@@ -11,6 +11,7 @@ export interface ChordDiagramColors {
   fretboardColor: string;
   borderColor: string;
   textColor: string;
+  chordNameColor: string; // Nova propriedade para a cor do nome do acorde
   borderWidth: number;
   stringThickness: number;
   fingerTextColor: string;
@@ -47,7 +48,7 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
   fingerBoxShadowBlur: 0,
   fingerBoxShadowSpread: 0,
   fingerBoxShadowColor: "rgba(0,0,0,0)",
-  fingerOpacity: 0.8,
+  fingerBackgroundAlpha: 0.9,
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);

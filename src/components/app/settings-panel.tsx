@@ -88,6 +88,18 @@ export function SettingsPanel() {
               <Label htmlFor="textColor" className="flex-1 text-right">Text</Label>
             </div>
             <div className="flex items-center justify-between">
+              <div className="relative">
+                <Input
+                  id="chordNameColor"
+                  type="color"
+                  value={colors.chordNameColor}
+                  onChange={(e) => handleColorChange("chordNameColor", e.target.value)}
+                  className="w-10 h-10 p-1 bg-input border-none"
+                />
+              </div>
+              <Label htmlFor="chordNameColor" className="flex-1 text-right">Chord Name</Label>
+            </div>
+            <div className="flex items-center justify-between">
               <Label htmlFor="borderWidth">Border Width</Label>
               <div className="relative">
                 <Input

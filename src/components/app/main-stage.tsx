@@ -47,7 +47,7 @@ export function MainStage() {
           </Button>
         </div>
       </div>
-      <div className="flex-1 bg-black rounded-lg w-[525px] h-[555px] overflow-hidden">
+      <div className="bg-black rounded-lg flex items-center justify-center p-4 aspect-video">
         {currentChord ? (
             <ChordDiagram {...currentChord} scale={1.5} />
         ) : (

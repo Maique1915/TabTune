@@ -49,7 +49,7 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
   fingerBoxShadowBlur: 0,
   fingerBoxShadowSpread: 0,
   fingerBoxShadowColor: 'rgba(0,0,0,0)',
-  fingerOpacity: 0.9,
+  fingerOpacity: 0.5,
 };
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
