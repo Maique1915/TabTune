@@ -10,6 +10,7 @@ export interface ChordDiagramColors {
   fingerColor: string;
   fretboardColor: string;
   borderColor: string;
+  chordNameColor: string;
   textColor: string;
   borderWidth: number;
   stringThickness: number;
@@ -38,6 +39,7 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
   fretboardColor: '#333333',
   borderColor: '#FFFFFF',
   textColor: '#FFA500',
+  chordNameColor: '#FFFFFF',
   borderWidth: 2,
   stringThickness: 2,
   fingerColor: '#FFFFFF',
