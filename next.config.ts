@@ -8,6 +8,14 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@motion-canvas/2d/src': '@motion-canvas/2d/lib',
+      '@motion-canvas/core/src': '@motion-canvas/core/lib',
+    };
+    return config;
+  },
   images: {
     remotePatterns: [
       {

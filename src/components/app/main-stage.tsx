@@ -8,14 +8,54 @@ import {
   RotateCcw,
   ZoomIn,
   Maximize,
+  Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/app/context/app--context";
 import { ChordDiagram } from "./chord-diagram";
+import { VideoCanvasStage, type VideoCanvasStageRef } from "./video-canvas-stage";
+import { useState, useRef } from "react";
 
 export function MainStage() {
   const { selectedChords } = useAppContext();
   const currentChord = selectedChords[selectedChords.length - 1];
+  const hasValidChord = currentChord && currentChord.positions && typeof currentChord.positions === 'object';
+  const [showVideoCanvas, setShowVideoCanvas] = useState(true);
+  const videoCanvasRef = useRef<VideoCanvasStageRef>(null);
+  const [ffmpegLoaded, setFFmpegLoaded] = useState(false);
+  const [isRendering, setIsRendering] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const handleAnimate = () => {
+    if (videoCanvasRef.current) {
+      videoCanvasRef.current.startAnimation();
+      setIsAnimating(true);
+      setIsPaused(false);
+    }
+  };
+
+  const handlePause = () => {
+    if (videoCanvasRef.current) {
+      videoCanvasRef.current.pauseAnimation();
+      setIsPaused(true);
+    }
+  };
+
+  const handleResume = () => {
+    if (videoCanvasRef.current) {
+      videoCanvasRef.current.resumeAnimation();
+      setIsPaused(false);
+    }
+  };
+
+  const handleRenderVideo = async () => {
+    if (videoCanvasRef.current && selectedChords.length > 0) {
+      setIsRendering(true);
+      await videoCanvasRef.current.handleRender();
+      setIsRendering(false);
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col bg-toolbar p-4">
@@ -24,10 +64,22 @@ export function MainStage() {
           <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/50 hover:text-primary-foreground">
             <SkipBack />
           </Button>
-          <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/50 hover:text-primary-foreground">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-foreground hover:bg-primary/50 hover:text-primary-foreground"
+            onClick={isPaused ? handleResume : handleAnimate}
+            disabled={!hasValidChord || (isAnimating && !isPaused)}
+          >
             <Play />
           </Button>
-          <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/50 hover:text-primary-foreground">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-foreground hover:bg-primary/50 hover:text-primary-foreground"
+            onClick={handlePause}
+            disabled={!hasValidChord || !isAnimating || isPaused}
+          >
             <Pause />
           </Button>
           <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/50 hover:text-primary-foreground">
@@ -37,7 +89,7 @@ export function MainStage() {
             <RotateCcw />
           </Button>
         </div>
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/50 hover:text-primary-foreground">
             <ZoomIn />
           </Button>
@@ -45,13 +97,46 @@ export function MainStage() {
           <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/50 hover:text-primary-foreground">
             <Maximize />
           </Button>
+          <div className="h-8 w-px bg-border mx-2" />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-foreground hover:bg-red-600 hover:text-white"
+            onClick={() => setShowVideoCanvas(!showVideoCanvas)}
+            disabled={!hasValidChord}
+            title={showVideoCanvas ? "Voltar para prévia" : "Modo de vídeo"}
+          >
+            <Video />
+          </Button>
+          <Button 
+            variant="default" 
+            size="sm"
+            className="bg-red-600 hover:bg-red-700 text-white whitespace-nowrap px-4"
+            onClick={handleRenderVideo}
+            disabled={selectedChords.length === 0 || !ffmpegLoaded || isRendering}
+            title={selectedChords.length === 0 ? "Selecione acordes primeiro" : "Renderizar vídeo MP4"}
+          >
+            {!ffmpegLoaded 
+              ? "Carregando FFmpeg..."
+              : isRendering 
+              ? "Renderizando..." 
+              : "Renderizar MP4"}
+          </Button>
         </div>
       </div>
-      <div className="bg-black rounded-lg flex items-center justify-center p-4 aspect-video">
-        {currentChord ? (
-            <ChordDiagram {...currentChord} scale={1.5} />
+      <div className="flex-1 bg-black rounded-lg flex items-center justify-center p-4">
+        {selectedChords.length > 0 ? (
+          <VideoCanvasStage 
+            ref={videoCanvasRef} 
+            chords={selectedChords}
+            onFFmpegLoad={() => setFFmpegLoaded(true)}
+            onAnimationStateChange={(animating, paused) => {
+              setIsAnimating(animating);
+              setIsPaused(paused);
+            }}
+          />
         ) : (
-            <p className="text-muted-foreground">Select a chord from the library to get started</p>
+          <p className="text-muted-foreground">Select a chord from the library to get started</p>
         )}
       </div>
     </div>

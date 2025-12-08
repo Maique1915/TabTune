@@ -12,6 +12,11 @@ const ChordDiagram: React.FC<ChordDiagramProps> = (props) => {
   const stringNames = ["E", "A", "D", "G", "B", "e"];
   const { colors } = useAppContext();
 
+  // Validação de segurança
+  if (!positions || typeof positions !== 'object') {
+    return null;
+  }
+
   const findMinNonZeroNote = (positions: Position, avoid: number[], nut?: nutForm): [number, number] => {
     let min = Infinity;
     let max = 0;
