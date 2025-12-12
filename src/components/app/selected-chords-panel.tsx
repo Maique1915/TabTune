@@ -68,7 +68,7 @@ export function SelectedChordsPanel() {
         <DragDropContext onDragEnd={handleOnDragEnd}>
             <Droppable droppableId="chords" direction="horizontal">
                 {(provided) => (
-                    <div {...provided.droppableProps} ref={provided.innerRef} className="absolute inset-0 flex items-center gap-4 p-2">
+                    <div {...provided.droppableProps} ref={provided.innerRef} className="absolute flex items-center gap-4 p-2">
                         {chords.length === 0 && (
                             <div className="flex-1 flex items-center justify-center h-full">
                                 <p className="text-muted-foreground">Your selected chords will appear here.</p>
@@ -86,7 +86,7 @@ export function SelectedChordsPanel() {
                                     >
                                         <GripVertical className="h-6 w-6 text-muted-foreground cursor-grab" />
                                         <div className="flex items-center justify-center" style={{ overflow: 'hidden' }}>
-                                            <ChordDiagram {...chord} scale={0.5} />
+                                            <ChordDiagram {...chord} scale={0.25} />
                                         </div>
                                          {selectedChordIndex === index && (
                                             <Button

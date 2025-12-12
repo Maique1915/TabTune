@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { useAppContext, DEFAULT_COLORS } from "@/app/context/app--context";
+import { useAppContext, DEFAULT_COLORS, AnimationType } from "@/app/context/app--context";
 import type { ChordDiagramColors } from "@/app/context/app--context";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export function SettingsPanel() {
-  const { colors, setColors } = useAppContext();
+  const { colors, setColors, animationType, setAnimationType } = useAppContext();
 
   const handleColorChange = (
     key: keyof ChordDiagramColors,
@@ -33,11 +34,33 @@ export function SettingsPanel() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        <Tabs defaultValue="general" className="w-full pr-4"> {/* Adicionado pr-4 para dar espaço ao seletor de cores */}
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="animation" className="w-full pr-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="animation">Animation</TabsTrigger>
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="fingers">Fingers</TabsTrigger>
           </TabsList>
+          <TabsContent value="animation" className="space-y-4 pt-4">
+            <div className="space-y-3">
+              <Label>Animation Style</Label>
+              <RadioGroup value={animationType} onValueChange={(value) => setAnimationType(value as AnimationType)}>
+                <div className="flex items-center space-x-2 p-3 rounded-lg border border-border hover:bg-accent/50">
+                  <RadioGroupItem value="carousel" id="carousel" />
+                  <Label htmlFor="carousel" className="flex-1 cursor-pointer">
+                    <div className="font-medium">Carousel</div>
+                    <div className="text-xs text-muted-foreground">Chords slide across the screen like a carousel</div>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2 p-3 rounded-lg border border-border hover:bg-accent/50">
+                  <RadioGroupItem value="static-fingers" id="static-fingers" />
+                  <Label htmlFor="static-fingers" className="flex-1 cursor-pointer">
+                    <div className="font-medium">Static Fretboard</div>
+                    <div className="text-xs text-muted-foreground">Fretboard stays centered, fingers animate smoothly between positions</div>
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+          </TabsContent>
           <TabsContent value="general" className="space-y-4 pt-4">
             <div className="flex items-center justify-between">
               <div className="relative">

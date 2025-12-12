@@ -20,7 +20,7 @@ export function SelectedChordsPanel() {
         <p className="text-sm font-bold text-white">Selected Chords</p>
       </div>
       <div className="flex-1 relative overflow-x-auto overflow-y-hidden">
-        <div className="absolute inset-0 flex items-center gap-4 p-2">
+        <div className="absolute inset-0 flex items-center p-2">
             {selectedChords.length === 0 && (
                 <div className="flex-1 flex items-center justify-center h-full">
                     <p className="text-muted-foreground">Your selected chords will appear here.</p>

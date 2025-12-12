@@ -25,11 +25,15 @@ export interface ChordDiagramColors {
   fingerBackgroundAlpha: number;
 }
 
+export type AnimationType = "carousel" | "static-fingers";
+
 interface AppContextType {
   selectedChords: ChordDiagramProps[];
   setSelectedChords: Dispatch<SetStateAction<ChordDiagramProps[]>>;
   colors: ChordDiagramColors;
   setColors: Dispatch<SetStateAction<ChordDiagramColors>>;
+  animationType: AnimationType;
+  setAnimationType: Dispatch<SetStateAction<AnimationType>>;
 }
 
 export const DEFAULT_COLORS: ChordDiagramColors = {
@@ -57,6 +61,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [selectedChords, setSelectedChords] = useState<ChordDiagramProps[]>([]);
   const [colors, setColors] = useState<ChordDiagramColors>(DEFAULT_COLORS);
+  const [animationType, setAnimationType] = useState<AnimationType>("carousel");
 
   return (
     <AppContext.Provider
@@ -65,6 +70,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setSelectedChords,
         colors,
         setColors,
+        animationType,
+        setAnimationType,
       }}
     >
       {children}

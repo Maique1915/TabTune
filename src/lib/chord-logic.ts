@@ -58,6 +58,7 @@ export const transpose = (chord: ChordDiagramProps, newAchord: Achord): ChordDia
             nut.vis = true;
             aux = 1
         } else {
+            aux = 1;
             nut.vis = newAchord.note !== chord.chord.note || nut.add
         }
     }

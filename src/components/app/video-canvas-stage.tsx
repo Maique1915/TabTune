@@ -3,11 +3,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { animate, type JSAnimation } from "animejs";
 import type { ChordDiagramProps } from "@/lib/types";
-import { getNome } from "@/lib/chords";
 import { useAppContext } from "@/app/context/app--context";
-import { Button } from "@/components/ui/button";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
+import { drawChordOnCanvas } from "@/lib/chord-drawer";
+import { drawStaticFingersAnimation } from "@/lib/static-fingers-drawer";
+import { drawCarouselAnimation } from "@/lib/carousel-drawer";
 
 export interface VideoCanvasStageRef {
   startAnimation: () => void;
@@ -58,8 +59,7 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     chordIndex: 0,
     transitionProgress: 0
   });
-  const { colors } = useAppContext();
-  const stringNames = ["E", "A", "D", "G", "B", "e"];
+  const { colors, animationType } = useAppContext();
   const [isAnimating, setIsAnimating] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentChordIndex, setCurrentChordIndex] = useState(0);
@@ -102,156 +102,41 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     if (!ctx) return;
 
     const state = animationStateRef.current;
-    const currentChord = chords[Math.floor(state.chordIndex)];
+    if (!chords || chords.length === 0) {
+      ctx.fillStyle = colors.cardColor;
+      ctx.fillRect(0, 0, width, height);
+      return;
+    }
+
+    // Garante que o índice do acorde é válido
+    const chordIndex = Math.max(0, Math.min(chords.length - 1, Math.floor(state.chordIndex)));
+    const currentChord = chords[chordIndex];
     if (!currentChord) return;
-    
-    const chordName = getNome(currentChord.chord).replace(/#/g, "♯").replace(/b/g, "♭");
 
-    // Limpar canvas
-    ctx.fillStyle = colors.cardColor;
-    ctx.fillRect(0, 0, width, height);
+    const nextChordIndex = Math.min(chords.length - 1, chordIndex + 1);
+    const nextChord = chordIndex < chords.length - 1 ? chords[nextChordIndex] : null;
 
-    // Dimensões do cartão do acorde
-    const cardWidth = 260;
-    const cardHeight = 360;
-    const cardX = (width - cardWidth) / 2;
-    const cardY = state.cardY;
-
-    // Desenhar cartão do acorde com fade-in
-    ctx.globalAlpha = Math.min(1, state.nameOpacity + 0.3);
-    ctx.fillStyle = colors.cardColor;
-    ctx.strokeStyle = colors.borderColor;
-    ctx.lineWidth = 2;
-    ctx.fillRect(cardX, cardY, cardWidth, cardHeight);
-    ctx.strokeRect(cardX, cardY, cardWidth, cardHeight);
-    ctx.globalAlpha = 1;
-
-    // Desenhar nome do acorde
-    ctx.globalAlpha = state.nameOpacity;
-    ctx.fillStyle = colors.textColor;
-    ctx.font = "bold 32px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(chordName, width / 2, cardY + 40);
-    ctx.globalAlpha = 1;
-
-    // Configurações do diagrama
-    const diagramX = cardX + 30;
-    const diagramY = cardY + 70;
-    const diagramWidth = cardWidth - 60;
-    const diagramHeight = 200;
-    const numStrings = 6;
-    const numFrets = 5;
-    const stringSpacing = diagramWidth / (numStrings - 1);
-    const fretSpacing = diagramHeight / numFrets;
-
-    // Desenhar cordas (verticais)
-    ctx.strokeStyle = colors.borderColor;
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < numStrings; i++) {
-      const x = diagramX + i * stringSpacing;
-      ctx.beginPath();
-      ctx.moveTo(x, diagramY);
-      ctx.lineTo(x, diagramY + diagramHeight);
-      ctx.stroke();
+    if (animationType === "static-fingers") {
+      // Animação de dedos estáticos
+      drawStaticFingersAnimation({
+        ctx,
+        currentChord,
+        nextChord,
+        transitionProgress: state.transitionProgress,
+        colors,
+        dimensions: { width, height },
+      });
+    } else {
+      // Animação de carrossel horizontal
+      drawCarouselAnimation({
+        ctx,
+        currentChord,
+        nextChord,
+        transitionProgress: state.transitionProgress,
+        colors,
+        dimensions: { width, height },
+      });
     }
-
-    // Desenhar trastes (horizontais)
-    for (let i = 0; i <= numFrets; i++) {
-      const y = diagramY + i * fretSpacing;
-      ctx.lineWidth = i === 0 ? 3 : 1.5;
-      ctx.beginPath();
-      ctx.moveTo(diagramX, y);
-      ctx.lineTo(diagramX + diagramWidth, y);
-      ctx.stroke();
-    }
-
-    // Desenhar pestana (barre)
-    if (currentChord.barre && currentChord.barre[0] > 0) {
-      const fretY = diagramY + (currentChord.barre[0] - 0.5) * fretSpacing;
-      const fromX = diagramX + currentChord.barre[1] * stringSpacing;
-      const toX = diagramX + (5 - currentChord.barre[1]) * stringSpacing;
-      
-      ctx.globalAlpha = state.fingerOpacity;
-      ctx.strokeStyle = colors.fingerColor;
-      ctx.lineWidth = 18;
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      ctx.moveTo(fromX, fretY);
-      ctx.lineTo(toX, fretY);
-      ctx.stroke();
-      ctx.lineWidth = 1.5;
-      ctx.lineCap = "butt";
-      ctx.globalAlpha = 1;
-    }
-
-    // Desenhar posições dos dedos com animação
-    ctx.globalAlpha = state.fingerOpacity;
-    ctx.fillStyle = colors.fingerColor;
-    ctx.save();
-    ctx.translate(width / 2, height / 2);
-    ctx.scale(state.fingerScale, state.fingerScale);
-    ctx.translate(-width / 2, -height / 2);
-    
-    Object.entries(currentChord.positions).forEach(([key, [fret]]) => {
-      const stringIndex = Number(key) - 1;
-      if (fret > 0) {
-        const x = diagramX + stringIndex * stringSpacing;
-        const y = diagramY + (fret - 0.5) * fretSpacing;
-        
-        ctx.beginPath();
-        ctx.arc(x, y, 8, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    });
-    
-    ctx.restore();
-    ctx.globalAlpha = 1;
-
-    // Desenhar X e O no topo
-    ctx.font = "bold 16px sans-serif";
-    ctx.textAlign = "center";
-    Object.entries(currentChord.positions).forEach(([key, [fret]]) => {
-      const stringIndex = Number(key) - 1;
-      const stringNumber = Number(key);
-      const x = diagramX + stringIndex * stringSpacing;
-      const y = diagramY - 15;
-      
-      if (currentChord.avoid?.includes(stringNumber)) {
-        ctx.fillStyle = colors.textColor;
-        ctx.globalAlpha = state.nameOpacity;
-        ctx.fillText("✕", x, y);
-        ctx.globalAlpha = 1;
-      } else if (fret === 0) {
-        ctx.strokeStyle = colors.textColor;
-        ctx.lineWidth = 2;
-        ctx.globalAlpha = state.nameOpacity;
-        ctx.beginPath();
-        ctx.arc(x, y - 5, 6, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-      }
-    });
-
-    // Desenhar número do traste (nut)
-    if (currentChord.nut?.pos && currentChord.nut.pos > 1) {
-      ctx.fillStyle = colors.textColor;
-      ctx.font = "14px sans-serif";
-      ctx.textAlign = "right";
-      ctx.globalAlpha = state.nameOpacity;
-      ctx.fillText(`${currentChord.nut.pos}fr`, diagramX - 10, diagramY + fretSpacing / 2);
-      ctx.globalAlpha = 1;
-    }
-
-    // Desenhar nomes das cordas
-    ctx.fillStyle = colors.textColor;
-    ctx.font = "12px sans-serif";
-    ctx.textAlign = "center";
-    ctx.globalAlpha = state.nameOpacity;
-    stringNames.forEach((name, i) => {
-      const x = diagramX + i * stringSpacing;
-      ctx.fillText(name, x, diagramY + diagramHeight + 25);
-    });
-    ctx.globalAlpha = 1;
 
     // Capturar frame se estiver gravando
     if (isRecording && onFrameCapture) {
@@ -272,97 +157,113 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     setCurrentChordIndex(0);
     if (onAnimationStateChange) onAnimationStateChange(true, false);
 
-    // Duração total: 2s por acorde (1.5s animação + 0.5s hold)
-    const animationsPerChord = chords.length;
-    const timeline: any[] = [];
+    if (animationType === "static-fingers") {
+      // Animação de dedos estáticos
+      let currentIndex = 0;
 
-    chords.forEach((_, index) => {
-      const startTime = index * 2000;
-      
-      // Reset para cada acorde
-      timeline.push({
-        targets: animationStateRef.current,
-        chordIndex: index,
-        fingerOpacity: 0,
-        fingerScale: 0.5,
-        cardY: height,
-        nameOpacity: 0,
-        transitionProgress: 0,
-        duration: 0,
-        delay: startTime,
-        onUpdate: () => {
-          setCurrentChordIndex(index);
-          drawAnimatedChord();
-        }
-      });
-
-      // Animação de entrada
-      timeline.push({
-        targets: animationStateRef.current,
+      // Estado inicial: primeiro acorde já visível
+      animationStateRef.current = {
         fingerOpacity: 1,
         fingerScale: 1,
-        cardY: (height - 360) / 2,
+        cardY: 0,
         nameOpacity: 1,
-        transitionProgress: 1,
-        duration: 1500,
-        delay: startTime,
-        easing: "outElastic(1, 0.6)",
-        onUpdate: () => drawAnimatedChord()
-      });
-    });
-
-    // Reset animation state
-    animationStateRef.current = {
-      fingerOpacity: 0,
-      fingerScale: 0.5,
-      cardY: height,
-      nameOpacity: 0,
-      chordIndex: 0,
-      transitionProgress: 0
-    };
-
-    // Executar todas as animações em sequência
-    let currentIndex = 0;
-    const animateNext = () => {
-      if (currentIndex >= chords.length) {
-        setIsAnimating(false);
-        setIsPaused(false);
-        if (onAnimationStateChange) onAnimationStateChange(false, false);
-        return;
-      }
-
-      // Reset para o próximo acorde
-      animationStateRef.current = {
-        fingerOpacity: 0,
-        fingerScale: 0.5,
-        cardY: height,
-        nameOpacity: 0,
-        chordIndex: currentIndex,
+        chordIndex: 0,
         transitionProgress: 0
       };
+      drawAnimatedChord();
 
-      setCurrentChordIndex(currentIndex);
+      const animateNext = () => {
+        if (currentIndex >= chords.length - 1) {
+          // Pausar no último acorde por 1 segundo
+          setTimeout(() => {
+            setIsAnimating(false);
+            setIsPaused(false);
+            if (onAnimationStateChange) onAnimationStateChange(false, false);
+          }, 1000);
+          return;
+        }
 
-      animationRef.current = animate(animationStateRef.current, {
+        setCurrentChordIndex(currentIndex);
+
+        // Transição para o próximo acorde
+        animationRef.current = animate(animationStateRef.current, {
+          chordIndex: currentIndex,
+          transitionProgress: 1,
+          duration: 1000,
+          easing: "easeInOutQuad",
+          onUpdate: () => drawAnimatedChord(),
+          onComplete: () => {
+            // Reset transição e ir para o próximo
+            currentIndex++;
+            animationStateRef.current.chordIndex = currentIndex;
+            animationStateRef.current.transitionProgress = 0;
+            
+            // Pausar 500ms antes da próxima transição
+            setTimeout(() => {
+              animateNext();
+            }, 500);
+          }
+        });
+      };
+
+      // Pausar 1 segundo no primeiro acorde antes de começar
+      setTimeout(() => {
+        animateNext();
+      }, 1000);
+    } else {
+      // Animação de carrossel horizontal
+      let currentIndex = 0;
+
+      // Estado inicial: primeiro acorde já no centro
+      animationStateRef.current = {
         fingerOpacity: 1,
         fingerScale: 1,
-        cardY: (height - 360) / 2,
+        cardY: 0,
         nameOpacity: 1,
-        transitionProgress: 1,
-        duration: 1500,
-        easing: "outElastic(1, 0.6)",
-        onUpdate: () => drawAnimatedChord(),
-        onComplete: () => {
-          // Aguardar 500ms antes do próximo acorde
-          setTimeout(() => {
-            currentIndex++;
-            animateNext();
-          }, 500);
-        }
-      });
-    };
+        chordIndex: 0,
+        transitionProgress: 0
+      };
+      drawAnimatedChord();
 
-    animateNext();
+      const animateNext = () => {
+        if (currentIndex >= chords.length - 1) {
+          // Pausar no último acorde por 1 segundo
+          setTimeout(() => {
+            setIsAnimating(false);
+            setIsPaused(false);
+            if (onAnimationStateChange) onAnimationStateChange(false, false);
+          }, 1000);
+          return;
+        }
+
+        setCurrentChordIndex(currentIndex);
+
+        // Slide para o próximo acorde (da direita para o centro)
+        animationRef.current = animate(animationStateRef.current, {
+          chordIndex: currentIndex,
+          transitionProgress: 1,
+          duration: 800,
+          easing: "easeInOutCubic",
+          onUpdate: () => drawAnimatedChord(),
+          onComplete: () => {
+            // Reset transição e ir para o próximo
+            currentIndex++;
+            animationStateRef.current.chordIndex = currentIndex;
+            animationStateRef.current.transitionProgress = 0;
+            
+            // Pausar 500ms antes da próxima transição
+            setTimeout(() => {
+              animateNext();
+            }, 500);
+          }
+        });
+      };
+
+      // Pausar 1 segundo no primeiro acorde antes de começar
+      setTimeout(() => {
+        animateNext();
+      }, 1000);
+    }
   };
 
   const pauseAnimation = () => {
@@ -391,65 +292,208 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     const canvas = canvasRef.current;
     const ffmpeg = ffmpegRef.current;
     const fps = 30;
-    const durationPerChord = 2.0; // 2s por acorde (1.5s animação + 0.5s hold)
-    const totalDuration = chords.length * durationPerChord;
-    const totalFrames = Math.ceil(fps * totalDuration);
 
     try {
-      // Reset animation state
-      animationStateRef.current = {
-        fingerOpacity: 0,
-        fingerScale: 0.5,
-        cardY: height,
-        nameOpacity: 0,
-        chordIndex: 0,
-        transitionProgress: 0
-      };
-
-      // Generate all frames
       const frames: Blob[] = [];
-      for (let i = 0; i < totalFrames; i++) {
-        const timeInSeconds = i / fps;
-        const chordIndex = Math.floor(timeInSeconds / durationPerChord);
-        const timeInChord = timeInSeconds % durationPerChord;
-        const animationDuration = 1.5;
-        
-        if (chordIndex >= chords.length) break;
 
-        const progress = Math.min(timeInChord / animationDuration, 1);
+      if (animationType === "static-fingers") {
+        // Renderização para animação de dedos estáticos
+        const holdDuration = 1.0; // 1s no primeiro acorde
+        const transitionDuration = 1.0; // 1s para transição
+        const pauseDuration = 0.5; // 0.5s entre transições
+        const finalHoldDuration = 1.0; // 1s no último acorde
         
-        // Easing function
-        const easing = (t: number) => {
-          const c4 = (2 * Math.PI) / 3;
-          return t === 0
-            ? 0
-            : t === 1
-            ? 1
-            : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
-        };
+        const framesFirstHold = Math.ceil(fps * holdDuration);
+        const framesPerTransition = Math.ceil(fps * transitionDuration);
+        const framesPause = Math.ceil(fps * pauseDuration);
+        const framesFinalHold = Math.ceil(fps * finalHoldDuration);
         
-        const t = easing(progress);
+        const totalFrames = framesFirstHold + 
+                           (chords.length - 1) * (framesPerTransition + framesPause) +
+                           framesFinalHold;
 
-        // Update animation state manually
+        let frameCount = 0;
+
+        // Primeiro acorde (hold)
         animationStateRef.current = {
-          fingerOpacity: t,
-          fingerScale: 0.5 + (0.5 * t),
-          cardY: height - (height - (height - 360) / 2) * t,
-          nameOpacity: t,
-          chordIndex,
-          transitionProgress: t
+          fingerOpacity: 1,
+          fingerScale: 1,
+          cardY: 0,
+          nameOpacity: 1,
+          chordIndex: 0,
+          transitionProgress: 0
         };
 
-        // Draw frame
-        drawAnimatedChord();
+        for (let i = 0; i < framesFirstHold; i++) {
+          drawAnimatedChord();
+          await new Promise<void>((resolve) => {
+            canvas.toBlob((blob) => {
+              if (blob) frames.push(blob);
+              resolve();
+            }, "image/png");
+          });
+          frameCount++;
+        }
 
-        // Capture frame as blob
-        await new Promise<void>((resolve) => {
-          canvas.toBlob((blob) => {
-            if (blob) frames.push(blob);
-            resolve();
-          }, "image/png");
-        });
+        // Transições entre acordes
+        for (let chordIndex = 0; chordIndex < chords.length - 1; chordIndex++) {
+          // Animação de transição
+          for (let i = 0; i < framesPerTransition; i++) {
+            const progress = i / framesPerTransition;
+            // Easing suave
+            const t = progress < 0.5 
+              ? 2 * progress * progress 
+              : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+            
+            animationStateRef.current = {
+              fingerOpacity: 1,
+              fingerScale: 1,
+              cardY: 0,
+              nameOpacity: 1,
+              chordIndex,
+              transitionProgress: t
+            };
+
+            drawAnimatedChord();
+            await new Promise<void>((resolve) => {
+              canvas.toBlob((blob) => {
+                if (blob) frames.push(blob);
+                resolve();
+              }, "image/png");
+            });
+            frameCount++;
+          }
+
+          // Pausa no próximo acorde
+          animationStateRef.current = {
+            fingerOpacity: 1,
+            fingerScale: 1,
+            cardY: 0,
+            nameOpacity: 1,
+            chordIndex: chordIndex + 1,
+            transitionProgress: 0
+          };
+
+          for (let i = 0; i < framesPause; i++) {
+            drawAnimatedChord();
+            await new Promise<void>((resolve) => {
+              canvas.toBlob((blob) => {
+                if (blob) frames.push(blob);
+                resolve();
+              }, "image/png");
+            });
+            frameCount++;
+          }
+        }
+
+        // Hold final no último acorde
+        for (let i = 0; i < framesFinalHold; i++) {
+          drawAnimatedChord();
+          await new Promise<void>((resolve) => {
+            canvas.toBlob((blob) => {
+              if (blob) frames.push(blob);
+              resolve();
+            }, "image/png");
+          });
+          frameCount++;
+        }
+      } else {
+        // Renderização para animação de carrossel horizontal
+        const holdDuration = 1.0; // 1s no primeiro acorde
+        const transitionDuration = 0.8; // 0.8s para transição
+        const pauseDuration = 0.5; // 0.5s entre transições
+        const finalHoldDuration = 1.0; // 1s no último acorde
+        
+        const framesFirstHold = Math.ceil(fps * holdDuration);
+        const framesPerTransition = Math.ceil(fps * transitionDuration);
+        const framesPause = Math.ceil(fps * pauseDuration);
+        const framesFinalHold = Math.ceil(fps * finalHoldDuration);
+        
+        let frameCount = 0;
+
+        // Primeiro acorde (hold)
+        animationStateRef.current = {
+          fingerOpacity: 1,
+          fingerScale: 1,
+          cardY: 0,
+          nameOpacity: 1,
+          chordIndex: 0,
+          transitionProgress: 0
+        };
+
+        for (let i = 0; i < framesFirstHold; i++) {
+          drawAnimatedChord();
+          await new Promise<void>((resolve) => {
+            canvas.toBlob((blob) => {
+              if (blob) frames.push(blob);
+              resolve();
+            }, "image/png");
+          });
+          frameCount++;
+        }
+
+        // Transições entre acordes
+        for (let chordIndex = 0; chordIndex < chords.length - 1; chordIndex++) {
+          // Animação de transição
+          for (let i = 0; i < framesPerTransition; i++) {
+            const progress = i / framesPerTransition;
+            // Easing cubic
+            const t = progress < 0.5 
+              ? 4 * progress * progress * progress 
+              : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+            
+            animationStateRef.current = {
+              fingerOpacity: 1,
+              fingerScale: 1,
+              cardY: 0,
+              nameOpacity: 1,
+              chordIndex,
+              transitionProgress: t
+            };
+
+            drawAnimatedChord();
+            await new Promise<void>((resolve) => {
+              canvas.toBlob((blob) => {
+                if (blob) frames.push(blob);
+                resolve();
+              }, "image/png");
+            });
+            frameCount++;
+          }
+
+          // Pausa no próximo acorde
+          animationStateRef.current = {
+            fingerOpacity: 1,
+            fingerScale: 1,
+            cardY: 0,
+            nameOpacity: 1,
+            chordIndex: chordIndex + 1,
+            transitionProgress: 0
+          };
+
+          for (let i = 0; i < framesPause; i++) {
+            drawAnimatedChord();
+            await new Promise<void>((resolve) => {
+              canvas.toBlob((blob) => {
+                if (blob) frames.push(blob);
+                resolve();
+              }, "image/png");
+            });
+            frameCount++;
+          }
+        }
+
+        // Hold final no último acorde
+        for (let i = 0; i < framesFinalHold; i++) {
+          drawAnimatedChord();
+          await new Promise<void>((resolve) => {
+            canvas.toBlob((blob) => {
+              if (blob) frames.push(blob);
+              resolve();
+            }, "image/png");
+          });
+          frameCount++;
+        }
       }
 
       console.log(`Generated ${frames.length} frames`);
@@ -506,18 +550,18 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
 
   useEffect(() => {
     if (chords && chords.length > 0 && !isRecording) {
-      // Desenhar primeiro frame imediatamente
+      // Para ambas animações, mostrar o último acorde adicionado no centro
       animationStateRef.current = {
         fingerOpacity: 1,
         fingerScale: 1,
-        cardY: (height - 360) / 2,
+        cardY: 0,
         nameOpacity: 1,
-        chordIndex: 0,
-        transitionProgress: 1
+        chordIndex: chords.length - 1,
+        transitionProgress: 0
       };
       drawAnimatedChord();
     }
-  }, [chords, isRecording]);
+  }, [chords, isRecording, colors, height, width, animationType]);
 
   // Para renderização contínua durante a gravação
   useEffect(() => {
