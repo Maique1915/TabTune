@@ -9,8 +9,10 @@
 export function formatTimeMs(ms: number): string {
   const totalSeconds = ms / 1000;
   const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toFixed(1).padStart(4, '0')}`;
+  const seconds = Math.floor(totalSeconds % 60);
+  const decimals = Math.floor((totalSeconds % 1) * 10);
+  
+  return `${minutes}:${seconds.toString().padStart(2, '0')}.${decimals}`;
 }
 
 /**

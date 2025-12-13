@@ -3,8 +3,8 @@
 import React from 'react';
 import type { ChordDiagramProps, Position, nutForm } from '@/lib/types';
 import { getNome } from '@/lib/chords';
-import "@/styles/chord.css";
 import { useAppContext } from '@/app/context/app--context';
+import '@/app/chord-diagram.css';
 
 const ChordDiagram: React.FC<ChordDiagramProps> = (props) => {
   const { positions, nut, barre, avoid, list } = props;
@@ -43,8 +43,7 @@ const ChordDiagram: React.FC<ChordDiagramProps> = (props) => {
   const transposeForDisplay = () => {
     const [minFret, maxFret] = findMinNonZeroNote(positions, avoid, nut);
 
-    if (maxFret <= 5 && (!nut || !nut.vis || nut.pos <= 5)) {
-      return { finalPositions: positions, finalNut: nut, transportDisplay: props.transport ?? 0 };
+        if (maxFret <= 5 && (!nut || !nut.vis || nut.pos <= 5)) {       return { finalPositions: positions, finalNut: nut, transportDisplay: props.transport ?? 0 };
     }
     
     const transposition = (nut && nut.vis) ? nut.pos -1 : minFret > 0 ? minFret -1 : 0

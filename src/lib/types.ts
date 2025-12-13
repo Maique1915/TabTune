@@ -1,3 +1,8 @@
+export interface ChordWithTiming {
+  chord: ChordDiagramProps;
+  duration: number; // duração em ms
+}
+
 export interface Achord {
   note: number;
   complement: number;

@@ -26,10 +26,15 @@ export function TimelineRuler({ totalDuration, zoom }: TimelineRulerProps) {
     marks.push(time);
   }
 
+  const TRACK_LABEL_WIDTH = 128; // 32 * 4 = 128px (w-32)
+
   return (
     <div className="relative h-8 bg-muted/30 border-b border-border">
+      {/* Espaço para label da track */}
+      <div className="absolute left-0 top-0 bottom-0 w-32 bg-muted/50 border-r border-border" />
+      
       {marks.map((time) => {
-        const x = (time / 1000) * zoom;
+        const x = TRACK_LABEL_WIDTH + (time / 1000) * zoom;
         const isSecond = time % 1000 === 0;
         
         return (

@@ -3,13 +3,14 @@
 
 import type { Dispatch, SetStateAction } from "react";
 import { createContext, useContext, useState } from "react";
-import type { Achord, ChordDiagramProps } from "@/lib/types";
+import type { Achord, ChordDiagramProps, ChordWithTiming } from "@/lib/types";
 
 export interface ChordDiagramColors {
   cardColor: string;
   fingerColor: string;
   fretboardColor: string;
   borderColor: string;
+  fretColor: string; // Cor específica para os trastes
   textColor: string;
   chordNameColor: string; // Nova propriedade para a cor do nome do acorde
   borderWidth: number;
@@ -28,8 +29,8 @@ export interface ChordDiagramColors {
 export type AnimationType = "carousel" | "static-fingers";
 
 interface AppContextType {
-  selectedChords: ChordDiagramProps[];
-  setSelectedChords: Dispatch<SetStateAction<ChordDiagramProps[]>>;
+  selectedChords: ChordWithTiming[];
+  setSelectedChords: Dispatch<SetStateAction<ChordWithTiming[]>>;
   colors: ChordDiagramColors;
   setColors: Dispatch<SetStateAction<ChordDiagramColors>>;
   animationType: AnimationType;
@@ -37,29 +38,30 @@ interface AppContextType {
 }
 
 export const DEFAULT_COLORS: ChordDiagramColors = {
-  cardColor: "#1E1E1E",
-  fingerColor: "#888888",
-  fretboardColor: "#333333",
-  borderColor: "#FFFFFF",
-  textColor: "#FFA500",
-  chordNameColor: "#FFFFFF",
-  borderWidth: 0,
-  stringThickness: 2,
-  fingerTextColor: "#FFFFFF",
-  fingerBorderColor: "#FFFFFF",
-  fingerBorderWidth: 3,
+  cardColor: "#000000",              // Fundo preto
+  fingerColor: "#200f0fff",            // Dedos brancos
+  fretboardColor: "#303135ff",         // Braço cinza escuro moderno
+  borderColor: "#FFFFFF",            // Cordas brancas
+  fretColor: "#000000ff",              // Trastes brancos
+  textColor: "#FF8C42",              // Nomes das cordas laranja
+  chordNameColor: "#FFFFFF",         // Nome do acorde branco
+  borderWidth: 3,
+  stringThickness: 3,                // Cordas um pouco mais grossas
+  fingerTextColor: "#ffffffff",        // Texto dos dedos preto
+  fingerBorderColor: "#FFFFFF",      // Borda branca nos dedos
+  fingerBorderWidth: 4,              // Borda mais visível
   fingerBoxShadowHOffset: 0,
   fingerBoxShadowVOffset: 0,
   fingerBoxShadowBlur: 0,
   fingerBoxShadowSpread: 0,
   fingerBoxShadowColor: "rgba(0,0,0,0)",
-  fingerBackgroundAlpha: 0.9,
+  fingerBackgroundAlpha: 0.3,        // Dedos totalmente opacos
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [selectedChords, setSelectedChords] = useState<ChordDiagramProps[]>([]);
+  const [selectedChords, setSelectedChords] = useState<ChordWithTiming[]>([]);
   const [colors, setColors] = useState<ChordDiagramColors>(DEFAULT_COLORS);
   const [animationType, setAnimationType] = useState<AnimationType>("carousel");
 

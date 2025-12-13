@@ -96,7 +96,19 @@ export function SettingsPanel() {
                   className="w-10 h-10 p-1 bg-input border-none"
                 />
               </div>
-              <Label htmlFor="borderColor" className="flex-1 text-right">Borders</Label>
+              <Label htmlFor="borderColor" className="flex-1 text-right">Strings (Cordas)</Label>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="relative">
+                <Input
+                  id="fretColor"
+                  type="color"
+                  value={colors.fretColor}
+                  onChange={(e) => handleColorChange("fretColor", e.target.value)}
+                  className="w-10 h-10 p-1 bg-input border-none"
+                />
+              </div>
+              <Label htmlFor="fretColor" className="flex-1 text-right">Frets (Trastes)</Label>
             </div>
             <div className="flex items-center justify-between">
               <div className="relative">

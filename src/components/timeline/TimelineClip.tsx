@@ -4,6 +4,7 @@ import React from "react";
 import { cn } from "@/lib/utils";
 import type { TimelineClip as TimelineClipType } from "@/lib/timeline/types";
 import { formatTimeMs } from "@/lib/timeline/utils";
+import { getNome } from "@/lib/chords";
 
 interface TimelineClipProps {
   clip: TimelineClipType;
@@ -27,7 +28,9 @@ export function TimelineClip({
   const left = (clip.start / 1000) * zoom;
   const width = (clip.duration / 1000) * zoom;
 
-  const chordName = `${clip.chord.chord.key}${clip.chord.chord.suffix || ''}`;
+  const chordName = clip.chord?.chord 
+    ? getNome(clip.chord.chord).replace(/#/g, "♯").replace(/b/g, "♭")
+    : 'Acorde';
 
   return (
     <div

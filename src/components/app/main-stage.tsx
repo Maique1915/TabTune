@@ -19,7 +19,7 @@ import { useState, useRef } from "react";
 export function MainStage() {
   const { selectedChords } = useAppContext();
   const currentChord = selectedChords[selectedChords.length - 1];
-  const hasValidChord = currentChord && currentChord.positions && typeof currentChord.positions === 'object';
+  const hasValidChord = currentChord && currentChord.chord && currentChord.chord.positions && typeof currentChord.chord.positions === 'object';
   const [showVideoCanvas, setShowVideoCanvas] = useState(true);
   const videoCanvasRef = useRef<VideoCanvasStageRef>(null);
   const [ffmpegLoaded, setFFmpegLoaded] = useState(false);
@@ -58,7 +58,7 @@ export function MainStage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-toolbar p-4">
+    <div className="flex flex-col bg-toolbar p-4 overflow-hidden">
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/50 hover:text-primary-foreground">
@@ -124,7 +124,7 @@ export function MainStage() {
           </Button>
         </div>
       </div>
-      <div className="flex-1 bg-black rounded-lg flex items-center justify-center p-4">
+      <div className="bg-black rounded-lg flex items-center justify-center p-4 overflow-hidden" style={{ height: 'calc(100% - 60px)' }}>
         {selectedChords.length > 0 ? (
           <VideoCanvasStage 
             ref={videoCanvasRef} 
