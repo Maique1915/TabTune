@@ -183,7 +183,7 @@ export function drawStaticFingersAnimation(params: DrawStaticFingersParams) {
   }
 
   // Trastes
-  for (let i = 0; i <= numFrets; i++) {
+  for (let i = 0; i <= 3; i++) {
     const y = fretboardY + i * realFretSpacing;
     ctx.lineWidth = i === 0 ? (colors.borderWidth * 4) : colors.borderWidth;
     ctx.beginPath();
@@ -342,11 +342,26 @@ export function drawStaticFingersAnimation(params: DrawStaticFingersParams) {
   });
   ctx.globalAlpha = 1;
 
-  // Número do traste inicial
+  // Número do traste inicial (com animação durante transição)
+  const nextTransportDisplay = nextTransposed?.transportDisplay || 1;
+  
+  // Fade out do texto atual
   if (transportDisplay > 1) {
+    ctx.globalAlpha = 1 - transitionProgress;
     ctx.fillStyle = colors.textColor;
     ctx.font = "bold 25px sans-serif";
     ctx.textAlign = "right";
     ctx.fillText(`${transportDisplay}ª`, fretboardX - realFretSpacing, fretboardY + (realFretSpacing / 2));
   }
+  
+  // Fade in do próximo texto (se houver transição)
+  if (nextTransportDisplay > 1 && transitionProgress > 0) {
+    ctx.globalAlpha = transitionProgress;
+    ctx.fillStyle = colors.textColor;
+    ctx.font = "bold 25px sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText(`${nextTransportDisplay}ª`, fretboardX - realFretSpacing, fretboardY + (realFretSpacing / 2));
+  }
+  
+  ctx.globalAlpha = 1;
 }

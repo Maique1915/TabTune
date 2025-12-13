@@ -21,6 +21,12 @@ export interface VideoCanvasStageRef {
   isPaused: boolean;
 }
 
+export interface ChordTiming {
+  holdDuration: number;      // Tempo que o acorde fica fixo (em segundos)
+  transitionDuration: number; // Tempo da transição (em segundos)
+  pauseDuration: number;      // Pausa entre transições (em segundos)
+}
+
 interface VideoCanvasStageProps {
   chords: ChordDiagramProps[];
   width?: number;
@@ -29,6 +35,7 @@ interface VideoCanvasStageProps {
   isRecording?: boolean;
   onFFmpegLoad?: () => void;
   onAnimationStateChange?: (isAnimating: boolean, isPaused: boolean) => void;
+  chordTimings?: ChordTiming[]; // 🎬 NOVO: Array de timings por acorde
 }
 
 interface AnimationState {
@@ -47,7 +54,8 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
   onFrameCapture,
   isRecording = false,
   onFFmpegLoad,
-  onAnimationStateChange
+  onAnimationStateChange,
+  chordTimings // 🎬 NOVO: recebe timings dinâmicos
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<JSAnimation | null>(null);
@@ -67,6 +75,19 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
   const [isRendering, setIsRendering] = useState(false);
   const ffmpegRef = useRef<FFmpeg | null>(null);
   const [ffmpegLoaded, setFFmpegLoaded] = useState(false);
+
+  // 🎬 FUNÇÃO HELPER: Busca timing de um acorde específico ou usa defaults
+  const getTimingForChord = (index: number): ChordTiming => {
+    if (chordTimings && chordTimings[index]) {
+      return chordTimings[index];
+    }
+    // Defaults se não houver timing customizado
+    return {
+      holdDuration: 1.0,
+      transitionDuration: animationType === "carousel" ? 1.0 : 0.8,
+      pauseDuration: 0.5
+    };
+  };
 
   useEffect(() => {
     const loadFFmpeg = async () => {
@@ -298,10 +319,14 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
 
       if (animationType === "static-fingers") {
         // Renderização para animação de dedos estáticos
-        const holdDuration = 1.0; // 1s no primeiro acorde
-        const transitionDuration = 1.0; // 1s para transição
-        const pauseDuration = 0.5; // 0.5s entre transições
-        const finalHoldDuration = 1.0; // 1s no último acorde
+        // 🎬 MODIFICADO: Busca timing do primeiro acorde
+        const firstTiming = getTimingForChord(0);
+        const lastTiming = getTimingForChord(chords.length - 1);
+        
+        const holdDuration = firstTiming.holdDuration;
+        const transitionDuration = firstTiming.transitionDuration;
+        const pauseDuration = firstTiming.pauseDuration;
+        const finalHoldDuration = lastTiming.holdDuration;
         
         const framesFirstHold = Math.ceil(fps * holdDuration);
         const framesPerTransition = Math.ceil(fps * transitionDuration);
@@ -337,9 +362,14 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
 
         // Transições entre acordes
         for (let chordIndex = 0; chordIndex < chords.length - 1; chordIndex++) {
+          // 🎬 MODIFICADO: Cada acorde pode ter sua própria duração de transição
+          const currentTiming = getTimingForChord(chordIndex);
+          const currentFramesPerTransition = Math.ceil(fps * currentTiming.transitionDuration);
+          const currentFramesPause = Math.ceil(fps * currentTiming.pauseDuration);
+          
           // Animação de transição
-          for (let i = 0; i < framesPerTransition; i++) {
-            const progress = i / framesPerTransition;
+          for (let i = 0; i < currentFramesPerTransition; i++) {
+            const progress = i / currentFramesPerTransition;
             // Easing suave
             const t = progress < 0.5 
               ? 2 * progress * progress 
@@ -374,7 +404,7 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
             transitionProgress: 0
           };
 
-          for (let i = 0; i < framesPause; i++) {
+          for (let i = 0; i < currentFramesPause; i++) {
             drawAnimatedChord();
             await new Promise<void>((resolve) => {
               canvas.toBlob((blob) => {
@@ -399,10 +429,14 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
         }
       } else {
         // Renderização para animação de carrossel horizontal
-        const holdDuration = 1.0; // 1s no primeiro acorde
-        const transitionDuration = 0.8; // 0.8s para transição
-        const pauseDuration = 0.5; // 0.5s entre transições
-        const finalHoldDuration = 1.0; // 1s no último acorde
+        // 🎬 MODIFICADO: Busca timing do primeiro acorde
+        const firstTiming = getTimingForChord(0);
+        const lastTiming = getTimingForChord(chords.length - 1);
+        
+        const holdDuration = firstTiming.holdDuration;
+        const transitionDuration = firstTiming.transitionDuration;
+        const pauseDuration = firstTiming.pauseDuration;
+        const finalHoldDuration = lastTiming.holdDuration;
         
         const framesFirstHold = Math.ceil(fps * holdDuration);
         const framesPerTransition = Math.ceil(fps * transitionDuration);
@@ -434,9 +468,14 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
 
         // Transições entre acordes
         for (let chordIndex = 0; chordIndex < chords.length - 1; chordIndex++) {
+          // 🎬 MODIFICADO: Cada acorde pode ter sua própria duração de transição
+          const currentTiming = getTimingForChord(chordIndex);
+          const currentFramesPerTransition = Math.ceil(fps * currentTiming.transitionDuration);
+          const currentFramesPause = Math.ceil(fps * currentTiming.pauseDuration);
+          
           // Animação de transição
-          for (let i = 0; i < framesPerTransition; i++) {
-            const progress = i / framesPerTransition;
+          for (let i = 0; i < currentFramesPerTransition; i++) {
+            const progress = i / currentFramesPerTransition;
             // Easing cubic
             const t = progress < 0.5 
               ? 4 * progress * progress * progress 
@@ -471,7 +510,7 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
             transitionProgress: 0
           };
 
-          for (let i = 0; i < framesPause; i++) {
+          for (let i = 0; i < currentFramesPause; i++) {
             drawAnimatedChord();
             await new Promise<void>((resolve) => {
               canvas.toBlob((blob) => {
