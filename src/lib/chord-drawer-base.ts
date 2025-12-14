@@ -301,15 +301,17 @@ export class ChordDrawerBase {
     offsetX: number,
     alpha: number,
     scale: number,
-    translateY: number,
-    centerX: number, // Origin for scale and translate
-    centerY: number  // Origin for scale and translate
+    translateY: number, // This is the offset that needs to be applied after scaling
+    centerX: number,
+    centerY: number
   ): void {
     this._ctx.save();
     this._ctx.globalAlpha = alpha;
-    this._ctx.translate(centerX, centerY + translateY);
-    this._ctx.scale(scale, scale);
-    this._ctx.translate(-centerX, -centerY);
+    this._ctx.translate(centerX, centerY); // Move origin to centerX, centerY
+    this._ctx.scale(scale, scale); // Scale around this new origin
+    this._ctx.translate(-centerX, -centerY); // Move origin back
+    // Now apply the translateY as a final translation offset
+    this._ctx.translate(0, translateY);
     this.drawChordName(text, offsetX);
     this._ctx.restore();
   }
@@ -353,17 +355,18 @@ export class ChordDrawerBase {
       return { finalChord: chord, transportDisplay: baseTransportDisplay };
     }
 
-    const transposition = (nut && nut.vis) ? nut.pos - 1 : minFret > 0 ? minFret - 1 : 0;
+    const transposition = (nut && nut.vis && nut.pos > 0) ? nut.pos - 1 : minFret > 0 ? minFret - 1 : 0;
 
     const newPositions: Position = {};
     for (const string in positions) {
       const [fret, finger, add] = positions[string];
       newPositions[string] = [fret > 0 ? fret - transposition : 0, finger, add];
     }
+    
+    // Transpose nut.pos if visible
+    const newNut = nut && nut.vis ? { ...nut, pos: nut.pos > 0 ? nut.pos - transposition : 0 } : nut;
 
-    const newBarre = chord.barre ? [chord.barre[0] - transposition, chord.barre[1]] as [number, number] : undefined;
-
-    const finalChord = { ...chord, positions: newPositions, barre: newBarre };
+    const finalChord = { ...chord, positions: newPositions, nut: newNut };
 
     return { finalChord, transportDisplay: baseTransportDisplay + transposition };
   }
