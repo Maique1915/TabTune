@@ -25,6 +25,7 @@ export class FretboardDrawer {
   // Visual settings
   private _neckRadius: number;
   private _stringNamesY: number;
+  private _scaleFactor: number; // Adicionar scaleFactor aqui
 
   constructor(
     ctx: CanvasRenderingContext2D,
@@ -46,11 +47,13 @@ export class FretboardDrawer {
       realFretSpacing: number;
       neckRadius: number;
       stringNamesY: number;
-    }
+    },
+    scaleFactor: number = 1 // Adicionar scaleFactor como parâmetro do construtor
   ) {
     this._ctx = ctx;
     this._colors = colors;
     this._dimensions = dimensions;
+    this._scaleFactor = scaleFactor; // Inicializar scaleFactor
 
     // Set diagram settings from the provided object
     this._diagramWidth = diagramSettings.diagramWidth;
@@ -68,6 +71,14 @@ export class FretboardDrawer {
     this._realFretSpacing = diagramSettings.realFretSpacing;
     this._neckRadius = diagramSettings.neckRadius;
     this._stringNamesY = diagramSettings.stringNamesY;
+  }
+
+  /**
+   * Função de easing cúbico (easeInOutQuad) para transições suaves.
+   * t: current time (progress from 0 to 1)
+   */
+  private easeInOutQuad(t: number): number {
+    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
   }
 
   /**
@@ -97,19 +108,25 @@ export class FretboardDrawer {
   /**
    * Desenha os nomes das cordas
    */
-  drawStringNames(): void {
+  drawStringNames(progress: number = 1): void {
+    const easedProgress = this.easeInOutQuad(progress);
     const stringNames = ["E", "A", "D", "G", "B", "e"];
 
+    this._ctx.save();
+    this._ctx.globalAlpha = easedProgress;
+    const translateY = (1 - easedProgress) * (-10 * this._scaleFactor); // Scaled slide in from top
+
     this._ctx.fillStyle = this._colors.textColor;
-    const fontSize = 40;
+    const fontSize = 40 * this._scaleFactor; // Scaled font size
     this._ctx.font = `bold ${fontSize}px sans-serif`;
     this._ctx.textAlign = "center";
     this._ctx.textBaseline = "middle";
 
     stringNames.forEach((name, i) => {
       const x = this._fretboardX + this._horizontalPadding + i * this._stringSpacing;
-      this._ctx.fillText(name, x, this._stringNamesY);
+      this._ctx.fillText(name, x, this._stringNamesY + translateY);
     });
+    this._ctx.restore();
   }
 
   /**
@@ -151,7 +168,7 @@ export class FretboardDrawer {
    */
   drawFretboard(): void {
     this.drawNeck();
-    this.drawStringNames();
+    this.drawStringNames(1); // Pass 1 for static drawing
     this.drawFrets();
     this.drawStrings();
   }
@@ -160,10 +177,11 @@ export class FretboardDrawer {
    * Desenha o braço progressivamente de cima para baixo
    */
   drawNeckProgressive(progress: number): void {
+    const easedProgress = this.easeInOutQuad(progress);
     const neckX = this._diagramX;
     const neckY = this._diagramY;
     const neckWidth = this._diagramWidth;
-    const neckHeight = this._diagramHeight * progress;
+    const neckHeight = this._diagramHeight * easedProgress;
 
     this._ctx.save();
     this._ctx.fillStyle = this._colors.fretboardColor;
@@ -186,7 +204,8 @@ export class FretboardDrawer {
   drawStringsProgressive(progress: number): void {
     if (this._colors.borderWidth <= 0) return;
 
-    const fretboardHeight = this._fretboardHeight * progress;
+    const easedProgress = this.easeInOutQuad(progress);
+    const fretboardHeight = this._fretboardHeight * easedProgress;
 
     this._ctx.save();
     this._ctx.strokeStyle = this._colors.borderColor;
@@ -206,8 +225,9 @@ export class FretboardDrawer {
    * Desenha os trastes um por um
    */
   drawFretsProgressive(progress: number): void {
+    const easedProgress = this.easeInOutQuad(progress);
     const numFrets = this._numFrets + 1; // Incluindo o nut
-    const fretsToDraw = Math.floor(progress * numFrets);
+    const fretsToDraw = Math.floor(easedProgress * numFrets);
 
     this._ctx.save();
     this._ctx.strokeStyle = this._colors.fretColor;
@@ -218,12 +238,14 @@ export class FretboardDrawer {
       
       // Se for o último traste sendo desenhado, pode estar parcial
       const isLastFret = i === fretsToDraw;
-      const partialProgress = isLastFret ? (progress * numFrets - fretsToDraw) : 1;
+      const currentFretProgress = isLastFret ? (easedProgress * numFrets - fretsToDraw) : 1;
       
-      this._ctx.globalAlpha = isLastFret ? partialProgress : 1;
+      this._ctx.globalAlpha = currentFretProgress;
+      const translateY = (1 - currentFretProgress) * (-5 * this._scaleFactor); // Scaled Subtle slide in from top
+      
       this._ctx.beginPath();
-      this._ctx.moveTo(this._fretboardX, y);
-      this._ctx.lineTo(this._fretboardX + this._fretboardWidth, y);
+      this._ctx.moveTo(this._fretboardX, y + translateY);
+      this._ctx.lineTo(this._fretboardX + this._fretboardWidth, y + translateY);
       this._ctx.stroke();
     }
     this._ctx.restore();
@@ -246,10 +268,13 @@ export class FretboardDrawer {
 
     // Desenhar nomes das cordas com fade
     if (phases.stringNamesProgress > 0) {
-      this._ctx.save();
-      this._ctx.globalAlpha = phases.stringNamesProgress;
-      this.drawStringNames();
-      this._ctx.restore();
+      this.drawStringNames(phases.stringNamesProgress);
+    }
+
+
+    // Desenhar trastes progressivamente
+    if (phases.fretsProgress > 0) {
+      this.drawFretsProgressive(phases.fretsProgress);
     }
 
     // Desenhar cordas progressivamente
@@ -257,9 +282,5 @@ export class FretboardDrawer {
       this.drawStringsProgressive(phases.stringsProgress);
     }
 
-    // Desenhar trastes progressivamente
-    if (phases.fretsProgress > 0) {
-      this.drawFretsProgressive(phases.fretsProgress);
-    }
   }
 }

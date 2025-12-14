@@ -44,7 +44,7 @@ export function TimelineClip({
       )}
       style={{
         left: `${left}px`,
-        width: `${Math.max(width, 60)}px`, // largura mínima
+        width: `${Math.max(width, 10)}px`,
       }}
       onMouseDown={onMouseDown}
     >

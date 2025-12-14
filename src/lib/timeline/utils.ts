@@ -23,6 +23,14 @@ export function xToTime(x: number, zoom: number): number {
 }
 
 /**
+ * Converte delta X (px) para delta de tempo (ms).
+ * Diferente de xToTime, aqui pode ser negativo (arrastar para esquerda).
+ */
+export function xDeltaToTime(deltaX: number, zoom: number): number {
+  return (deltaX / zoom) * 1000;
+}
+
+/**
  * Converte tempo em ms para posição X
  */
 export function timeToX(time: number, zoom: number): number {

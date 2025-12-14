@@ -35,6 +35,26 @@ interface AppContextType {
   setColors: Dispatch<SetStateAction<ChordDiagramColors>>;
   animationType: AnimationType;
   setAnimationType: Dispatch<SetStateAction<AnimationType>>;
+
+  playbackTransitionsEnabled: boolean;
+  setPlaybackTransitionsEnabled: Dispatch<SetStateAction<boolean>>;
+  playbackBuildEnabled: boolean;
+  setPlaybackBuildEnabled: Dispatch<SetStateAction<boolean>>;
+
+  playbackIsPlaying: boolean;
+  setPlaybackIsPlaying: Dispatch<SetStateAction<boolean>>;
+  playbackIsPaused: boolean;
+  setPlaybackIsPaused: Dispatch<SetStateAction<boolean>>;
+  playbackProgress: number; // 0..1
+  setPlaybackProgress: Dispatch<SetStateAction<number>>;
+  playbackTotalDurationMs: number;
+  setPlaybackTotalDurationMs: Dispatch<SetStateAction<number>>;
+
+  playbackIsScrubbing: boolean;
+  setPlaybackIsScrubbing: Dispatch<SetStateAction<boolean>>;
+  playbackSeekProgress: number; // 0..1
+  playbackSeekNonce: number;
+  requestPlaybackSeek: (progress: number) => void;
 }
 
 export const DEFAULT_COLORS: ChordDiagramColors = {
@@ -64,6 +84,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [selectedChords, setSelectedChords] = useState<ChordWithTiming[]>([]);
   const [colors, setColors] = useState<ChordDiagramColors>(DEFAULT_COLORS);
   const [animationType, setAnimationType] = useState<AnimationType>("carousel");
+  const [playbackTransitionsEnabled, setPlaybackTransitionsEnabled] = useState(true);
+  const [playbackBuildEnabled, setPlaybackBuildEnabled] = useState(true);
+  const [playbackIsPlaying, setPlaybackIsPlaying] = useState(false);
+  const [playbackIsPaused, setPlaybackIsPaused] = useState(false);
+  const [playbackProgress, setPlaybackProgress] = useState(0);
+  const [playbackTotalDurationMs, setPlaybackTotalDurationMs] = useState(0);
+  const [playbackIsScrubbing, setPlaybackIsScrubbing] = useState(false);
+  const [playbackSeekProgress, setPlaybackSeekProgress] = useState(0);
+  const [playbackSeekNonce, setPlaybackSeekNonce] = useState(0);
+
+  const requestPlaybackSeek = (progress: number) => {
+    setPlaybackSeekProgress(progress);
+    setPlaybackSeekNonce((n) => n + 1);
+  };
 
   return (
     <AppContext.Provider
@@ -74,6 +108,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setColors,
         animationType,
         setAnimationType,
+
+        playbackTransitionsEnabled,
+        setPlaybackTransitionsEnabled,
+        playbackBuildEnabled,
+        setPlaybackBuildEnabled,
+
+        playbackIsPlaying,
+        setPlaybackIsPlaying,
+        playbackIsPaused,
+        setPlaybackIsPaused,
+        playbackProgress,
+        setPlaybackProgress,
+        playbackTotalDurationMs,
+        setPlaybackTotalDurationMs,
+
+        playbackIsScrubbing,
+        setPlaybackIsScrubbing,
+        playbackSeekProgress,
+        playbackSeekNonce,
+        requestPlaybackSeek,
       }}
     >
       {children}

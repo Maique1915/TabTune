@@ -14,10 +14,16 @@ import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/app/context/app--context";
 import { ChordDiagram } from "./chord-diagram";
 import { VideoCanvasStage, type VideoCanvasStageRef } from "./video-canvas-stage";
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function MainStage() {
-  const { selectedChords } = useAppContext();
+  const {
+    selectedChords,
+    playbackTransitionsEnabled,
+    setPlaybackTransitionsEnabled,
+    playbackBuildEnabled,
+    setPlaybackBuildEnabled,
+  } = useAppContext();
   const currentChord = selectedChords[selectedChords.length - 1];
   const hasValidChord = currentChord && currentChord.chord && currentChord.chord.positions && typeof currentChord.chord.positions === 'object';
   const [showVideoCanvas, setShowVideoCanvas] = useState(true);
@@ -26,6 +32,13 @@ export function MainStage() {
   const [isRendering, setIsRendering] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+
+  // Transições/build reativados.
+  // (Sem UI de toggle ainda; mantém tudo sincronizado via contexto.)
+  useEffect(() => {
+    setPlaybackTransitionsEnabled(true);
+    setPlaybackBuildEnabled(true);
+  }, [setPlaybackBuildEnabled, setPlaybackTransitionsEnabled]);
 
   const handleAnimate = () => {
     if (videoCanvasRef.current) {
@@ -129,6 +142,8 @@ export function MainStage() {
           <VideoCanvasStage 
             ref={videoCanvasRef} 
             chords={selectedChords}
+            transitionsEnabled={playbackTransitionsEnabled}
+            buildEnabled={playbackBuildEnabled}
             onFFmpegLoad={() => setFFmpegLoaded(true)}
             onAnimationStateChange={(animating, paused) => {
               setIsAnimating(animating);

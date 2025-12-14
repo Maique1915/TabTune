@@ -41,6 +41,10 @@ export const transpose = (chord: ChordDiagramProps, newAchord: Achord): ChordDia
     let aux = 0;
     let nut: nutForm = JSON.parse(JSON.stringify(chord.nut)); // Deep copy
 
+    let barre: [number, number] | undefined = chord.barre
+      ? ([chord.barre[0], chord.barre[1]] as [number, number])
+      : undefined;
+
     let newPos = 0;
 
     if (chord.origin === newAchord.note) {
@@ -65,6 +69,10 @@ export const transpose = (chord: ChordDiagramProps, newAchord: Achord): ChordDia
     
     nut.pos += newPos;
 
+    if (barre) {
+      barre = [barre[0] + (newPos - minNote), barre[1]];
+    }
+
     entries = Object.entries(chord.positions).map(([str, [fret, finger, add]]) => {
         if (fret > 0) {
            fret += newPos - minNote;
@@ -80,6 +88,10 @@ export const transpose = (chord: ChordDiagramProps, newAchord: Achord): ChordDia
         transport = nut.vis ? nut.pos : finalMinNote
         const offset = transport - 1;
         if(nut.vis) nut.pos = 1;
+
+      if (barre) {
+        barre = [barre[0] - offset, barre[1]];
+      }
         
         entries = Object.entries(position).map(([str, [fret, finger, add]]) => {
             if(fret > 0) fret -= offset;
@@ -89,5 +101,5 @@ export const transpose = (chord: ChordDiagramProps, newAchord: Achord): ChordDia
     }
 
 
-    return { ...chord, positions: position, nut: nut, transport };
+    return { ...chord, chord: newAchord, positions: position, nut: nut, transport, barre };
 };

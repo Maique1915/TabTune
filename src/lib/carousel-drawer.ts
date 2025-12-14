@@ -77,8 +77,6 @@ export function drawCarouselAnimation(params: DrawCarouselParams) {
   // Limpar canvas
   drawer.clearCanvas();
 
-  const centeringOffset = drawer.applyCentering();
-
   // Calcular offsets para animação de slide
   const currentOffsetX = -dimensions.width * transitionProgress;
   const currentOpacity = 1 - transitionProgress;
@@ -93,6 +91,4 @@ export function drawCarouselAnimation(params: DrawCarouselParams) {
   if (nextChord) {
     drawChordAtPosition(drawer, nextChord, nextOffsetX, nextOpacity);
   }
-
-  drawer.removeCentering(centeringOffset);
 }

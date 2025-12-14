@@ -22,14 +22,14 @@ export function TimelineTrack({
   onClipDelete
 }: TimelineTrackProps) {
   return (
-    <div className="relative h-16 bg-background border-b border-border">
+    <div className="relative h-16 bg-background border-b border-border overflow-hidden">
       {/* Nome da track */}
       <div className="absolute left-0 top-0 bottom-0 w-32 bg-muted/50 border-r border-border flex items-center px-3">
         <span className="text-sm font-medium">{track.name}</span>
       </div>
 
       {/* Área de clips */}
-      <div className="absolute left-32 right-0 top-0 bottom-0">
+      <div className="absolute left-32 right-0 top-0 bottom-0 overflow-hidden">
         {track.clips.map((clip) => (
           <TimelineClip
             key={clip.id}

@@ -6,7 +6,6 @@ import type { ChordWithTiming } from "@/lib/types";
 import { useAppContext } from "@/app/context/app--context";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
-import { drawChordOnCanvas } from "@/lib/chord-drawer";
 import { drawStaticFingersAnimation } from "@/lib/static-fingers-drawer";
 import { drawCarouselAnimation } from "@/lib/carousel-drawer";
 
@@ -29,6 +28,9 @@ interface VideoCanvasStageProps {
   isRecording?: boolean;
   onFFmpegLoad?: () => void;
   onAnimationStateChange?: (isAnimating: boolean, isPaused: boolean) => void;
+  transitionsEnabled?: boolean;
+  buildEnabled?: boolean;
+  prebufferMs?: number;
 }
 
 interface AnimationState {
@@ -49,9 +51,26 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
   isRecording = false,
   onFFmpegLoad,
   onAnimationStateChange,
+  transitionsEnabled = true,
+  buildEnabled = true,
+  prebufferMs = 0,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<JSAnimation | null>(null);
+  const playheadAnimationRef = useRef<JSAnimation | null>(null);
+  const playheadStateRef = useRef<{ t: number }>({ t: 0 });
+  const playbackRafIdRef = useRef<number | null>(null);
+  const playbackStartPerfMsRef = useRef<number>(0);
+  const playbackElapsedMsRef = useRef<number>(0);
+  const playbackSessionIdRef = useRef<number>(0);
+  const lastProgressEmitMsRef = useRef<number>(0);
+
+  const frameCacheRef = useRef<{
+    startFrameIndex: number;
+    bitmaps: Array<ImageBitmap | null>;
+    frameMs: number;
+  } | null>(null);
+  const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationStateRef = useRef<AnimationState>({
     fingerOpacity: 0,
     fingerScale: 0.5,
@@ -61,31 +80,347 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     transitionProgress: 0,
     buildProgress: 1,
   });
-  const { colors, animationType } = useAppContext();
+  const {
+    colors,
+    animationType,
+    setPlaybackIsPlaying,
+    setPlaybackIsPaused,
+    setPlaybackProgress,
+    setPlaybackTotalDurationMs,
+    playbackSeekNonce,
+    playbackSeekProgress,
+  } = useAppContext();
   const [isAnimating, setIsAnimating] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [currentChordIndex, setCurrentChordIndex] = useState(0);
   const [frames, setFrames] = useState<ImageData[]>([]);
   const [isRendering, setIsRendering] = useState(false);
   const ffmpegRef = useRef<FFmpeg | null>(null);
   const [ffmpegLoaded, setFFmpegLoaded] = useState(false);
 
-  // 🎬 FUNÇÃO HELPER: Retorna os timings de um ChordWithTiming em segundos
-  const getChordTimingsInSeconds = useCallback((chordWithTiming: ChordWithTiming) => {
-    const defaultHoldDuration = 2.0; // 2 segundos padrão
-    const defaultTransitionDuration = animationType === "carousel" ? 1.0 : 0.8;
-    const defaultPauseDuration = 0.5;
+  const baseTransitionDurationSec = animationType === "carousel" ? 1.0 : 0.8;
+  const transitionDurationSec = transitionsEnabled ? baseTransitionDurationSec : 0;
+  const buildDurationSec = 1.0;
+  const minSegmentSec = transitionDurationSec * 2;
+  const halfTransitionSec = transitionDurationSec / 2;
 
-    // Converte a duração do TimelineClip (ms) para segundos.
-    // Usaremos essa como holdDuration primária.
-    const holdDuration = (chordWithTiming.duration / 1000) || defaultHoldDuration;
+  // Duração do "segmento" do clip (em segundos). O segmento inclui a transição de saída (se houver).
+  // Mantém o tempo das transições fixo e ajusta o hold para caber no tempo do clip.
+  const getSegmentDurationSec = useCallback((chordWithTiming: ChordWithTiming) => {
+    const defaultSegmentSec = 2.0;
+    const clipSec = (chordWithTiming.duration / 1000) || defaultSegmentSec;
+    return Math.max(clipSec, minSegmentSec);
+  }, [minSegmentSec]);
 
-    return {
-      holdDuration: holdDuration,
-      transitionDuration: defaultTransitionDuration,
-      pauseDuration: defaultPauseDuration
+  const stopPlayhead = useCallback(() => {
+    if (playbackRafIdRef.current !== null) {
+      cancelAnimationFrame(playbackRafIdRef.current);
+      playbackRafIdRef.current = null;
+    }
+    if (playheadAnimationRef.current) {
+      playheadAnimationRef.current.pause();
+      playheadAnimationRef.current = null;
+    }
+    playheadStateRef.current.t = 0;
+    playbackElapsedMsRef.current = 0;
+    lastProgressEmitMsRef.current = 0;
+    frameCacheRef.current = null;
+    setPlaybackProgress(0);
+    setPlaybackIsPlaying(false);
+    setPlaybackIsPaused(false);
+  }, [setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress]);
+
+  const startPlayhead = useCallback((totalDurationMs: number) => {
+    // Mantém compatibilidade (ref) mas o playhead real é driven por RAF
+    if (playheadAnimationRef.current) {
+      playheadAnimationRef.current.pause();
+      playheadAnimationRef.current = null;
+    }
+    if (playbackRafIdRef.current !== null) {
+      cancelAnimationFrame(playbackRafIdRef.current);
+      playbackRafIdRef.current = null;
+    }
+
+    setPlaybackTotalDurationMs(totalDurationMs);
+    setPlaybackIsPlaying(true);
+    setPlaybackIsPaused(false);
+    setPlaybackProgress(0);
+
+    playheadStateRef.current.t = 0;
+    playbackElapsedMsRef.current = 0;
+    playbackStartPerfMsRef.current = performance.now();
+    lastProgressEmitMsRef.current = 0;
+  }, [setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress, setPlaybackTotalDurationMs]);
+
+  const computeTotalPlaybackDurationMs = useCallback(() => {
+    if (!chords || chords.length === 0) return 0;
+
+    let totalMs = 0;
+    for (const chordWithTiming of chords) {
+      totalMs += getSegmentDurationSec(chordWithTiming) * 1000;
+    }
+
+    return Math.max(0, Math.round(totalMs));
+  }, [chords, getSegmentDurationSec]);
+
+  const computeStateAtTimeMs = useCallback((timeMs: number) => {
+    if (!chords || chords.length === 0) return null;
+
+    const buildMsBase = (buildEnabled ? buildDurationSec : 0) * 1000;
+    let cursor = 0;
+    const t = Math.max(0, timeMs);
+
+    const halfTransitionMsBase = halfTransitionSec * 1000;
+
+    if (animationType === "static-fingers") {
+      for (let i = 0; i < chords.length; i++) {
+        const segmentMs = Math.max(0, getSegmentDurationSec(chords[i]) * 1000);
+        const incomingHalfMs = i > 0 ? Math.min(halfTransitionMsBase, segmentMs) : 0;
+        const outgoingHalfMs = i < chords.length - 1 ? Math.min(halfTransitionMsBase, segmentMs) : 0;
+        const staticMs = Math.max(0, segmentMs - incomingHalfMs - outgoingHalfMs);
+
+        // 1) Metade final da transição anterior (progress 0.5 -> 1), no início do clip
+        if (incomingHalfMs > 0) {
+          if (t < cursor + incomingHalfMs) {
+            const p = (t - cursor) / incomingHalfMs;
+            return { chordIndex: i - 1, transitionProgress: 0.5 + 0.5 * p, buildProgress: 1 };
+          }
+          cursor += incomingHalfMs;
+        }
+
+        // 2) Parte estática (inclui build apenas no primeiro)
+        if (i === 0) {
+          const buildMs = Math.min(buildMsBase, staticMs);
+          const holdMs = Math.max(0, staticMs - buildMs);
+
+          if (buildMs > 0 && t < cursor + buildMs) {
+            return { chordIndex: 0, transitionProgress: 0, buildProgress: (t - cursor) / buildMs };
+          }
+          cursor += buildMs;
+
+          if (t < cursor + holdMs) {
+            return { chordIndex: 0, transitionProgress: 0, buildProgress: 1 };
+          }
+          cursor += holdMs;
+        } else {
+          if (t < cursor + staticMs) {
+            return { chordIndex: i, transitionProgress: 0, buildProgress: 1 };
+          }
+          cursor += staticMs;
+        }
+
+        // 3) Metade inicial da transição para o próximo (progress 0 -> 0.5), no fim do clip
+        if (outgoingHalfMs > 0) {
+          if (t < cursor + outgoingHalfMs) {
+            const p = (t - cursor) / outgoingHalfMs;
+            return { chordIndex: i, transitionProgress: 0.5 * p, buildProgress: 1 };
+          }
+          cursor += outgoingHalfMs;
+        }
+      }
+
+      return { chordIndex: chords.length - 1, transitionProgress: 0, buildProgress: 1 };
+    }
+
+    // carousel
+    for (let i = 0; i < chords.length; i++) {
+      const segmentMs = Math.max(0, getSegmentDurationSec(chords[i]) * 1000);
+      const incomingHalfMs = i > 0 ? Math.min(halfTransitionMsBase, segmentMs) : 0;
+      const outgoingHalfMs = i < chords.length - 1 ? Math.min(halfTransitionMsBase, segmentMs) : 0;
+      const staticMs = Math.max(0, segmentMs - incomingHalfMs - outgoingHalfMs);
+
+      if (incomingHalfMs > 0) {
+        if (t < cursor + incomingHalfMs) {
+          const p = (t - cursor) / incomingHalfMs;
+          return { chordIndex: i - 1, transitionProgress: 0.5 + 0.5 * p, buildProgress: 1 };
+        }
+        cursor += incomingHalfMs;
+      }
+
+      if (t < cursor + staticMs) {
+        return { chordIndex: i, transitionProgress: 0, buildProgress: 1 };
+      }
+      cursor += staticMs;
+
+      if (outgoingHalfMs > 0) {
+        if (t < cursor + outgoingHalfMs) {
+          const p = (t - cursor) / outgoingHalfMs;
+          return { chordIndex: i, transitionProgress: 0.5 * p, buildProgress: 1 };
+        }
+        cursor += outgoingHalfMs;
+      }
+    }
+
+    return { chordIndex: chords.length - 1, transitionProgress: 0, buildProgress: 1 };
+  }, [animationType, buildDurationSec, buildEnabled, chords, getSegmentDurationSec, halfTransitionSec]);
+
+  const drawFrame = useCallback((ctx: CanvasRenderingContext2D, state: AnimationState) => {
+    if (!chords || chords.length === 0) return;
+
+    // Resolve current/next para cada tipo
+    let chordIndex: number;
+    let currentChordData: ChordWithTiming;
+    let nextChordData: ChordWithTiming | null;
+
+    if (animationType === "carousel") {
+      chordIndex = Math.max(0, Math.min(chords.length - 1, Math.floor(state.chordIndex)));
+      currentChordData = chords[chordIndex];
+      nextChordData = chordIndex < chords.length - 1 ? chords[chordIndex + 1] : null;
+    } else {
+      chordIndex = Math.max(0, Math.min(chords.length - 1, Math.floor(state.chordIndex)));
+      currentChordData = chords[chordIndex];
+      const nextChordIndex = Math.min(chords.length - 1, chordIndex + 1);
+      nextChordData = chordIndex < chords.length - 1 ? chords[nextChordIndex] : null;
+    }
+
+    if (!currentChordData) return;
+
+    if (animationType === "static-fingers") {
+      drawStaticFingersAnimation({
+        ctx,
+        currentChord: currentChordData.chord,
+        nextChord: nextChordData ? nextChordData.chord : null,
+        transitionProgress: state.transitionProgress,
+        colors,
+        dimensions: { width, height },
+        buildProgress: state.buildProgress,
+      });
+    } else {
+      drawCarouselAnimation({
+        ctx,
+        currentChord: currentChordData.chord,
+        nextChord: nextChordData ? nextChordData.chord : null,
+        transitionProgress: state.transitionProgress,
+        colors,
+        dimensions: { width, height },
+      });
+    }
+  }, [animationType, chords, colors, height, width]);
+
+  const prebufferFrames = useCallback(async (totalDurationMs: number, startTimeMs: number) => {
+    const bufferMs = Math.max(0, prebufferMs);
+    if (bufferMs <= 0) {
+      frameCacheRef.current = null;
+      return;
+    }
+    if (typeof createImageBitmap !== "function") {
+      frameCacheRef.current = null;
+      return;
+    }
+
+    const frameMs = 1000 / 30;
+    const startFrameIndex = Math.floor(startTimeMs / frameMs);
+    const framesToRender = Math.max(0, Math.min(
+      Math.ceil(bufferMs / frameMs),
+      Math.ceil(Math.max(0, totalDurationMs - startTimeMs) / frameMs)
+    ));
+    if (framesToRender <= 0) {
+      frameCacheRef.current = null;
+      return;
+    }
+
+    if (!offscreenCanvasRef.current) {
+      offscreenCanvasRef.current = document.createElement("canvas");
+    }
+    const off = offscreenCanvasRef.current;
+    off.width = width;
+    off.height = height;
+    const offCtx = off.getContext("2d");
+    if (!offCtx) {
+      frameCacheRef.current = null;
+      return;
+    }
+
+    const cache: { startFrameIndex: number; bitmaps: Array<ImageBitmap | null>; frameMs: number } = {
+      startFrameIndex,
+      bitmaps: new Array(framesToRender).fill(null),
+      frameMs,
     };
-  }, [animationType]);
+    frameCacheRef.current = cache;
+
+    for (let i = 0; i < framesToRender; i++) {
+      const tMs = startTimeMs + i * frameMs;
+      const state = computeStateAtTimeMs(tMs);
+      if (!state) continue;
+
+      const frameState: AnimationState = {
+        ...animationStateRef.current,
+        chordIndex: state.chordIndex,
+        transitionProgress: Math.max(0, Math.min(1, state.transitionProgress)),
+        buildProgress: Math.max(0, Math.min(1, state.buildProgress)),
+        fingerOpacity: 1,
+        fingerScale: 1,
+        cardY: 0,
+        nameOpacity: 1,
+      };
+
+      drawFrame(offCtx, frameState);
+      cache.bitmaps[i] = await createImageBitmap(off);
+    }
+  }, [computeStateAtTimeMs, drawFrame, height, prebufferMs, width]);
+
+  // Mantém duração total disponível mesmo fora do play (necessário para scrub)
+  useEffect(() => {
+    // Se a duração total mudar durante o play, o timeline passa a recalcular
+    // tempo/pixels com outro denominador e a linha parece não-linear.
+    // Então: travar a duração enquanto está tocando (exceto quando pausado).
+    if (playheadAnimationRef.current && !isPaused) return;
+    const totalMs = computeTotalPlaybackDurationMs();
+    setPlaybackTotalDurationMs(totalMs);
+  }, [computeTotalPlaybackDurationMs, isPaused, setPlaybackTotalDurationMs]);
+
+  // Seek/Scrub: renderiza o frame correspondente ao progresso solicitado
+  useEffect(() => {
+    if (!chords || chords.length === 0) return;
+    if (!playbackSeekNonce) return;
+
+    const clampedProgress = Math.max(0, Math.min(1, playbackSeekProgress));
+    const totalMs = computeTotalPlaybackDurationMs();
+    const timeMs = clampedProgress * totalMs;
+
+    // Se estiver tocando (RAF loop), só reposiciona o relógio e mantém tocando.
+    if (playbackRafIdRef.current !== null && !isPaused) {
+      playbackElapsedMsRef.current = timeMs;
+      playbackStartPerfMsRef.current = performance.now() - timeMs;
+    }
+
+    // Pausar animações em andamento
+    if (animationRef.current) animationRef.current.pause();
+    if (playheadAnimationRef.current) playheadAnimationRef.current.pause();
+
+    setIsAnimating(true);
+    setIsPaused(true);
+    setPlaybackIsPlaying(false);
+    setPlaybackIsPaused(true);
+    setPlaybackProgress(clampedProgress);
+
+    if (onAnimationStateChange) onAnimationStateChange(true, true);
+
+    const state = computeStateAtTimeMs(timeMs);
+    if (!state) return;
+
+    animationStateRef.current = {
+      ...animationStateRef.current,
+      chordIndex: state.chordIndex,
+      transitionProgress: Math.max(0, Math.min(1, state.transitionProgress)),
+      buildProgress: Math.max(0, Math.min(1, state.buildProgress)),
+      fingerOpacity: 1,
+      fingerScale: 1,
+      cardY: 0,
+      nameOpacity: 1,
+    };
+
+    drawAnimatedChord();
+  }, [
+    chords,
+    computeStateAtTimeMs,
+    computeTotalPlaybackDurationMs,
+    onAnimationStateChange,
+    playbackSeekNonce,
+    playbackSeekProgress,
+    setPlaybackIsPaused,
+    setPlaybackIsPlaying,
+    setPlaybackProgress,
+  ]);
 
   useEffect(() => {
     const loadFFmpeg = async () => {
@@ -120,63 +455,7 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const state = animationStateRef.current;
-    if (!chords || chords.length === 0) {
-      ctx.fillStyle = colors.cardColor;
-      ctx.fillRect(0, 0, width, height);
-      return;
-    }
-
-    // Para carousel: durante transição, currentChord é o que está saindo e nextChord é o que está entrando
-    // Para static-fingers: currentChord é o índice atual
-    let chordIndex: number;
-    let currentChordData: ChordWithTiming;
-    let nextChordData: ChordWithTiming | null;
-    let previousChordData: ChordWithTiming | null = null;
-
-    if (animationType === "carousel") {
-      // No carousel, sempre usar o índice base (sem floor durante transição)
-      chordIndex = Math.max(0, Math.min(chords.length - 1, Math.floor(state.chordIndex)));
-      currentChordData = chords[chordIndex];
-      
-      // Acorde anterior (sempre visível se existir)
-      previousChordData = chordIndex > 0 ? chords[chordIndex - 1] : null;
-      
-      // Próximo acorde (sempre visível se existir)
-      nextChordData = chordIndex < chords.length - 1 ? chords[chordIndex + 1] : null;
-    } else {
-      // Static fingers
-      chordIndex = Math.max(0, Math.min(chords.length - 1, Math.floor(state.chordIndex)));
-      currentChordData = chords[chordIndex];
-      const nextChordIndex = Math.min(chords.length - 1, chordIndex + 1);
-      nextChordData = chordIndex < chords.length - 1 ? chords[nextChordIndex] : null;
-    }
-
-    if (!currentChordData) return;
-
-    if (animationType === "static-fingers") {
-      // Animação de dedos estáticos
-      drawStaticFingersAnimation({
-        ctx,
-        currentChord: currentChordData.chord,
-        nextChord: nextChordData ? nextChordData.chord : null,
-        transitionProgress: state.transitionProgress,
-        colors,
-        dimensions: { width, height },
-        buildProgress: state.buildProgress,
-      });
-    } else {
-      // Animação de carrossel horizontal
-      drawCarouselAnimation({
-        ctx,
-        currentChord: currentChordData.chord,
-        nextChord: nextChordData ? nextChordData.chord : null,
-        previousChord: previousChordData ? previousChordData.chord : null,
-        transitionProgress: state.transitionProgress,
-        colors,
-        dimensions: { width, height },
-      });
-    }
+    drawFrame(ctx, animationStateRef.current);
 
     // Capturar frame se estiver gravando
     if (isRecording && onFrameCapture) {
@@ -185,211 +464,156 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     }
   };
 
+  const startPlaybackRafLoop = useCallback((totalDurationMs: number) => {
+    if (playbackRafIdRef.current !== null) {
+      cancelAnimationFrame(playbackRafIdRef.current);
+      playbackRafIdRef.current = null;
+    }
+
+    const tick = () => {
+      const now = performance.now();
+      const elapsed = Math.max(0, now - playbackStartPerfMsRef.current);
+      const clampedElapsed = Math.min(totalDurationMs, elapsed);
+      playbackElapsedMsRef.current = clampedElapsed;
+      playheadStateRef.current.t = clampedElapsed;
+
+      // Se tiver cache pré-render, usa o bitmap para desenhar rápido.
+      const cache = frameCacheRef.current;
+      if (cache && canvasRef.current) {
+        const frameIndex = Math.floor(clampedElapsed / cache.frameMs);
+        const offset = frameIndex - cache.startFrameIndex;
+        const bitmap = offset >= 0 && offset < cache.bitmaps.length ? cache.bitmaps[offset] : null;
+        if (bitmap) {
+          const ctx = canvasRef.current.getContext("2d");
+          if (ctx) ctx.drawImage(bitmap, 0, 0);
+        }
+      }
+
+      const state = computeStateAtTimeMs(clampedElapsed);
+      if (state) {
+        animationStateRef.current = {
+          ...animationStateRef.current,
+          chordIndex: state.chordIndex,
+          transitionProgress: Math.max(0, Math.min(1, state.transitionProgress)),
+          buildProgress: Math.max(0, Math.min(1, state.buildProgress)),
+          fingerOpacity: 1,
+          fingerScale: 1,
+          cardY: 0,
+          nameOpacity: 1,
+        };
+        // Se não desenhou via cache (ou cache vazio), desenha normal.
+        const cache = frameCacheRef.current;
+        if (!cache || cache.bitmaps.length === 0) {
+          drawAnimatedChord();
+        }
+      }
+
+      if (now - lastProgressEmitMsRef.current >= 50) {
+        lastProgressEmitMsRef.current = now;
+        setPlaybackProgress(totalDurationMs > 0 ? clampedElapsed / totalDurationMs : 0);
+      }
+
+      if (clampedElapsed >= totalDurationMs) {
+        // Ao terminar, volta pro início da timeline.
+        setPlaybackProgress(0);
+        setPlaybackIsPlaying(false);
+        setPlaybackIsPaused(false);
+        setIsAnimating(false);
+        setIsPaused(false);
+        if (onAnimationStateChange) onAnimationStateChange(false, false);
+        stopPlayhead();
+        return;
+      }
+
+      playbackRafIdRef.current = requestAnimationFrame(tick);
+    };
+
+    playbackRafIdRef.current = requestAnimationFrame(tick);
+  }, [computeStateAtTimeMs, drawAnimatedChord, onAnimationStateChange, setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress, stopPlayhead]);
+
   const startAnimation = () => {
-    if (animationRef.current) {
-      animationRef.current.pause();
+    // Playback linear: usa o mesmo mapeamento de tempo do scrub.
+    if (animationRef.current) animationRef.current.pause();
+    if (playheadAnimationRef.current) {
+      playheadAnimationRef.current.pause();
+      playheadAnimationRef.current = null;
+    }
+    if (playbackRafIdRef.current !== null) {
+      cancelAnimationFrame(playbackRafIdRef.current);
+      playbackRafIdRef.current = null;
     }
 
     if (!chords || chords.length === 0) return;
 
     setIsAnimating(true);
     setIsPaused(false);
-    setCurrentChordIndex(0);
     if (onAnimationStateChange) onAnimationStateChange(true, false);
 
-    if (animationType === "static-fingers") {
-      let currentIndex = 0;
+    const totalMs = computeTotalPlaybackDurationMs();
+    startPlayhead(totalMs);
 
-      // Estado inicial
-      animationStateRef.current = {
-        fingerOpacity: 0,
-        fingerScale: 0,
-        cardY: 0,
-        nameOpacity: 0,
-        chordIndex: 0,
-        transitionProgress: 0,
-        buildProgress: 0,
-      };
+    // Pré-renderiza um buffer antes de começar (para ficar mais fluido).
+    const sessionId = ++playbackSessionIdRef.current;
+    (async () => {
+      await prebufferFrames(totalMs, 0);
+      if (playbackSessionIdRef.current !== sessionId) return;
 
-      const animateNext = () => {
-        if (currentIndex >= chords.length) { 
-          setIsAnimating(false);
-          setIsPaused(false);
-          if (onAnimationStateChange) onAnimationStateChange(false, false);
-          return;
-        }
+      // Re-inicia o relógio para começar após o buffer
+      playbackStartPerfMsRef.current = performance.now();
+      playbackElapsedMsRef.current = 0;
+      playheadStateRef.current.t = 0;
+      lastProgressEmitMsRef.current = 0;
 
-        const currentChordWithTiming = chords[currentIndex];
-        const { holdDuration, transitionDuration, pauseDuration } = getChordTimingsInSeconds(currentChordWithTiming);
+      // Frame 0
+      const state0 = computeStateAtTimeMs(0);
+      if (state0) {
+        animationStateRef.current = {
+          ...animationStateRef.current,
+          chordIndex: state0.chordIndex,
+          transitionProgress: Math.max(0, Math.min(1, state0.transitionProgress)),
+          buildProgress: Math.max(0, Math.min(1, state0.buildProgress)),
+          fingerOpacity: 1,
+          fingerScale: 1,
+          cardY: 0,
+          nameOpacity: 1,
+        };
+        drawAnimatedChord();
+      }
 
-        setCurrentChordIndex(currentIndex);
+      startPlaybackRafLoop(totalMs);
+    })();
 
-        // Apenas o primeiro acorde tem build-in animation
-        if (currentIndex === 0) {
-          // Fase 1: Animação build-in (aparecimento do acorde)
-          const buildDuration = 1.0; // 1 segundo para build-in
-          animationRef.current = animate(animationStateRef.current, {
-            chordIndex: currentIndex,
-            buildProgress: 1,
-            duration: buildDuration * 1000,
-            easing: "easeOutCubic",
-            onUpdate: () => drawAnimatedChord(),
-            onComplete: () => {
-              // Fase 2: Hold (acorde fica visível)
-              animate(animationStateRef.current, {
-                chordIndex: currentIndex,
-                duration: Math.max(0, holdDuration - buildDuration) * 1000,
-                easing: "linear",
-                onUpdate: () => drawAnimatedChord(),
-                onComplete: () => {
-                  if (currentIndex >= chords.length - 1) {
-                    setTimeout(() => {
-                      setIsAnimating(false);
-                      setIsPaused(false);
-                      if (onAnimationStateChange) onAnimationStateChange(false, false);
-                    }, 1000);
-                    return;
-                  }
-
-                  // Fase 3: Transição para o próximo acorde
-                  animate(animationStateRef.current, {
-                    transitionProgress: 1,
-                    duration: transitionDuration * 1000,
-                    easing: "easeInOutQuad",
-                    onUpdate: () => drawAnimatedChord(),
-                    onComplete: () => {
-                      currentIndex++;
-                      animationStateRef.current.chordIndex = currentIndex;
-                      animationStateRef.current.transitionProgress = 0;
-                      animationStateRef.current.buildProgress = 1; // Já está construído
-                      
-                      setTimeout(() => {
-                        animateNext();
-                      }, pauseDuration * 1000); 
-                    }
-                  });
-                }
-              });
-            }
-          });
-        } else {
-          // Acordes subsequentes: hold + transição
-          animationRef.current = animate(animationStateRef.current, {
-            chordIndex: currentIndex,
-            transitionProgress: 0,
-            duration: holdDuration * 1000,
-            easing: "linear",
-            onUpdate: () => drawAnimatedChord(),
-            onComplete: () => {
-              if (currentIndex >= chords.length - 1) {
-                setTimeout(() => {
-                  setIsAnimating(false);
-                  setIsPaused(false);
-                  if (onAnimationStateChange) onAnimationStateChange(false, false);
-                }, 1000);
-                return;
-              }
-
-              // Transição para o próximo acorde
-              animate(animationStateRef.current, {
-                transitionProgress: 1,
-                duration: transitionDuration * 1000,
-                easing: "easeInOutQuad",
-                onUpdate: () => drawAnimatedChord(),
-                onComplete: () => {
-                  currentIndex++;
-                  animationStateRef.current.chordIndex = currentIndex;
-                  animationStateRef.current.transitionProgress = 0;
-                  
-                  setTimeout(() => {
-                    animateNext();
-                  }, pauseDuration * 1000); 
-                }
-              });
-            }
-          });
-        }
-      };
-      animateNext(); // Inicia o primeiro acorde
-    } else {
-      // Animação de carrossel horizontal
-      let currentIndex = 0;
-
-      // Estado inicial
-      animationStateRef.current = {
-        fingerOpacity: 0,
-        fingerScale: 0,
-        cardY: 0,
-        nameOpacity: 0,
-        chordIndex: 0,
-        transitionProgress: 0,
-      };
-
-      const animateNext = () => {
-        if (currentIndex >= chords.length) { 
-          setIsAnimating(false);
-          setIsPaused(false);
-          if (onAnimationStateChange) onAnimationStateChange(false, false);
-          return;
-        }
-
-        const currentChordWithTiming = chords[currentIndex];
-        const { holdDuration, transitionDuration, pauseDuration } = getChordTimingsInSeconds(currentChordWithTiming);
-
-        setCurrentChordIndex(currentIndex);
-
-        // Animação do acorde atual (hold)
-        animationRef.current = animate(animationStateRef.current, {
-          chordIndex: currentIndex,
-          duration: holdDuration * 1000, 
-          easing: "linear", 
-          onUpdate: () => drawAnimatedChord(),
-          onComplete: () => {
-            if (currentIndex >= chords.length - 1) {
-              setTimeout(() => {
-                setIsAnimating(false);
-                setIsPaused(false);
-                if (onAnimationStateChange) onAnimationStateChange(false, false);
-              }, 1000);
-              return;
-            }
-
-            animate(animationStateRef.current, {
-              transitionProgress: 1,
-              duration: transitionDuration * 1000,
-              easing: "easeInOutCubic",
-              onUpdate: () => drawAnimatedChord(),
-              onComplete: () => {
-                currentIndex++;
-                animationStateRef.current.chordIndex = currentIndex;
-                animationStateRef.current.transitionProgress = 0;
-                
-                setTimeout(() => {
-                  animateNext();
-                }, pauseDuration * 1000); 
-              }
-            });
-          }
-        });
-      };
-      animateNext(); // Inicia o primeiro acorde
-    }
+    // obs: o loop começa após o prebuffer.
   };
 
   const pauseAnimation = () => {
-    if (animationRef.current && isAnimating) {
-      animationRef.current.pause();
-      setIsPaused(true);
-      if (onAnimationStateChange) onAnimationStateChange(true, true);
+    if (!isAnimating) return;
+    if (animationRef.current) animationRef.current.pause();
+    if (playheadAnimationRef.current) playheadAnimationRef.current.pause();
+    if (playbackRafIdRef.current !== null) {
+      cancelAnimationFrame(playbackRafIdRef.current);
+      playbackRafIdRef.current = null;
     }
+    setIsPaused(true);
+    setPlaybackIsPaused(true);
+    if (onAnimationStateChange) onAnimationStateChange(true, true);
   };
 
   const resumeAnimation = () => {
-    if (animationRef.current && isPaused) {
-      animationRef.current.play();
-      setIsPaused(false);
-      if (onAnimationStateChange) onAnimationStateChange(true, false);
-    }
+    if (!isPaused) return;
+    if (!chords || chords.length === 0) return;
+
+    if (animationRef.current) animationRef.current.play();
+    if (playheadAnimationRef.current) playheadAnimationRef.current.play();
+
+    setIsPaused(false);
+    setPlaybackIsPaused(false);
+    if (onAnimationStateChange) onAnimationStateChange(true, false);
+
+    const totalMs = computeTotalPlaybackDurationMs();
+    // Continua a partir do tempo atual
+    playbackStartPerfMsRef.current = performance.now() - playbackElapsedMsRef.current;
+    startPlaybackRafLoop(totalMs);
   };
 
   const handleRender = async () => {
@@ -406,15 +630,63 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     try {
       const frames: Blob[] = [];
 
-      if (animationType === "static-fingers") {
-        let currentFrameChordIndex = 0;
-        let accumulatedFrames = 0;
+      for (let chordIndex = 0; chordIndex < chords.length; chordIndex++) {
+        const segmentDuration = getSegmentDurationSec(chords[chordIndex]);
+        const incomingHalf = chordIndex > 0 ? halfTransitionSec : 0;
+        const outgoingHalf = chordIndex < chords.length - 1 ? halfTransitionSec : 0;
+        const staticDuration = Math.max(0, segmentDuration - incomingHalf - outgoingHalf);
 
-        while (currentFrameChordIndex < chords.length) {
-          const currentChordWithTiming = chords[currentFrameChordIndex];
-          const { holdDuration, transitionDuration, pauseDuration } = getChordTimingsInSeconds(currentChordWithTiming);
+        if (animationType === "static-fingers") {
+          // 1) incoming half (0.5 -> 1)
+          if (incomingHalf > 0) {
+            const framesIncoming = Math.ceil(fps * incomingHalf);
+            for (let i = 0; i < framesIncoming; i++) {
+              const p = i / framesIncoming;
+              animationStateRef.current = {
+                fingerOpacity: 1,
+                fingerScale: 1,
+                cardY: 0,
+                nameOpacity: 1,
+                chordIndex: chordIndex - 1,
+                transitionProgress: 0.5 + 0.5 * p,
+                buildProgress: 1,
+              };
+              drawAnimatedChord();
+              await new Promise<void>((resolve) => {
+                canvas.toBlob((blob) => {
+                  if (blob) frames.push(blob);
+                  resolve();
+                }, "image/png");
+              });
+            }
+          }
 
-          // Hold do acorde atual
+          const buildDuration = (buildEnabled && chordIndex === 0) ? Math.min(buildDurationSec, staticDuration) : 0;
+          const holdDuration = chordIndex === 0 ? Math.max(0, staticDuration - buildDuration) : staticDuration;
+
+          if (buildDuration > 0) {
+            const framesBuild = Math.max(1, Math.ceil(fps * buildDuration));
+            for (let i = 0; i < framesBuild; i++) {
+              const p = (i + 1) / framesBuild;
+              animationStateRef.current = {
+                fingerOpacity: 1,
+                fingerScale: 1,
+                cardY: 0,
+                nameOpacity: 1,
+                chordIndex,
+                transitionProgress: 0,
+                buildProgress: p,
+              };
+              drawAnimatedChord();
+              await new Promise<void>((resolve) => {
+                canvas.toBlob((blob) => {
+                  if (blob) frames.push(blob);
+                  resolve();
+                }, "image/png");
+              });
+            }
+          }
+
           const framesHold = Math.ceil(fps * holdDuration);
           for (let i = 0; i < framesHold; i++) {
             animationStateRef.current = {
@@ -422,8 +694,9 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
               fingerScale: 1,
               cardY: 0,
               nameOpacity: 1,
-              chordIndex: currentFrameChordIndex,
+              chordIndex,
               transitionProgress: 0,
+              buildProgress: 1,
             };
             drawAnimatedChord();
             await new Promise<void>((resolve) => {
@@ -432,25 +705,21 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
                 resolve();
               }, "image/png");
             });
-            accumulatedFrames++;
           }
 
-          // Se não for o último acorde, processa a transição e pausa
-          if (currentFrameChordIndex < chords.length - 1) {
-            const framesPerTransition = Math.ceil(fps * transitionDuration);
-            for (let i = 0; i < framesPerTransition; i++) {
-              const progress = i / framesPerTransition;
-              const t = progress < 0.5 
-                ? 2 * progress * progress 
-                : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-              
+          // 3) outgoing half (0 -> 0.5)
+          if (outgoingHalf > 0) {
+            const framesOutgoing = Math.ceil(fps * outgoingHalf);
+            for (let i = 0; i < framesOutgoing; i++) {
+              const p = i / framesOutgoing;
               animationStateRef.current = {
                 fingerOpacity: 1,
                 fingerScale: 1,
                 cardY: 0,
                 nameOpacity: 1,
-                chordIndex: currentFrameChordIndex,
-                transitionProgress: t,
+                chordIndex,
+                transitionProgress: 0.5 * p,
+                buildProgress: 1,
               };
               drawAnimatedChord();
               await new Promise<void>((resolve) => {
@@ -459,18 +728,21 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
                   resolve();
                 }, "image/png");
               });
-              accumulatedFrames++;
             }
-
-            const framesPause = Math.ceil(fps * pauseDuration);
-            for (let i = 0; i < framesPause; i++) {
+          }
+        } else {
+          if (incomingHalf > 0) {
+            const framesIncoming = Math.ceil(fps * incomingHalf);
+            for (let i = 0; i < framesIncoming; i++) {
+              const p = i / framesIncoming;
               animationStateRef.current = {
                 fingerOpacity: 1,
                 fingerScale: 1,
                 cardY: 0,
                 nameOpacity: 1,
-                chordIndex: currentFrameChordIndex + 1, // Já no próximo acorde
-                transitionProgress: 0,
+                chordIndex: chordIndex - 1,
+                transitionProgress: 0.5 + 0.5 * p,
+                buildProgress: 1,
               };
               drawAnimatedChord();
               await new Promise<void>((resolve) => {
@@ -479,29 +751,19 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
                   resolve();
                 }, "image/png");
               });
-              accumulatedFrames++;
             }
           }
-          currentFrameChordIndex++;
-        }
-      } else { // Carrossel
-        let currentFrameChordIndex = 0;
-        let accumulatedFrames = 0;
 
-        while (currentFrameChordIndex < chords.length) {
-          const currentChordWithTiming = chords[currentFrameChordIndex];
-          const { holdDuration, transitionDuration, pauseDuration } = getChordTimingsInSeconds(currentChordWithTiming);
-
-          // Hold do acorde atual
-          const framesHold = Math.ceil(fps * holdDuration);
+          const framesHold = Math.ceil(fps * staticDuration);
           for (let i = 0; i < framesHold; i++) {
             animationStateRef.current = {
               fingerOpacity: 1,
               fingerScale: 1,
               cardY: 0,
               nameOpacity: 1,
-              chordIndex: currentFrameChordIndex,
+              chordIndex,
               transitionProgress: 0,
+              buildProgress: 1,
             };
             drawAnimatedChord();
             await new Promise<void>((resolve) => {
@@ -510,25 +772,20 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
                 resolve();
               }, "image/png");
             });
-            accumulatedFrames++;
           }
 
-          // Se não for o último acorde, processa a transição e pausa
-          if (currentFrameChordIndex < chords.length - 1) {
-            const framesPerTransition = Math.ceil(fps * transitionDuration);
-            for (let i = 0; i < framesPerTransition; i++) {
-              const progress = i / framesPerTransition;
-              const t = progress < 0.5 
-                ? 4 * progress * progress * progress 
-                : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-              
+          if (outgoingHalf > 0) {
+            const framesOutgoing = Math.ceil(fps * outgoingHalf);
+            for (let i = 0; i < framesOutgoing; i++) {
+              const p = i / framesOutgoing;
               animationStateRef.current = {
                 fingerOpacity: 1,
                 fingerScale: 1,
                 cardY: 0,
                 nameOpacity: 1,
-                chordIndex: currentFrameChordIndex,
-                transitionProgress: t,
+                chordIndex,
+                transitionProgress: 0.5 * p,
+                buildProgress: 1,
               };
               drawAnimatedChord();
               await new Promise<void>((resolve) => {
@@ -537,57 +794,31 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
                   resolve();
                 }, "image/png");
               });
-              accumulatedFrames++;
-            }
-
-            const framesPause = Math.ceil(fps * pauseDuration);
-            for (let i = 0; i < framesPause; i++) {
-              animationStateRef.current = {
-                fingerOpacity: 1,
-                fingerScale: 1,
-                cardY: 0,
-                nameOpacity: 1,
-                chordIndex: currentFrameChordIndex + 1, // Já no próximo acorde
-                transitionProgress: 0,
-              };
-              drawAnimatedChord();
-              await new Promise<void>((resolve) => {
-                canvas.toBlob((blob) => {
-                  if (blob) frames.push(blob);
-                  resolve();
-                }, "image/png");
-              });
-              accumulatedFrames++;
             }
           }
-          currentFrameChordIndex++;
         }
       }
 
       console.log(`Generated ${frames.length} frames`);
 
-      // Write frames to FFmpeg virtual filesystem
       for (let i = 0; i < frames.length; i++) {
         const frameData = await fetchFile(frames[i]);
         await ffmpeg.writeFile(`frame${String(i).padStart(4, "0")}.png`, frameData);
       }
 
-      // Convert frames to MP4
       await ffmpeg.exec([
         "-framerate", String(fps),
         "-i", "frame%04d.png",
-        "-c:v", "libx64",
+        "-c:v", "libx264",
         "-pix_fmt", "yuv420p",
         "-preset", "slow",
         "-crf", "18",
         "output.mp4"
       ]);
 
-      // Read output file
       const data = await ffmpeg.readFile("output.mp4");
       const videoBlob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/mp4" });
 
-      // Download video
       const url = URL.createObjectURL(videoBlob);
       const a = document.createElement("a");
       a.href = url;
@@ -630,8 +861,7 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
       };
       drawAnimatedChord();
     }
-  }, [chords, isRecording, colors, height, width, animationType, drawAnimatedChord, isAnimating]);
-  
+  }, [chords, isRecording, colors, height, width, animationType, isAnimating]);
 
   // Para renderização contínua durante a gravação
   useEffect(() => {
@@ -642,7 +872,7 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
 
       return () => clearInterval(interval);
     }
-  }, [isRecording, chords, colors, width, height, drawAnimatedChord]);
+  }, [isRecording, chords, colors, width, height]);
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full">
@@ -651,8 +881,8 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
         width={width}
         height={height}
         className="max-w-full max-h-full"
-        style={{ 
-          width: "auto", 
+        style={{
+          width: "auto",
           height: "100%",
           imageRendering: "crisp-edges"
         }}

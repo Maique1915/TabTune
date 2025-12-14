@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { chordData, getNome, notes, complements, basses } from "@/lib/chords";
+import { transpose as transposeChord } from "@/lib/chord-logic";
 import { useAppContext } from "@/app/context/app--context";
 import { ChordDiagram } from "./chord-diagram";
 import { useToast } from "@/hooks/use-toast";
@@ -74,14 +75,8 @@ export function LibraryPanel() {
       const originalNoteIndex = chordItem.chord.note;
       const interval = targetNoteIndex - chordItem.origin;
       const newNoteIndex = (originalNoteIndex + interval + 12) % 12;
-      
-      return {
-        ...chordItem,
-        chord: {
-          ...chordItem.chord,
-          note: newNoteIndex,
-        },
-      };
+
+      return transposeChord(chordItem, { ...chordItem.chord, note: newNoteIndex });
     });
   }, [selectedNote]);
 
