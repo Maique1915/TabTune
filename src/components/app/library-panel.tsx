@@ -19,9 +19,10 @@ import { Label } from "@/components/ui/label";
 import { chordData, getNome, notes, complements, basses } from "@/lib/chords";
 import { transpose as transposeChord } from "@/lib/chord-logic";
 import { useAppContext } from "@/app/context/app--context";
-import { ChordDiagram } from "./chord-diagram";
+import { CanvasChordDiagram } from "./canvas-chord-diagram";
 import { useToast } from "@/hooks/use-toast";
 import { ChordWithTiming, ChordDiagramProps } from "@/lib/types";
+import { ChordDiagram } from "./chord-diagram";
 
 export function LibraryPanel() {
   const { selectedChords, setSelectedChords } = useAppContext();
@@ -271,3 +272,23 @@ export function LibraryPanel() {
     </>
   );
 }
+
+/*
+<div className="flex-1 overflow-y-auto p-3">
+          <div className="grid grid-cols-2 gap-3">
+            {filteredChords.map((chord, index) => (
+              <div
+                key={`${JSON.stringify(chord.chord)}-${index}`}
+                className="group relative cursor-pointer rounded-lg overflow-hidden aspect-square flex items-center justify-center hover:ring-2 hover:ring-accent transition-all bg-background/50"
+                onClick={() => handleChordSelect(chord)}
+              >
+                <CanvasChordDiagram {...chord} scale={0.2} />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+                <p className="absolute bottom-2 left-2 right-2 text-xs font-bold text-white line-clamp-1">
+                  {getNome(chord.chord).replace(/#/g, '♯').replace(/b/g, '♭')}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+*/

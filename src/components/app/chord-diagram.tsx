@@ -75,12 +75,12 @@ const ChordDiagram: React.FC<ChordDiagramProps> = (props) => {
   const fingerBackgroundColor = hexToRgba(colors.fingerColor, colors.fingerBackgroundAlpha);
 
   return (
-    <div className="rounded-lg overflow-hidden flex items-center justify-center" style={{ backgroundColor: colors.cardColor, borderWidth: `${colors.borderWidth}px`, borderColor: colors.borderColor, borderRadius: '10px', width: `${350 * scale}px`, height: `${370 * scale}px` }}>
+    <div className="rounded-lg overflow-hidden flex items-center justify-center" style={{ backgroundColor: colors.cardColor, borderRadius: '10px', width: `${350 * scale}px`, height: `${370 * scale}px` }}>
         <div className="chord" style={{ transform: `scale(${scale})`, transformOrigin: 'center' }}>
             <div className="chord-diagram">
         {transportDisplay > 0 && <div className="transpose" style={{backgroundColor: colors.cardColor, color: colors.textColor}}>{`${transportDisplay}ª`}</div>}
         <div className="chord-name" style={{ color: colors.chordNameColor }}>{getNome(props.chord).replace(/#/g, '♯').replace(/b/g, '♭')}</div>
-        <div className="neck" style={{ backgroundColor: colors.fretboardColor, borderWidth: `${colors.borderWidth}px`, borderColor: colors.borderColor }}>
+        <div className="neck" style={{ backgroundColor: colors.fretboardColor}}>
           <div className="nut-line" style={{ backgroundColor: colors.borderColor, height: `${colors.stringThickness}px` }}></div>
           {[...Array(5)].map((_, i) => (
             <div key={i} className="fret" style={{ top: `${40 + 50 * (i)}px`, backgroundColor: colors.borderColor, height: `${2}px` }}></div>
