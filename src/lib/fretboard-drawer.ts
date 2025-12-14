@@ -72,7 +72,15 @@ export class FretboardDrawer {
     this._neckRadius = diagramSettings.neckRadius;
     this._stringNamesY = diagramSettings.stringNamesY;
   }
-
+  public setDiagramX(diagramX: number): void {
+    this._diagramX = diagramX;
+    this._fretboardX = diagramX;
+  }
+  public setDiagramY(diagramY: number): void {
+    this._diagramY = diagramY;
+    this._fretboardY = this._diagramY + (75 * this._scaleFactor); // Recalculate based on current scaleFactor
+    this._stringNamesY = this._diagramY + (40 * this._scaleFactor); // Also depends on _diagramY
+  }
   /**
    * Função de easing cúbico (easeInOutQuad) para transições suaves.
    * t: current time (progress from 0 to 1)

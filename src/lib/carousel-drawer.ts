@@ -1,7 +1,7 @@
 import type { ChordDiagramProps } from "@/lib/types";
 import type { ChordDiagramColors } from "@/app/context/app--context";
-import { getNome } from "@/lib/chords";
 import { ChordDrawerBase } from "@/lib/chord-drawer-base";
+import { easeInOutQuad } from "@/lib/animacao";
 
 interface DrawCarouselParams {
   ctx: CanvasRenderingContext2D;
@@ -22,25 +22,29 @@ export function drawCarouselAnimation(params: DrawCarouselParams) {
 
   if (!currentChord) return;
 
-  // Criar drawer
+  // Create a new drawer for each frame to ensure clean state
   const drawer = new ChordDrawerBase(ctx, colors, dimensions);
-  
-  // Limpar canvas
   drawer.clearCanvas();
 
-  // If there's a next chord, we are in a transition animation
+  const centerAndDraw = (chord: ChordDiagramProps, offsetX: number = 0) => {
+    const chordDrawer = new ChordDrawerBase(ctx, colors, dimensions);
+    chordDrawer.calculateWithOffset(offsetX);
+    chordDrawer.drawChord(chord);
+  };
+
   if (nextChord) {
-    // drawer.drawChordWithTransition already handles the offsets internally
-    // We just need to calculate the main offsetX for the carousel
-    const offsetX = -dimensions.width * transitionProgress;
-    drawer.calculateWithOffset(offsetX); // Set the base offset for the drawer
-    drawer.drawChordWithTransition(currentChord, nextChord, transitionProgress, offsetX);
+    const easedProgress = easeInOutQuad(transitionProgress);
+
+    // 1. Draw current chord sliding out to the left
+    const currentOffsetX = -easedProgress * (dimensions.width);
+    centerAndDraw(currentChord, currentOffsetX);
+
+    // 2. Draw next chord sliding in from the right
+    const nextOffsetX = dimensions.width - (easedProgress * dimensions.width);
+    centerAndDraw(nextChord, nextOffsetX);
+
   } else {
-    // If no next chord, it's a static display of the current chord
-    // or the end state of a transition (where progress would be 1)
-    // Here we can simply call drawChord or drawChordWithBuildAnimation
-    // For simplicity, let's call drawChord. If animations are desired for static,
-    // that logic needs to be handled in the caller (e.g., progress from 0 to 1)
-    drawer.drawChord(currentChord);
+    // Static display of the current chord, perfectly centered
+    centerAndDraw(currentChord, 0);
   }
 }
