@@ -362,10 +362,13 @@ export class ChordDrawerBase {
       const [fret, finger, add] = positions[string];
       newPositions[string] = [fret > 0 ? fret - transposition : 0, finger, add];
     }
+    
+    // Transpose nut.pos if visible
+    const newNut = nut && nut.vis ? { ...nut, pos: nut.pos > 0 ? nut.pos - transposition : 0 } : nut;
 
     const newBarre = chord.barre ? [chord.barre[0] - transposition, chord.barre[1]] as [number, number] : undefined;
 
-    const finalChord = { ...chord, positions: newPositions, barre: newBarre };
+    const finalChord = { ...chord, positions: newPositions, nut: newNut, barre: newBarre };
 
     return { finalChord, transportDisplay: baseTransportDisplay + transposition };
   }

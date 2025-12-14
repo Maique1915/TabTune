@@ -11,37 +11,50 @@ export interface BarreInfo {
 type PositionKey = number | string;
 
 export function detectBarre(chord: ChordDiagramProps): BarreInfo | null {
-  // 1. Prioritize explicit `chord.barre` property
-  if (chord.barre && chord.barre.length === 2) {
-    const fret = chord.barre[0];
-    const fromString = chord.barre[1];
-    let toString = fromString; // Initialize with fromString
-    let barreFinger: number | undefined;
-
-    // Find the max string covered and the finger used for the barre
-    for (const stringKey in chord.positions) {
+  // Helper to find the last string covered on a given fret by the barre finger
+  const findToStringAndFinger = (fret: number, fromString: number, positions: Position): { toString: number; finger?: number } => {
+    let toString = fromString;
+    let finger: number | undefined;
+    for (const stringKey in positions) {
       const stringNumber = parseInt(stringKey);
-      const [posFret, finger] = chord.positions[stringKey];
-
+      const [posFret, posFinger] = positions[stringKey];
       if (posFret === fret && stringNumber >= fromString) {
         if (stringNumber > toString) {
           toString = stringNumber;
         }
-        if (stringNumber === fromString && finger) {
-          barreFinger = finger; // Get the finger from the starting string of the barre
+        if (stringNumber === fromString && posFinger) {
+          finger = posFinger;
         }
       }
     }
+    return { toString, finger };
+  };
+
+  // 1. Prioritize explicit `chord.barre` property (the [number, number] tuple)
+  if (chord.barre && chord.barre.length === 2) {
+    const fret = chord.barre[0];
+    const fromString = chord.barre[1];
+    const { toString, finger } = findToStringAndFinger(fret, fromString, chord.positions);
 
     return {
       fret: fret,
       fromString: fromString,
       toString: toString,
-      finger: barreFinger,
+      finger: finger,
     };
   }
 
-  // 2. Fallback to inferring barre from `chord.positions`
+  // 2. Fallback to `chord.nut`
+  if (chord.nut && chord.nut.vis) {
+    return {
+      fret: chord.nut.pos,
+      fromString: chord.nut.str[0],
+      toString: chord.nut.str[1],
+      finger: chord.nut.fin,
+    };
+  }
+
+  // 3. Fallback to inferring barre from `chord.positions`
   if (!chord.positions) return null;
 
   const byFret: Record<number, number[]> = {}; // Map fret to list of strings pressed on that fret
