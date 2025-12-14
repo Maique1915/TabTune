@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import type { TimelineClip as TimelineClipType } from "@/lib/timeline/types";
 import { formatTimeMs } from "@/lib/timeline/utils";
 import { getNome } from "@/lib/chords";
+import { Music } from "lucide-react";
+import { AudioClipVisual } from "./AudioClipVisual";
 
 interface TimelineClipProps {
   clip: TimelineClipType;
@@ -28,9 +30,25 @@ export function TimelineClip({
   const left = (clip.start / 1000) * zoom;
   const width = (clip.duration / 1000) * zoom;
 
-  const chordName = clip.chord?.chord 
-    ? getNome(clip.chord.chord).replace(/#/g, "♯").replace(/b/g, "♭")
-    : 'Acorde';
+  let clipContent;
+  let clipBgColor = "bg-primary/20 border-primary/50 hover:bg-primary/30";
+  let visualContent = null;
+  
+  if (clip.type === 'chord') {
+    const chordName = clip.chord?.chord 
+      ? getNome(clip.chord.chord).replace(/#/g, "♯").replace(/b/g, "♭")
+      : 'Chord';
+    clipContent = <span className="text-sm font-semibold truncate">{chordName}</span>;
+  } else if (clip.type === 'audio') {
+    visualContent = <AudioClipVisual waveform={clip.waveform} />;
+    clipContent = (
+      <div className="relative z-10 flex items-center gap-2 pointer-events-none">
+        <Music className="h-4 w-4 shrink-0" />
+        <span className="text-sm font-semibold truncate">{clip.fileName}</span>
+      </div>
+    );
+    clipBgColor = "bg-green-500/20 border-green-500/50 hover:bg-green-500/30";
+  }
 
   return (
     <div
@@ -40,7 +58,7 @@ export function TimelineClip({
         "select-none cursor-move",
         isSelected 
           ? "bg-blue-500/30 border-blue-500 z-20" 
-          : "bg-primary/20 border-primary/50 hover:bg-primary/30"
+          : clipBgColor
       )}
       style={{
         left: `${left}px`,
@@ -48,6 +66,7 @@ export function TimelineClip({
       }}
       onMouseDown={onMouseDown}
     >
+      {visualContent}
       {/* Handle resize esquerdo */}
       <div
         className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/30 z-30"
@@ -58,10 +77,8 @@ export function TimelineClip({
       />
 
       {/* Conteúdo do clip */}
-      <div className="flex-1 flex items-center justify-between overflow-hidden">
-        <span className="text-sm font-semibold truncate">
-          {chordName}
-        </span>
+      <div className="relative z-10 flex-1 flex items-center justify-between overflow-hidden pointer-events-none">
+        {clipContent}
         <span className="text-xs opacity-70 whitespace-nowrap ml-2">
           {formatTimeMs(clip.duration)}
         </span>
@@ -70,12 +87,12 @@ export function TimelineClip({
       {/* Botão deletar (aparece quando selecionado) */}
       {isSelected && onDelete && (
         <button
-          className="text-xs opacity-70 hover:opacity-100 hover:text-red-500 transition-all px-1"
+          className="relative z-10 text-xs opacity-70 hover:opacity-100 hover:text-red-500 transition-all px-1"
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
           }}
-          title="Remover acorde"
+          title="Remover clip"
         >
           ×
         </button>

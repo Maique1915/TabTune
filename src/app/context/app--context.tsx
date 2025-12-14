@@ -4,6 +4,7 @@
 import type { Dispatch, SetStateAction } from "react";
 import { createContext, useContext, useState } from "react";
 import type { Achord, ChordDiagramProps, ChordWithTiming } from "@/lib/types";
+import type { TimelineState } from "@/lib/timeline/types";
 
 export interface ChordDiagramColors {
   cardColor: string;
@@ -31,6 +32,8 @@ export type AnimationType = "carousel" | "static-fingers";
 interface AppContextType {
   selectedChords: ChordWithTiming[];
   setSelectedChords: Dispatch<SetStateAction<ChordWithTiming[]>>;
+  timelineState: TimelineState;
+  setTimelineState: Dispatch<SetStateAction<TimelineState>>;
   colors: ChordDiagramColors;
   setColors: Dispatch<SetStateAction<ChordDiagramColors>>;
   animationType: AnimationType;
@@ -80,8 +83,22 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const INITIAL_TIMELINE_STATE: TimelineState = {
+  tracks: [
+    {
+      id: "chords-track",
+      name: "Acordes",
+      type: 'chord',
+      clips: []
+    }
+  ],
+  totalDuration: 10000, // 10s default
+  zoom: 100 // 100px por segundo
+};
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [selectedChords, setSelectedChords] = useState<ChordWithTiming[]>([]);
+  const [timelineState, setTimelineState] = useState<TimelineState>(INITIAL_TIMELINE_STATE);
   const [colors, setColors] = useState<ChordDiagramColors>(DEFAULT_COLORS);
   const [animationType, setAnimationType] = useState<AnimationType>("carousel");
   const [playbackTransitionsEnabled, setPlaybackTransitionsEnabled] = useState(true);
@@ -104,6 +121,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       value={{
         selectedChords,
         setSelectedChords,
+        timelineState,
+        setTimelineState,
         colors,
         setColors,
         animationType,

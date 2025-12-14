@@ -12,20 +12,20 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/app/context/app--context";
-import { ChordDiagram } from "./chord-diagram";
 import { VideoCanvasStage, type VideoCanvasStageRef } from "./video-canvas-stage";
 import { useEffect, useRef, useState } from "react";
 
 export function MainStage() {
   const {
     selectedChords,
+    timelineState,
     playbackTransitionsEnabled,
     setPlaybackTransitionsEnabled,
     playbackBuildEnabled,
     setPlaybackBuildEnabled,
   } = useAppContext();
-  const currentChord = selectedChords[selectedChords.length - 1];
-  const hasValidChord = currentChord && currentChord.chord && currentChord.chord.positions && typeof currentChord.chord.positions === 'object';
+
+  const isTimelineEmpty = timelineState.tracks.every(track => track.clips.length === 0);
   const [showVideoCanvas, setShowVideoCanvas] = useState(true);
   const videoCanvasRef = useRef<VideoCanvasStageRef>(null);
   const [ffmpegLoaded, setFFmpegLoaded] = useState(false);
@@ -34,7 +34,6 @@ export function MainStage() {
   const [isPaused, setIsPaused] = useState(false);
 
   // Transições/build reativados.
-  // (Sem UI de toggle ainda; mantém tudo sincronizado via contexto.)
   useEffect(() => {
     setPlaybackTransitionsEnabled(true);
     setPlaybackBuildEnabled(true);
@@ -63,7 +62,7 @@ export function MainStage() {
   };
 
   const handleRenderVideo = async () => {
-    if (videoCanvasRef.current && selectedChords.length > 0) {
+    if (videoCanvasRef.current && !isTimelineEmpty) {
       setIsRendering(true);
       await videoCanvasRef.current.handleRender();
       setIsRendering(false);
@@ -82,7 +81,7 @@ export function MainStage() {
             size="icon" 
             className="text-foreground hover:bg-primary/50 hover:text-primary-foreground"
             onClick={isPaused ? handleResume : handleAnimate}
-            disabled={!hasValidChord || (isAnimating && !isPaused)}
+            disabled={isTimelineEmpty || (isAnimating && !isPaused)}
           >
             <Play />
           </Button>
@@ -91,7 +90,7 @@ export function MainStage() {
             size="icon" 
             className="text-foreground hover:bg-primary/50 hover:text-primary-foreground"
             onClick={handlePause}
-            disabled={!hasValidChord || !isAnimating || isPaused}
+            disabled={!isAnimating || isPaused}
           >
             <Pause />
           </Button>
@@ -116,7 +115,7 @@ export function MainStage() {
             size="icon" 
             className="text-foreground hover:bg-red-600 hover:text-white"
             onClick={() => setShowVideoCanvas(!showVideoCanvas)}
-            disabled={!hasValidChord}
+            disabled={isTimelineEmpty}
             title={showVideoCanvas ? "Voltar para prévia" : "Modo de vídeo"}
           >
             <Video />
@@ -126,8 +125,8 @@ export function MainStage() {
             size="sm"
             className="bg-red-600 hover:bg-red-700 text-white whitespace-nowrap px-4"
             onClick={handleRenderVideo}
-            disabled={selectedChords.length === 0 || !ffmpegLoaded || isRendering}
-            title={selectedChords.length === 0 ? "Selecione acordes primeiro" : "Renderizar vídeo MP4"}
+            disabled={isTimelineEmpty || !ffmpegLoaded || isRendering}
+            title={isTimelineEmpty ? "Adicione clips na timeline primeiro" : "Renderizar vídeo MP4"}
           >
             {!ffmpegLoaded 
               ? "Carregando FFmpeg..."
@@ -138,7 +137,7 @@ export function MainStage() {
         </div>
       </div>
       <div className="bg-black rounded-lg flex items-center justify-center p-4 overflow-hidden" style={{ height: 'calc(100% - 60px)' }}>
-        {selectedChords.length > 0 ? (
+        {!isTimelineEmpty ? (
           <VideoCanvasStage 
             ref={videoCanvasRef} 
             chords={selectedChords}

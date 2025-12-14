@@ -5,15 +5,37 @@
 
 import type { ChordDiagramProps } from "@/lib/types";
 
+export type ClipType = 'chord' | 'audio';
+
 /**
- * Representa um clip (bloco) de acorde na timeline
+ * Base interface for all timeline clips
  */
-export interface TimelineClip {
+export interface BaseClip {
   id: string;
-  chord: ChordDiagramProps;
   start: number;    // tempo de início em ms
-  duration: number; // duração em ms (tempo que fica fixo)
+  duration: number; // duração em ms
 }
+
+/**
+ * Represents a chord clip on the timeline
+ */
+export interface ChordClip extends BaseClip {
+  type: 'chord';
+  chord: ChordDiagramProps;
+}
+
+/**
+ * Represents an audio clip on the timeline
+ */
+export interface AudioClip extends BaseClip {
+  type: 'audio';
+  fileName: string;
+  audioUrl: string;
+  waveform: number[];
+}
+
+// A clip can be one of the defined types
+export type TimelineClip = ChordClip | AudioClip;
 
 /**
  * Representa uma track (faixa/layer) na timeline
@@ -21,6 +43,7 @@ export interface TimelineClip {
 export interface TimelineTrack {
   id: string;
   name: string;
+  type: ClipType; // Tracks are typed now
   clips: TimelineClip[];
 }
 
