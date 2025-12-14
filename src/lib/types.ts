@@ -1,3 +1,10 @@
+export interface BarreInfo {
+  fret: number;
+  fromString: number;
+  toString: number;
+  finger?: number;
+}
+
 export interface ChordWithTiming {
   chord: ChordDiagramProps;
   duration: number; // duração em ms
@@ -24,7 +31,6 @@ export interface ChordDiagramProps {
   chord: Achord;
   origin: number;
   positions: Position;
-  barre?: [number, number];
   avoid: number[];
   scale?: number;
   transport?: number;
