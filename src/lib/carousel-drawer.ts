@@ -17,55 +17,6 @@ interface DrawCarouselParams {
   index?: number;
 }
 
-function drawChordAtPosition(
-  drawer: ChordDrawerBase,
-  chord: ChordDiagramProps,
-  offsetX: number,
-  opacity: number
-) {
-  const ctx = drawer.ctx;
-  ctx.save();
-  ctx.globalAlpha = opacity;
-
-  // Transpor acorde
-  const { finalChord, transportDisplay } = drawer.transposeForDisplay(chord);
-  const chordName = getNome(finalChord.chord).replace(/#/g, "♯").replace(/b/g, "♭");
-
-  // Aplicar centralização base
-  const baseOffset = drawer.applyCentering();
-  
-  // Adicionar offset do carrossel
-  ctx.translate(offsetX, 0);
-
-  // Desenhar nome do acorde
-  drawer.drawChordName(chordName);
-  
-  // Desenhar fretboard
-  drawer.drawFretboard();
-
-  // Desenhar pestana
-  if (finalChord.barre) {
-    drawer.drawBarre(finalChord.barre);
-  }
-
-  // Desenhar dedos
-  drawer.drawFingers(finalChord.positions);
-
-  // Desenhar cordas evitadas (X)
-  drawer.drawAvoidedStrings(finalChord.avoid || []);
-
-  // Indicador de transposição
-  drawer.drawTransposeIndicator(transportDisplay);
-
-  // Remover translate de offset do carrossel
-  ctx.translate(-offsetX, 0);
-  
-  // Remover centralização base
-  drawer.removeCentering(baseOffset);
-  
-  ctx.restore();
-}
-
 export function drawCarouselAnimation(params: DrawCarouselParams) {
   const { ctx, currentChord, nextChord, transitionProgress, colors, dimensions } = params;
 
@@ -77,18 +28,19 @@ export function drawCarouselAnimation(params: DrawCarouselParams) {
   // Limpar canvas
   drawer.clearCanvas();
 
-  // Calcular offsets para animação de slide
-  const currentOffsetX = -dimensions.width * transitionProgress;
-  const currentOpacity = 1 - transitionProgress;
-
-  const nextOffsetX = dimensions.width * (1 - transitionProgress);
-  const nextOpacity = transitionProgress;
-
-  // Desenhar acorde atual (saindo para a esquerda)
-  drawChordAtPosition(drawer, currentChord, currentOffsetX, currentOpacity);
-
-  // Desenhar próximo acorde (entrando pela direita)
+  // If there's a next chord, we are in a transition animation
   if (nextChord) {
-    drawChordAtPosition(drawer, nextChord, nextOffsetX, nextOpacity);
+    // drawer.drawChordWithTransition already handles the offsets internally
+    // We just need to calculate the main offsetX for the carousel
+    const offsetX = -dimensions.width * transitionProgress;
+    drawer.calculateWithOffset(offsetX); // Set the base offset for the drawer
+    drawer.drawChordWithTransition(currentChord, nextChord, transitionProgress, offsetX);
+  } else {
+    // If no next chord, it's a static display of the current chord
+    // or the end state of a transition (where progress would be 1)
+    // Here we can simply call drawChord or drawChordWithBuildAnimation
+    // For simplicity, let's call drawChord. If animations are desired for static,
+    // that logic needs to be handled in the caller (e.g., progress from 0 to 1)
+    drawer.drawChord(currentChord);
   }
 }

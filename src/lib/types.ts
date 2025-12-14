@@ -31,7 +31,6 @@ export interface ChordDiagramProps {
   chord: Achord;
   origin: number;
   positions: Position;
-  barre?: [number, number];
   avoid: number[];
   scale?: number;
   transport?: number;

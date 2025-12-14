@@ -366,9 +366,7 @@ export class ChordDrawerBase {
     // Transpose nut.pos if visible
     const newNut = nut && nut.vis ? { ...nut, pos: nut.pos > 0 ? nut.pos - transposition : 0 } : nut;
 
-    const newBarre = chord.barre ? [chord.barre[0] - transposition, chord.barre[1]] as [number, number] : undefined;
-
-    const finalChord = { ...chord, positions: newPositions, nut: newNut, barre: newBarre };
+    const finalChord = { ...chord, positions: newPositions, nut: newNut };
 
     return { finalChord, transportDisplay: baseTransportDisplay + transposition };
   }
@@ -407,10 +405,14 @@ export class ChordDrawerBase {
     const fromStringIndex = barre.fromString - 1;
     const toStringIndex = barre.toString - 1;
 
-    const fromX = this.fretboardX + this.horizontalPadding + fromStringIndex * this.stringSpacing;
-    const toX = this.fretboardX + this.horizontalPadding + toStringIndex * this.stringSpacing;
+    let fromX = this.fretboardX + this.horizontalPadding + fromStringIndex * this.stringSpacing;
+    let toX = this.fretboardX + this.horizontalPadding + toStringIndex * this.stringSpacing;
 
-    // Calculate the actual width of the barre based on the difference between toX and fromX
+    // Adjust fromX and toX to extend by half a finger radius on each side
+    // This makes the barre visually cover the strings' "diameter"
+    fromX -= this.fingerRadius / 2;
+    toX += this.fingerRadius / 2;
+
     const barreActualWidth = toX - fromX;
 
     this._ctx.fillStyle = this.hexToRgba(this._colors.fingerColor, this._colors.fingerBackgroundAlpha);
@@ -465,10 +467,11 @@ export class ChordDrawerBase {
 
       // Don't draw if finger is 0 (open string, not pressed) or -1 (muted)
       if (fret > 0 && finger > 0) {
-        // Check if this finger is part of the barre
+        // Check if this finger is part of the barre AND it's the same finger as the barre
         if (
           barreInfo &&
           fret === barreInfo.fret &&
+          finger === barreInfo.finger && // Adicionado: verificar se é o mesmo dedo da pestana
           stringIndex >= barreInfo.fromString &&
           stringIndex <= barreInfo.toString
         ) {
@@ -602,6 +605,7 @@ export class ChordDrawerBase {
    * Desenha um acorde completo
    */
   drawChord(chord: ChordDiagramProps, offsetX: number = 0): void {
+    console.log("Chord selected (static draw):", chord);
     if (offsetX !== 0) {
       this.calculateWithOffset(offsetX);
     }
@@ -629,6 +633,7 @@ export class ChordDrawerBase {
    * @param offsetX - Deslocamento horizontal
    */
   drawChordWithBuildAnimation(chord: ChordDiagramProps, progress: number, offsetX: number = 0): void {
+    console.log("Chord animation started (build-in):", chord);
     if (offsetX !== 0) {
       this.calculateWithOffset(offsetX);
     }
@@ -753,6 +758,8 @@ export class ChordDrawerBase {
     originalProgress: number,
     offsetX: number = 0
   ): void {
+    console.log("Chord animation started (transition - current):", currentChord);
+    console.log("Chord animation started (transition - next):", nextChord);
     if (offsetX !== 0) {
       this.calculateWithOffset(offsetX);
     }
