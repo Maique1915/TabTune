@@ -11,15 +11,33 @@ export interface BarreInfo {
 type PositionKey = number | string;
 
 export function detectBarre(chord: ChordDiagramProps): BarreInfo | null {
-  // 1. Prioritize barre information from `chord.nut`
-  if (chord.nut && chord.nut.vis) {
-    // Assuming nut.str[0] is fromString and nut.str[1] is toString
-    // nut.pos can be 0, indicating a barre at the nut (open string)
+  // 1. Prioritize explicit `chord.barre` property
+  if (chord.barre && chord.barre.length === 2) {
+    const fret = chord.barre[0];
+    const fromString = chord.barre[1];
+    let toString = fromString; // Initialize with fromString
+    let barreFinger: number | undefined;
+
+    // Find the max string covered and the finger used for the barre
+    for (const stringKey in chord.positions) {
+      const stringNumber = parseInt(stringKey);
+      const [posFret, finger] = chord.positions[stringKey];
+
+      if (posFret === fret && stringNumber >= fromString) {
+        if (stringNumber > toString) {
+          toString = stringNumber;
+        }
+        if (stringNumber === fromString && finger) {
+          barreFinger = finger; // Get the finger from the starting string of the barre
+        }
+      }
+    }
+
     return {
-      fret: chord.nut.pos,
-      fromString: chord.nut.str[0],
-      toString: chord.nut.str[1],
-      finger: chord.nut.fin,
+      fret: fret,
+      fromString: fromString,
+      toString: toString,
+      finger: barreFinger,
     };
   }
 
