@@ -12,8 +12,9 @@ type PositionKey = number | string;
 
 export function detectBarre(chord: ChordDiagramProps): BarreInfo | null {
   // 1. Prioritize barre information from `chord.nut`
-  if (chord.nut && chord.nut.vis && chord.nut.pos > 0) {
+  if (chord.nut && chord.nut.vis) {
     // Assuming nut.str[0] is fromString and nut.str[1] is toString
+    // nut.pos can be 0, indicating a barre at the nut (open string)
     return {
       fret: chord.nut.pos,
       fromString: chord.nut.str[0],
