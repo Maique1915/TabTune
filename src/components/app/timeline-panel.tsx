@@ -229,7 +229,7 @@ export function TimelinePanel() {
           }}
           onPlayheadScrubEnd={(progress) => {
             setPlaybackProgress(progress);
-            requestPlaybackSeek(false);
+            requestPlaybackSeek(0);
           }}
         />
       </div>
