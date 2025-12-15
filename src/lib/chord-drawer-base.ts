@@ -759,8 +759,17 @@ export class ChordDrawerBase {
     this.drawChordName(chordName, offsetX);
     this.drawFretboard();
 
-    if (barreInfo) {
-      this.drawFretPosition(barreInfo.fret, barreInfo.finger, barreInfo.fromString - 1, barreInfo.toString - 1);
+    if (
+      barreInfo &&
+      typeof barreInfo.fromString === "number" &&
+      typeof barreInfo.toString === "number"
+    ) {
+      this.drawFretPosition(
+        barreInfo.fret,
+        barreInfo.finger ?? 1,
+        barreInfo.fromString - 1,
+        barreInfo.toString - 1
+      );
     }
 
     this.drawFingers(finalChord.positions, barreInfo);
@@ -821,8 +830,7 @@ export class ChordDrawerBase {
       const centerX = fromX + barreActualWidth / 2;
 
       this._ctx.translate(centerX, fretY); // Move origin to barre center
-      this._drawBarreShapeAtPosition(barreInfo.finger, barreActualWidth);
-      
+      this._drawBarreShapeAtPosition(barreInfo.finger ?? 1, barreActualWidth);
       this._ctx.restore();
     }
 
@@ -990,7 +998,7 @@ export class ChordDrawerBase {
       const fromString = currentBarre.fromString + (nextBarre.fromString - currentBarre.fromString) * progress;
       const toString = currentBarre.toString + (nextBarre.toString - currentBarre.toString) * progress;
       // Interpolate finger
-      const finger = Math.round((currentBarre.finger) + ((nextBarre.finger) - (currentBarre.finger)) * progress);
+      const finger = Math.round((currentBarre.finger ?? 1) + ((nextBarre.finger ?? 1) - (currentBarre.finger ?? 1)) * progress);
 
       const fretY = this.fretboardY + (fret - 0.5) * this.realFretSpacing;
       let fromX = this.fretboardX + this.horizontalPadding + (fromString - 1) * this.stringSpacing;
@@ -1024,7 +1032,7 @@ export class ChordDrawerBase {
           fromX -= this.fingerRadius;
           toX += this.fingerRadius;
           const barreActualWidth = toX - fromX;
-          this._drawBarreShapeAtPosition(currentBarre.finger, barreActualWidth);
+          this._drawBarreShapeAtPosition(currentBarre.finger ?? 1, barreActualWidth);
         }
       );
     } else if (!currentBarre && nextBarre) {
@@ -1047,7 +1055,7 @@ export class ChordDrawerBase {
           fromX -= this.fingerRadius;
           toX += this.fingerRadius;
           const barreActualWidth = toX - fromX;
-          this._drawBarreShapeAtPosition(nextBarre.finger, barreActualWidth);
+          this._drawBarreShapeAtPosition(nextBarre.finger ?? 1, barreActualWidth);
         }
       );
     }

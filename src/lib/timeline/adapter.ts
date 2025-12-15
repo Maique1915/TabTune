@@ -4,7 +4,12 @@
  */
 
 import type { TimelineState } from "./types";
-import type { ChordTiming } from "@/components/app/video-canvas-stage";
+// TODO: Replace this with the correct import if ChordTiming is exported elsewhere
+export type ChordTiming = {
+  holdDuration: number;
+  transitionDuration: number;
+  pauseDuration: number;
+};
 
 /**
  * Converte o estado da timeline para array de timings

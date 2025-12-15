@@ -19,12 +19,12 @@ export interface Achord {
 export type Position = { [key: number]: [number, number, number] };
 
 export interface nutForm {
-  vis: boolean;
-  str: [number, number];
-  pos: number;
-  fin: number;
-  add: boolean;
-  trn: number;
+  vis: boolean; // Se a pestana é visível
+  str: [number, number]; // Cordas que a pestana abrange (ex: [1, 5] para cordas 1 a 5)
+  pos: number; // Posição do traste (casa) onde a pestana está
+  fin: number; // Dedo usado para a pestana
+  add: boolean; // Informação adicional (uso específico não claro)
+  trn: number; // Transposição
 }
 
 export interface ChordDiagramProps {
@@ -34,7 +34,7 @@ export interface ChordDiagramProps {
   avoid: number[];
   scale?: number;
   transport?: number;
-  nut: nutForm;
+  nut: nutForm; // Define a pestana (barre) do acorde.
   add?: Position;
   list?: boolean;
   ffinger?: number;
