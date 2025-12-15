@@ -7,7 +7,7 @@ import { useAppContext } from '@/app/context/app--context';
 import '@/app/chord-diagram.css';
 
 const ChordDiagram: React.FC<ChordDiagramProps> = (props) => {
-  const { positions, nut, barre, avoid, list } = props;
+  const { positions, nut, avoid, list } = props;
   const scale = props.scale ?? (list ? 0.3 : 1);
   const stringNames = ["E", "A", "D", "G", "B", "e"];
   const { colors } = useAppContext();
@@ -101,13 +101,13 @@ const ChordDiagram: React.FC<ChordDiagramProps> = (props) => {
               {avoid && avoid.includes(i + 1) && <div className="avoid" style={{ color: colors.textColor }}>x</div>}
             </div>
           ))}
-          {barre && (
+          {nut && nut.vis &&(
             <div
               className="barre"
               style={{
-                top: `${60 * barre[0] - 20}px`,
-                left: `${44 * (barre[1] - 1) + 40}px`,
-                width: `${44 * (barre[1] - 1)}px`,
+                top: `${60 * nut.str[0] - 20}px`,
+                left: `${44 * (nut.str[1] - 1) + 40}px`,
+                width: `${44 * (nut.str[1] - 1)}px`,
                 backgroundColor: fingerBackgroundColor,
                 borderColor: colors.fingerBorderColor,
                 borderWidth: `${colors.fingerBorderWidth}px`,
