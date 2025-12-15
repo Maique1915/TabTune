@@ -3,14 +3,5 @@
     "buildCommand": "npm run build",
     "devCommand": "npm run dev",
     "installCommand": "npm install",
-    "startCommand": "npm run start",
-    "lintCommand": "npm run lint",
-    "typecheckCommand": "npm run typecheck",
-    "postinstallCommand": "npm run postinstall",
-    "outputDirectory": ".next",
-    "regions": ["gru1"],
-    "builds": [
-        { "src": "next.config.js", "use": "@vercel/next" }
-    ],
     "dev":  { "command": "npm run dev", "port": 9003 }
 }
