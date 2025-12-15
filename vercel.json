@@ -2,6 +2,5 @@
     "framework": "nextjs",
     "buildCommand": "npm run build",
     "devCommand": "npm run dev",
-    "installCommand": "npm install",
-    "dev":  { "command": "npm run dev", "port": 9003 }
+    "installCommand": "npm install"
 }
