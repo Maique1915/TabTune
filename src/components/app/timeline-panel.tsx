@@ -7,27 +7,27 @@ import type { TimelineState, TimelineClip, ChordClip } from "@/lib/timeline/type
 import { generateClipId } from "@/lib/timeline/utils";
 import type { ChordWithTiming } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Music } from "lucide-react";
+import { Play, Pause } from "lucide-react";
 
-const extractWaveformData = (audioBuffer: AudioBuffer, targetPoints: number): number[] => {
-  const rawData = audioBuffer.getChannelData(0);
-  const samples = rawData.length;
-  const blockSize = Math.floor(samples / targetPoints);
-  const waveform = [];
-  for (let i = 0; i < targetPoints; i++) {
-    const blockStart = blockSize * i;
-    let sum = 0;
-    for (let j = 0; j < blockSize; j++) {
-      sum += Math.abs(rawData[blockStart + j]);
-    }
-    waveform.push(sum / blockSize);
-  }
-  // Normalize the waveform
-  const max = Math.max(...waveform);
-  return waveform.map(v => v / max);
-};
+interface TimelinePanelProps {
+  isAnimating: boolean;
+  isPaused: boolean;
+  ffmpegLoaded: boolean;
+  handleAnimate: () => void;
+  handlePause: () => void;
+  handleResume: () => void;
+  handleRenderVideo: () => void;
+}
 
-export function TimelinePanel() {
+export function TimelinePanel({
+  isAnimating,
+  isPaused,
+  ffmpegLoaded,
+  handleAnimate,
+  handlePause,
+  handleResume,
+  handleRenderVideo
+}: TimelinePanelProps) {
   const {
     selectedChords,
     setSelectedChords,
@@ -42,7 +42,7 @@ export function TimelinePanel() {
     playbackTransitionsEnabled,
   } = useAppContext();
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const isTimelineEmpty = timelineState.tracks.every(track => track.clips.length === 0);
 
   const transitionDurationMs = animationType === "carousel" ? 1000 : 800;
   const minClipDurationMs = playbackTransitionsEnabled ? transitionDurationMs * 2 : 0;
@@ -148,73 +148,11 @@ export function TimelinePanel() {
 
     setSelectedChords(reorderedChordsWithTiming);
   };
-  
-  const handleAudioFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const audioUrl = URL.createObjectURL(file);
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
-      const response = await fetch(audioUrl);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      
-      const duration = audioBuffer.duration * 1000;
-      const waveform = extractWaveformData(audioBuffer, 400);
-
-      const newAudioTrack = {
-        id: `audio-track-${generateClipId()}`,
-        name: file.name,
-        type: 'audio' as const,
-        clips: [
-          {
-            id: `audio-clip-${generateClipId()}`,
-            type: 'audio' as const,
-            fileName: file.name,
-            audioUrl: audioUrl,
-            start: 0,
-            duration: duration,
-            waveform: waveform
-          },
-        ],
-      };
-
-      setTimelineState(prev => {
-        const newTotalDuration = Math.max(prev.totalDuration, duration);
-        return {
-          ...prev,
-          tracks: [...prev.tracks, newAudioTrack],
-          totalDuration: newTotalDuration,
-        };
-      });
-
-    } catch (error) {
-      console.error("Error processing audio file:", error);
-    }
-  };
-
-  const handleAddAudioClick = () => {
-    fileInputRef.current?.click();
-  };
 
   return (
+    <div className="flex flex-col h-full">
     <div className="border-t border-border bg-muted/30 p-4 flex-1 overflow-hidden flex flex-col">
-      <div className="flex items-center gap-2 mb-2">
-        <Button variant="outline" size="sm" onClick={handleAddAudioClick}>
-          <Music className="h-4 w-4 mr-2" />
-          Add Audio
-        </Button>
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          onChange={handleAudioFileSelect} 
-          accept=".mp3,.wav" 
-          style={{ display: 'none' }} 
-        />
-      </div>
-      <div className="flex-1 overflow-hidden">
+      <div className="">
         <Timeline 
           value={timelineState}
           onChange={handleTimelineChange}
@@ -231,7 +169,20 @@ export function TimelinePanel() {
             setPlaybackProgress(progress);
             requestPlaybackSeek(0);
           }}
+          isAnimating={isAnimating}
+          isPaused={isPaused}
+          ffmpegLoaded={ffmpegLoaded}
+          isTimelineEmpty={isTimelineEmpty}
+          handleAnimate={handleAnimate}
+          handlePause={handlePause}
+          handleResume={handleResume}
+          handleRenderVideo={handleRenderVideo}
         />
+      </div>
+    </div>
+    
+    <div className="flex flex-col items-center justify-center p-4 bg-muted/20 border-t border-border">
+      s
       </div>
     </div>
   );

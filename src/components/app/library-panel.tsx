@@ -46,7 +46,7 @@ export function LibraryPanel() {
   const scaleNotes = useMemo(() => {
     const scaleIndex = notes.indexOf(selectedScale);
     const majorScaleIntervals = [0, 2, 4, 5, 7, 9, 11]; // Tom, Tom, Semitom, Tom, Tom, Tom, Semitom
-    
+
     return majorScaleIntervals.map((interval) => {
       const noteIndex = (scaleIndex + interval) % 12;
       return notes[noteIndex];
@@ -69,9 +69,9 @@ export function LibraryPanel() {
   // Transpor todos os acordes para a nota selecionada
   const transposedChords = useMemo(() => {
     if (selectedNote === "all") return chordData;
-    
+
     const targetNoteIndex = notes.indexOf(selectedNote);
-    
+
     return chordData.map((chordItem) => {
       const originalNoteIndex = chordItem.chord.note;
       const interval = targetNoteIndex - chordItem.origin;
@@ -130,18 +130,8 @@ export function LibraryPanel() {
       {/* Menu lateral com filtros */}
       <aside className="flex h-full w-16 flex-col bg-panel border-r shrink-0 items-center py-4 gap-4">
         <div className="text-2xl">🎸</div>
-        
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={`p-2 rounded-lg transition-colors ${
-            showFilters ? "bg-accent text-accent-foreground" : "hover:bg-accent/20"
-          }`}
-          title="Filters"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-          </svg>
-        </button>
+
+
       </aside>
 
       {/* Painel de filtros */}
@@ -149,7 +139,7 @@ export function LibraryPanel() {
         <aside className="flex h-full w-40 flex-col bg-panel border-r shrink-0 overflow-hidden">
           <div className="p-4 space-y-3">
             <h2 className="text-lg font-bold text-white">Filters</h2>
-            
+
             {/* Select de Escala */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Scale</Label>
@@ -166,7 +156,7 @@ export function LibraryPanel() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             {/* Select de Nota */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Note</Label>
@@ -227,11 +217,10 @@ export function LibraryPanel() {
                   <button
                     key={ext}
                     onClick={() => handleExtensionToggle(ext)}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                      selectedExtensions.includes(ext)
-                        ? "bg-accent text-accent-foreground"
-                        : "bg-input text-foreground hover:bg-accent/50"
-                    }`}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${selectedExtensions.includes(ext)
+                      ? "bg-accent text-accent-foreground"
+                      : "bg-input text-foreground hover:bg-accent/50"
+                      }`}
                   >
                     {ext}
                   </button>
@@ -244,12 +233,28 @@ export function LibraryPanel() {
 
       {/* Painel de acordes */}
       <aside className="flex h-full w-80 flex-col bg-panel border-r shrink-0 overflow-hidden">
-        <div className="p-4 border-b">
-          <h2 className="text-lg font-bold text-white">Library</h2>
-          <p className="text-xs text-muted-foreground mt-1">
-            {filteredChords.length} chord{filteredChords.length !== 1 ? 's' : ''}
-          </p>
+        <div className="mb-2 p-4 flex items-center justify-between border-b">
+
+          <div className="p-4 ">
+            <h2 className="text-lg font-bold text-white">Library</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              {filteredChords.length} chord{filteredChords.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`p-2 rounded-lg transition-colors ${showFilters ? "bg-accent text-accent-foreground" : "hover:bg-accent/20"
+              }`}
+            title="Filters"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+            </svg>
+          </button>
         </div>
+
+
 
         <div className="flex-1 overflow-y-auto p-3">
           <div className="grid grid-cols-2 gap-3">

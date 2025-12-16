@@ -9,7 +9,7 @@ export const getComplement = (value: string): number => { return complements.ind
 export const getBasse = (value: string): number => { return basses.indexOf(value) }
 
 export const getNome = ({note, complement, bass}: Achord): string => {
-    return notes[note] + (complements[complement] || '') + (bass > 0 ? basses[bass] : '')
+    return notes[note] + (complements[complement] ==='Major' ? '' : complements[complement] || '') + (bass > 0 ? basses[bass] : '')
 }
 
 

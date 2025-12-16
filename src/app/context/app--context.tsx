@@ -58,6 +58,13 @@ interface AppContextType {
   playbackSeekProgress: number; // 0..1
   playbackSeekNonce: number;
   requestPlaybackSeek: (progress: number) => void;
+
+  isRendering: boolean;
+  setIsRendering: Dispatch<SetStateAction<boolean>>;
+  renderProgress: number; // 0..100
+  setRenderProgress: Dispatch<SetStateAction<number>>;
+  renderCancelRequested: boolean;
+  setRenderCancelRequested: Dispatch<SetStateAction<boolean>>;
 }
 
 export const DEFAULT_COLORS: ChordDiagramColors = {
@@ -110,6 +117,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [playbackIsScrubbing, setPlaybackIsScrubbing] = useState(false);
   const [playbackSeekProgress, setPlaybackSeekProgress] = useState(0);
   const [playbackSeekNonce, setPlaybackSeekNonce] = useState(0);
+  const [isRendering, setIsRendering] = useState(false);
+  const [renderProgress, setRenderProgress] = useState(0);
+  const [renderCancelRequested, setRenderCancelRequested] = useState(false);
 
   const requestPlaybackSeek = (progress: number) => {
     setPlaybackSeekProgress(progress);
@@ -147,6 +157,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         playbackSeekProgress,
         playbackSeekNonce,
         requestPlaybackSeek,
+
+        isRendering,
+        setIsRendering,
+        renderProgress,
+        setRenderProgress,
+        renderCancelRequested,
+        setRenderCancelRequested,
       }}
     >
       {children}

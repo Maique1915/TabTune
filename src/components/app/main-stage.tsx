@@ -1,21 +1,16 @@
 
 "use client";
-import {
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  RotateCcw,
-  ZoomIn,
-  Maximize,
-  Video,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+
 import { useAppContext } from "@/app/context/app--context";
 import { VideoCanvasStage, type VideoCanvasStageRef } from "./video-canvas-stage";
-import { useEffect, useRef, useState } from "react";
+import React, { forwardRef } from 'react';
 
-export function MainStage() {
+interface MainStageProps {
+  onFFmpegLoad: () => void;
+  onAnimationStateChange: (isAnimating: boolean, isPaused: boolean) => void;
+}
+
+export const MainStage = forwardRef<VideoCanvasStageRef, MainStageProps>((props, ref) => {
   const {
     selectedChords,
     timelineState,
@@ -23,131 +18,23 @@ export function MainStage() {
     setPlaybackTransitionsEnabled,
     playbackBuildEnabled,
     setPlaybackBuildEnabled,
+    setRenderProgress,
   } = useAppContext();
 
   const isTimelineEmpty = timelineState.tracks.every(track => track.clips.length === 0);
-  const [showVideoCanvas, setShowVideoCanvas] = useState(true);
-  const videoCanvasRef = useRef<VideoCanvasStageRef>(null);
-  const [ffmpegLoaded, setFFmpegLoaded] = useState(false);
-  const [isRendering, setIsRendering] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-
-  // Transições/build reativados.
-  useEffect(() => {
-    setPlaybackTransitionsEnabled(true);
-    setPlaybackBuildEnabled(true);
-  }, [setPlaybackBuildEnabled, setPlaybackTransitionsEnabled]);
-
-  const handleAnimate = () => {
-    if (videoCanvasRef.current) {
-      videoCanvasRef.current.startAnimation();
-      setIsAnimating(true);
-      setIsPaused(false);
-    }
-  };
-
-  const handlePause = () => {
-    if (videoCanvasRef.current) {
-      videoCanvasRef.current.pauseAnimation();
-      setIsPaused(true);
-    }
-  };
-
-  const handleResume = () => {
-    if (videoCanvasRef.current) {
-      videoCanvasRef.current.resumeAnimation();
-      setIsPaused(false);
-    }
-  };
-
-  const handleRenderVideo = async () => {
-    if (videoCanvasRef.current && !isTimelineEmpty) {
-      setIsRendering(true);
-      await videoCanvasRef.current.handleRender();
-      setIsRendering(false);
-    }
-  };
 
   return (
     <div className="flex flex-col bg-toolbar p-4 overflow-hidden">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/50 hover:text-primary-foreground">
-            <SkipBack />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="text-foreground hover:bg-primary/50 hover:text-primary-foreground"
-            onClick={isPaused ? handleResume : handleAnimate}
-            disabled={isTimelineEmpty || (isAnimating && !isPaused)}
-          >
-            <Play />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="text-foreground hover:bg-primary/50 hover:text-primary-foreground"
-            onClick={handlePause}
-            disabled={!isAnimating || isPaused}
-          >
-            <Pause />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/50 hover:text-primary-foreground">
-            <SkipForward />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/50 hover:text-primary-foreground">
-            <RotateCcw />
-          </Button>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/50 hover:text-primary-foreground">
-            <ZoomIn />
-          </Button>
-          <span>100%</span>
-          <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/50 hover:text-primary-foreground">
-            <Maximize />
-          </Button>
-          <div className="h-8 w-px bg-border mx-2" />
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="text-foreground hover:bg-red-600 hover:text-white"
-            onClick={() => setShowVideoCanvas(!showVideoCanvas)}
-            disabled={isTimelineEmpty}
-            title={showVideoCanvas ? "Voltar para prévia" : "Modo de vídeo"}
-          >
-            <Video />
-          </Button>
-          <Button 
-            variant="default" 
-            size="sm"
-            className="bg-red-600 hover:bg-red-700 text-white whitespace-nowrap px-4"
-            onClick={handleRenderVideo}
-            disabled={isTimelineEmpty || !ffmpegLoaded || isRendering}
-            title={isTimelineEmpty ? "Adicione clips na timeline primeiro" : "Renderizar vídeo MP4"}
-          >
-            {!ffmpegLoaded 
-              ? "Carregando FFmpeg..."
-              : isRendering 
-              ? "Renderizando..." 
-              : "Renderizar MP4"}
-          </Button>
-        </div>
-      </div>
-      <div className="bg-black rounded-lg flex items-center justify-center p-4 overflow-hidden" style={{ height: 'calc(100% - 60px)' }}>
+      <div className="bg-black rounded-lg flex items-center justify-center p-4 overflow-hidden" style={{ height: '100%' }}>
         {!isTimelineEmpty ? (
           <VideoCanvasStage 
-            ref={videoCanvasRef} 
+            ref={ref}
             chords={selectedChords}
             transitionsEnabled={playbackTransitionsEnabled}
             buildEnabled={playbackBuildEnabled}
-            onFFmpegLoad={() => setFFmpegLoaded(true)}
-            onAnimationStateChange={(animating, paused) => {
-              setIsAnimating(animating);
-              setIsPaused(paused);
-            }}
+            onFFmpegLoad={props.onFFmpegLoad}
+            onAnimationStateChange={props.onAnimationStateChange}
+            onRenderProgress={setRenderProgress}
           />
         ) : (
           <p className="text-muted-foreground">Select a chord from the library to get started</p>
@@ -155,4 +42,6 @@ export function MainStage() {
       </div>
     </div>
   );
-}
+});
+
+MainStage.displayName = "MainStage";
