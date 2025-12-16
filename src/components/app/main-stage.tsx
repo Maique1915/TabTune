@@ -15,9 +15,7 @@ export const MainStage = forwardRef<VideoCanvasStageRef, MainStageProps>((props,
     selectedChords,
     timelineState,
     playbackTransitionsEnabled,
-    setPlaybackTransitionsEnabled,
     playbackBuildEnabled,
-    setPlaybackBuildEnabled,
     setRenderProgress,
   } = useAppContext();
 
