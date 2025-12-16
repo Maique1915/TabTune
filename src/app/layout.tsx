@@ -21,6 +21,8 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet" />
       <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2227531384549606"
      crossOrigin="anonymous"></script>
+     <meta name="google-adsense-account" content="ca-pub-2227531384549606" />
+
       </head>
       <body className="font-body antialiased bg-background">
         {children}
