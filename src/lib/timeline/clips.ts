@@ -45,92 +45,9 @@ export class TimelineChord {
   }
 
   update(loopContext: LoopContext): void {
-    const { videoCanvasStageRef, colors, animationType, transitionsEnabled, buildEnabled, getSegmentDurationSec, currentTimeMs, totalTimelineDurationMs } = loopContext;
-
-    // Se o clipe de acorde estiver no período de exibição na timeline
-    if (currentTimeMs >= this.start && currentTimeMs <= this.start + this.duration) {
-      const elapsedSinceClipStart = currentTimeMs - this.start;
-      
-      // Lógica de cálculo de estado da animação (copiada do VideoCanvasStage.computeStateAtTimeMs)
-      // Esta parte da lógica está duplicada. Idealmente, o VideoCanvasStage faria o computeStateAtTimeMs
-      // e o TimelineChord apenas fornecería os dados para o VideoCanvasStage.renderAtTime
-      // Por enquanto, para fazer o renderAtTime do videoCanvasStageRef funcionar, precisamos simular.
-      if (!videoCanvasStageRef?.current?.canvasRef?.current) return;
-
-      const canvas = videoCanvasStageRef.current.canvasRef.current;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-
-      const width = canvas.width;
-      const height = canvas.height;
-
-      // Limpar o canvas antes de desenhar o frame do acorde atual
-      ctx.clearRect(0, 0, width, height);
-
-
-      const buildDurationSec = 1.0; // Hardcoded por enquanto, pode vir de constantes ou props
-      const halfTransitionSec = (animationType === "carousel" ? 1.0 : 0.8) / 2; // Hardcoded por enquanto
-
-      const buildMsBase = (buildEnabled ? buildDurationSec : 0) * 1000;
-      let cursor = 0;
-      const t = Math.max(0, elapsedSinceClipStart); // Tempo relativo ao início do clipe
-
-      let animationState = null;
-
-      if (animationType === "static-fingers") {
-        const segmentMs = this.duration; // Duração do próprio clipe
-        const incomingHalfMs = 0; // Não há transição "incoming" para um clipe individual
-        const outgoingHalfMs = 0; // Não há transição "outgoing" para um clipe individual
-        const staticMs = segmentMs; // O clipe inteiro é estático
-        
-        // No contexto de um clipe individual, a animação de build acontece no início
-        const buildMs = Math.min(buildMsBase, staticMs);
-        const holdMs = Math.max(0, staticMs - buildMs);
-
-        if (buildMs > 0 && t < cursor + buildMs) {
-          animationState = { chordIndex: 0, transitionProgress: 0, buildProgress: (t - cursor) / buildMs };
-        } else if (t < cursor + holdMs) {
-          animationState = { chordIndex: 0, transitionProgress: 0, buildProgress: 1 };
-        } else {
-          animationState = { chordIndex: 0, transitionProgress: 0, buildProgress: 1 };
-        }
-
-      } else { // Carousel (ou outros)
-        animationState = { chordIndex: 0, transitionProgress: 0, buildProgress: 1 }; // Renderizar estaticamente por enquanto
-      }
-
-      if (animationState) {
-        // Mapear o chordIndex do clipe para um array de um único elemento
-        const chordsArray = [this.chordWithTiming];
-        const currentChordData = chordsArray[0];
-
-        if (animationType === "static-fingers") {
-          drawStaticFingersAnimation({
-            ctx,
-            currentChord: currentChordData.chord,
-            nextChord: null, // Sem próximo acorde para um clipe individual
-            transitionProgress: animationState.transitionProgress,
-            colors,
-            dimensions: { width, height },
-            buildProgress: animationState.buildProgress,
-          });
-        } else {
-          drawCarouselAnimation({
-            ctx,
-            currentChord: currentChordData.chord,
-            nextChord: null, // Sem próximo acorde para um clipe individual
-            transitionProgress: animationState.transitionProgress,
-            colors,
-            dimensions: { width, height },
-          });
-        }
-      }
-    } else {
-        // Se o clipe não estiver no período atual, garantir que o canvas não o mostre
-        // Isso pode ser feito de forma mais inteligente limpando apenas a área do clipe
-        // ou deixando o VideoCanvasStage gerenciar o `clearRect` principal.
-        // Por enquanto, vamos supor que o VideoCanvasStage fará um clear completo a cada frame.
-    }
+    // A lógica de renderização do acorde agora é centralizada no VideoCanvasStage.renderAtTime.
+    // O método update do clipe de acorde não precisa fazer nada no loop principal,
+    // pois sua representação visual é totalmente determinada pelo tempo.
   }
 }
 
