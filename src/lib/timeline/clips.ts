@@ -27,7 +27,7 @@ export type TimelineClipInstance = TimelineClipType & {
   // Adicione quaisquer outros métodos ou propriedades que você considere comuns ou necessários
 };
 
-export class TimelineChord implements TimelineClipInstance {
+export class TimelineChord {
   id: string;
   start: number;
   duration: number;
@@ -134,7 +134,7 @@ export class TimelineChord implements TimelineClipInstance {
   }
 }
 
-export class TimelineAudio implements TimelineClipInstance {
+export class TimelineAudio {
   id: string;
   start: number;
   duration: number;
