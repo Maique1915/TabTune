@@ -6,8 +6,10 @@ export interface BarreInfo {
 }
 
 export interface ChordWithTiming {
-  chord: ChordDiagramProps;
-  duration: number; // duração em ms
+  chord: ChordDiagramProps; // Original chord data
+  duration: number; // in ms
+  finalChord: ChordDiagramProps; // Pre-calculated transposed chord for display
+  transportDisplay: number;    // Pre-calculated transpose display value
 }
 
 export interface Achord {

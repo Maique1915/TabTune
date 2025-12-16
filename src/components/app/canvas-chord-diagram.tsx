@@ -44,7 +44,7 @@ const CanvasChordDiagram: React.FC<ChordDiagramProps & { scale?: number }> = (pr
     
     // Draw the chord. Note that the props passed to drawChord should not include the scale prop
     // meant for this React component.
-    drawer.drawChord(chordProps as ChordDiagramProps);
+    drawer.drawChord(chordProps, 1);
 
   }, [chordProps, colors, canvasWidth, canvasHeight, scale]);
 

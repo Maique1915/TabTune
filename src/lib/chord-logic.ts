@@ -1,4 +1,4 @@
-import type { ChordDiagramProps, Achord, nutForm, Position } from './types';
+import type { ChordDiagramProps, Achord, nutForm, Position, BarreInfo } from './types'; // Add BarreInfo import
 
 const findOpenStrings = (positions: Position, avoid: number[]): number[] => {
   const allStrings = [1, 2, 3, 4, 5, 6];
@@ -90,4 +90,54 @@ export const transpose = (chord: ChordDiagramProps, newAchord: Achord): ChordDia
 
 
     return { ...chord, chord: newAchord, positions: position, nut: nut, transport };
+};
+
+/**
+ * Calculates the chord data adjusted for display, including transposition for higher frets.
+ * This logic was previously in ChordDrawerBase.transposeForDisplay.
+ */
+export const getChordDisplayData = (originalChord: ChordDiagramProps): { finalChord: ChordDiagramProps; transportDisplay: number } => {
+  const { positions, nut, avoid } = originalChord;
+  let finalChord: ChordDiagramProps;
+
+  // Some flows (e.g., `src/lib/chord-logic.ts`) already normalize the shape to fit the diagram
+  // and expose the original fret in `chord.transport`.
+  const baseTransportDisplay = originalChord.transport && originalChord.transport > 0 ? originalChord.transport : 1;
+
+  const [minFret, maxFret] = findMinNonZeroNote(positions, avoid || [], nut); // Pass empty array if avoid is undefined
+
+  if (maxFret <= 4 && (!nut || !nut.vis || nut.pos <= 4)) {
+    finalChord = originalChord;
+    return { finalChord, transportDisplay: baseTransportDisplay };
+  }
+
+  const transposition = (nut && nut.vis) ? nut.pos - 1 : minFret > 0 ? minFret - 1 : 0;
+
+  const newPositions: Position = {};
+  for (const string in positions) {
+    const [fret, finger, add] = positions[string];
+    let newFret = fret > 0 ? fret - transposition : 0;
+    let newFinger = finger;
+
+    // Apply trn to finger number if transposition occurred and trn is set
+    if (transposition > 0 && nut && nut.vis && nut.trn > 0 && newFinger > 0) {
+      newFinger = finger + nut.trn;
+    }
+    newPositions[string] = [newFret, newFinger, add];
+  }
+  
+  // Transpose nut.pos if visible
+  let newNut = nut;
+  if (nut && nut.vis) {
+    const transposedPos = nut.pos > 0 ? nut.pos - transposition : 0;
+    let transposedFin = nut.fin;
+    // Apply trn to barre finger if transposition occurred and trn is set
+    if (transposition > 0 && nut.trn > 0) { // Removed transposedFin > 0 check
+      transposedFin = nut.fin + nut.trn;
+    }
+    newNut = { ...nut, pos: transposedPos, fin: transposedFin };
+  }
+
+  finalChord = { ...originalChord, positions: newPositions, nut: newNut };
+  return { finalChord, transportDisplay: baseTransportDisplay + transposition };
 };

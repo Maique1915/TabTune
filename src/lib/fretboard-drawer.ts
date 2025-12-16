@@ -81,6 +81,18 @@ export class FretboardDrawer {
     this._fretboardY = this._diagramY + (75 * this._scaleFactor); // Recalculate based on current scaleFactor
     this._stringNamesY = this._diagramY + (40 * this._scaleFactor); // Also depends on _diagramY
   }
+
+  public setColors(colors: ChordDiagramColors): void {
+    this._colors = colors;
+  }
+
+  public setDimensions(dimensions: { width: number; height: number }): void {
+    this._dimensions = dimensions;
+  }
+
+  public setCtx(ctx: CanvasRenderingContext2D): void {
+    this._ctx = ctx;
+  }
   /**
    * Função de easing cúbico (easeInOutQuad) para transições suaves.
    * t: current time (progress from 0 to 1)

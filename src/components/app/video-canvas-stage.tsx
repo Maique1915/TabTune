@@ -8,6 +8,8 @@ import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { drawStaticFingersAnimation } from "@/lib/static-fingers-drawer";
 import { drawCarouselAnimation } from "@/lib/carousel-drawer";
+import { ChordDrawerBase } from "@/lib/chord-drawer-base";
+import { FretboardDrawer } from "@/lib/fretboard-drawer";
 
 export interface VideoCanvasStageRef {
   startAnimation: () => void;
@@ -67,6 +69,7 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
   const playbackElapsedMsRef = useRef<number>(0);
   const playbackSessionIdRef = useRef<number>(0);
   const lastProgressEmitMsRef = useRef<number>(0);
+  const chordDrawerRef = useRef<ChordDrawerBase | null>(null);
 
   const frameCacheRef = useRef<{
     startFrameIndex: number;
@@ -101,6 +104,25 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
   const [ffmpegLoaded, setFFmpegLoaded] = useState(false);
   const isRenderCancelledRef = useRef(false);
 
+  // Initialize and update ChordDrawerBase instance
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const ctx = canvasRef.current.getContext("2d");
+    if (!ctx) return;
+
+    if (!chordDrawerRef.current) {
+      // Assuming scaleFactor = 1 for now, will refine if dynamic
+      chordDrawerRef.current = new ChordDrawerBase(ctx, colors, { width, height }, 1);
+    } else {
+      // Update existing instance
+      chordDrawerRef.current.setColors(colors);
+      chordDrawerRef.current.setDimensions({ width, height });
+      // If scaleFactor were dynamic, it would be updated here too
+      // chordDrawerRef.current.setScaleFactor(someScaleFactor);
+    }
+  }, [colors, width, height]);
+
   const baseTransitionDurationSec = animationType === "carousel" ? 1.0 : 0.8;
   const transitionDurationSec = transitionsEnabled ? baseTransitionDurationSec : 0;
   const buildDurationSec = 1.0;
@@ -127,7 +149,10 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     playheadStateRef.current.t = 0;
     playbackElapsedMsRef.current = 0;
     lastProgressEmitMsRef.current = 0;
-    frameCacheRef.current = null;
+    if (frameCacheRef.current) {
+      frameCacheRef.current.bitmaps.forEach(bitmap => bitmap?.close());
+      frameCacheRef.current = null;
+    }
     setPlaybackProgress(0);
     setPlaybackIsPlaying(false);
     setPlaybackIsPaused(false);
@@ -257,8 +282,9 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     return { chordIndex: chords.length - 1, transitionProgress: 0, buildProgress: 1 };
   }, [animationType, buildDurationSec, buildEnabled, chords, getSegmentDurationSec, halfTransitionSec]);
 
-  const drawFrame = useCallback((ctx: CanvasRenderingContext2D, state: AnimationState) => {
+  const drawFrame = useCallback((state: AnimationState) => {
     if (!chords || chords.length === 0) return;
+    if (!chordDrawerRef.current) return; // Ensure drawer is initialized
 
     // Resolve current/next para cada tipo
     let chordIndex: number;
@@ -280,25 +306,21 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
 
     if (animationType === "static-fingers") {
       drawStaticFingersAnimation({
-        ctx,
-        currentChord: currentChordData.chord,
-        nextChord: nextChordData ? nextChordData.chord : null,
+        drawer: chordDrawerRef.current,
+        currentDisplayChord: { finalChord: currentChordData.finalChord, transportDisplay: currentChordData.transportDisplay },
+        nextDisplayChord: nextChordData ? { finalChord: nextChordData.finalChord, transportDisplay: nextChordData.transportDisplay } : null,
         transitionProgress: state.transitionProgress,
-        colors,
-        dimensions: { width, height },
         buildProgress: state.buildProgress,
       });
     } else {
       drawCarouselAnimation({
-        ctx,
-        currentChord: currentChordData.chord,
-        nextChord: nextChordData ? nextChordData.chord : null,
+        drawer: chordDrawerRef.current,
+        currentDisplayChord: { finalChord: currentChordData.finalChord, transportDisplay: currentChordData.transportDisplay },
+        nextDisplayChord: nextChordData ? { finalChord: nextChordData.finalChord, transportDisplay: nextChordData.transportDisplay } : null,
         transitionProgress: state.transitionProgress,
-        colors,
-        dimensions: { width, height },
       });
     }
-  }, [animationType, chords, colors, height, width]);
+  }, [animationType, chords, chordDrawerRef]);
 
   const prebufferFrames = useCallback(async (totalDurationMs: number, startTimeMs: number) => {
     const bufferMs = Math.max(0, prebufferMs);
@@ -334,11 +356,24 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
       return;
     }
 
+    if (!chordDrawerRef.current) {
+      // Handle error or return if drawer not initialized
+      return;
+    }
+
+    // Store original context and set to offCtx
+    const originalChordDrawerCtx = chordDrawerRef.current.ctx;
+    chordDrawerRef.current.setCtx(offCtx);
+
     const cache: { startFrameIndex: number; bitmaps: Array<ImageBitmap | null>; frameMs: number } = {
       startFrameIndex,
       bitmaps: new Array(framesToRender).fill(null),
       frameMs,
     };
+    // Close any previous bitmaps if the cache is being re-generated
+    if (frameCacheRef.current) {
+      frameCacheRef.current.bitmaps.forEach(bitmap => bitmap?.close());
+    }
     frameCacheRef.current = cache;
 
     for (let i = 0; i < framesToRender; i++) {
@@ -357,9 +392,12 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
         nameOpacity: 1,
       };
 
-      drawFrame(offCtx, frameState);
+      drawFrame(frameState); // Call drawFrame without ctx
       cache.bitmaps[i] = await createImageBitmap(off);
     }
+
+    // Restore original context
+    chordDrawerRef.current.setCtx(originalChordDrawerCtx);
   }, [computeStateAtTimeMs, drawFrame, height, prebufferMs, width]);
 
   // Mantém duração total disponível mesmo fora do play (necessário para scrub)
@@ -455,15 +493,16 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
 
   const drawAnimatedChord = () => {
     if (!canvasRef.current || !chords || chords.length === 0) return;
+    if (!chordDrawerRef.current) return; // Ensure drawer is initialized
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    drawFrame(ctx, animationStateRef.current);
+    // drawFrame no longer takes ctx. It uses the ctx managed by chordDrawerRef.current
+    drawFrame(animationStateRef.current); 
 
     // Capturar frame se estiver gravando
     if (isRecording && onFrameCapture) {
+      const canvas = canvasRef.current; 
+      const ctx = canvas.getContext("2d"); 
+      if (!ctx) return; 
       const imageData = ctx.getImageData(0, 0, width, height);
       onFrameCapture(imageData);
     }

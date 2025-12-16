@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { chordData, getNome, notes, complements, basses } from "@/lib/chords";
-import { transpose as transposeChord } from "@/lib/chord-logic";
+import { transpose as transposeChord, getChordDisplayData } from "@/lib/chord-logic";
 import { useAppContext } from "@/app/context/app--context";
 import { CanvasChordDiagram } from "./canvas-chord-diagram";
 import { useToast } from "@/hooks/use-toast";
@@ -35,8 +35,14 @@ export function LibraryPanel() {
   const [selectedBass, setSelectedBass] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(true);
 
-  const handleChordSelect = (chord: ChordWithTiming['chord']) => {
-    setSelectedChords((prev) => [...prev, { chord: chord, duration: 2000 }]);
+  const handleChordSelect = (chord: ChordDiagramProps) => {
+    const { finalChord, transportDisplay } = getChordDisplayData(chord);
+    setSelectedChords((prev) => [...prev, {
+      chord: chord,
+      duration: 2000,
+      finalChord: finalChord,
+      transportDisplay: transportDisplay,
+    }]);
     toast({
       title: `${getNome(chord.chord)} added`,
     });

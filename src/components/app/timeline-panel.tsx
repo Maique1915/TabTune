@@ -5,6 +5,7 @@ import { useAppContext } from "@/app/context/app--context";
 import { Timeline } from "@/components/timeline";
 import type { TimelineState, TimelineClip, ChordClip } from "@/lib/timeline/types";
 import { generateClipId } from "@/lib/timeline/utils";
+import { getChordDisplayData } from "@/lib/chord-logic"; // New import
 import type { ChordWithTiming } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Play, Pause } from "lucide-react";
@@ -60,10 +61,13 @@ export function TimelinePanel({
     selectedChords.forEach((chordWithTiming, index) => {
       if (chordWithTiming && chordWithTiming.chord) {
         const duration = Math.max(chordWithTiming.duration || defaultDuration, minClipDurationMs);
+        const { finalChord, transportDisplay } = getChordDisplayData(chordWithTiming.chord);
         clips.push({
           id: `clip-${index}-${Date.now()}`,
           type: 'chord',
-          chord: chordWithTiming.chord,
+          chord: chordWithTiming.chord, // Keep original chord
+          finalChord,                  // Add finalChord
+          transportDisplay,            // Add transportDisplay
           start: currentStart,
           duration
         });
@@ -102,10 +106,13 @@ export function TimelinePanel({
           const lastClip = newClips[newClips.length - 1];
           const newStart = lastClip ? lastClip.start + lastClip.duration : 0;
           const duration = Math.max(chordWithTiming.duration || 2000, minClipDurationMs);
+          const { finalChord, transportDisplay } = getChordDisplayData(chordWithTiming.chord);
           newClips.push({
             id: generateClipId(),
             type: 'chord',
-            chord: chordWithTiming.chord,
+            chord: chordWithTiming.chord, // Keep original chord
+            finalChord,                  // Add finalChord
+            transportDisplay,            // Add transportDisplay
             start: newStart,
             duration
           });
@@ -143,8 +150,10 @@ export function TimelinePanel({
       .filter((clip): clip is ChordClip => clip.type === 'chord')
       .map(clip => ({
         chord: clip.chord,
-        duration: Math.max(clip.duration, minClipDurationMs)
-      }));
+        duration: Math.max(clip.duration, minClipDurationMs),
+        finalChord: clip.finalChord, // Add finalChord
+        transportDisplay: clip.transportDisplay, // Add transportDisplay
+      } as ChordWithTiming)); // Cast to ChordWithTiming to satisfy type, as optional properties are now required for ChordWithTiming
 
     setSelectedChords(reorderedChordsWithTiming);
   };

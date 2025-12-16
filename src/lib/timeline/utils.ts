@@ -41,9 +41,34 @@ export function snapToGrid(time: number, gridSize: number = 100): number {
   return Math.round(time / gridSize) * gridSize;
 }
 
+
 /**
  * Gera ID único para clip
  */
 export function generateClipId(): string {
   return `clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+
+/**
+ * Limita valor entre min e max
+ */
+export function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+/**
+ * Calcula o tempo final máximo de todas as tracks.
+ */
+export function calculateMaxTrackEndTime(tracks: TimelineTrack[]): number {
+  let maxEndTime = 0;
+  for (const track of tracks) {
+    for (const clip of track.clips) {
+      const endTime = clip.start + clip.duration;
+      if (endTime > maxEndTime) {
+        maxEndTime = endTime;
+      }
+    }
+  }
+  return maxEndTime;
 }

@@ -207,17 +207,20 @@ export class ChordDrawerBase {
 
   // ============ SETTERS ============
 
-  set ctx(value: CanvasRenderingContext2D) {
+  public setCtx(value: CanvasRenderingContext2D) {
     this._ctx = value;
+    this.fretboardDrawer.setCtx(value);
   }
 
-  set colors(value: ChordDiagramColors) {
+  public setColors(value: ChordDiagramColors) {
     this._colors = value;
+    this.fretboardDrawer.setColors(value);
   }
 
-  set dimensions(value: { width: number; height: number }) {
+  public setDimensions(value: { width: number; height: number }) {
     this._dimensions = value;
     this._calculateDimensions();
+    this.fretboardDrawer.setDimensions(value);
   }
 
   set scaleFactor(value: number) {
@@ -330,79 +333,7 @@ export class ChordDrawerBase {
     this._ctx.restore();
   }
 
-  /**
-   * Transpõe acorde para exibição
-   */
-  transposeForDisplay(chord: ChordDiagramProps): { finalChord: ChordDiagramProps; transportDisplay: number } {
-    console.log("transposeForDisplay: Input chord", chord);
-    const { positions, nut, avoid } = chord;
-    let finalChord: ChordDiagramProps;
 
-    // Alguns fluxos (ex.: `src/lib/chord-logic.ts`) já normalizam o shape para caber no diagrama
-    // e expõem a casa original em `chord.transport`.
-    const baseTransportDisplay = chord.transport && chord.transport > 0 ? chord.transport : 1;
-
-    const findMinNonZeroNote = (): [number, number] => {
-      let min = Infinity;
-      let max = 0;
-
-      if (nut && nut.vis) {
-        min = nut.pos;
-      }
-
-      (Object.entries(positions) as Array<[string, [number, number, number]]>).forEach(([str, [fret]]) => {
-        const stringNumber = parseInt(str);
-        if (fret > 0 && !(avoid?.includes(stringNumber))) {
-          if (fret < min) {
-            min = fret;
-          }
-          if (fret > max) {
-            max = fret;
-          }
-        }
-      });
-
-      return [min === Infinity ? 0 : min, max];
-    };
-
-    const [minFret, maxFret] = findMinNonZeroNote();
-
-    if (maxFret <= 4 && (!nut || !nut.vis || nut.pos <= 4)) {
-      finalChord = chord;
-      return { finalChord, transportDisplay: baseTransportDisplay };
-    }
-
-    const transposition = (nut && nut.vis) ? nut.pos - 1 : minFret > 0 ? minFret - 1 : 0;
-
-    const newPositions: Position = {};
-    for (const string in positions) {
-      const [fret, finger, add] = positions[string];
-      let newFret = fret > 0 ? fret - transposition : 0;
-      let newFinger = finger;
-
-      // Apply trn to finger number if transposition occurred and trn is set
-      if (transposition > 0 && nut && nut.vis && nut.trn > 0 && newFinger > 0) {
-        newFinger = finger + nut.trn;
-      }
-      newPositions[string] = [newFret, newFinger, add];
-    }
-    
-    // Transpose nut.pos if visible
-    let newNut = nut;
-    if (nut && nut.vis) {
-      const transposedPos = nut.pos > 0 ? nut.pos - transposition : 0;
-      let transposedFin = nut.fin;
-      // Apply trn to barre finger if transposition occurred and trn is set
-      if (transposition > 0 && nut.trn > 0) { // Removed transposedFin > 0 check
-        transposedFin = nut.fin + nut.trn;
-      }
-      newNut = { ...nut, pos: transposedPos, fin: transposedFin };
-    }
-
-    finalChord = { ...chord, positions: newPositions, nut: newNut };
-    console.log("transposeForDisplay: Output finalChord", finalChord);
-    return { finalChord, transportDisplay: baseTransportDisplay + transposition };
-  }
 
   // ============ MÉTODOS DE DESENHO ============
 
@@ -746,13 +677,12 @@ export class ChordDrawerBase {
   /**
    * Desenha um acorde completo
    */
-  drawChord(chord: ChordDiagramProps, offsetX: number = 0): void {
-    console.log("Chord selected (static draw):", chord);
+  drawChord(finalChord: ChordDiagramProps, transportDisplay: number, offsetX: number = 0): void {
+    console.log("Chord selected (static draw):", finalChord); // Log finalChord
     if (offsetX !== 0) {
       this.calculateWithOffset(offsetX);
     }
 
-    const { finalChord, transportDisplay } = this.transposeForDisplay(chord);
     const chordName = getNome(finalChord.chord).replace(/#/g, "♯").replace(/b/g, "♭");
     const barreInfo = this._detectBarre(finalChord);
 
@@ -783,13 +713,12 @@ export class ChordDrawerBase {
    * @param progress - Progresso da animação (0-1)
    * @param offsetX - Deslocamento horizontal
    */
-  drawChordWithBuildAnimation(chord: ChordDiagramProps, progress: number, offsetX: number = 0): void {
-    console.log("Chord animation started (build-in):", chord);
+  drawChordWithBuildAnimation(finalChord: ChordDiagramProps, transportDisplay: number, progress: number, offsetX: number = 0): void {
+    console.log("Chord animation started (build-in):", finalChord); // Log finalChord
     if (offsetX !== 0) {
       this.calculateWithOffset(offsetX);
     }
 
-    const { finalChord, transportDisplay } = this.transposeForDisplay(chord);
     const chordName = getNome(finalChord.chord).replace(/#/g, "♯").replace(/b/g, "♭");
     const phases = this.calculateAnimationPhases(progress);
     const barreInfo = this._detectBarre(finalChord);
@@ -915,19 +844,23 @@ export class ChordDrawerBase {
    * @param offsetX - Deslocamento horizontal
    */
   drawChordWithTransition(
-    currentChord: ChordDiagramProps,
-    nextChord: ChordDiagramProps,
+    currentFinalChord: ChordDiagramProps,
+    currentTransportDisplay: number,
+    nextFinalChord: ChordDiagramProps,
+    nextTransportDisplay: number,
     originalProgress: number,
     offsetX: number = 0
   ): void {
-    console.log("Chord animation started (transition - current):", currentChord);
-    console.log("Chord animation started (transition - next):", nextChord);
+    console.log("Chord animation started (transition - current):", currentFinalChord);
+    console.log("Chord animation started (transition - next):", nextFinalChord);
     if (offsetX !== 0) {
       this.calculateWithOffset(offsetX);
     }
 
-    const { finalChord: current, transportDisplay: currentTransport } = this.transposeForDisplay(currentChord);
-    const { finalChord: next, transportDisplay: nextTransport } = this.transposeForDisplay(nextChord);
+    const current = currentFinalChord; // Use directly
+    const next = nextFinalChord;       // Use directly
+    const currentTransport = currentTransportDisplay; // Use directly
+    const nextTransport = nextTransportDisplay;       // Use directly
 
     const currentBarreInfo = this._detectBarre(current);
     const nextBarreInfo = this._detectBarre(next);

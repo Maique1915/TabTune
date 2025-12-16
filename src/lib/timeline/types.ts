@@ -22,6 +22,8 @@ export interface BaseClip {
 export interface ChordClip extends BaseClip {
   type: 'chord';
   chord: ChordDiagramProps;
+  finalChord?: ChordDiagramProps; // Pre-calculated transposed chord
+  transportDisplay?: number;    // Pre-calculated transpose display value
 }
 
 /**
