@@ -22,10 +22,10 @@ export interface LoopContext {
   isPlaying: boolean; // NOVO: Estado global de reprodução
 }
 
-export interface TimelineClipInstance extends TimelineClipType {
+export type TimelineClipInstance = TimelineClipType & {
   update(loopContext: LoopContext): void;
   // Adicione quaisquer outros métodos ou propriedades que você considere comuns ou necessários
-}
+};
 
 export class TimelineChord implements TimelineClipInstance {
   id: string;
