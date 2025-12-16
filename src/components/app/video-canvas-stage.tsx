@@ -426,31 +426,32 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     setPlaybackProgress,
   ]);
 
-  useEffect(() => {
-    const loadFFmpeg = async () => {
-      const ffmpeg = new FFmpeg();
-      ffmpegRef.current = ffmpeg;
-      
-      ffmpeg.on("log", ({ message }) => {
-        console.log(message);
+  // Move loadFFmpeg to be accessible by cancelRender
+  const loadFFmpeg = useCallback(async () => {
+    const ffmpeg = new FFmpeg();
+    ffmpegRef.current = ffmpeg;
+    
+    ffmpeg.on("log", ({ message }) => {
+      console.log(message);
+    });
+
+    try {
+      const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
       });
+      setFFmpegLoaded(true);
+      if (onFFmpegLoad) onFFmpegLoad();
+      console.log("FFmpeg loaded successfully");
+    } catch (error) {
+      console.error("Failed to load FFmpeg:", error);
+    }
+  }, [onFFmpegLoad]);
 
-      try {
-        const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
-        await ffmpeg.load({
-          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-        });
-        setFFmpegLoaded(true);
-        if (onFFmpegLoad) onFFmpegLoad();
-        console.log("FFmpeg loaded successfully");
-      } catch (error) {
-        console.error("Failed to load FFmpeg:", error);
-      }
-    };
-
+  useEffect(() => {
     loadFFmpeg();
-  }, []);
+  }, [loadFFmpeg]);
 
   const drawAnimatedChord = () => {
     if (!canvasRef.current || !chords || chords.length === 0) return;
