@@ -1,14 +1,12 @@
 // src/lib/timeline/clips.ts
 import type { ChordDiagramProps, ChordWithTiming } from "@/lib/types";
 import type { TimelineClip as TimelineClipType, AudioClip, ChordClip } from "./types";
-import type { VideoCanvasStageRef } from "@/components/app/video-canvas-stage"; // Para tipagem da ref
 import { drawStaticFingersAnimation } from "@/lib/static-fingers-drawer";
 import { drawCarouselAnimation } from "@/lib/carousel-drawer";
 import type { ChordDiagramColors, AnimationType } from "@/app/context/app--context";
 
 // Interfaces para os contextos que as classes de clipe podem precisar
 export interface LoopContext {
-  videoCanvasStageRef?: React.RefObject<VideoCanvasStageRef>;
   // Adicione outras propriedades que o loop principal pode passar para os clipes
   // Ex: globalAudioDurationMs, playGlobalAudio, etc.
   // Por enquanto, vamos manter simples e passar explicitamente o que VideoCanvasStage precisa.

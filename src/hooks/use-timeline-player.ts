@@ -1,6 +1,5 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import type { TimelineState } from "@/lib/timeline/types";
-import type { VideoCanvasStageRef } from "@/components/app/video-canvas-stage";
 import { TimelineAudio, TimelineChord, LoopContext, TimelineClipInstance } from "@/lib/timeline/clips";
 import type { ChordDiagramColors, AnimationType } from "@/app/context/app--context";
 import type { ChordWithTiming } from "@/lib/types";
@@ -12,7 +11,6 @@ interface UseTimelinePlayerProps {
   setPlaybackIsPaused: (isPaused: boolean) => void;
   isGlobalAudioPlaying: boolean;
   playbackTotalDurationMs: number;
-  videoCanvasStageRef: React.RefObject<VideoCanvasStageRef>;
   timelineState: TimelineState;
   colors: ChordDiagramColors; // Nova prop
   animationType: AnimationType; // Nova prop
@@ -28,7 +26,6 @@ export const useTimelinePlayer = ({
   setPlaybackIsPaused,
   isGlobalAudioPlaying,
   playbackTotalDurationMs,
-  videoCanvasStageRef,
   timelineState,
   colors, // Desestruturar
   animationType, // Desestruturar
@@ -62,10 +59,8 @@ export const useTimelinePlayer = ({
     setPlaybackIsPlaying(false);
     setPlaybackIsPaused(true);
     setPlaybackProgress(0);
-    if (videoCanvasStageRef && videoCanvasStageRef.current) {
-      // videoCanvasStageRef.current.renderAtTime(0);
-    }
-  }, [setPlaybackIsPlaying, setPlaybackIsPaused, setPlaybackProgress, stopAllAudioClips, videoCanvasStageRef]);
+
+  }, [setPlaybackIsPlaying, setPlaybackIsPaused, setPlaybackProgress, stopAllAudioClips]);
 
   const pauseGlobalAudio = useCallback(() => {
     setPlaybackIsPlaying(false);
@@ -99,15 +94,11 @@ export const useTimelinePlayer = ({
 
     setPlaybackProgress(progress);
     
-    if (videoCanvasStageRef && videoCanvasStageRef.current) {
-      //videoCanvasStageRef.current.renderAtTime(newTimeMs);
-    }
-
     stopAllAudioClips();
     if (isGlobalAudioPlaying) {
         playbackStartTimeRef.current = performance.now() - newTimeMs;
     }
-  }, [isGlobalAudioPlaying, playbackTotalDurationMs, setPlaybackProgress, stopAllAudioClips, videoCanvasStageRef]);
+  }, [isGlobalAudioPlaying, playbackTotalDurationMs, setPlaybackProgress, stopAllAudioClips]);
 
   useEffect(() => {
     const clips = timelineState.tracks.flatMap(track => track.clips);
@@ -133,7 +124,6 @@ export const useTimelinePlayer = ({
       }
 
       const loopContext: LoopContext = {
-        videoCanvasStageRef: videoCanvasStageRef,
         colors: colors,
         animationType: animationType,
         transitionsEnabled: transitionsEnabled,
@@ -152,10 +142,6 @@ export const useTimelinePlayer = ({
             currentAudioClipRef.current = clip as TimelineAudio;
         }
       });
-      
-      if (videoCanvasStageRef && videoCanvasStageRef.current) {
-        //videoCanvasStageRef.current.renderAtTime(currentPlaybackTimeMs);
-      }
 
       if (currentPlaybackTimeMs >= playbackTotalDurationMs) {
         stopGlobalAudio();
@@ -171,9 +157,6 @@ export const useTimelinePlayer = ({
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
         animationFrameId.current = null;
-      }
-      if (videoCanvasStageRef && videoCanvasStageRef.current) {
-        //videoCanvasStageRef.current.renderAtTime(lastElapsedMsRef.current);
       }
     }
 
@@ -191,7 +174,6 @@ export const useTimelinePlayer = ({
     stopGlobalAudio,
     stopAllAudioClips,
     timelineState.tracks,
-    videoCanvasStageRef,
     colors, // Dependência adicionada
     animationType, // Dependência adicionada
     transitionsEnabled, // Dependência adicionada
