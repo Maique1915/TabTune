@@ -100,7 +100,7 @@ export const useTimelinePlayer = ({
     setPlaybackProgress(progress);
     
     if (videoCanvasStageRef && videoCanvasStageRef.current) {
-      videoCanvasStageRef.current.renderAtTime(newTimeMs);
+      //videoCanvasStageRef.current.renderAtTime(newTimeMs);
     }
 
     stopAllAudioClips();
@@ -145,14 +145,16 @@ export const useTimelinePlayer = ({
       };
 
       clips.forEach(clip => {
-        clip.update(loopContext);
+        if (typeof (clip as any).update === 'function') {
+          (clip as any).update(loopContext);
+        }
         if (clip.type === 'audio' && (clip as TimelineAudio).isPlaying) {
             currentAudioClipRef.current = clip as TimelineAudio;
         }
       });
       
       if (videoCanvasStageRef && videoCanvasStageRef.current) {
-        videoCanvasStageRef.current.renderAtTime(currentPlaybackTimeMs);
+        //videoCanvasStageRef.current.renderAtTime(currentPlaybackTimeMs);
       }
 
       if (currentPlaybackTimeMs >= playbackTotalDurationMs) {
@@ -171,7 +173,7 @@ export const useTimelinePlayer = ({
         animationFrameId.current = null;
       }
       if (videoCanvasStageRef && videoCanvasStageRef.current) {
-        videoCanvasStageRef.current.renderAtTime(lastElapsedMsRef.current);
+        //videoCanvasStageRef.current.renderAtTime(lastElapsedMsRef.current);
       }
     }
 
