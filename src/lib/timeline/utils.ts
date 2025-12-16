@@ -1,7 +1,4 @@
-/**
- * 🛠️ Timeline Utils
- * Funções utilitárias para a timeline
- */
+import type { TimelineTrack } from "./types";
 
 /**
  * Converte tempo em ms para formato legível
@@ -51,9 +48,19 @@ export function generateClipId(): string {
   return `clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
+
 /**
- * Limita valor entre min e max
+ * Calcula o tempo final máximo de todas as tracks.
  */
-export function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
+export function calculateMaxTrackEndTime(tracks: TimelineTrack[]): number {
+  let maxEndTime = 0;
+  for (const track of tracks) {
+    for (const clip of track.clips) {
+      const endTime = clip.start + clip.duration;
+      if (endTime > maxEndTime) {
+        maxEndTime = endTime;
+      }
+    }
+  }
+  return maxEndTime;
 }
