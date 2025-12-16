@@ -32,7 +32,7 @@ export function TimelinePanel({
   const {
     selectedChords,
     setSelectedChords,
-    timelineState, 
+    timelineState,
     setTimelineState,
     playbackProgress,
     setPlaybackProgress,
@@ -47,7 +47,7 @@ export function TimelinePanel({
 
   const transitionDurationMs = animationType === "carousel" ? 1000 : 800;
   const minClipDurationMs = playbackTransitionsEnabled ? transitionDurationMs * 2 : 0;
-  
+
   const [isInitializing, setIsInitializing] = useState(true);
 
   // Sincroniza selectedChords → timeline clips (apenas na inicialização)
@@ -78,7 +78,7 @@ export function TimelinePanel({
     const totalNeeded = Math.max(currentStart, 1000);
     const totalFromPlayback = playbackTotalDurationMs > 0 ? playbackTotalDurationMs : totalNeeded;
     const totalDuration = Math.max(totalNeeded, totalFromPlayback);
-    
+
     setTimelineState(prev => ({
       ...prev,
       tracks: [{ ...prev.tracks[0], clips }],
@@ -96,10 +96,10 @@ export function TimelinePanel({
     if (!chordTrack) return;
 
     const currentClipCount = chordTrack.clips.length || 0;
-    
+
     if (selectedChords.length > currentClipCount) {
       const newClips = [...chordTrack.clips];
-      
+
       for (let i = currentClipCount; i < selectedChords.length; i++) {
         const chordWithTiming = selectedChords[i];
         if (chordWithTiming && chordWithTiming.chord) {
@@ -160,38 +160,38 @@ export function TimelinePanel({
 
   return (
     <div className="flex flex-col h-full">
-    <div className="border-t border-border bg-muted/30 p-4 flex-1 overflow-hidden flex flex-col">
-      <div className="">
-        <Timeline 
-          value={timelineState}
-          onChange={handleTimelineChange}
-          playheadProgress={playbackProgress}
-          playheadTotalDurationMs={playbackTotalDurationMs || timelineState.totalDuration}
-          minClipDurationMs={minClipDurationMs}
-          showPlayhead
-          onPlayheadScrubStart={() => setPlaybackIsScrubbing(true)}
-          onPlayheadScrub={(progress) => {
-            setPlaybackProgress(progress);
-            requestPlaybackSeek(progress);
-          }}
-          onPlayheadScrubEnd={(progress) => {
-            setPlaybackProgress(progress);
-            requestPlaybackSeek(0);
-          }}
-          isAnimating={isAnimating}
-          isPaused={isPaused}
-          ffmpegLoaded={ffmpegLoaded}
-          isTimelineEmpty={isTimelineEmpty}
-          handleAnimate={handleAnimate}
-          handlePause={handlePause}
-          handleResume={handleResume}
-          handleRenderVideo={handleRenderVideo}
-        />
+      <div className="border-t border-border bg-muted/30 p-4 flex-1 overflow-hidden flex flex-col">
+        <div className="">
+          <Timeline
+            value={timelineState}
+            onChange={handleTimelineChange}
+            playheadProgress={playbackProgress}
+            playheadTotalDurationMs={playbackTotalDurationMs || timelineState.totalDuration}
+            minClipDurationMs={minClipDurationMs}
+            showPlayhead
+            onPlayheadScrubStart={() => setPlaybackIsScrubbing(true)}
+            onPlayheadScrub={(progress) => {
+              setPlaybackProgress(progress);
+              requestPlaybackSeek(progress);
+            }}
+            onPlayheadScrubEnd={(progress) => {
+              setPlaybackProgress(progress);
+              requestPlaybackSeek(0);
+            }}
+            isAnimating={isAnimating}
+            isPaused={isPaused}
+            ffmpegLoaded={ffmpegLoaded}
+            isTimelineEmpty={isTimelineEmpty}
+            handleAnimate={handleAnimate}
+            handlePause={handlePause}
+            handleResume={handleResume}
+            handleRenderVideo={handleRenderVideo}
+          />
+        </div>
       </div>
-    </div>
-    
-    <div className="flex flex-col items-center justify-center p-4 bg-muted/20 border-t border-border">
-      s
+
+      <div className="flex flex-col items-center justify-center p-4 bg-muted/20 border-t border-border">
+        
       </div>
     </div>
   );
