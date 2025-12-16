@@ -63,7 +63,7 @@ export const useTimelinePlayer = ({
     setPlaybackIsPaused(true);
     setPlaybackProgress(0);
     if (videoCanvasStageRef && videoCanvasStageRef.current) {
-      videoCanvasStageRef.current.renderAtTime(0);
+      // videoCanvasStageRef.current.renderAtTime(0);
     }
   }, [setPlaybackIsPlaying, setPlaybackIsPaused, setPlaybackProgress, stopAllAudioClips, videoCanvasStageRef]);
 
