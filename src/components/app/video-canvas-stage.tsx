@@ -765,21 +765,7 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     isPaused
   }));
 
-  useEffect(() => {
-    if (chords && chords.length > 0 && !isRecording && !isAnimating) {
-      // Para ambas animações, mostrar o último acorde adicionado no centro
-      animationStateRef.current = {
-        fingerOpacity: 1,
-        fingerScale: 1,
-        cardY: 0,
-        nameOpacity: 1,
-        chordIndex: chords.length - 1,
-        transitionProgress: 0,
-        buildProgress: 1,
-      };
-      drawAnimatedChord();
-    }
-  }, [chords, isRecording, colors, height, width, animationType, isAnimating]);
+
 
   // Para renderização contínua durante a gravação
   useEffect(() => {

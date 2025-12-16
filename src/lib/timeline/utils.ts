@@ -47,20 +47,3 @@ export function snapToGrid(time: number, gridSize: number = 100): number {
 export function generateClipId(): string {
   return `clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
-
-
-/**
- * Calcula o tempo final máximo de todas as tracks.
- */
-export function calculateMaxTrackEndTime(tracks: TimelineTrack[]): number {
-  let maxEndTime = 0;
-  for (const track of tracks) {
-    for (const clip of track.clips) {
-      const endTime = clip.start + clip.duration;
-      if (endTime > maxEndTime) {
-        maxEndTime = endTime;
-      }
-    }
-  }
-  return maxEndTime;
-}
