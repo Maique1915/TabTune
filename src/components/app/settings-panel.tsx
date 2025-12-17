@@ -9,14 +9,18 @@ import { Slider } from "@/components/ui/slider";
 import { useAppContext, DEFAULT_COLORS, AnimationType } from "@/app/context/app--context";
 import type { ChordDiagramColors } from "@/app/context/app--context";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { cn } from "@/lib/utils";
 
-export function SettingsPanel() {
+interface SettingsPanelProps {
+  isMobile: boolean;
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function SettingsPanel({ isMobile, isOpen, onClose }: SettingsPanelProps) {
   const { colors, setColors, animationType, setAnimationType } = useAppContext();
 
-  const handleColorChange = (
-    key: keyof ChordDiagramColors,
-    value: string | number
-  ) => {
+  const handleColorChange = (key: keyof ChordDiagramColors, value: string | number) => {
     setColors((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -24,8 +28,15 @@ export function SettingsPanel() {
     setColors(DEFAULT_COLORS);
   };
 
-  return (
-    <aside className="flex h-full w-80 flex-col bg-panel border-l shrink-0">
+  const rootClasses = cn(
+    "flex flex-col bg-surface-light dark:bg-surface-dark transition-transform duration-300 ease-in-out",
+    isMobile
+      ? `fixed inset-x-0 bottom-0 h-[70vh] rounded-t-2xl shadow-2xl z-50 ${isOpen ? "translate-y-0" : "translate-y-full"}`
+      : "relative w-80 h-full border-l border-gray-200 dark:border-gray-800"
+  );
+  
+  const PanelContent = () => (
+    <>
       <div className="p-4 border-b">
         <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
           <Palette />
@@ -62,223 +73,96 @@ export function SettingsPanel() {
             </div>
           </TabsContent>
           <TabsContent value="general" className="space-y-4 pt-4">
-            <div className="flex items-center justify-between">
-              <div className="relative">
-                <Input
-                  id="cardColor"
-                  type="color"
-                  value={colors.cardColor}
-                  onChange={(e) => handleColorChange("cardColor", e.target.value)}
-                  className="w-10 h-10 p-1 bg-input border-none"
-                />
-              </div>
-              <Label htmlFor="cardColor" className="flex-1 text-right">Background</Label>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="relative">
-                <Input
-                  id="fretboardColor"
-                  type="color"
-                  value={colors.fretboardColor}
-                  onChange={(e) => handleColorChange("fretboardColor", e.target.value)}
-                  className="w-10 h-10 p-1 bg-input border-none"
-                />
-              </div>
-              <Label htmlFor="fretboardColor" className="flex-1 text-right">Guitar Neck</Label>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="relative">
-                <Input
-                  id="borderColor"
-                  type="color"
-                  value={colors.borderColor}
-                  onChange={(e) => handleColorChange("borderColor", e.target.value)}
-                  className="w-10 h-10 p-1 bg-input border-none"
-                />
-              </div>
-              <Label htmlFor="borderColor" className="flex-1 text-right">Strings (Cordas)</Label>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="relative">
-                <Input
-                  id="fretColor"
-                  type="color"
-                  value={colors.fretColor}
-                  onChange={(e) => handleColorChange("fretColor", e.target.value)}
-                  className="w-10 h-10 p-1 bg-input border-none"
-                />
-              </div>
-              <Label htmlFor="fretColor" className="flex-1 text-right">Frets (Trastes)</Label>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="relative">
-                <Input
-                  id="textColor"
-                  type="color"
-                  value={colors.textColor}
-                  onChange={(e) => handleColorChange("textColor", e.target.value)}
-                  className="w-10 h-10 p-1 bg-input border-none"
-                />
-              </div>
-              <Label htmlFor="textColor" className="flex-1 text-right">Text</Label>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="relative">
-                <Input
-                  id="chordNameColor"
-                  type="color"
-                  value={colors.chordNameColor}
-                  onChange={(e) => handleColorChange("chordNameColor", e.target.value)}
-                  className="w-10 h-10 p-1 bg-input border-none"
-                />
-              </div>
-              <Label htmlFor="chordNameColor" className="flex-1 text-right">Chord Name</Label>
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="borderWidth">Border Width</Label>
-              <div className="relative">
-                <Input
-                id="borderWidth"
-                type="number"
-                value={colors.borderWidth}
-                onChange={(e) => handleColorChange("borderWidth", parseInt(e.target.value))}
-                className="w-20 bg-input"
-              />
-            </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="stringThickness">String Thickness</Label>
-              <Input
-                id="stringThickness"
-                type="number"
-                value={colors.stringThickness}
-                onChange={(e) => handleColorChange("stringThickness", parseInt(e.target.value))}
-                className="w-20 bg-input"
-              />
-            </div>
+            {/* General Settings */}
+            <ColorSetting label="Background" colorKey="cardColor" />
+            <ColorSetting label="Guitar Neck" colorKey="fretboardColor" />
+            <ColorSetting label="Strings (Cordas)" colorKey="borderColor" />
+            <ColorSetting label="Frets (Trastes)" colorKey="fretColor" />
+            <ColorSetting label="Text" colorKey="textColor" />
+            <ColorSetting label="Chord Name" colorKey="chordNameColor" />
+            <NumberSetting label="Border Width" colorKey="borderWidth" />
+            <NumberSetting label="String Thickness" colorKey="stringThickness" />
           </TabsContent>
           <TabsContent value="fingers" className="space-y-4 pt-4">
-            <div className="flex items-center justify-between">
-              <div className="relative">
-                <Input
-                  id="fingerColor"
-                  type="color"
-                  value={colors.fingerColor}
-                  onChange={(e) => handleColorChange("fingerColor", e.target.value)}
-                  className="w-10 h-10 p-1 bg-input border-none"
-                />
-              </div>
-              <Label htmlFor="fingerColor" className="flex-1 text-right">Background</Label>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="relative">
-                <Input
-                  id="fingerTextColor"
-                  type="color"
-                  value={colors.fingerTextColor}
-                  onChange={(e) => handleColorChange("fingerTextColor", e.target.value)}
-                  className="w-10 h-10 p-1 bg-input border-none"
-                />
-              </div>
-              <Label htmlFor="fingerTextColor" className="flex-1 text-right">Text</Label>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="relative">
-                <Input
-                  id="fingerBorderColor"
-                  type="color"
-                  value={colors.fingerBorderColor}
-                  onChange={(e) => handleColorChange("fingerBorderColor", e.target.value)}
-                  className="w-10 h-10 p-1 bg-input border-none"
-                />
-              </div>
-              <Label htmlFor="fingerBorderColor" className="flex-1 text-right">Border</Label>
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="fingerBorderWidth">Border Width</Label>
-              <div className="relative">
-                <Input
-                  id="fingerBorderWidth"
-                  type="number"
-                  value={colors.fingerBorderWidth}
-                  onChange={(e) => handleColorChange("fingerBorderWidth", parseInt(e.target.value))}
-                  className="w-20 bg-input"
-                />
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="fingerBoxShadowHOffset">Shadow H-Offset</Label>
-              <Input
-                id="fingerBoxShadowHOffset"
-                type="number"
-                value={colors.fingerBoxShadowHOffset}
-                onChange={(e) => handleColorChange("fingerBoxShadowHOffset", parseInt(e.target.value))}
-                className="w-20 bg-input"
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="fingerBoxShadowVOffset">Shadow V-Offset</Label>
-              <Input
-                id="fingerBoxShadowVOffset"
-                type="number"
-                value={colors.fingerBoxShadowVOffset}
-                onChange={(e) => handleColorChange("fingerBoxShadowVOffset", parseInt(e.target.value))}
-                className="w-20 bg-input"
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="fingerBoxShadowBlur">Shadow Blur</Label>
-              <Input
-                id="fingerBoxShadowBlur"
-                type="number"
-                value={colors.fingerBoxShadowBlur}
-                onChange={(e) => handleColorChange("fingerBoxShadowBlur", parseInt(e.target.value))}
-                className="w-20 bg-input"
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="fingerBoxShadowSpread">Shadow Spread</Label>
-              <Input
-                id="fingerBoxShadowSpread"
-                type="number"
-                value={colors.fingerBoxShadowSpread}
-                onChange={(e) => handleColorChange("fingerBoxShadowSpread", parseInt(e.target.value))}
-                className="w-20 bg-input"
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="relative">
-                <Input
-                  id="fingerBoxShadowColor"
-                  type="color"
-                  value={colors.fingerBoxShadowColor}
-                  onChange={(e) => handleColorChange("fingerBoxShadowColor", e.target.value)}
-                  className="w-10 h-10 p-1 bg-input border-none"
-                />
-              </div>
-              <Label htmlFor="fingerBoxShadowColor" className="flex-1 text-right">Shadow Color</Label>
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="fingerBackgroundAlpha">BG Opacity</Label>
-              <div className="flex items-center gap-2 w-32">
-                <Slider
-                  id="fingerBackgroundAlpha"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={[colors.fingerBackgroundAlpha]}
-                  onValueChange={(value) => handleColorChange("fingerBackgroundAlpha", value[0])}
-                  className="w-full"
-                />
-                <span className="text-xs w-10 text-right">{Math.round(colors.fingerBackgroundAlpha * 100)}%</span>
-              </div>
-            </div>
+            {/* Finger Settings */}
+            <ColorSetting label="Background" colorKey="fingerColor" />
+            <ColorSetting label="Text" colorKey="fingerTextColor" />
+            <ColorSetting label="Border" colorKey="fingerBorderColor" />
+            <NumberSetting label="Border Width" colorKey="fingerBorderWidth" />
+            <NumberSetting label="Shadow H-Offset" colorKey="fingerBoxShadowHOffset" />
+            <NumberSetting label="Shadow V-Offset" colorKey="fingerBoxShadowVOffset" />
+            <NumberSetting label="Shadow Blur" colorKey="fingerBoxShadowBlur" />
+            <NumberSetting label="Shadow Spread" colorKey="fingerBoxShadowSpread" />
+            <ColorSetting label="Shadow Color" colorKey="fingerBoxShadowColor" />
+            <SliderSetting label="BG Opacity" colorKey="fingerBackgroundAlpha" />
           </TabsContent>
         </Tabs>
         <Button onClick={handleResetToDefault} className="w-full mt-4">
           Reset to Default
         </Button>
       </div>
-    </aside>
+    </>
+  );
+
+  const ColorSetting = ({ label, colorKey }: { label: string; colorKey: keyof ChordDiagramColors }) => (
+    <div className="flex items-center justify-between">
+      <Input
+        id={colorKey}
+        type="color"
+        value={colors[colorKey] as string}
+        onChange={(e) => handleColorChange(colorKey, e.target.value)}
+        className="w-10 h-10 p-1 bg-input border-none"
+      />
+      <Label htmlFor={colorKey} className="flex-1 text-right">{label}</Label>
+    </div>
+  );
+
+  const NumberSetting = ({ label, colorKey }: { label: string; colorKey: keyof ChordDiagramColors }) => (
+    <div className="flex items-center justify-between">
+      <Label htmlFor={colorKey}>{label}</Label>
+      <Input
+        id={colorKey}
+        type="number"
+        value={colors[colorKey] as number}
+        onChange={(e) => handleColorChange(colorKey, parseInt(e.target.value))}
+        className="w-20 bg-input"
+      />
+    </div>
+  );
+
+  const SliderSetting = ({ label, colorKey }: { label: string; colorKey: keyof ChordDiagramColors }) => (
+     <div className="flex items-center justify-between">
+      <Label htmlFor={colorKey}>{label}</Label>
+      <div className="flex items-center gap-2 w-32">
+        <Slider
+          id={colorKey}
+          min={0}
+          max={1}
+          step={0.05}
+          value={[colors[colorKey] as number]}
+          onValueChange={(value) => handleColorChange(colorKey, value[0])}
+          className="w-full"
+        />
+        <span className="text-xs w-10 text-right">{Math.round((colors[colorKey] as number) * 100)}%</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={rootClasses}>
+       {isMobile && (
+        <div className="w-full flex justify-center pt-3 pb-1 cursor-pointer" onClick={onClose}>
+          <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+        </div>
+      )}
+      <div className={cn("flex flex-col flex-1 overflow-hidden", { "hidden lg:flex": !isMobile })}>
+        <PanelContent />
+      </div>
+      {isMobile && isOpen && (
+         <div className="flex flex-col flex-1 overflow-hidden">
+           <PanelContent />
+         </div>
+      )}
+    </div>
   );
 }
