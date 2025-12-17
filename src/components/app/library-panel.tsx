@@ -264,9 +264,9 @@ export function LibraryPanel() {
 
         <div className="flex-1 overflow-y-auto p-3">
           <div className="grid grid-cols-2 gap-3">
-            {filteredChords.map((chord, index) => (
+            {filteredChords.map((chord) => (
               <div
-                key={`${JSON.stringify(chord.chord)}-${index}`}
+                key={`${chord.chord.note}-${chord.chord.complement}-${chord.chord.bass}-${JSON.stringify(chord.positions)}`}
                 className="group relative cursor-pointer rounded-lg overflow-hidden aspect-square flex items-center justify-center hover:ring-2 hover:ring-accent transition-all bg-background/50"
                 onClick={() => handleChordSelect(chord)}
               >
