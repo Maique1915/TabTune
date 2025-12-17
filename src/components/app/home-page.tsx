@@ -113,7 +113,9 @@ export function HomePage() {
       <div className="flex h-screen w-full flex-col bg-background text-foreground">
         <AppHeader onSettingsClick={() => handlePanelChange('settings')} />
         <div className="flex-1 overflow-hidden">
-          {mobilePanel === 'studio' && mainContent}
+          <div className={cn("h-full", { "hidden": mobilePanel !== 'studio' })}>
+            {mainContent}
+          </div>
         </div>
         <MobileNav activePanel={mobilePanel} onPanelChange={handlePanelChange} />
         

@@ -104,7 +104,11 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
   };
 
   const FiltersContent = () => (
-    <div className={cn("p-4 space-y-3 bg-panel border-r", { "w-40": !isMobile, "w-full": isMobile })}>
+    <div className={cn(
+      "p-4 space-y-3 bg-panel border-r h-full overflow-y-auto",
+      { "w-40": !isMobile, "w-full": isMobile },
+      !showFilters && "hidden"
+    )}>
       <h2 className="text-lg font-bold text-white">Filters</h2>
       <div className="space-y-1.5">
         <Label className="text-xs font-medium">Scale</Label>
@@ -185,7 +189,7 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
       </div>
       
       <div className="flex flex-1 overflow-hidden">
-        {showFilters && <FiltersContent />}
+        <FiltersContent />
         <div className="flex-1 overflow-y-auto p-3">
           <div className={cn("grid gap-3", isMobile || showFilters ? "grid-cols-2" : "grid-cols-3")}>
             {filteredChords.map((chord) => (

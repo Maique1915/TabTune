@@ -9,6 +9,7 @@ import { getChordDisplayData } from "@/lib/chord-logic"; // New import
 import type { ChordWithTiming } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Play, Pause } from "lucide-react";
+import AdBanner from "../ad-banner";
 
 interface TimelinePanelProps {
   isAnimating: boolean;
@@ -188,6 +189,7 @@ export function TimelinePanel({
             handleRenderVideo={handleRenderVideo}
           />
         </div>
+        <AdBanner clientId="2227531384549606" slotId="1234567890" style={{ marginTop: '16px' }} dataAdFormat="auto" dataFullWidthResponsive="true" />
       </div>
 
       <div className="flex flex-col items-center justify-center p-4 bg-muted/20 border-t border-border">
