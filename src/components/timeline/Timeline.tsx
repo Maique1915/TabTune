@@ -258,8 +258,20 @@ export function Timeline({
   }, [dragState, handleMouseMove, handleMouseUp]);
 
   const handleClipDelete = (clipId: string) => {
-    onChange({ ...value, tracks: value.tracks.map(t => ({ ...t, clips: t.clips.filter(c => c.id !== clipId) })) });
-    if (selectedClipId === clipId) setSelectedClipId(null);
+    const newTracks = value.tracks.map(track => {
+      if (track.clips.some(c => c.id === clipId)) {
+        const filteredClips = track.clips.filter(c => c.id !== clipId);
+        const repackedClips = repackClips(filteredClips);
+        return { ...track, clips: repackedClips };
+      }
+      return track;
+    });
+
+    onChange({ ...value, tracks: newTracks });
+
+    if (selectedClipId === clipId) {
+      setSelectedClipId(null);
+    }
   };
 
   // Zoom
