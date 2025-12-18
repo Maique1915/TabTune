@@ -501,351 +501,387 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     setPlaybackProgress,
   ]);
 
-    // Move loadFFmpeg to be accessible by cancelRender
-    const loadFFmpeg = useCallback(async () => {
-      if (ffmpegRef.current?.loaded) {
-        console.log("FFmpeg already loaded.");
-        return;
-      }
-      // If a previous load was attempted but failed, ffmpegRef.current might exist but not be loaded.
-      // We create a new instance to retry.
-      const ffmpeg = new FFmpeg();
-      ffmpegRef.current = ffmpeg;
-  
-      ffmpeg.on("log", ({ message }) => {
-        console.log(message);
+  // Move loadFFmpeg to be accessible by cancelRender
+  const loadFFmpeg = useCallback(async () => {
+    if (ffmpegRef.current?.loaded) {
+      return;
+    }
+
+    // Check for SharedArrayBuffer support (required for FFmpeg.wasm)
+    if (typeof SharedArrayBuffer === "undefined") {
+      throw new Error(
+        "SharedArrayBuffer is not available. Ensure that the site is 'Cross-Origin Isolated' " +
+        "via COOP/COEP headers in next.config.ts."
+      );
+    }
+
+    const ffmpeg = new FFmpeg();
+    ffmpegRef.current = ffmpeg;
+
+    ffmpeg.on("log", ({ message }) => {
+      console.log("[FFmpeg Log]:", message);
+    });
+
+    try {
+      const baseURL = "https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/umd";
+      const workerURL = await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, "text/javascript");
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+        workerURL,
       });
-  
-      try {
-                const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
-        const workerURL = await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, "text/javascript");
-        await ffmpeg.load({
-          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-          workerURL,
-        });
-        console.log("FFmpeg loaded successfully (in worker).");
-      } catch (error) {
-        if ((error as Error).message === "called FFmpeg.terminate()") {
-          console.log("FFmpeg loading cancelled (terminated).");
-        } else {
-          console.error("Failed to load FFmpeg:", error);
-        }
-        ffmpegRef.current = null; // Nullify ref on failure to allow retry.
+      console.log("FFmpeg loaded successfully.");
+    } catch (error) {
+      ffmpegRef.current = null;
+      if ((error as Error).message === "called FFmpeg.terminate()") {
+        console.log("FFmpeg loading cancelled.");
+      } else {
+        console.error("FFmpeg Load Error:", error);
+        throw error; // Rethrow to let caller handle it
       }
-    }, []);
-  
-    useEffect(() => {
-      return () => {
-        // Cleanup FFmpeg on unmount
-        if (ffmpegRef.current) {
-          try {
-            ffmpegRef.current.terminate();
-            console.log("FFmpeg terminated on unmount");
-          } catch (e) {
-            console.error("Error terminating FFmpeg on unmount", e);
-          }
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      // Cleanup FFmpeg on unmount
+      if (ffmpegRef.current) {
+        try {
+          ffmpegRef.current.terminate();
+          console.log("FFmpeg terminated on unmount");
+        } catch (e) {
+          console.error("Error terminating FFmpeg on unmount", e);
         }
-  
-        // Cleanup bitmaps
-        if (frameCacheRef.current) {
-          frameCacheRef.current.bitmaps.forEach(b => b?.close());
-          frameCacheRef.current = null;
-        }
-      };
-    }, []);
-  
-  
-  
-    const startPlaybackRafLoop = useCallback((totalDurationMs: number) => {
-      if (playbackRafIdRef.current !== null) {
-        cancelAnimationFrame(playbackRafIdRef.current);
-        playbackRafIdRef.current = null;
       }
-  
-      const tick = () => {
-        const now = performance.now();
-        const elapsed = Math.max(0, now - playbackStartPerfMsRef.current);
-        const clampedElapsed = Math.min(totalDurationMs, elapsed);
-        playbackElapsedMsRef.current = clampedElapsed;
-        playheadStateRef.current.t = clampedElapsed;
-  
-        // Se tiver cache pré-render, usa o bitmap para desenhar rápido.
+
+      // Cleanup bitmaps
+      if (frameCacheRef.current) {
+        frameCacheRef.current.bitmaps.forEach(b => b?.close());
+        frameCacheRef.current = null;
+      }
+    };
+  }, []);
+
+
+
+  const startPlaybackRafLoop = useCallback((totalDurationMs: number) => {
+    if (playbackRafIdRef.current !== null) {
+      cancelAnimationFrame(playbackRafIdRef.current);
+      playbackRafIdRef.current = null;
+    }
+
+    const tick = () => {
+      const now = performance.now();
+      const elapsed = Math.max(0, now - playbackStartPerfMsRef.current);
+      const clampedElapsed = Math.min(totalDurationMs, elapsed);
+      playbackElapsedMsRef.current = clampedElapsed;
+      playheadStateRef.current.t = clampedElapsed;
+
+      // Se tiver cache pré-render, usa o bitmap para desenhar rápido.
+      const cache = frameCacheRef.current;
+      if (cache && canvasRef.current) {
+        const frameIndex = Math.floor(clampedElapsed / cache.frameMs);
+        const offset = frameIndex - cache.startFrameIndex;
+        const bitmap = offset >= 0 && offset < cache.bitmaps.length ? cache.bitmaps[offset] : null;
+        if (bitmap) {
+          const ctx = canvasRef.current.getContext("2d");
+          if (ctx) ctx.drawImage(bitmap, 0, 0);
+        }
+      }
+
+      const state = computeStateAtTimeMs(clampedElapsed);
+      if (state) {
+        animationStateRef.current = {
+          ...animationStateRef.current,
+          chordIndex: state.chordIndex,
+          transitionProgress: Math.max(0, Math.min(1, state.transitionProgress)),
+          buildProgress: Math.max(0, Math.min(1, state.buildProgress)),
+          fingerOpacity: 1,
+          fingerScale: 1,
+          cardY: 0,
+          nameOpacity: 1,
+        };
+        // Se não desenhou via cache (ou cache vazio), desenha normal.
         const cache = frameCacheRef.current;
-        if (cache && canvasRef.current) {
-          const frameIndex = Math.floor(clampedElapsed / cache.frameMs);
-          const offset = frameIndex - cache.startFrameIndex;
-          const bitmap = offset >= 0 && offset < cache.bitmaps.length ? cache.bitmaps[offset] : null;
-          if (bitmap) {
-            const ctx = canvasRef.current.getContext("2d");
-            if (ctx) ctx.drawImage(bitmap, 0, 0);
-          }
-        }
-  
-        const state = computeStateAtTimeMs(clampedElapsed);
-        if (state) {
-          animationStateRef.current = {
-            ...animationStateRef.current,
-            chordIndex: state.chordIndex,
-            transitionProgress: Math.max(0, Math.min(1, state.transitionProgress)),
-            buildProgress: Math.max(0, Math.min(1, state.buildProgress)),
-            fingerOpacity: 1,
-            fingerScale: 1,
-            cardY: 0,
-            nameOpacity: 1,
-          };
-          // Se não desenhou via cache (ou cache vazio), desenha normal.
-          const cache = frameCacheRef.current;
-          if (!cache || cache.bitmaps.length === 0) {
-            drawAnimatedChord();
-          }
-        }
-  
-        if (now - lastProgressEmitMsRef.current >= 50) {
-          lastProgressEmitMsRef.current = now;
-          setPlaybackProgress(totalDurationMs > 0 ? clampedElapsed / totalDurationMs : 0);
-        }
-  
-        if (clampedElapsed >= totalDurationMs) {
-          // Ao terminar, volta pro início da timeline.
-          setPlaybackProgress(0);
-          setPlaybackIsPlaying(false);
-          setPlaybackIsPaused(false);
-          setIsAnimating(false);
-          setIsPaused(false);
-          if (onAnimationStateChange) onAnimationStateChange(false, false);
-          stopPlayhead();
-          return;
-        }
-  
-        playbackRafIdRef.current = requestAnimationFrame(tick);
-      };
-  
-      playbackRafIdRef.current = requestAnimationFrame(tick);
-    }, [computeStateAtTimeMs, drawAnimatedChord, onAnimationStateChange, setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress, stopPlayhead]);
-  
-    const startAnimation = () => {
-      // Playback linear: usa o mesmo mapeamento de tempo do scrub.
-      if (animationRef.current) animationRef.current.pause();
-      if (playheadAnimationRef.current) {
-        playheadAnimationRef.current.pause();
-        playheadAnimationRef.current = null;
-      }
-      if (playbackRafIdRef.current !== null) {
-        cancelAnimationFrame(playbackRafIdRef.current);
-        playbackRafIdRef.current = null;
-      }
-  
-      if (!chords || chords.length === 0) return;
-  
-      setIsAnimating(true);
-      setIsPaused(false);
-      if (onAnimationStateChange) onAnimationStateChange(true, false);
-  
-      const totalMs = computeTotalPlaybackDurationMs();
-      startPlayhead(totalMs);
-  
-      // Pré-renderiza um buffer antes de começar (para ficar mais fluido).
-      const sessionId = ++playbackSessionIdRef.current;
-      (async () => {
-        await prebufferFrames(totalMs, 0);
-        if (playbackSessionIdRef.current !== sessionId) return;
-  
-        // Re-inicia o relógio para começar após o buffer
-        playbackStartPerfMsRef.current = performance.now();
-        playbackElapsedMsRef.current = 0;
-        playheadStateRef.current.t = 0;
-        lastProgressEmitMsRef.current = 0;
-  
-        // Frame 0
-        const state0 = computeStateAtTimeMs(0);
-        if (state0) {
-          animationStateRef.current = {
-            ...animationStateRef.current,
-            chordIndex: state0.chordIndex,
-            transitionProgress: Math.max(0, Math.min(1, state0.transitionProgress)),
-            buildProgress: Math.max(0, Math.min(1, state0.buildProgress)),
-            fingerOpacity: 1,
-            fingerScale: 1,
-            cardY: 0,
-            nameOpacity: 1,
-          };
+        if (!cache || cache.bitmaps.length === 0) {
           drawAnimatedChord();
         }
-  
-        startPlaybackRafLoop(totalMs);
-      })();
-  
-      // obs: o loop começa após o prebuffer.
-    };
-  
-    const pauseAnimation = () => {
-      if (!isAnimating) return;
-      if (animationRef.current) animationRef.current.pause();
-      if (playheadAnimationRef.current) playheadAnimationRef.current.pause();
-      if (playbackRafIdRef.current !== null) {
-        cancelAnimationFrame(playbackRafIdRef.current);
-        playbackRafIdRef.current = null;
       }
-      setIsPaused(true);
-      setPlaybackIsPaused(true);
-      if (onAnimationStateChange) onAnimationStateChange(true, true);
+
+      if (now - lastProgressEmitMsRef.current >= 50) {
+        lastProgressEmitMsRef.current = now;
+        setPlaybackProgress(totalDurationMs > 0 ? clampedElapsed / totalDurationMs : 0);
+      }
+
+      if (clampedElapsed >= totalDurationMs) {
+        // Ao terminar, volta pro início da timeline.
+        setPlaybackProgress(0);
+        setPlaybackIsPlaying(false);
+        setPlaybackIsPaused(false);
+        setIsAnimating(false);
+        setIsPaused(false);
+        if (onAnimationStateChange) onAnimationStateChange(false, false);
+        stopPlayhead();
+        return;
+      }
+
+      playbackRafIdRef.current = requestAnimationFrame(tick);
     };
-  
-    const resumeAnimation = () => {
-      if (!isPaused) return;
-      if (!chords || chords.length === 0) return;
-  
-      if (animationRef.current) animationRef.current.play();
-      if (playheadAnimationRef.current) playheadAnimationRef.current.play();
-  
-      setIsPaused(false);
-      setPlaybackIsPaused(false);
-      if (onAnimationStateChange) onAnimationStateChange(true, false);
-  
-      const totalMs = computeTotalPlaybackDurationMs();
-      // Continua a partir do tempo atual
-      playbackStartPerfMsRef.current = performance.now() - playbackElapsedMsRef.current;
+
+    playbackRafIdRef.current = requestAnimationFrame(tick);
+  }, [computeStateAtTimeMs, drawAnimatedChord, onAnimationStateChange, setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress, stopPlayhead]);
+
+  const startAnimation = () => {
+    // Playback linear: usa o mesmo mapeamento de tempo do scrub.
+    if (animationRef.current) animationRef.current.pause();
+    if (playheadAnimationRef.current) {
+      playheadAnimationRef.current.pause();
+      playheadAnimationRef.current = null;
+    }
+    if (playbackRafIdRef.current !== null) {
+      cancelAnimationFrame(playbackRafIdRef.current);
+      playbackRafIdRef.current = null;
+    }
+
+    if (!chords || chords.length === 0) return;
+
+    setIsAnimating(true);
+    setIsPaused(false);
+    if (onAnimationStateChange) onAnimationStateChange(true, false);
+
+    const totalMs = computeTotalPlaybackDurationMs();
+    startPlayhead(totalMs);
+
+    // Pré-renderiza um buffer antes de começar (para ficar mais fluido).
+    const sessionId = ++playbackSessionIdRef.current;
+    (async () => {
+      await prebufferFrames(totalMs, 0);
+      if (playbackSessionIdRef.current !== sessionId) return;
+
+      // Re-inicia o relógio para começar após o buffer
+      playbackStartPerfMsRef.current = performance.now();
+      playbackElapsedMsRef.current = 0;
+      playheadStateRef.current.t = 0;
+      lastProgressEmitMsRef.current = 0;
+
+      // Frame 0
+      const state0 = computeStateAtTimeMs(0);
+      if (state0) {
+        animationStateRef.current = {
+          ...animationStateRef.current,
+          chordIndex: state0.chordIndex,
+          transitionProgress: Math.max(0, Math.min(1, state0.transitionProgress)),
+          buildProgress: Math.max(0, Math.min(1, state0.buildProgress)),
+          fingerOpacity: 1,
+          fingerScale: 1,
+          cardY: 0,
+          nameOpacity: 1,
+        };
+        drawAnimatedChord();
+      }
+
       startPlaybackRafLoop(totalMs);
-    };
-  
-    const handleRender = () => new Promise<void>(async (resolve, reject) => {
-      if (!chords || chords.length === 0 || !canvasRef.current) {
-        return reject(new Error("Canvas or chords not ready"));
+    })();
+
+    // obs: o loop começa após o prebuffer.
+  };
+
+  const pauseAnimation = () => {
+    if (!isAnimating) return;
+    if (animationRef.current) animationRef.current.pause();
+    if (playheadAnimationRef.current) playheadAnimationRef.current.pause();
+    if (playbackRafIdRef.current !== null) {
+      cancelAnimationFrame(playbackRafIdRef.current);
+      playbackRafIdRef.current = null;
+    }
+    setIsPaused(true);
+    setPlaybackIsPaused(true);
+    if (onAnimationStateChange) onAnimationStateChange(true, true);
+  };
+
+  const resumeAnimation = () => {
+    if (!isPaused) return;
+    if (!chords || chords.length === 0) return;
+
+    if (animationRef.current) animationRef.current.play();
+    if (playheadAnimationRef.current) playheadAnimationRef.current.play();
+
+    setIsPaused(false);
+    setPlaybackIsPaused(false);
+    if (onAnimationStateChange) onAnimationStateChange(true, false);
+
+    const totalMs = computeTotalPlaybackDurationMs();
+    // Continua a partir do tempo atual
+    playbackStartPerfMsRef.current = performance.now() - playbackElapsedMsRef.current;
+    startPlaybackRafLoop(totalMs);
+  };
+
+  const handleRender = () => new Promise<void>(async (resolve, reject) => {
+    if (!chords || chords.length === 0 || !canvasRef.current) {
+      return reject(new Error("Canvas or chords not ready"));
+    }
+
+    try {
+      await loadFFmpeg();
+      if (!ffmpegRef.current) {
+        return reject(new Error("FFmpeg instance not available after loading attempt"));
       }
-      
-      try {
-        await loadFFmpeg();
-        if (!ffmpegRef.current) {
-          return reject(new Error("FFmpeg instance not loaded"));
-        }
-        
-        isRenderCancelledRef.current = false;
-        setIsRendering(true);
-        const canvas = canvasRef.current;
-        const ffmpeg = ffmpegRef.current;
-        const fps = 30;
-        let frameCount = 0;
-        
-        const processFrame = async () => {
-          if (isRenderCancelledRef.current) throw new Error("Render cancelled by user");
-          await new Promise<void>((res) => {
-            canvas.toBlob(async (blob) => {
-              if (blob) {
-                const frameData = await fetchFile(blob);
-                await ffmpeg.writeFile(`frame${String(frameCount++).padStart(5, "0")}.png`, frameData);
-              }
-              res();
-            }, "image/png");
-          });
+
+      isRenderCancelledRef.current = false;
+      setIsRendering(true);
+      const canvas = canvasRef.current;
+      const ffmpeg = ffmpegRef.current;
+      const fps = 30;
+      let frameCount = 0;
+
+      const processFrame = async () => {
+        if (isRenderCancelledRef.current) throw new Error("Render cancelled by user");
+        await new Promise<void>((res) => {
+          canvas.toBlob(async (blob) => {
+            if (blob) {
+              const frameData = await fetchFile(blob);
+              await ffmpeg.writeFile(`frame${String(frameCount++).padStart(5, "0")}.png`, frameData);
+            }
+            res();
+          }, "image/png");
+        });
+      };
+
+      let totalFrames = 0;
+      chords.forEach(chord => {
+        totalFrames += Math.ceil(getSegmentDurationSec(chord) * fps);
+      });
+
+      for (let chordIndex = 0; chordIndex < chords.length; chordIndex++) {
+        if (isRenderCancelledRef.current) throw new Error("Render cancelled by user");
+        const segmentDuration = getSegmentDurationSec(chords[chordIndex]);
+        const incomingHalf = chordIndex > 0 ? halfTransitionSec : 0;
+        const outgoingHalf = chordIndex < chords.length - 1 ? halfTransitionSec : 0;
+        const staticDuration = Math.max(0, segmentDuration - incomingHalf - outgoingHalf);
+
+        const processSegment = async (duration: number, getProgress: (p: number) => { chordIndex: number; transitionProgress: number; buildProgress: number; }) => {
+          const frameCountForSegment = Math.ceil(fps * duration);
+          for (let i = 0; i < frameCountForSegment; i++) {
+            if (isRenderCancelledRef.current) throw new Error("Render cancelled by user");
+            const p = duration > 0 ? i / frameCountForSegment : 1;
+            animationStateRef.current = { fingerOpacity: 1, fingerScale: 1, cardY: 0, nameOpacity: 1, ...getProgress(p) };
+            drawAnimatedChord();
+            await processFrame();
+            if (onRenderProgress) {
+              const overallProgress = (frameCount / totalFrames) * 90;
+              onRenderProgress(Math.round(overallProgress * 100) / 100);
+            }
+          }
         };
 
-        let totalFrames = 0;
-        chords.forEach(chord => {
-          totalFrames += Math.ceil(getSegmentDurationSec(chord) * fps);
-        });
-
-        for (let chordIndex = 0; chordIndex < chords.length; chordIndex++) {
-          if (isRenderCancelledRef.current) throw new Error("Render cancelled by user");
-          const segmentDuration = getSegmentDurationSec(chords[chordIndex]);
-          const incomingHalf = chordIndex > 0 ? halfTransitionSec : 0;
-          const outgoingHalf = chordIndex < chords.length - 1 ? halfTransitionSec : 0;
-          const staticDuration = Math.max(0, segmentDuration - incomingHalf - outgoingHalf);
-          
-          const processSegment = async (duration: number, getProgress: (p: number) => { chordIndex: number; transitionProgress: number; buildProgress: number; }) => {
-            const frameCountForSegment = Math.ceil(fps * duration);
-            for (let i = 0; i < frameCountForSegment; i++) {
-              if (isRenderCancelledRef.current) throw new Error("Render cancelled by user");
-              const p = duration > 0 ? i / frameCountForSegment : 1;
-              animationStateRef.current = { fingerOpacity: 1, fingerScale: 1, cardY: 0, nameOpacity: 1, ...getProgress(p) };
-              drawAnimatedChord();
-              await processFrame();
-              if (onRenderProgress) {
-                const overallProgress = (frameCount / totalFrames) * 90;
-                onRenderProgress(Math.round(overallProgress * 100) / 100);
-              }
-            }
-          };
-
-          if (animationType === "static-fingers") {
-            if (incomingHalf > 0) await processSegment(incomingHalf, p => ({ chordIndex: chordIndex - 1, transitionProgress: 0.5 + 0.5 * p, buildProgress: 1 }));
-            const buildDuration = (buildEnabled && chordIndex === 0) ? Math.min(buildDurationSec, staticDuration) : 0;
-            const holdDuration = chordIndex === 0 ? Math.max(0, staticDuration - buildDuration) : staticDuration;
-            if (buildDuration > 0) await processSegment(buildDuration, p => ({ chordIndex, transitionProgress: 0, buildProgress: p }));
-            if (holdDuration > 0) await processSegment(holdDuration, p => ({ chordIndex, transitionProgress: 0, buildProgress: 1 }));
-            if (outgoingHalf > 0) await processSegment(outgoingHalf, p => ({ chordIndex, transitionProgress: 0.5 * p, buildProgress: 1 }));
-          } else {
-            if (incomingHalf > 0) await processSegment(incomingHalf, p => ({ chordIndex: chordIndex - 1, transitionProgress: 0.5 + 0.5 * p, buildProgress: 1 }));
-            if (staticDuration > 0) await processSegment(staticDuration, p => ({ chordIndex, transitionProgress: 0, buildProgress: 1 }));
-            if (outgoingHalf > 0) await processSegment(outgoingHalf, p => ({ chordIndex, transitionProgress: 0.5 * p, buildProgress: 1 }));
-          }
+        if (animationType === "static-fingers") {
+          if (incomingHalf > 0) await processSegment(incomingHalf, p => ({ chordIndex: chordIndex - 1, transitionProgress: 0.5 + 0.5 * p, buildProgress: 1 }));
+          const buildDuration = (buildEnabled && chordIndex === 0) ? Math.min(buildDurationSec, staticDuration) : 0;
+          const holdDuration = chordIndex === 0 ? Math.max(0, staticDuration - buildDuration) : staticDuration;
+          if (buildDuration > 0) await processSegment(buildDuration, p => ({ chordIndex, transitionProgress: 0, buildProgress: p }));
+          if (holdDuration > 0) await processSegment(holdDuration, p => ({ chordIndex, transitionProgress: 0, buildProgress: 1 }));
+          if (outgoingHalf > 0) await processSegment(outgoingHalf, p => ({ chordIndex, transitionProgress: 0.5 * p, buildProgress: 1 }));
+        } else {
+          if (incomingHalf > 0) await processSegment(incomingHalf, p => ({ chordIndex: chordIndex - 1, transitionProgress: 0.5 + 0.5 * p, buildProgress: 1 }));
+          if (staticDuration > 0) await processSegment(staticDuration, p => ({ chordIndex, transitionProgress: 0, buildProgress: 1 }));
+          if (outgoingHalf > 0) await processSegment(outgoingHalf, p => ({ chordIndex, transitionProgress: 0.5 * p, buildProgress: 1 }));
         }
-        
+      }
+
+      if (onRenderProgress) {
+        onRenderProgress(90); // Transition to encoding phase
+      }
+
+      // Add progress listener specifically for the encoding phase
+      const progressHandler = ({ progress: encProgress }: { progress: number }) => {
         if (onRenderProgress) {
-          onRenderProgress(95);
+          // Map encoding progress (0-1) to the 90-100% range
+          const mappedProgress = 90 + (encProgress * 10);
+          onRenderProgress(Math.round(mappedProgress * 100) / 100);
         }
-        
+      };
+      ffmpeg.on("progress", progressHandler);
+
+      try {
         await ffmpeg.exec([
           "-framerate", String(fps),
           "-i", "frame%05d.png",
           "-c:v", "libx264",
           "-pix_fmt", "yuv420p",
           "-preset", "veryfast",
-          "-crf", "20",
+          "-crf", "22", // Slightly higher CRF for faster encoding/smaller size
+          "-threads", "0", // Use all available worker threads
+          "-movflags", "+faststart",
           "output.mp4"
         ]);
-        
-        if (isRenderCancelledRef.current) throw new Error("Render cancelled after encoding");
-        
-        const data = await ffmpeg.readFile("output.mp4");
-        const videoBlob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/mp4" });
-        const url = URL.createObjectURL(videoBlob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `chords-animation-${Date.now()}.mp4`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        console.log("Video rendered successfully");
-        resolve();
+      } finally {
+        ffmpeg.off("progress", progressHandler);
+      }
 
-      } catch (e) {
-        if ((e as Error).message.includes("cancelled")) {
-          console.log("Render process was cancelled.");
-        } else {
-          console.error("Frame generation or encoding failed:", e);
-        }
-        reject(e);
-      }
-    });
-  
-    const cancelRender = () => {
-      isRenderCancelledRef.current = true;
-      if (ffmpegRef.current) {
-        // FFmpeg.terminate() is a more forceful way to stop
-        // This is a workaround since the library doesn't have a clean abort signal for exec
+      if (isRenderCancelledRef.current) throw new Error("Render cancelled after encoding");
+
+      const data = await ffmpeg.readFile("output.mp4");
+      const videoBlob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/mp4" });
+
+      // Cleanup: Delete PNG frames and temporary MP4 to free up WASM memory
+      console.log("Cleaning up temporary files...");
+      for (let i = 0; i < frameCount; i++) {
         try {
-          ffmpegRef.current.terminate();
-          console.log("FFmpeg process terminated at user request.");
+          await ffmpeg.deleteFile(`frame${String(i).padStart(5, "0")}.png`);
         } catch (e) {
-          console.error("Could not terminate FFmpeg:", e)
+          // Ignore deletion errors if file was never created
         }
       }
-    };
-  
-    React.useImperativeHandle(ref, () => ({
-      startAnimation,
-      pauseAnimation,
-      resumeAnimation,
-      handleRender,
-      cancelRender,
-      isAnimating,
-      isRendering,
-      ffmpegLoaded: !!ffmpegRef.current,
-      isPaused
-    }));
+      try {
+        await ffmpeg.deleteFile("output.mp4");
+      } catch (e) { }
+      const url = URL.createObjectURL(videoBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `chords-animation-${Date.now()}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      console.log("Video rendered successfully");
+      resolve();
+
+    } catch (e) {
+      if ((e as Error).message.includes("cancelled")) {
+        console.log("Render process was cancelled.");
+      } else {
+        console.error("Frame generation or encoding failed:", e);
+      }
+      reject(e);
+    }
+  });
+
+  const cancelRender = () => {
+    isRenderCancelledRef.current = true;
+    if (ffmpegRef.current) {
+      // FFmpeg.terminate() is a more forceful way to stop
+      // This is a workaround since the library doesn't have a clean abort signal for exec
+      try {
+        ffmpegRef.current.terminate();
+        console.log("FFmpeg process terminated at user request.");
+      } catch (e) {
+        console.error("Could not terminate FFmpeg:", e)
+      }
+    }
+  };
+
+  React.useImperativeHandle(ref, () => ({
+    startAnimation,
+    pauseAnimation,
+    resumeAnimation,
+    handleRender,
+    cancelRender,
+    isAnimating,
+    isRendering,
+    ffmpegLoaded: !!ffmpegRef.current,
+    isPaused
+  }));
 
 
   // Para renderização contínua durante a gravação
