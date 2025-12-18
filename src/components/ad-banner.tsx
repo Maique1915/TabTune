@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { AdSense } from "./ad-sense";
+
 
 type AdBannerProps = {
   clientId: string;
@@ -9,21 +9,27 @@ type AdBannerProps = {
   style?: React.CSSProperties;
   className?: string;
   dataAdFormat?: string;
-    dataFullWidthResponsive?: string;
+  dataFullWidthResponsive?: string;
 };
 
 export function AdBanner({ clientId, slotId, style, className, dataAdFormat, dataFullWidthResponsive }: AdBannerProps) {
-    useEffect(() => {
-        try {
-            ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
-        } catch (e) {
-            console.error("AdSense error:", e);
-        }
-    }, []);
+  const initialized = React.useRef(false);
+
+  useEffect(() => {
+    if (initialized.current) {
+      return;
+    }
+    initialized.current = true;
+
+    try {
+      ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+    } catch (e) {
+      console.error("AdSense error:", e);
+    }
+  }, [clientId, slotId]); // dependencies usually don't change, but good practice. actually empty array is fine if we want run-once.
 
   return (
     <div style={style} className={className}>
-      <AdSense clientId={clientId} />
       <ins
         className="adsbygoogle"
         style={{ display: "block" }}

@@ -6,7 +6,6 @@ import React, { forwardRef } from 'react';
 import { cn } from "@/lib/utils";
 
 interface MainStageProps {
-  onFFmpegLoad: () => void;
   onAnimationStateChange: (isAnimating: boolean, isPaused: boolean) => void;
 }
 
@@ -30,7 +29,6 @@ export const MainStage = forwardRef<VideoCanvasStageRef, MainStageProps>((props,
             chords={selectedChords}
             transitionsEnabled={playbackTransitionsEnabled}
             buildEnabled={playbackBuildEnabled}
-            onFFmpegLoad={props.onFFmpegLoad}
             onAnimationStateChange={props.onAnimationStateChange}
             onRenderProgress={setRenderProgress}
           />

@@ -28,20 +28,20 @@ const CanvasChordDiagram: React.FC<ChordDiagramProps & { scale?: number }> = (pr
 
     // The drawer's internal dimensions are set to the canvas size.
     const dimensions = { width: canvas.width, height: canvas.height };
-    
-    // The base width of the drawing logic in ChordDrawerBase is 600px.
-    // We calculate a scale factor to make that 600px drawing fit into our canvas width.
-    const drawerBaseWidth = 600;
+
+    // The base width of the drawing logic in ChordDrawerBase is defined in the class.
+    // We calculate a scale factor to make that drawing fit into our canvas width.
+    const drawerBaseWidth = ChordDrawerBase.BASE_WIDTH;
     const calculatedScaleFactor = canvas.width / drawerBaseWidth;
 
     const drawer = new ChordDrawerBase(ctx, colors, dimensions, calculatedScaleFactor);
 
     // Clear canvas before drawing
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     // Center the chord within the canvas
     drawer.calculateWithOffset(0);
-    
+
     // Draw the chord. Note that the props passed to drawChord should not include the scale prop
     // meant for this React component.
     drawer.drawChord(chordProps, 1);

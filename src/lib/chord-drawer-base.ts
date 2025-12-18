@@ -15,9 +15,16 @@ export class ChordDrawerBase {
   private _dimensions: { width: number; height: number };
   public fretboardDrawer: FretboardDrawer;
 
+  // Cache para o braço do violão (sprite)
+  private _fretboardCache: HTMLCanvasElement | null = null;
+  // Flag to avoid drawing the fretboard on every frame after a transition ends
+  private _skipFretboard: boolean = false;
+
   // Configurações do diagrama (valores base não escalados)
 
-  private _baseDiagramWidth: number = 600;
+  // Configurações do diagrama (valores base não escalados)
+  public static readonly BASE_WIDTH: number = 500;
+  private _baseDiagramWidth: number = ChordDrawerBase.BASE_WIDTH;
 
   private _diagramHeight: number = 0;
 
@@ -53,7 +60,7 @@ export class ChordDrawerBase {
 
   private _baseNeckRadius: number = 30;
 
-  private _baseFingerRadius: number = 45;
+  private _baseFingerRadius: number = 35;
 
   private _baseBarreWidth: number = 90;
 
@@ -210,22 +217,27 @@ export class ChordDrawerBase {
   public setCtx(value: CanvasRenderingContext2D) {
     this._ctx = value;
     this.fretboardDrawer.setCtx(value);
+    // Não precisa invalidar cache se mudar apenas contexto de destino, 
+    // mas se for resize/cor sim.
   }
 
   public setColors(value: ChordDiagramColors) {
     this._colors = value;
     this.fretboardDrawer.setColors(value);
+    this._fretboardCache = null; // Invalidate cache
   }
 
   public setDimensions(value: { width: number; height: number }) {
     this._dimensions = value;
     this._calculateDimensions();
     this.fretboardDrawer.setDimensions(value);
+    this._fretboardCache = null; // Invalidate cache
   }
 
   set scaleFactor(value: number) {
     this._scaleFactor = value;
     this._calculateDimensions(); // Recalculate everything based on new scale
+    this._fretboardCache = null; // Invalidate cache
   }
 
   // ============ MÉTODOS UTILITÁRIOS ============
@@ -276,6 +288,20 @@ export class ChordDrawerBase {
     // Propagate position changes to the fretboard drawer
     this.fretboardDrawer.setDiagramX(this._diagramX);
     this.fretboardDrawer.setDiagramY(this._diagramY);
+
+    // Invalidate cache only if offset actually changes render (usually it does for full sprite)
+    // Note: If we cached *only* the fretboard relative to itself, we wouldn't need to invalidate on offset.
+    // But typically we cache the whole stage or the fretboard bounding box.
+    // For simplicity, let's invalidate or ensure draw uses offset correctly.
+    // Ideally, we cache the fretboard 'image' at (0,0) and draw it at (x,y).
+    // So changing X/Y shouldn't invalidate cache, just where we draw it.
+    // BUT FretboardDrawer uses absolute coordinates internally?
+    // Let's check: fretboardDrawer accepts diagramX/Y. So yes, it bakes coordinates.
+    // So we MUST invalidate cache if X/Y changes OR change FretboardDrawer to draw at 0,0 and translate.
+    // For now, easiest optimization is invalidate.
+    // Invalidate cache ONLY if dimensions/scale act in a way that changes the intrinsic look.
+    // Translation (X/Y) does NOT invalidate cache anymore because we draw the cached sprite at dynamic X/Y.
+    // this._fretboardCache = null; 
   }
 
   /**
@@ -375,7 +401,7 @@ export class ChordDrawerBase {
     // Número do dedo
     if (finger > 0) {
       this._ctx.fillStyle = this._colors.fingerTextColor;
-      const fontSize = 50 * this._scaleFactor;
+      const fontSize = 45 * this._scaleFactor;
       this._ctx.font = `bold ${fontSize}px sans-serif`;
       this._ctx.textAlign = "center";
       this._ctx.textBaseline = "middle";
@@ -416,7 +442,7 @@ export class ChordDrawerBase {
 
     if (finger > 0) {
       this._ctx.fillStyle = this._colors.fingerTextColor;
-      const fontSize = 50 * this._scaleFactor;
+      const fontSize = 45 * this._scaleFactor;
       this._ctx.font = `bold ${fontSize}px sans-serif`;
       this._ctx.textAlign = "center";
       this._ctx.textBaseline = "middle";
@@ -495,12 +521,12 @@ export class ChordDrawerBase {
    */
   drawChordName(chordName: string, offsetX: number = 0): void {
     this._ctx.fillStyle = this._colors.chordNameColor;
-    const fontSize = 80 * this._scaleFactor;
+    const fontSize = 75 * this._scaleFactor;
     this._ctx.font = `bold ${fontSize}px sans-serif`;
     this._ctx.textAlign = "center";
     this._ctx.textBaseline = "middle";
-    const nameX = this.diagramX + this.diagramWidth / 2 + offsetX;
-    const nameY = this.diagramY - (60 * this._scaleFactor);
+    const nameX = this.diagramX + this.diagramWidth / 2;
+    const nameY = this.diagramY - (75 * this._scaleFactor);
     this._ctx.fillText(chordName, nameX, nameY);
   }
 
@@ -544,10 +570,87 @@ export class ChordDrawerBase {
   }
 
   /**
+   * Atualiza o cache do fretboard desenhando-o em um canvas offscreen
+   */
+  /**
+   * Atualiza o cache do fretboard desenhando-o em um canvas offscreen
+   * O cache agora é gerado em posição "neutra" (local 0,0) para ser reutilizado em qualquer posição X/Y.
+   */
+  private _updateFretboardCache(): void {
+    if (!this._fretboardCache) {
+      this._fretboardCache = document.createElement('canvas');
+      console.log("❄️ Creating Fretboard Sprite Cache (Static Fingers behavior check)");
+    }
+
+    // Margem de segurança para sombras/bordas
+    const margin = 10 * this._scaleFactor;
+    const width = this._fretboardWidth + (this.horizontalPadding * 2);
+    const height = this._diagramHeight; // Altura total do diagrama para incluir nomes das cordas no topo
+
+    // Redimensiona se necessário
+    if (this._fretboardCache.width !== width || this._fretboardCache.height !== height) {
+      this._fretboardCache.width = width;
+      this._fretboardCache.height = height;
+    }
+
+    const cacheCtx = this._fretboardCache.getContext('2d');
+    if (!cacheCtx) return;
+
+    // Limpa o cache
+    cacheCtx.clearRect(0, 0, width, height);
+
+    // Salva estado original do drawer
+    const originalCtx = this._ctx;
+
+    // Configura o drawer para desenhar no cache nas coordenadas locais (0,0)
+    // O fretboard deve começar no X=0 (com padding interno) e Y relativo aos nomes das cordas
+    // DiagramX local = 0
+    // DiagramY local = 0
+    this.fretboardDrawer.setCtx(cacheCtx);
+
+    // Armazena valores originais para restaurar depois
+    const originalDx = this.diagramX;
+    const originalDy = this.diagramY;
+
+    // Seta posições locais para o render
+    this.fretboardDrawer.setDiagramX(0);
+    this.fretboardDrawer.setDiagramY(0);
+
+    this.fretboardDrawer.drawFretboard();
+
+    // Restaura coordenadas e contexto originais
+    this.fretboardDrawer.setDiagramX(originalDx);
+    this.fretboardDrawer.setDiagramY(originalDy);
+    this.fretboardDrawer.setCtx(originalCtx);
+  }
+
+  /**
+   * Limpa recursos e caches
+   */
+  public dispose(): void {
+    this._fretboardCache = null;
+    // We don't nullify ctx because it's passed from outside (the main canvas),
+    // but clearing the internal sprite canvas releases that specific memory.
+  }
+
+  /**
    * Desenha o fretboard completo (delegado para FretboardDrawer)
+   * Usa cache se disponível
    */
   drawFretboard(): void {
-    this.fretboardDrawer.drawFretboard();
+    if (!this._fretboardCache) {
+      this._updateFretboardCache();
+    }
+
+    if (this._fretboardCache) {
+      // Desenha o cache na posição atual
+      // O cache foi gerado assumindo diagramX=0, diagramY=0. 
+      // Então desenhamos em this.diagramX, this.diagramY.
+      this._ctx.drawImage(this._fretboardCache, this.diagramX, this.diagramY);
+    } else {
+      // Fallback
+      this.fretboardDrawer.drawFretboard();
+    }
   }
 
   /**
@@ -581,7 +684,7 @@ export class ChordDrawerBase {
   drawAvoidedStrings(avoid: number[] | undefined): void {
     if (!avoid) return;
 
-    const fontSize = 50 * this._scaleFactor;
+    const fontSize = 45 * this._scaleFactor;
     this._ctx.font = `bold ${fontSize}px sans-serif`;
     this._ctx.textAlign = "center";
     this._ctx.textBaseline = "middle";
@@ -675,10 +778,75 @@ export class ChordDrawerBase {
   }
 
   /**
+   * Helper to find min and max non-zero frets
+   */
+  private _findMinNonZeroNote(positions: Position, avoid: number[], nut?: any): [number, number] {
+    let min = Infinity;
+    let max = 0;
+
+    if (nut && nut.vis) {
+      min = nut.pos;
+    }
+
+    Object.entries(positions).forEach(([str, val]) => {
+      const [fret] = val as any; // Cast safely
+      const stringNumber = parseInt(str);
+      // Ensure we don't count discouraged strings if needed, though original logic just checks avoid array
+      // But 'avoid' array in props logic was separate. Here checking fret > 0 is key.
+      if (fret > 0 && (!avoid || !avoid.includes(stringNumber))) {
+        if (fret < min) {
+          min = fret;
+        }
+        if (fret > max) {
+          max = fret;
+        }
+      }
+    });
+
+    return [min === Infinity ? 0 : min, max];
+  }
+
+  /**
+   * Transposes the chord data to fit within available frets if necessary.
+   * Logic ported from chord-diagram.tsx
+   */
+  private _transposeForDisplay(chord: ChordDiagramProps, currentTransport: number): { finalChord: ChordDiagramProps, transportDisplay: number } {
+    const { positions, nut, avoid } = chord;
+    const [minFret, maxFret] = this._findMinNonZeroNote(positions, avoid || [], nut);
+
+    // If fits in 5 frets and doesn't explicitly start high with a nut, keep as is
+    if (maxFret <= 5 && (!nut || !nut.vis || nut.pos <= 5)) {
+      return { finalChord: chord, transportDisplay: currentTransport };
+    }
+
+    const transposition = (nut && nut.vis) ? nut.pos - 1 : minFret > 0 ? minFret - 1 : 0;
+
+    const newPositions: Position = {};
+    for (const string in positions) {
+      const val = positions[string];
+      const [fret, finger, add] = val as [number, number, any];
+      newPositions[string] = [fret > 0 ? fret - transposition : 0, finger, add];
+    }
+
+    const newNut = nut && nut.vis ? { ...nut, pos: nut.pos - transposition } : nut;
+
+    return {
+      finalChord: {
+        ...chord,
+        positions: newPositions,
+        nut: newNut
+      },
+      transportDisplay: transposition + 1
+    };
+  }
+
+  /**
    * Desenha um acorde completo
    */
-  drawChord(finalChord: ChordDiagramProps, transportDisplay: number, offsetX: number = 0): void {
-    console.log("Chord selected (static draw):", finalChord); // Log finalChord
+  drawChord(inputChord: ChordDiagramProps, inputTransportDisplay: number, offsetX: number = 0): void {
+    const { finalChord, transportDisplay } = this._transposeForDisplay(inputChord, inputTransportDisplay);
+
+    console.log("Chord selected (static draw):", finalChord);
     if (offsetX !== 0) {
       this.calculateWithOffset(offsetX);
     }
@@ -687,6 +855,8 @@ export class ChordDrawerBase {
     const barreInfo = this._detectBarre(finalChord);
 
     this.drawChordName(chordName, offsetX);
+    // Reset flag for static draw
+    this._skipFretboard = false;
     this.drawFretboard();
 
     if (
@@ -713,11 +883,15 @@ export class ChordDrawerBase {
    * @param progress - Progresso da animação (0-1)
    * @param offsetX - Deslocamento horizontal
    */
-  drawChordWithBuildAnimation(finalChord: ChordDiagramProps, transportDisplay: number, progress: number, offsetX: number = 0): void {
-    console.log("Chord animation started (build-in):", finalChord); // Log finalChord
+  drawChordWithBuildAnimation(inputChord: ChordDiagramProps, inputTransportDisplay: number, progress: number, offsetX: number = 0): void {
+    const { finalChord, transportDisplay } = this._transposeForDisplay(inputChord, inputTransportDisplay);
+
+    console.log("Chord animation started (build-in):", finalChord);
     if (offsetX !== 0) {
       this.calculateWithOffset(offsetX);
     }
+    // Reset flag for build animation
+    this._skipFretboard = false;
 
     const chordName = getNome(finalChord.chord).replace(/#/g, "♯").replace(/b/g, "♭");
     const phases = this.calculateAnimationPhases(progress);
@@ -749,7 +923,7 @@ export class ChordDrawerBase {
     if (phases.nut > 0 && barreInfo) {
       this._ctx.save();
       this._ctx.globalAlpha = phases.nut;
-      
+
       const fretY = this.fretboardY + (barreInfo.fret - 0.5) * this.realFretSpacing;
       let fromX = this.fretboardX + this.horizontalPadding + (barreInfo.fromString - 1) * this.stringSpacing;
       let toX = this.fretboardX + this.horizontalPadding + (barreInfo.toString - 1) * this.stringSpacing;
@@ -783,7 +957,7 @@ export class ChordDrawerBase {
             return;
           }
 
-          const x = this._fretboardX + this.horizontalPadding + (stringIndex -1) * this._stringSpacing;
+          const x = this._fretboardX + this.horizontalPadding + (stringIndex - 1) * this._stringSpacing;
           const y = this._fretboardY + (fret - 0.5) * this._realFretSpacing;
 
           this._ctx.save();
@@ -812,7 +986,7 @@ export class ChordDrawerBase {
           this._ctx.translate(x, y);
           this._ctx.scale(scale, scale);
           this._ctx.fillStyle = this._colors.textColor;
-          const fontSize = 50 * this._scaleFactor;
+          const fontSize = 45 * this._scaleFactor;
           this._ctx.font = `bold ${fontSize}px sans-serif`;
           this._ctx.textAlign = "center";
           this._ctx.textBaseline = "middle";
@@ -857,6 +1031,8 @@ export class ChordDrawerBase {
       this.calculateWithOffset(offsetX);
     }
 
+    // Ensure fretboard will be drawn for this transition
+    this._skipFretboard = false;
     const current = currentFinalChord; // Use directly
     const next = nextFinalChord;       // Use directly
     const currentTransport = currentTransportDisplay; // Use directly
@@ -898,8 +1074,14 @@ export class ChordDrawerBase {
       centerY
     );
 
-    // Fretboard sempre visível
-    this.drawFretboard();
+    // Fretboard drawing – skip if flag is set
+    if (!this._skipFretboard) {
+      this.drawFretboard();
+    }
+    // When transition finishes, set flag to skip further fretboard draws for this chord
+    if (originalProgress >= 1) {
+      this._skipFretboard = true;
+    }
 
     // Pestana: zoom in/out ou interpolação
     this.drawBarreWithTransition(currentBarreInfo, nextBarreInfo, originalProgress);
@@ -949,7 +1131,7 @@ export class ChordDrawerBase {
       // Pestana desaparece - zoom out
       const scale = 1 + (progress * 0.5); // 1 -> 1.5
       const y = this._fretboardY + (currentBarre.fret - 0.5) * this._realFretSpacing;
-      
+
       const fromStringIndex = currentBarre.fromString - 1;
       const toStringIndex = currentBarre.toString - 1;
       const fromX = this._fretboardX + this.horizontalPadding + fromStringIndex * this._stringSpacing;
@@ -1133,7 +1315,7 @@ export class ChordDrawerBase {
       // Draw function for the "x"
       const drawX = () => {
         this._ctx.fillStyle = this._colors.textColor;
-        const fontSize = 50 * this._scaleFactor; // Scaled font size
+        const fontSize = 45 * this._scaleFactor; // Scaled font size
         this._ctx.font = `bold ${fontSize}px sans-serif`;
         this._ctx.textAlign = "center";
         this._ctx.textBaseline = "middle";

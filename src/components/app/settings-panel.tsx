@@ -17,25 +17,94 @@ interface SettingsPanelProps {
   onClose?: () => void;
 }
 
-export function SettingsPanel({ isMobile, isOpen, onClose }: SettingsPanelProps) {
-  const { colors, setColors, animationType, setAnimationType } = useAppContext();
+// Helper components extracted to avoid re-renders
+const ColorSetting = ({ label, colorKey }: { label: string; colorKey: keyof ChordDiagramColors }) => {
+  const { colors, setColors } = useAppContext();
 
-  const handleColorChange = (key: keyof ChordDiagramColors, value: string | number) => {
+  const handleColorChange = (key: keyof ChordDiagramColors, value: string) => {
     setColors((prev) => ({ ...prev, [key]: value }));
   };
+
+  const rawValue = colors[colorKey] as string;
+  let safeValue = rawValue;
+  if (safeValue.startsWith('#') && safeValue.length > 7) {
+    safeValue = safeValue.substring(0, 7);
+  } else if (safeValue.startsWith('rgba') || safeValue.startsWith('rgb')) {
+    safeValue = "#000000";
+  }
+
+  return (
+    <div className="flex items-center justify-between">
+      <Input
+        id={colorKey}
+        type="color"
+        value={safeValue}
+        onChange={(e) => handleColorChange(colorKey, e.target.value)}
+        className="w-10 h-10 p-1 bg-input border-none"
+      />
+      <Label htmlFor={colorKey} className="flex-1 text-right">{label}</Label>
+    </div>
+  );
+};
+
+const NumberSetting = ({ label, colorKey }: { label: string; colorKey: keyof ChordDiagramColors }) => {
+  const { colors, setColors } = useAppContext();
+
+  const handleColorChange = (key: keyof ChordDiagramColors, value: number) => {
+    setColors((prev) => ({ ...prev, [key]: value }));
+  };
+
+  return (
+    <div className="flex items-center justify-between">
+      <Label htmlFor={colorKey}>{label}</Label>
+      <Input
+        id={colorKey}
+        type="number"
+        value={isNaN(colors[colorKey] as number) ? 0 : (colors[colorKey] as number)}
+        onChange={(e) => {
+          const val = parseInt(e.target.value);
+          handleColorChange(colorKey, isNaN(val) ? 0 : val);
+        }}
+        className="w-20 bg-input"
+      />
+    </div>
+  );
+};
+
+const SliderSetting = ({ label, colorKey, min = 0, max = 1, step = 0.05 }: { label: string; colorKey: keyof ChordDiagramColors, min?: number, max?: number, step?: number }) => {
+  const { colors, setColors } = useAppContext();
+
+  const handleColorChange = (key: keyof ChordDiagramColors, value: number) => {
+    setColors((prev) => ({ ...prev, [key]: value }));
+  };
+
+  return (
+    <div className="flex items-center justify-between">
+      <Label htmlFor={colorKey}>{label}</Label>
+      <div className="flex items-center gap-2 w-32">
+        <Slider
+          id={colorKey}
+          min={min}
+          max={max}
+          step={step}
+          value={[colors[colorKey] as number]}
+          onValueChange={(value) => handleColorChange(colorKey, value[0])}
+          className="w-full"
+        />
+        <span className="text-xs w-10 text-right">{Math.round((colors[colorKey] as number) * 100)}%</span>
+      </div>
+    </div>
+  );
+};
+
+const SettingsContent = () => {
+  const { animationType, setAnimationType, setColors } = useAppContext();
 
   const handleResetToDefault = () => {
     setColors(DEFAULT_COLORS);
   };
 
-  const rootClasses = cn(
-    "flex flex-col bg-surface-light dark:bg-surface-dark transition-transform duration-300 ease-in-out",
-    isMobile
-      ? `fixed inset-x-0 bottom-0 h-[70vh] rounded-t-2xl shadow-2xl z-50 ${isOpen ? "translate-y-0" : "translate-y-full"}`
-      : "relative w-80 h-full border-l border-gray-200 dark:border-gray-800"
-  );
-  
-  const PanelContent = () => (
+  return (
     <>
       <div className="p-4 border-b">
         <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
@@ -75,6 +144,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose }: SettingsPanelProps)
           <TabsContent value="general" className="space-y-4 pt-4">
             {/* General Settings */}
             <ColorSetting label="Background" colorKey="cardColor" />
+            <SliderSetting label="Scale (Tamanho)" colorKey="fretboardScale" min={0.5} max={1.5} step={0.1} />
             <ColorSetting label="Guitar Neck" colorKey="fretboardColor" />
             <ColorSetting label="Strings (Cordas)" colorKey="borderColor" />
             <ColorSetting label="Frets (Trastes)" colorKey="fretColor" />
@@ -103,66 +173,34 @@ export function SettingsPanel({ isMobile, isOpen, onClose }: SettingsPanelProps)
       </div>
     </>
   );
+};
 
-  const ColorSetting = ({ label, colorKey }: { label: string; colorKey: keyof ChordDiagramColors }) => (
-    <div className="flex items-center justify-between">
-      <Input
-        id={colorKey}
-        type="color"
-        value={colors[colorKey] as string}
-        onChange={(e) => handleColorChange(colorKey, e.target.value)}
-        className="w-10 h-10 p-1 bg-input border-none"
-      />
-      <Label htmlFor={colorKey} className="flex-1 text-right">{label}</Label>
-    </div>
-  );
+export function SettingsPanel({ isMobile, isOpen, onClose }: SettingsPanelProps) {
+  // Main component now only handles layout/visibility logic
 
-  const NumberSetting = ({ label, colorKey }: { label: string; colorKey: keyof ChordDiagramColors }) => (
-    <div className="flex items-center justify-between">
-      <Label htmlFor={colorKey}>{label}</Label>
-      <Input
-        id={colorKey}
-        type="number"
-        value={colors[colorKey] as number}
-        onChange={(e) => handleColorChange(colorKey, parseInt(e.target.value))}
-        className="w-20 bg-input"
-      />
-    </div>
-  );
-
-  const SliderSetting = ({ label, colorKey }: { label: string; colorKey: keyof ChordDiagramColors }) => (
-     <div className="flex items-center justify-between">
-      <Label htmlFor={colorKey}>{label}</Label>
-      <div className="flex items-center gap-2 w-32">
-        <Slider
-          id={colorKey}
-          min={0}
-          max={1}
-          step={0.05}
-          value={[colors[colorKey] as number]}
-          onValueChange={(value) => handleColorChange(colorKey, value[0])}
-          className="w-full"
-        />
-        <span className="text-xs w-10 text-right">{Math.round((colors[colorKey] as number) * 100)}%</span>
-      </div>
-    </div>
+  const rootClasses = cn(
+    "flex flex-col bg-surface-light dark:bg-surface-dark transition-transform duration-300 ease-in-out",
+    isMobile
+      ? `fixed inset-x-0 bottom-0 h-[70vh] rounded-t-2xl shadow-2xl z-50 ${isOpen ? "translate-y-0" : "translate-y-full"}`
+      : "relative w-80 h-full border-l border-gray-200 dark:border-gray-800"
   );
 
   return (
     <div className={rootClasses}>
-       {isMobile && (
+      {isMobile && (
         <div className="w-full flex justify-center pt-3 pb-1 cursor-pointer" onClick={onClose}>
           <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
         </div>
       )}
       <div className={cn("flex flex-col flex-1 overflow-hidden", { "hidden lg:flex": !isMobile })}>
-        <PanelContent />
+        <SettingsContent />
       </div>
       {isMobile && isOpen && (
-         <div className="flex flex-col flex-1 overflow-hidden">
-           <PanelContent />
-         </div>
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <SettingsContent />
+        </div>
       )}
     </div>
   );
 }
+

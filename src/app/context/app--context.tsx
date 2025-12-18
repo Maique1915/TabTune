@@ -25,6 +25,7 @@ export interface ChordDiagramColors {
   fingerBoxShadowSpread: number;
   fingerBoxShadowColor: string;
   fingerBackgroundAlpha: number;
+  fretboardScale: number; // Nova propriedade para escala geral do braço
 }
 
 export type AnimationType = "carousel" | "static-fingers";
@@ -69,23 +70,24 @@ interface AppContextType {
 
 export const DEFAULT_COLORS: ChordDiagramColors = {
   cardColor: "#000000",              // Fundo preto
-  fingerColor: "#200f0fff",            // Dedos brancos
-  fretboardColor: "#303135ff",         // Braço cinza escuro moderno
+  fingerColor: "#200f0f",            // Dedos brancos
+  fretboardColor: "#303135",         // Braço cinza escuro moderno
   borderColor: "#FFFFFF",            // Cordas brancas
-  fretColor: "#000000ff",              // Trastes brancos
+  fretColor: "#000000",              // Trastes brancos
   textColor: "#FF8C42",              // Nomes das cordas laranja
   chordNameColor: "#FFFFFF",         // Nome do acorde branco
   borderWidth: 3,
   stringThickness: 3,                // Cordas um pouco mais grossas
-  fingerTextColor: "#ffffffff",        // Texto dos dedos preto
+  fingerTextColor: "#ffffff",        // Texto dos dedos preto
   fingerBorderColor: "#FFFFFF",      // Borda branca nos dedos
   fingerBorderWidth: 4,              // Borda mais visível
   fingerBoxShadowHOffset: 0,
   fingerBoxShadowVOffset: 0,
   fingerBoxShadowBlur: 0,
   fingerBoxShadowSpread: 0,
-  fingerBoxShadowColor: "rgba(0,0,0,0)",
+  fingerBoxShadowColor: "#000000",
   fingerBackgroundAlpha: 0.3,        // Dedos totalmente opacos
+  fretboardScale: 1.0,               // Escala padrão
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
