@@ -841,7 +841,15 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
       a.download = `chords-animation-${Date.now()}.mp4`;
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
+
+      // Safer removal to avoid DOM reconciliation issues
+      if (a.parentNode) {
+        a.parentNode.removeChild(a);
+      } else {
+        try {
+          a.remove();
+        } catch (e) { }
+      }
       URL.revokeObjectURL(url);
 
       console.log("Video rendered successfully");
