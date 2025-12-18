@@ -8,7 +8,7 @@ export function formatTimeMs(ms: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = Math.floor(totalSeconds % 60);
   const decimals = Math.floor((totalSeconds % 1) * 10);
-  
+
   return `${minutes}:${seconds.toString().padStart(2, '0')}.${decimals}`;
 }
 
@@ -42,11 +42,9 @@ export function snapToGrid(time: number, gridSize: number = 100): number {
 }
 
 
-/**
- * Gera ID único para clip
- */
 export function generateClipId(): string {
-  return `clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  // Usamos apenas um sufixo aleatório para IDs gerados em tempo de execução
+  return `clip-${Math.random().toString(36).substring(2, 11)}`;
 }
 
 

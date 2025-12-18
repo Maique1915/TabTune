@@ -50,6 +50,11 @@ export function TimelinePanel({
   const minClipDurationMs = playbackTransitionsEnabled ? transitionDurationMs * 2 : 0;
 
   const [isInitializing, setIsInitializing] = useState(true);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   // Sincroniza selectedChords → timeline clips (apenas na inicialização)
   useEffect(() => {
@@ -64,7 +69,7 @@ export function TimelinePanel({
         const duration = Math.max(chordWithTiming.duration || defaultDuration, minClipDurationMs);
         const { finalChord, transportDisplay } = getChordDisplayData(chordWithTiming.chord);
         clips.push({
-          id: `clip-${index}-${Date.now()}`,
+          id: `initial-clip-${index}`, // Deterministic ID for hydration safety
           type: 'chord',
           chord: chordWithTiming.chord, // Keep original chord
           finalChord,                  // Add finalChord
@@ -158,6 +163,8 @@ export function TimelinePanel({
 
     setSelectedChords(reorderedChordsWithTiming);
   };
+
+  if (!hasMounted) return null;
 
   return (
     <div className="flex flex-col h-full">

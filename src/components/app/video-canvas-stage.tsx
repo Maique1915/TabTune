@@ -257,6 +257,7 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     lastProgressEmitMsRef.current = 0;
   }, [setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress, setPlaybackTotalDurationMs]);
 
+
   const computeTotalPlaybackDurationMs = useCallback(() => {
     if (!chords || chords.length === 0) return 0;
 
@@ -837,20 +838,18 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
       } catch (e) { }
       const url = URL.createObjectURL(videoBlob);
       const a = document.createElement("a");
+      a.style.display = 'none'; // Ensure it's not visible
       a.href = url;
       a.download = `chords-animation-${Date.now()}.mp4`;
-      document.body.appendChild(a);
+
+      // Modern browsers allow clicking a detached anchor
       a.click();
 
-      // Safer removal to avoid DOM reconciliation issues
-      if (a.parentNode) {
-        a.parentNode.removeChild(a);
-      } else {
-        try {
-          a.remove();
-        } catch (e) { }
-      }
-      URL.revokeObjectURL(url);
+      // Revoke the URL after a short delay to ensure the browser has started the download
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        a.remove();
+      }, 100);
 
       console.log("Video rendered successfully");
       resolve();
