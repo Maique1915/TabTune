@@ -25,9 +25,14 @@ export function HomePage() {
   const videoCanvasRef = useRef<VideoCanvasStageRef>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  
+
   const isMobile = useIsMobile();
   const [mobilePanel, setMobilePanel] = useState<'studio' | 'library' | 'settings'>('studio');
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   useEffect(() => {
     if (renderCancelRequested) {
@@ -66,7 +71,7 @@ export function HomePage() {
     if (videoCanvasRef.current) {
       setIsRendering(true);
       setRenderProgress(0);
-      
+
       try {
         await videoCanvasRef.current.handleRender();
         if (!renderCancelRequested) {
@@ -75,7 +80,7 @@ export function HomePage() {
       } catch (error) {
         console.error("An error occurred during video rendering:", error);
         // Reset progress, but keep the card visible for a moment to show the error state if any
-        setRenderProgress(0); 
+        setRenderProgress(0);
       } finally {
         if (!renderCancelRequested) {
           setTimeout(() => {
@@ -83,10 +88,10 @@ export function HomePage() {
             setRenderProgress(0); // Final reset
           }, 2000); // Keep card visible for 2s after completion/error
         } else {
-           // If cancelled, hide immediately
-           setIsRendering(false);
-           setRenderProgress(0);
-           setRenderCancelRequested(false);
+          // If cancelled, hide immediately
+          setIsRendering(false);
+          setRenderProgress(0);
+          setRenderCancelRequested(false);
         }
       }
     }
@@ -102,14 +107,14 @@ export function HomePage() {
 
   const mainContent = (
     <main className="flex flex-1 flex-col overflow-hidden" style={{ display: 'grid', gridTemplateRows: '60% 40%' }}>
-      <MainStage 
+      <MainStage
         ref={videoCanvasRef}
         onAnimationStateChange={(animating, paused) => {
           setIsAnimating(animating);
           setIsPaused(paused);
         }}
       />
-      <TimelinePanel 
+      <TimelinePanel
         isAnimating={isAnimating}
         isPaused={isPaused}
         ffmpegLoaded={true}
@@ -121,17 +126,28 @@ export function HomePage() {
     </main>
   );
 
+  if (!hasMounted) {
+    return (
+      <div className="flex h-screen w-full flex-col bg-background text-foreground animate-pulse">
+        <div className="h-16 border-b border-border bg-muted/20" />
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-muted-foreground">Loading Studio...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (isMobile) {
     return (
-          <div className="flex h-screen w-full flex-col bg-background text-foreground">
-            <AppHeader onSettingsClick={() => handlePanelChange('settings')} />
-            <RenderingProgressCard />        <div className="flex-1 overflow-hidden">
+      <div className="flex h-screen w-full flex-col bg-background text-foreground">
+        <AppHeader onSettingsClick={() => handlePanelChange('settings')} />
+        <RenderingProgressCard />        <div className="flex-1 overflow-hidden">
           <div className={cn("h-full", { "hidden": mobilePanel !== 'studio' })}>
             {mainContent}
           </div>
         </div>
         <MobileNav activePanel={mobilePanel} onPanelChange={handlePanelChange} />
-        
+
         <LibraryPanel
           isMobile={true}
           isOpen={mobilePanel === 'library'}

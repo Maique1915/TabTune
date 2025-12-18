@@ -50,11 +50,6 @@ export function TimelinePanel({
   const minClipDurationMs = playbackTransitionsEnabled ? transitionDurationMs * 2 : 0;
 
   const [isInitializing, setIsInitializing] = useState(true);
-  const [hasMounted, setHasMounted] = useState(false);
-
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
 
   // Sincroniza selectedChords → timeline clips (apenas na inicialização)
   useEffect(() => {
@@ -160,11 +155,8 @@ export function TimelinePanel({
         finalChord: clip.finalChord, // Add finalChord
         transportDisplay: clip.transportDisplay, // Add transportDisplay
       } as ChordWithTiming)); // Cast to ChordWithTiming to satisfy type, as optional properties are now required for ChordWithTiming
-
     setSelectedChords(reorderedChordsWithTiming);
   };
-
-  if (!hasMounted) return null;
 
   return (
     <div className="flex flex-col h-full">

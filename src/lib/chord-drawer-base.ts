@@ -577,6 +577,8 @@ export class ChordDrawerBase {
    * O cache agora é gerado em posição "neutra" (local 0,0) para ser reutilizado em qualquer posição X/Y.
    */
   private _updateFretboardCache(): void {
+    if (typeof document === 'undefined') return;
+
     if (!this._fretboardCache) {
       this._fretboardCache = document.createElement('canvas');
       console.log("❄️ Creating Fretboard Sprite Cache (Static Fingers behavior check)");
