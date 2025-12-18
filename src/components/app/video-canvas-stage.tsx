@@ -740,10 +740,10 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
           canvas.toBlob(async (blob) => {
             if (blob) {
               const frameData = await fetchFile(blob);
-              await ffmpeg.writeFile(`frame${String(frameCount++).padStart(5, "0")}.png`, frameData);
+              await ffmpeg.writeFile(`frame${String(frameCount++).padStart(5, "0")}.jpg`, frameData);
             }
             res();
-          }, "image/png");
+          }, "image/jpeg", 0.95);
         });
       };
 
@@ -803,14 +803,14 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
       ffmpeg.on("progress", progressHandler);
 
       try {
+        console.log("Starting FFmpeg encoding with ultrafast preset...");
         await ffmpeg.exec([
           "-framerate", String(fps),
-          "-i", "frame%05d.png",
+          "-i", "frame%05d.jpg",
           "-c:v", "libx264",
           "-pix_fmt", "yuv420p",
-          "-preset", "veryfast",
-          "-crf", "22", // Slightly higher CRF for faster encoding/smaller size
-          "-threads", "0", // Use all available worker threads
+          "-preset", "ultrafast",
+          "-crf", "22",
           "-movflags", "+faststart",
           "output.mp4"
         ]);
@@ -827,7 +827,7 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
       console.log("Cleaning up temporary files...");
       for (let i = 0; i < frameCount; i++) {
         try {
-          await ffmpeg.deleteFile(`frame${String(i).padStart(5, "0")}.png`);
+          await ffmpeg.deleteFile(`frame${String(i).padStart(5, "0")}.jpg`);
         } catch (e) {
           // Ignore deletion errors if file was never created
         }
