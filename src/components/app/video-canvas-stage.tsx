@@ -19,7 +19,6 @@ export interface VideoCanvasStageRef {
   cancelRender: () => void;
   isAnimating: boolean;
   isRendering: boolean;
-  isRendering: boolean;
   isPaused: boolean;
 }
 
