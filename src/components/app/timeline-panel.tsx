@@ -192,6 +192,18 @@ export function TimelinePanel({
 
   return (
     <div className="flex flex-col h-full">
+       <TimelineControls
+        isAnimating={isAnimating}
+        isPaused={isPaused}
+        ffmpegLoaded={ffmpegLoaded}
+        handleAnimate={handleAnimate}
+        handlePause={handlePause}
+        handleResume={handleResume}
+        handleRenderVideo={handleRenderVideo}
+        isTimelineEmpty={isTimelineEmpty}
+        onAudioUpload={handleAudioUpload}
+        audioUploaded={audioUploaded}
+      />
       <div className="border-t border-border bg-muted/30 p-4 flex-1 overflow-hidden flex flex-col">
         <div className="">
           <Timeline
@@ -229,18 +241,7 @@ export function TimelinePanel({
       </div>
       {/* Substitui os controles para aceitar props extras */}
       <style>{`.timeline-controls-upload { display: none; }`}</style>
-      <TimelineControls
-        isAnimating={isAnimating}
-        isPaused={isPaused}
-        ffmpegLoaded={ffmpegLoaded}
-        handleAnimate={handleAnimate}
-        handlePause={handlePause}
-        handleResume={handleResume}
-        handleRenderVideo={handleRenderVideo}
-        isTimelineEmpty={isTimelineEmpty}
-        onAudioUpload={handleAudioUpload}
-        audioUploaded={audioUploaded}
-      />
+     
     </div>
   );
 }
