@@ -292,16 +292,7 @@ export function Timeline({
   return (
     <div className={className}>
       <div className="flex items-center gap-2 mb-2 px-2">
-        <TimelineControls
-          isAnimating={isAnimating}
-          isPaused={isPaused}
-          ffmpegLoaded={ffmpegLoaded}
-          handleAnimate={handleAnimate}
-          handlePause={handlePause}
-          handleResume={handleResume}
-          handleRenderVideo={handleRenderVideo}
-          isTimelineEmpty={isTimelineEmpty}
-        />
+        {/* Controles da timeline agora são renderizados pelo TimelinePanel */}
         <div className="flex-1" />
         <span className="text-xs text-muted-foreground tabular-nums">
           {formatTimeMs(currentTimeMs)} / {formatTimeMs(effectiveDurationMs)}
