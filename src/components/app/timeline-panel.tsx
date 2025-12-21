@@ -17,8 +17,20 @@ import { generateClipId } from "@/lib/timeline/utils";
 import { getChordDisplayData } from "@/lib/chord-logic"; // New import
 import type { ChordWithTiming } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Play, Pause } from "lucide-react";
 
+export function TimelinePanel({
+  isAnimating,
+  isPaused,
+  ffmpegLoaded,
+  handleAnimate,
+  handlePause,
+  handleResume,
+  handleRenderVideo
+}: TimelinePanelProps) {
+  // ...existing hooks, context, states, etc...
+  // (mantenha o restante do código já existente da função aqui)
+
+  // ...
 
   return (
     <div className="flex flex-row w-full h-full bg-gradient-to-br from-[#181c24] via-[#23283a] to-[#181c24]">
@@ -102,6 +114,7 @@ import { Play, Pause } from "lucide-react";
       </div>
     </div>
   );
+}
 
     selectedChords.forEach((chordWithTiming, index) => {
       if (chordWithTiming && chordWithTiming.chord) {
