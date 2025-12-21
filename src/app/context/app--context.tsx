@@ -1,8 +1,7 @@
-
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useRef } from "react";
 import type { Achord, ChordDiagramProps, ChordWithTiming } from "@/lib/types";
 import type { TimelineState } from "@/lib/timeline/types";
 
@@ -66,6 +65,10 @@ interface AppContextType {
   setRenderProgress: Dispatch<SetStateAction<number>>;
   renderCancelRequested: boolean;
   setRenderCancelRequested: Dispatch<SetStateAction<boolean>>;
+
+  minClipDurationMs: number; // Adicione esta linha
+
+  audioRefs: React.MutableRefObject<Record<string, HTMLAudioElement | null>>;
 }
 
 export const DEFAULT_COLORS: ChordDiagramColors = {
@@ -123,51 +126,59 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [renderProgress, setRenderProgress] = useState(0);
   const [renderCancelRequested, setRenderCancelRequested] = useState(false);
 
+  const minClipDurationMs = 200; // Defina um valor padrão ou obtenha de outro lugar
+
   const requestPlaybackSeek = (progress: number) => {
     setPlaybackSeekProgress(progress);
     setPlaybackSeekNonce((n) => n + 1);
   };
 
+  const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
+
+  const value: AppContextType = {
+    selectedChords,
+    setSelectedChords,
+    timelineState,
+    setTimelineState,
+    colors,
+    setColors,
+    animationType,
+    setAnimationType,
+
+    playbackTransitionsEnabled,
+    setPlaybackTransitionsEnabled,
+    playbackBuildEnabled,
+    setPlaybackBuildEnabled,
+
+    playbackIsPlaying,
+    setPlaybackIsPlaying,
+    playbackIsPaused,
+    setPlaybackIsPaused,
+    playbackProgress,
+    setPlaybackProgress,
+    playbackTotalDurationMs,
+    setPlaybackTotalDurationMs,
+
+    playbackIsScrubbing,
+    setPlaybackIsScrubbing,
+    playbackSeekProgress,
+    playbackSeekNonce,
+    requestPlaybackSeek,
+
+    isRendering,
+    setIsRendering,
+    renderProgress,
+    setRenderProgress,
+    renderCancelRequested,
+    setRenderCancelRequested,
+
+    minClipDurationMs,
+
+    audioRefs,
+  };
+
   return (
-    <AppContext.Provider
-      value={{
-        selectedChords,
-        setSelectedChords,
-        timelineState,
-        setTimelineState,
-        colors,
-        setColors,
-        animationType,
-        setAnimationType,
-
-        playbackTransitionsEnabled,
-        setPlaybackTransitionsEnabled,
-        playbackBuildEnabled,
-        setPlaybackBuildEnabled,
-
-        playbackIsPlaying,
-        setPlaybackIsPlaying,
-        playbackIsPaused,
-        setPlaybackIsPaused,
-        playbackProgress,
-        setPlaybackProgress,
-        playbackTotalDurationMs,
-        setPlaybackTotalDurationMs,
-
-        playbackIsScrubbing,
-        setPlaybackIsScrubbing,
-        playbackSeekProgress,
-        playbackSeekNonce,
-        requestPlaybackSeek,
-
-        isRendering,
-        setIsRendering,
-        renderProgress,
-        setRenderProgress,
-        renderCancelRequested,
-        setRenderCancelRequested,
-      }}
-    >
+    <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   );

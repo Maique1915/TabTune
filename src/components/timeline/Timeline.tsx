@@ -65,10 +65,10 @@ export function Timeline({
   const totalWidthPx = (effectiveDurationMs / 1000) * value.zoom;
   const currentTimeMs = Math.round(Math.max(0, Math.min(1, playheadProgress)) * effectiveDurationMs);
 
-  const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+    const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
-          <div ref={containerRef} className="relative border border-[#23283a] rounded-2xl overflow-x-auto bg-[#23283a] shadow-xl p-4 my-2">
-  const playheadMotionRef = useRef({
+    // Removido bloco JSX solto que estava fora do return
+    const playheadMotionRef = useRef({
     targetProgress: 0,
     lastTargetProgress: 0,
     lastTargetPerfMs: 0,
