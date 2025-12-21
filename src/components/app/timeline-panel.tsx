@@ -299,7 +299,14 @@ export function TimelinePanel({
         {/* Elementos de áudio ocultos para sincronizar com a animação */}
         {getAllAudioClips(timelineState.tracks).map((clip) => {
           // Type guard: only render for audio clips
-          if (clip.type !== 'audio') return null;
+          if (clip.type !== 'audio') return null;          
+          
+          // Utilitário para obter todos os clipes de áudio da timeline
+          function getAllAudioClips(tracks: TimelineTrack[]) {
+            return tracks
+              .filter(t => t.type === 'audio')
+              .flatMap(t => t.clips);
+          }
           const audioKey = clip.id != null ? String(clip.id) : undefined;
           return (
             <audio
