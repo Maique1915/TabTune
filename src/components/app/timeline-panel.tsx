@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAppContext } from "@/app/context/app--context";
 import { Timeline } from "@/components/timeline";
+import { TimelineControls } from "@/components/timeline/TimelineControls";
 import type { TimelineState, TimelineClip, ChordClip } from "@/lib/timeline/types";
 import { generateClipId } from "@/lib/timeline/utils";
 import { getChordDisplayData } from "@/lib/chord-logic"; // New import
