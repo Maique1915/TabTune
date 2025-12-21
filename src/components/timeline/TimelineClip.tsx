@@ -43,7 +43,7 @@ export function TimelineClip({
     visualContent = (
       <div className="absolute inset-0 flex flex-col justify-end pointer-events-none">
         <AudioClipVisual waveform={clip.waveform} />
-        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs px-2 py-0.5 flex items-center gap-1 rounded-b-md">
+        <div className="absolute bottom-0 left-0 right-0 text-white text-[11px] px-1 py-0.5 flex items-center gap-1 drop-shadow-sm select-none" style={{background: 'none', textShadow: '0 1px 4px #000a'}}>
           <Music className="h-3 w-3 shrink-0 opacity-80" />
           <span className="truncate">{clip.fileName}</span>
         </div>

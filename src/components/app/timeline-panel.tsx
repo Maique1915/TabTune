@@ -81,11 +81,17 @@ export function TimelinePanel({
     const totalFromPlayback = playbackTotalDurationMs > 0 ? playbackTotalDurationMs : totalNeeded;
     const totalDuration = Math.max(totalNeeded, totalFromPlayback);
 
-    setTimelineState(prev => ({
-      ...prev,
-      tracks: [{ ...prev.tracks[0], clips }],
-      totalDuration
-    }));
+    setTimelineState(prev => {
+      // Atualiza apenas a track de acordes, mantendo as outras
+      const newTracks = prev.tracks.length > 0
+        ? prev.tracks.map(t => t.type === 'chord' ? { ...t, clips } : t)
+        : [{ id: generateClipId(), name: 'Acordes', type: 'chord' as const, clips }];
+      return {
+        ...prev,
+        tracks: newTracks,
+        totalDuration
+      };
+    });
 
     setIsInitializing(false);
   }, [selectedChords, isInitializing, playbackTotalDurationMs, minClipDurationMs, setTimelineState]);
