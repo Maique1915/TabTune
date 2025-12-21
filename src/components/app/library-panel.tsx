@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import "@/complements/app/library-panel.css";
+import "./library-panel.css";
 import {
   Select,
   SelectContent,
