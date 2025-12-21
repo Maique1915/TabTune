@@ -1,6 +1,32 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Component, ReactNode } from "react";
+// ErrorBoundary para capturar erros de remoção de nó
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(error: Error) {
+    // Captura qualquer erro de renderização
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error, info: any) {
+    // Opcional: logar o erro
+    if (error.message && error.message.includes('removeChild')) {
+      // Ignorar erro específico
+      return;
+    }
+    // Outros erros podem ser tratados aqui
+  }
+  render() {
+    if (this.state.hasError) {
+      // Renderiza nada se erro capturado
+      return null;
+    }
+    return this.props.children;
+  }
+}
 import {
   Select,
   SelectContent,
@@ -192,7 +218,9 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
       </div>
       
       <div className="flex flex-1 overflow-hidden">
-        <FiltersContent />
+        <ErrorBoundary>
+          <FiltersContent />
+        </ErrorBoundary>
         <div className="flex-1 overflow-y-auto p-3">
           <div className={cn("grid gap-3", isMobile || showFilters ? "grid-cols-2" : "grid-cols-3")}>
             {filteredChords.map((chord) => (
