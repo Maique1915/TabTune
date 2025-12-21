@@ -17,7 +17,6 @@ interface TimelineControlsProps {
   onAudioUpload: (file: File) => void;
   audioUploaded: boolean;
 }
-}
 
   isAnimating,
   isPaused,
