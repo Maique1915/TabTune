@@ -164,51 +164,76 @@ export function TimelinePanel({
 
   // Função para adicionar o clipe de áudio à timeline
   const handleAudioUpload = (file: File) => {
-    // Cria um novo clipe de áudio (simples, sem waveform)
-    const audioClip = {
-      id: generateClipId(),
-      type: 'audio' as const,
-      fileName: file.name,
-      audioUrl: URL.createObjectURL(file),
-      start: 0,
-      duration: 5000, // valor padrão, pode ser ajustado depois
-      waveform: [],
-    };
-    setTimelineState(prev => {
-      // Procura a track de acordes
-      const chordTrack = prev.tracks.find(t => t.type === 'chord');
-      // Procura a primeira track de áudio
-      let audioTrackIndex = prev.tracks.findIndex(t => t.type === 'audio');
-      let newTracks = [...prev.tracks];
-      if (audioTrackIndex === -1) {
-        // Não existe track de áudio, cria uma nova abaixo da de acordes
-        const newAudioTrack = {
+    // Extrai a waveform do arquivo de áudio usando Web Audio API
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const arrayBuffer = e.target?.result;
+      if (!arrayBuffer) return;
+      try {
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer as ArrayBuffer);
+        // Amostra a waveform para 100 pontos
+        const rawData = audioBuffer.getChannelData(0);
+        const samples = 100;
+        const blockSize = Math.floor(rawData.length / samples);
+        const waveform = Array(samples).fill(0).map((_, i) => {
+          let sum = 0;
+          for (let j = 0; j < blockSize; j++) {
+            sum += Math.abs(rawData[i * blockSize + j] || 0);
+          }
+          return sum / blockSize;
+        });
+        // Duração real do áudio
+        const durationMs = Math.floor(audioBuffer.duration * 1000);
+        const audioClip = {
           id: generateClipId(),
-          name: 'Áudio',
           type: 'audio' as const,
-          clips: [audioClip],
+          fileName: file.name,
+          audioUrl: URL.createObjectURL(file),
+          start: 0,
+          duration: durationMs,
+          waveform,
         };
-        // Insere logo após a track de acordes
-        const chordIndex = prev.tracks.findIndex(t => t.type === 'chord');
-        if (chordIndex !== -1) {
-          newTracks.splice(chordIndex + 1, 0, newAudioTrack);
-        } else {
-          newTracks.push(newAudioTrack);
-        }
-      } else {
-        // Já existe track de áudio, adiciona nela
-        newTracks = newTracks.map((t, idx) =>
-          idx === audioTrackIndex
-            ? { ...t, clips: [...t.clips, audioClip] }
-            : t
-        );
+        setTimelineState(prev => {
+          // Procura a track de acordes
+          const chordTrack = prev.tracks.find(t => t.type === 'chord');
+          // Procura a primeira track de áudio
+          let audioTrackIndex = prev.tracks.findIndex(t => t.type === 'audio');
+          let newTracks = [...prev.tracks];
+          if (audioTrackIndex === -1) {
+            // Não existe track de áudio, cria uma nova abaixo da de acordes
+            const newAudioTrack = {
+              id: generateClipId(),
+              name: 'Áudio',
+              type: 'audio' as const,
+              clips: [audioClip],
+            };
+            // Insere logo após a track de acordes
+            const chordIndex = prev.tracks.findIndex(t => t.type === 'chord');
+            if (chordIndex !== -1) {
+              newTracks.splice(chordIndex + 1, 0, newAudioTrack);
+            } else {
+              newTracks.push(newAudioTrack);
+            }
+          } else {
+            // Já existe track de áudio, adiciona nela
+            newTracks = newTracks.map((t, idx) =>
+              idx === audioTrackIndex
+                ? { ...t, clips: [...t.clips, audioClip] }
+                : t
+            );
+          }
+          return {
+            ...prev,
+            tracks: newTracks,
+          };
+        });
+        setAudioUploaded(true);
+      } catch (err) {
+        alert('Erro ao processar áudio.');
       }
-      return {
-        ...prev,
-        tracks: newTracks,
-      };
-    });
-    setAudioUploaded(true);
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   return (
