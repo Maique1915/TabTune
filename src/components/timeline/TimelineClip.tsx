@@ -40,13 +40,16 @@ export function TimelineClip({
       : 'Chord';
     clipContent = <span className="text-sm font-semibold truncate">{chordName}</span>;
   } else if (clip.type === 'audio') {
-    visualContent = <AudioClipVisual waveform={clip.waveform} />;
-    clipContent = (
-      <div className="relative z-10 flex items-center gap-2 pointer-events-none">
-        <Music className="h-4 w-4 shrink-0" />
-        <span className="text-sm font-semibold truncate">{clip.fileName}</span>
+    visualContent = (
+      <div className="absolute inset-0 flex flex-col justify-end pointer-events-none">
+        <AudioClipVisual waveform={clip.waveform} />
+        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs px-2 py-0.5 flex items-center gap-1 rounded-b-md">
+          <Music className="h-3 w-3 shrink-0 opacity-80" />
+          <span className="truncate">{clip.fileName}</span>
+        </div>
       </div>
     );
+    clipContent = null;
     clipBgColor = "bg-green-500/20 border-green-500/50 hover:bg-green-500/30";
   }
 
@@ -66,6 +69,7 @@ export function TimelineClip({
       }}
       onMouseDown={onMouseDown}
     >
+      {/* Visual do clipe (waveform + label para áudio) */}
       {visualContent}
       {/* Handle resize esquerdo */}
       <div
@@ -77,12 +81,14 @@ export function TimelineClip({
       />
 
       {/* Conteúdo do clip */}
-      <div className="relative z-10 flex-1 flex items-center justify-between overflow-hidden pointer-events-none">
-        {clipContent}
-        <span className="text-xs opacity-70 whitespace-nowrap ml-2">
-          {formatTimeMs(clip.duration)}
-        </span>
-      </div>
+      {clipContent && (
+        <div className="relative z-10 flex-1 flex items-center justify-between overflow-hidden pointer-events-none">
+          {clipContent}
+          <span className="text-xs opacity-70 whitespace-nowrap ml-2">
+            {formatTimeMs(clip.duration)}
+          </span>
+        </div>
+      )}
 
       {/* Botão deletar (aparece quando selecionado) */}
       {isSelected && onDelete && (
