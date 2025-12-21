@@ -1,42 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import type { TimelineTrack } from "@/lib/timeline/types";
+
 // Utilitário para obter todos os clipes de áudio da timeline
-function getAllAudioClips(tracks) {
+function getAllAudioClips(tracks: TimelineTrack[]) {
   return tracks
     .filter(t => t.type === 'audio')
     .flatMap(t => t.clips);
 }
-  // Refs para os elementos de áudio
-  const audioRefs = useRef<{ [id: string]: HTMLAudioElement | null }>({});
-
-  // Sincroniza play/pause dos áudios com a animação
-  useEffect(() => {
-    const audioClips = getAllAudioClips(timelineState.tracks);
-    if (isAnimating && audioClips.length > 0) {
-      audioClips.forEach(clip => {
-        const audio = audioRefs.current[clip.id];
-        if (audio) {
-          audio.currentTime = 0;
-          audio.play();
-        }
-      });
-    } else if (!isAnimating && audioClips.length > 0) {
-      audioClips.forEach(clip => {
-        const audio = audioRefs.current[clip.id];
-        if (audio) {
-          audio.pause();
-        }
-      });
-    }
-    // Pausa áudios ao desmontar
-    return () => {
-      audioClips.forEach(clip => {
-        const audio = audioRefs.current[clip.id];
-        if (audio) audio.pause();
-      });
-    };
-  }, [isAnimating, timelineState.tracks]);
 import { useAppContext } from "@/app/context/app--context";
 import { Timeline } from "@/components/timeline";
 import { TimelineControls } from "@/components/timeline/TimelineControls";
@@ -80,6 +52,37 @@ export function TimelinePanel({
     animationType,
     playbackTransitionsEnabled,
   } = useAppContext();
+
+  // Refs para os elementos de áudio
+  const audioRefs = useRef<{ [id: string]: HTMLAudioElement | null }>({});
+
+  // Sincroniza play/pause dos áudios com a animação
+  useEffect(() => {
+    const audioClips = getAllAudioClips(timelineState.tracks);
+    if (isAnimating && audioClips.length > 0) {
+      audioClips.forEach(clip => {
+        const audio = audioRefs.current[clip.id];
+        if (audio) {
+          audio.currentTime = 0;
+          audio.play();
+        }
+      });
+    } else if (!isAnimating && audioClips.length > 0) {
+      audioClips.forEach(clip => {
+        const audio = audioRefs.current[clip.id];
+        if (audio) {
+          audio.pause();
+        }
+      });
+    }
+    // Pausa áudios ao desmontar
+    return () => {
+      audioClips.forEach(clip => {
+        const audio = audioRefs.current[clip.id];
+        if (audio) audio.pause();
+      });
+    };
+  }, [isAnimating, timelineState.tracks]);
 
   const isTimelineEmpty = timelineState.tracks.every(track => track.clips.length === 0);
 
@@ -294,7 +297,9 @@ export function TimelinePanel({
       />
       <div className="border-t border-border bg-muted/30 p-4 flex-1 overflow-hidden flex flex-col">
         {/* Elementos de áudio ocultos para sincronizar com a animação */}
-        {getAllAudioClips(timelineState.tracks).map((clip: { id: React.Key | null | undefined; audioUrl: string | Blob | MediaSource | MediaStream | undefined; }) => {
+        {getAllAudioClips(timelineState.tracks).map((clip) => {
+          // Type guard: only render for audio clips
+          if (clip.type !== 'audio') return null;
           const audioKey = clip.id != null ? String(clip.id) : undefined;
           return (
             <audio
