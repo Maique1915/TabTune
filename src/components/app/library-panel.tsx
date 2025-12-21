@@ -38,6 +38,7 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
   const [selectedBass, setSelectedBass] = useState<string>("all");
   // id fixo para o checkbox
   const filterId = "filter-toggle";
+  const [showFilters, setShowFilters] = useState(!isMobile);
 
   const handleChordSelect = (chord: ChordDiagramProps) => {
     const { finalChord, transportDisplay } = getChordDisplayData(chord);
@@ -189,11 +190,14 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Library</h2>
           <p className="text-xs text-muted-foreground">{filteredChords.length} chords</p>
         </div>
-        {/* Checkbox oculto para controlar o filtro */}
-        <input id={filterId} type="checkbox" className="filter-toggle-checkbox hidden" defaultChecked={!isMobile} />
-        <label htmlFor={filterId} className="cursor-pointer flex items-center justify-center w-10 h-10 rounded-full hover:bg-accent/30 transition">
+        <button
+          type="button"
+          aria-label="Toggle filters"
+          className="cursor-pointer flex items-center justify-center w-10 h-10 rounded-full hover:bg-accent/30 transition"
+          onClick={() => setShowFilters((prev) => !prev)}
+        >
           <Filter className="h-5 w-5 text-primary" />
-        </label>
+        </button>
       </div>
       
       <div className="flex flex-1 overflow-hidden">
