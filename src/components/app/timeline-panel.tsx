@@ -263,3 +263,6 @@ export function TimelinePanel({
   );
 }
 
+console.log("Renderizando LibraryPanel");
+console.log("Renderizando TimelinePanel");
+
