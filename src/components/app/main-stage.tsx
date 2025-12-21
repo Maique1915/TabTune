@@ -22,7 +22,7 @@ export const MainStage = forwardRef<VideoCanvasStageRef, MainStageProps>((props,
 
   return (
     <div className="flex flex-col bg-toolbar p-4 overflow-hidden">
-      <div className="bg-black rounded-lg flex items-center justify-center p-4 overflow-hidden" style={{ height: '100%' }}>
+      <div className="rounded-lg flex items-center justify-center p-4 overflow-hidden" style={{ height: '100%' }}>
         <div className={cn("w-full h-full", { "hidden": isTimelineEmpty })}>
           <VideoCanvasStage
             ref={ref}
