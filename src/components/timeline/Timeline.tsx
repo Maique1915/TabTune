@@ -289,6 +289,7 @@ export function Timeline({
     });
   };
 
+  
   return (
     <div className={className}>
       <div className="flex items-center gap-2 mb-2 px-2">
