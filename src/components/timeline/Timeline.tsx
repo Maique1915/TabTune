@@ -309,40 +309,42 @@ export function Timeline({
         </Button>
       </div>
 
-      <div ref={containerRef} className="relative border border-border rounded-lg overflow-auto bg-background h-full">
-        {showPlayhead && (
-          <div
-            className="absolute top-0 bottom-0 z-50"
-            style={{
-              left: `${TRACK_LABEL_WIDTH - 6}px`,
-              width: "12px",
-              transform: `translateX(${totalWidthPx * clamp01(playheadProgress)}px)`,
-              willChange: "transform",
-              touchAction: "none",
-              cursor: "ew-resize",
-            }}
-            ref={playheadRef}
-            onPointerDown={handlePlayheadPointerDown}
-            onPointerMove={handlePlayheadPointerMove}
-            onPointerUp={handlePlayheadPointerUp}
-          >
-            <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-1 bg-primary rounded-full" />
-          </div>
-        )}
+      <div ref={containerRef} className="relative border border-border rounded-lg overflow-x-auto bg-background">
+        <div className="relative w-max min-w-full">
+          {showPlayhead && (
+            <div
+              className="absolute top-0 bottom-0 z-50"
+              style={{
+                left: `${TRACK_LABEL_WIDTH - 6}px`,
+                width: "12px",
+                transform: `translateX(${totalWidthPx * clamp01(playheadProgress)}px)`,
+                willChange: "transform",
+                touchAction: "none",
+                cursor: "ew-resize",
+              }}
+              ref={playheadRef}
+              onPointerDown={handlePlayheadPointerDown}
+              onPointerMove={handlePlayheadPointerMove}
+              onPointerUp={handlePlayheadPointerUp}
+            >
+              <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-1 bg-primary rounded-full" />
+            </div>
+          )}
 
-        <TimelineRuler totalDuration={effectiveDurationMs} zoom={value.zoom} />
+          <TimelineRuler totalDuration={effectiveDurationMs} zoom={value.zoom} />
 
-        {value.tracks.map(track => (
-          <TimelineTrack
-            key={track.id}
-            track={track}
-            zoom={value.zoom}
-            selectedClipId={selectedClipId}
-            onClipSelect={setSelectedClipId}
-            onDragStart={setDragState}
-            onClipDelete={handleClipDelete}
-          />
-        ))}
+          {value.tracks.map(track => (
+            <TimelineTrack
+              key={track.id}
+              track={track}
+              zoom={value.zoom}
+              selectedClipId={selectedClipId}
+              onClipSelect={setSelectedClipId}
+              onDragStart={setDragState}
+              onClipDelete={handleClipDelete}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
