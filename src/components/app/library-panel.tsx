@@ -37,8 +37,7 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
   const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
   const [selectedBass, setSelectedBass] = useState<string>("all");
   // id fixo para o checkbox
-  const filterId = "filter-toggle";
-  const [showFilters, setShowFilters] = useState(!isMobile);
+  // const filterId = "filter-toggle";
 
   const handleChordSelect = (chord: ChordDiagramProps) => {
     const { finalChord, transportDisplay } = getChordDisplayData(chord);
@@ -111,10 +110,8 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
     <div
       className={cn(
         "p-4 space-y-3 bg-panel border-r h-full overflow-y-auto transition-all duration-200",
-        { "w-40": !isMobile, "w-full": isMobile },
-        showFilters ? "block" : "hidden"
+        { "w-40": !isMobile, "w-full": isMobile }
       )}
-      style={{ display: showFilters ? undefined : 'none' }}
     >
       <h2 className="text-lg font-bold text-white">Filters</h2>
       <div className="space-y-1.5">
@@ -190,14 +187,6 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Library</h2>
           <p className="text-xs text-muted-foreground">{filteredChords.length} chords</p>
         </div>
-        <button
-          type="button"
-          aria-label="Toggle filters"
-          className="cursor-pointer flex items-center justify-center w-10 h-10 rounded-full hover:bg-accent/30 transition"
-          onClick={() => setShowFilters((prev) => !prev)}
-        >
-          <Filter className="h-5 w-5 text-primary" />
-        </button>
       </div>
       
       <div className="flex flex-1 overflow-hidden">
