@@ -121,8 +121,7 @@ export function HomePage() {
         handleAnimate={handleAnimate}
         handlePause={handlePause}
         handleResume={handleResume}
-        handleRenderVideo={handleRenderVideo}
-      />
+        handleRenderVideo={handleRenderVideo} isTimelineEmpty={false}      />
     </main>
   );
 
