@@ -67,7 +67,7 @@ export function Timeline({
 
   const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
-  // Suaviza o playhead
+          <div ref={containerRef} className="relative border border-[#23283a] rounded-2xl overflow-x-auto bg-[#23283a] shadow-xl p-4 my-2">
   const playheadMotionRef = useRef({
     targetProgress: 0,
     lastTargetProgress: 0,

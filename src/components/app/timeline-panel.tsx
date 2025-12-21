@@ -20,84 +20,88 @@ import { Button } from "@/components/ui/button";
 import { Play, Pause } from "lucide-react";
 
 
-interface TimelinePanelProps {
-  isAnimating: boolean;
-  isPaused: boolean;
-  ffmpegLoaded: boolean;
-  handleAnimate: () => void;
-  handlePause: () => void;
-  handleResume: () => void;
-  handleRenderVideo: () => void;
-}
-
-export function TimelinePanel({
-  isAnimating,
-  isPaused,
-  ffmpegLoaded,
-  handleAnimate,
-  handlePause,
-  handleResume,
-  handleRenderVideo
-}: TimelinePanelProps) {
-  const {
-    selectedChords,
-    setSelectedChords,
-    timelineState,
-    setTimelineState,
-    playbackProgress,
-    setPlaybackProgress,
-    setPlaybackIsScrubbing,
-    requestPlaybackSeek,
-    playbackTotalDurationMs,
-    animationType,
-    playbackTransitionsEnabled,
-  } = useAppContext();
-
-  // Refs para os elementos de áudio
-  const audioRefs = useRef<{ [id: string]: HTMLAudioElement | null }>({});
-
-  // Sincroniza play/pause dos áudios com a animação
-  useEffect(() => {
-    const audioClips = getAllAudioClips(timelineState.tracks);
-    if (isAnimating && audioClips.length > 0) {
-      audioClips.forEach(clip => {
-        const audio = audioRefs.current[clip.id];
-        if (audio) {
-          audio.currentTime = 0;
-          audio.play();
-        }
-      });
-    } else if (!isAnimating && audioClips.length > 0) {
-      audioClips.forEach(clip => {
-        const audio = audioRefs.current[clip.id];
-        if (audio) {
-          audio.pause();
-        }
-      });
-    }
-    // Pausa áudios ao desmontar
-    return () => {
-      audioClips.forEach(clip => {
-        const audio = audioRefs.current[clip.id];
-        if (audio) audio.pause();
-      });
-    };
-  }, [isAnimating, timelineState.tracks]);
-
-  const isTimelineEmpty = timelineState.tracks.every(track => track.clips.length === 0);
-
-  const transitionDurationMs = animationType === "carousel" ? 1000 : 800;
-  const minClipDurationMs = playbackTransitionsEnabled ? transitionDurationMs * 2 : 0;
-
-  const [isInitializing, setIsInitializing] = useState(true);
-
-  // Sincroniza selectedChords → timeline clips (apenas na inicialização)
-  useEffect(() => {
-    if (!isInitializing || selectedChords.length === 0) return;
-
-    const clips: ChordClip[] = [];
-    let currentStart = 0;
-    const defaultDuration = 2000;
+  return (
+    <div className="flex flex-row w-full h-full bg-gradient-to-br from-[#181c24] via-[#23283a] to-[#181c24]">
+      {/* Painel lateral esquerdo (exemplo visual) */}
+      <div className="shrink-0 w-[260px] bg-[#23283a] border-r border-[#23283a] shadow-xl rounded-r-2xl flex flex-col items-center py-6 mr-2">
+        {/* Conteúdo do painel esquerdo (ex: Library) */}
+      </div>
+      {/* Área central fixa, destacada */}
+      <div className="flex-1 flex flex-col items-center justify-center min-w-[900px] max-w-[1500px] mx-auto px-8 py-6 bg-[#23283a] rounded-2xl shadow-2xl border border-[#23283a]">
+        <TimelineControls
+          isAnimating={isAnimating}
+          isPaused={isPaused}
+          ffmpegLoaded={ffmpegLoaded}
+          handleAnimate={handleAnimate}
+          handlePause={handlePause}
+          handleResume={handleResume}
+          handleRenderVideo={handleRenderVideo}
+          isTimelineEmpty={isTimelineEmpty}
+          onAudioUpload={handleAudioUpload}
+          audioUploaded={audioUploaded}
+        />
+        <div className="border-t border-border bg-[#23283a] p-6 w-full overflow-hidden flex flex-col rounded-xl shadow-lg mt-4">
+          {/* Elementos de áudio ocultos para sincronizar com a animação */}
+          {getAllAudioClips(timelineState.tracks).map((clip) => {
+            if (clip.type !== 'audio') return null;
+            const audioKey = clip.id != null ? String(clip.id) : undefined;
+            return (
+              <audio
+                key={audioKey}
+                ref={el => {
+                  if (audioKey !== undefined) {
+                    audioRefs.current[audioKey] = el;
+                  }
+                }}
+                src={clip.audioUrl}
+                preload="auto"
+                style={{ display: 'none' }}
+              />
+            );
+          })}
+          <div className="">
+            <Timeline
+              value={timelineState}
+              onChange={handleTimelineChange}
+              playheadProgress={playbackProgress}
+              playheadTotalDurationMs={playbackTotalDurationMs || timelineState.totalDuration}
+              minClipDurationMs={minClipDurationMs}
+              showPlayhead
+              onPlayheadScrubStart={() => setPlaybackIsScrubbing(true)}
+              onPlayheadScrub={(progress) => {
+                setPlaybackProgress(progress);
+                requestPlaybackSeek(progress);
+              }}
+              onPlayheadScrubEnd={(progress) => {
+                setPlaybackProgress(progress);
+                requestPlaybackSeek(0);
+              }}
+              isAnimating={isAnimating}
+              isPaused={isPaused}
+              ffmpegLoaded={ffmpegLoaded}
+              isTimelineEmpty={isTimelineEmpty}
+              handleAnimate={handleAnimate}
+              handlePause={handlePause}
+              handleResume={handleResume}
+              handleRenderVideo={handleRenderVideo}
+            />
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center p-4 bg-[#23283a] border-t border-border rounded-b-xl mt-2"></div>
+        {/* Passa o botão de upload para os controles */}
+        <div style={{ display: 'none' }} />
+        <div className="absolute">
+          {/* O botão é renderizado dentro dos controles, não aqui */}
+        </div>
+        {/* Substitui os controles para aceitar props extras */}
+        <style>{`.timeline-controls-upload { display: none; }`}</style>
+      </div>
+      {/* Painel lateral direito (exemplo visual) */}
+      <div className="shrink-0 w-[260px] bg-[#23283a] border-l border-[#23283a] shadow-xl rounded-l-2xl flex flex-col items-center py-6 ml-2">
+        {/* Conteúdo do painel direito (ex: Customizer) */}
+      </div>
+    </div>
+  );
 
     selectedChords.forEach((chordWithTiming, index) => {
       if (chordWithTiming && chordWithTiming.chord) {
