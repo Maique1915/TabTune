@@ -104,11 +104,14 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
   };
 
   const FiltersContent = () => (
-    <div className={cn(
-      "p-4 space-y-3 bg-panel border-r h-full overflow-y-auto",
-      { "w-40": !isMobile, "w-full": isMobile },
-      !showFilters && "hidden"
-    )}>
+    <div
+      className={cn(
+        "p-4 space-y-3 bg-panel border-r h-full overflow-y-auto transition-all duration-200",
+        { "w-40": !isMobile, "w-full": isMobile },
+        showFilters ? "block" : "hidden"
+      )}
+      style={{ display: showFilters ? undefined : 'none' }}
+    >
       <h2 className="text-lg font-bold text-white">Filters</h2>
       <div className="space-y-1.5">
         <Label className="text-xs font-medium">Scale</Label>
