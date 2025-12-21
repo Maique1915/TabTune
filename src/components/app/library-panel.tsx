@@ -2,7 +2,13 @@
 
 import { useState, useMemo } from "react";
 import "./library-panel.css";
-// Removido Select customizado
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { chordData, getNome, notes, complements, basses } from "@/lib/chords";
@@ -110,54 +116,42 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
       <h2 className="text-lg font-bold text-white">Filters</h2>
       <div className="space-y-1.5">
         <Label className="text-xs font-medium">Scale</Label>
-        <select
-          className="bg-input h-9 text-sm w-full rounded-md border px-3 py-2"
-          value={selectedScale}
-          onChange={e => setSelectedScale(e.target.value)}
-        >
-          {notes.map((note) => (
-            <option key={note} value={note}>{note.replace(/#/g, '♯')}</option>
-          ))}
-        </select>
+        <Select value={selectedScale} onValueChange={setSelectedScale}>
+          <SelectTrigger className="bg-input h-9 text-sm"><SelectValue placeholder="Scale" /></SelectTrigger>
+          <SelectContent>{notes.map((note) => <SelectItem key={note} value={note}>{note.replace(/#/g, '♯')}</SelectItem>)}</SelectContent>
+        </Select>
       </div>
       <div className="space-y-1.5">
         <Label className="text-xs font-medium">Note</Label>
-        <select
-          className="bg-input h-9 text-sm w-full rounded-md border px-3 py-2"
-          value={selectedNote}
-          onChange={e => setSelectedNote(e.target.value)}
-        >
-          <option value="all">All</option>
-          {scaleNotes.map((note) => (
-            <option key={note} value={note}>{note.replace(/#/g, '♯')}</option>
-          ))}
-        </select>
+        <Select value={selectedNote} onValueChange={setSelectedNote}>
+          <SelectTrigger className="bg-input h-9 text-sm"><SelectValue placeholder="All" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            {scaleNotes.map((note) => <SelectItem key={note} value={note}>{note.replace(/#/g, '♯')}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-1.5">
         <Label className="text-xs font-medium">Quality</Label>
-        <select
-          className="bg-input h-9 text-sm w-full rounded-md border px-3 py-2"
-          value={selectedQuality}
-          onChange={e => setSelectedQuality(e.target.value)}
-        >
-          <option value="all">All</option>
-          <option value="major">Major</option>
-          <option value="minor">Minor</option>
-          <option value="dim">Dim</option>
-        </select>
+        <Select value={selectedQuality} onValueChange={setSelectedQuality}>
+          <SelectTrigger className="bg-input h-9 text-sm"><SelectValue placeholder="All" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="major">Major</SelectItem>
+            <SelectItem value="minor">Minor</SelectItem>
+            <SelectItem value="dim">Dim</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-1.5">
         <Label className="text-xs font-medium">Bass</Label>
-        <select
-          className="bg-input h-9 text-sm w-full rounded-md border px-3 py-2"
-          value={selectedBass}
-          onChange={e => setSelectedBass(e.target.value)}
-        >
-          <option value="all">All</option>
-          {basses.map((bass, index) => (
-            <option key={bass} value={bass}>{bassNotes[index]}</option>
-          ))}
-        </select>
+        <Select value={selectedBass} onValueChange={setSelectedBass}>
+          <SelectTrigger className="bg-input h-9 text-sm"><SelectValue placeholder="All" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            {basses.map((bass, index) => <SelectItem key={bass} value={bass}>{bassNotes[index]}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-1.5">
         <Label className="text-xs font-medium">Extensions</Label>
