@@ -175,16 +175,37 @@ export function TimelinePanel({
       waveform: [],
     };
     setTimelineState(prev => {
-      const track = prev.tracks[0];
+      // Procura a track de acordes
+      const chordTrack = prev.tracks.find(t => t.type === 'chord');
+      // Procura a primeira track de áudio
+      let audioTrackIndex = prev.tracks.findIndex(t => t.type === 'audio');
+      let newTracks = [...prev.tracks];
+      if (audioTrackIndex === -1) {
+        // Não existe track de áudio, cria uma nova abaixo da de acordes
+        const newAudioTrack = {
+          id: generateClipId(),
+          name: 'Áudio',
+          type: 'audio' as const,
+          clips: [audioClip],
+        };
+        // Insere logo após a track de acordes
+        const chordIndex = prev.tracks.findIndex(t => t.type === 'chord');
+        if (chordIndex !== -1) {
+          newTracks.splice(chordIndex + 1, 0, newAudioTrack);
+        } else {
+          newTracks.push(newAudioTrack);
+        }
+      } else {
+        // Já existe track de áudio, adiciona nela
+        newTracks = newTracks.map((t, idx) =>
+          idx === audioTrackIndex
+            ? { ...t, clips: [...t.clips, audioClip] }
+            : t
+        );
+      }
       return {
         ...prev,
-        tracks: [
-          {
-            ...track,
-            clips: [...track.clips, audioClip],
-          },
-          ...prev.tracks.slice(1),
-        ],
+        tracks: newTracks,
       };
     });
     setAudioUploaded(true);
