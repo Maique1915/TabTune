@@ -128,6 +128,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const minClipDurationMs = 200; // Defina um valor padrão ou obtenha de outro lugar
 
+  
   const requestPlaybackSeek = (progress: number) => {
     setPlaybackSeekProgress(progress);
     setPlaybackSeekNonce((n) => n + 1);
