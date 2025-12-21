@@ -166,7 +166,7 @@ export function TimelinePanel({
     // Cria um novo clipe de áudio (simples, sem waveform)
     const audioClip = {
       id: generateClipId(),
-      type: 'audio',
+      type: 'audio' as const,
       fileName: file.name,
       audioUrl: URL.createObjectURL(file),
       start: 0,
