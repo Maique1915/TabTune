@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Film } from "lucide-react";
 import { useAppContext } from "@/app/context/app--context";
@@ -16,7 +16,10 @@ interface TimelineControlsProps {
   isTimelineEmpty: boolean;
 }
 
-export function TimelineControls({
+// Novo tipo para clipe de áudio
+type AddAudioClipFn = (file: File) => void;
+}
+
   isAnimating,
   isPaused,
   ffmpegLoaded,
@@ -25,8 +28,11 @@ export function TimelineControls({
   handleResume,
   handleRenderVideo,
   isTimelineEmpty,
-}: TimelineControlsProps) {
+  onAudioUpload,
+  audioUploaded
+}: TimelineControlsProps & { onAudioUpload: (file: File) => void; audioUploaded: boolean }) {
   const { isRendering } = useAppContext();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="flex items-center gap-2">
@@ -45,6 +51,32 @@ export function TimelineControls({
       >
         {isAnimating && !isPaused ? <Pause /> : <Play />}
       </Button>
+
+      {/* Botão de upload de áudio */}
+      <input
+        type="file"
+        accept="audio/*"
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+        onChange={e => {
+          const file = e.target.files?.[0];
+          if (file) {
+            onAudioUpload(file);
+          }
+        }}
+        disabled={audioUploaded}
+      />
+      <Button
+        variant="outline"
+        size="sm"
+        className="whitespace-nowrap"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={audioUploaded}
+        title={audioUploaded ? "Áudio já adicionado" : "Adicionar áudio à timeline"}
+      >
+        {audioUploaded ? "Áudio adicionado" : "Adicionar áudio"}
+      </Button>
+
       <Button 
         variant="default" 
         size="sm"

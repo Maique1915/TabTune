@@ -158,6 +158,36 @@ export function TimelinePanel({
     setSelectedChords(reorderedChordsWithTiming);
   };
 
+  // Estado para controlar se o áudio já foi adicionado
+  const [audioUploaded, setAudioUploaded] = useState(false);
+
+  // Função para adicionar o clipe de áudio à timeline
+  const handleAudioUpload = (file: File) => {
+    // Cria um novo clipe de áudio (simples, sem waveform)
+    const audioClip = {
+      id: generateClipId(),
+      type: 'audio',
+      fileName: file.name,
+      start: 0,
+      duration: 5000, // valor padrão, pode ser ajustado depois
+      waveform: [],
+    };
+    setTimelineState(prev => {
+      const track = prev.tracks[0];
+      return {
+        ...prev,
+        tracks: [
+          {
+            ...track,
+            clips: [...track.clips, audioClip],
+          },
+          ...prev.tracks.slice(1),
+        ],
+      };
+    });
+    setAudioUploaded(true);
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="border-t border-border bg-muted/30 p-4 flex-1 overflow-hidden flex flex-col">
@@ -188,12 +218,27 @@ export function TimelinePanel({
             handleRenderVideo={handleRenderVideo}
           />
         </div>
-
       </div>
-
-      <div className="flex flex-col items-center justify-center p-4 bg-muted/20 border-t border-border">
-
+      <div className="flex flex-col items-center justify-center p-4 bg-muted/20 border-t border-border"></div>
+      {/* Passa o botão de upload para os controles */}
+      <div style={{ display: 'none' }} />
+      <div className="absolute">
+        {/* O botão é renderizado dentro dos controles, não aqui */}
       </div>
+      {/* Substitui os controles para aceitar props extras */}
+      <style>{`.timeline-controls-upload { display: none; }`}</style>
+      <TimelineControls
+        isAnimating={isAnimating}
+        isPaused={isPaused}
+        ffmpegLoaded={ffmpegLoaded}
+        handleAnimate={handleAnimate}
+        handlePause={handlePause}
+        handleResume={handleResume}
+        handleRenderVideo={handleRenderVideo}
+        isTimelineEmpty={isTimelineEmpty}
+        onAudioUpload={handleAudioUpload}
+        audioUploaded={audioUploaded}
+      />
     </div>
   );
 }
