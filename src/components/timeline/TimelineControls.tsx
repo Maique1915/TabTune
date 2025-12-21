@@ -18,6 +18,7 @@ interface TimelineControlsProps {
   audioUploaded: boolean;
 }
 
+export function TimelineControls({
   isAnimating,
   isPaused,
   ffmpegLoaded,
@@ -26,6 +27,8 @@ interface TimelineControlsProps {
   handleResume,
   handleRenderVideo,
   isTimelineEmpty,
+  onAudioUpload,
+  audioUploaded
 }: TimelineControlsProps) {
   const { isRendering } = useAppContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
