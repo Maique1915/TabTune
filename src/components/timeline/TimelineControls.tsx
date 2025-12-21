@@ -35,6 +35,11 @@ export function TimelineControls({
 
   return (
     <div className="flex items-center gap-2">
+       <div className="flex items-center justify-between w-full gap-4 py-2 px-4 bg-surface-light dark:bg-surface-dark border-b border-gray-200 dark:border-gray-800">
+    {/* Esquerda: Play/Pause e Áudio */}
+    <div className="flex items-center gap-2">
+      {/* Botão Play/Pause */}
+ 
       <Button 
         variant="ghost" 
         size="icon" 
@@ -75,6 +80,7 @@ export function TimelineControls({
       >
         {audioUploaded ? "Áudio adicionado" : "Adicionar áudio"}
       </Button>
+      </div>
 
       <Button 
         variant="default" 
@@ -90,6 +96,7 @@ export function TimelineControls({
           ? "Renderizando..." 
           : "Renderizar MP4"}
       </Button>
+      </div>
     </div>
   );
 }
