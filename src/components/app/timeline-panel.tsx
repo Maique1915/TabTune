@@ -181,6 +181,7 @@ export function TimelinePanel({
       } as ChordWithTiming));
     setSelectedChords(reorderedChordsWithTiming);
   };
+console.log("Renderizando TimelinePanel");
 
   // --- RENDER ---
   return (
@@ -262,7 +263,3 @@ export function TimelinePanel({
     </div>
   );
 }
-
-console.log("Renderizando LibraryPanel");
-console.log("Renderizando TimelinePanel");
-

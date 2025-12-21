@@ -48,13 +48,8 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
       onClose?.();
     }
   };
-    // Visual moderno
-    return (
-      <div className="w-full h-full bg-[#23283a] rounded-2xl shadow-2xl border border-[#23283a] p-6 flex flex-col gap-4 text-base text-white">
-        {/* ...restante do conteúdo da library... */}
-      </div>
-    );
-    // ...restante do componente...
+
+console.log("Renderizando LibraryPanel");
 
   const scaleNotes = useMemo(() => {
     const scaleIndex = notes.indexOf(selectedScale);
