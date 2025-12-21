@@ -252,10 +252,6 @@ console.log("Renderizando TimelinePanel");
         <div className="absolute"></div>
         <style>{`.timeline-controls-upload { display: none; }`}</style>
       </div>
-      {/* Painel lateral direito (exemplo visual) */}
-      <div className="shrink-0 w-[260px] bg-[#23283a] border-l border-[#23283a] shadow-xl rounded-l-2xl flex flex-col items-center py-6 ml-2">
-        {/* Conteúdo do painel direito (ex: Customizer) */}
-      </div>
     </div>
   );
 }
