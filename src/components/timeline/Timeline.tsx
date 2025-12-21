@@ -310,7 +310,7 @@ export function Timeline({
       </div>
 
       <div ref={containerRef} className="relative border border-border rounded-lg overflow-x-auto bg-background">
-        <div className="relative w-max min-w-full">
+        <div className="relative" style={{ width: `${totalWidthPx + TRACK_LABEL_WIDTH}px` }}>
           {showPlayhead && (
             <div
               className="absolute top-0 bottom-0 z-50"
