@@ -14,10 +14,7 @@ interface TimelineControlsProps {
   handleResume: () => void;
   handleRenderVideo: () => void;
   isTimelineEmpty: boolean;
-}
 
-// Novo tipo para clipe de áudio
-type AddAudioClipFn = (file: File) => void;
 }
 
   isAnimating,
