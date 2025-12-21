@@ -48,109 +48,109 @@ export function TimelinePanel({
     setPlaybackProgress,
     setPlaybackIsScrubbing,
     requestPlaybackSeek,
-    export function TimelinePanel({
-      isAnimating,
-      isPaused,
-      ffmpegLoaded,
-      handleAnimate,
-      handlePause,
-      handleResume,
-      handleRenderVideo
-    }: TimelinePanelProps) {
-      const {
-        selectedChords,
-        setSelectedChords,
-        timelineState,
-        setTimelineState,
-        playbackProgress,
-        setPlaybackProgress,
-        setPlaybackIsScrubbing,
-        requestPlaybackSeek,
-        playbackTotalDurationMs,
-        animationType,
-        playbackTransitionsEnabled,
-      } = useAppContext();
+    playbackTotalDurationMs,
+    animationType,
+    playbackTransitionsEnabled,
+  } = useAppContext();
 
-      // ...existing code...
+  // Refs para os elementos de áudio
+  const audioRefs = useRef<{ [id: string]: HTMLAudioElement | null }>({});
 
-      return (
-        <div className="flex flex-row w-full h-full">
-          {/* Exemplo: Library/Customizer à esquerda */}
-          {/* <div className="shrink-0 w-[280px]"> ... </div> */}
-          {/* Área central fixa */}
-          <div className="flex-1 flex flex-col items-center justify-center min-w-[800px] max-w-[1400px] mx-auto">
-            <TimelineControls
-              isAnimating={isAnimating}
-              isPaused={isPaused}
-              ffmpegLoaded={ffmpegLoaded}
-              handleAnimate={handleAnimate}
-              handlePause={handlePause}
-              handleResume={handleResume}
-              handleRenderVideo={handleRenderVideo}
-              isTimelineEmpty={isTimelineEmpty}
-              onAudioUpload={handleAudioUpload}
-              audioUploaded={audioUploaded}
-            />
-            <div className="border-t border-border bg-muted/30 p-4 w-full overflow-hidden flex flex-col">
-              {/* Elementos de áudio ocultos para sincronizar com a animação */}
-              {getAllAudioClips(timelineState.tracks).map((clip) => {
-                if (clip.type !== 'audio') return null;
-                const audioKey = clip.id != null ? String(clip.id) : undefined;
-                return (
-                  <audio
-                    key={audioKey}
-                    ref={el => {
-                      if (audioKey !== undefined) {
-                        audioRefs.current[audioKey] = el;
-                      }
-                    }}
-                    src={clip.audioUrl}
-                    preload="auto"
-                    style={{ display: 'none' }}
-                  />
-                );
-              })}
-              <div className="">
-                <Timeline
-                  value={timelineState}
-                  onChange={handleTimelineChange}
-                  playheadProgress={playbackProgress}
-                  playheadTotalDurationMs={playbackTotalDurationMs || timelineState.totalDuration}
-                  minClipDurationMs={minClipDurationMs}
-                  showPlayhead
-                  onPlayheadScrubStart={() => setPlaybackIsScrubbing(true)}
-                  onPlayheadScrub={(progress) => {
-                    setPlaybackProgress(progress);
-                    requestPlaybackSeek(progress);
-                  }}
-                  onPlayheadScrubEnd={(progress) => {
-                    setPlaybackProgress(progress);
-                    requestPlaybackSeek(0);
-                  }}
-                  isAnimating={isAnimating}
-                  isPaused={isPaused}
-                  ffmpegLoaded={ffmpegLoaded}
-                  isTimelineEmpty={isTimelineEmpty}
-                  handleAnimate={handleAnimate}
-                  handlePause={handlePause}
-                  handleResume={handleResume}
-                  handleRenderVideo={handleRenderVideo}
-                />
-              </div>
-            </div>
-            <div className="flex flex-col items-center justify-center p-4 bg-muted/20 border-t border-border"></div>
-            {/* Passa o botão de upload para os controles */}
-            <div style={{ display: 'none' }} />
-            <div className="absolute">
-              {/* O botão é renderizado dentro dos controles, não aqui */}
-            </div>
-            {/* Substitui os controles para aceitar props extras */}
-            <style>{`.timeline-controls-upload { display: none; }`}</style>
-          </div>
-          {/* Exemplo: Customizer à direita */}
-          {/* <div className="shrink-0 w-[280px]"> ... </div> */}
-        </div>
-      );
+  // Sincroniza play/pause dos áudios com a animação
+  useEffect(() => {
+    const audioClips = getAllAudioClips(timelineState.tracks);
+    if (isAnimating && audioClips.length > 0) {
+      audioClips.forEach(clip => {
+        const audio = audioRefs.current[clip.id];
+        if (audio) {
+          audio.currentTime = 0;
+          audio.play();
+        }
+      });
+    } else if (!isAnimating && audioClips.length > 0) {
+      audioClips.forEach(clip => {
+        const audio = audioRefs.current[clip.id];
+        if (audio) {
+          audio.pause();
+        }
+      });
+    }
+    // Pausa áudios ao desmontar
+    return () => {
+      audioClips.forEach(clip => {
+        const audio = audioRefs.current[clip.id];
+        if (audio) audio.pause();
+      });
+    };
+  }, [isAnimating, timelineState.tracks]);
+
+  const isTimelineEmpty = timelineState.tracks.every(track => track.clips.length === 0);
+
+  const transitionDurationMs = animationType === "carousel" ? 1000 : 800;
+  const minClipDurationMs = playbackTransitionsEnabled ? transitionDurationMs * 2 : 0;
+
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  // Sincroniza selectedChords → timeline clips (apenas na inicialização)
+  useEffect(() => {
+    if (!isInitializing || selectedChords.length === 0) return;
+
+    const clips: ChordClip[] = [];
+    let currentStart = 0;
+    const defaultDuration = 2000;
+
+    selectedChords.forEach((chordWithTiming, index) => {
+      if (chordWithTiming && chordWithTiming.chord) {
+        const duration = Math.max(chordWithTiming.duration || defaultDuration, minClipDurationMs);
+        const { finalChord, transportDisplay } = getChordDisplayData(chordWithTiming.chord);
+        clips.push({
+          id: `initial-clip-${index}`, // Deterministic ID for hydration safety
+          type: 'chord',
+          chord: chordWithTiming.chord, // Keep original chord
+          finalChord,                  // Add finalChord
+          transportDisplay,            // Add transportDisplay
+          start: currentStart,
+          duration
+        });
+        currentStart += duration;
+      }
+    });
+
+    const totalNeeded = Math.max(currentStart, 1000);
+    const totalFromPlayback = playbackTotalDurationMs > 0 ? playbackTotalDurationMs : totalNeeded;
+    const totalDuration = Math.max(totalNeeded, totalFromPlayback);
+
+    setTimelineState(prev => {
+      // Atualiza apenas a track de acordes, mantendo as outras
+      const newTracks = prev.tracks.length > 0
+        ? prev.tracks.map(t => t.type === 'chord' ? { ...t, clips } : t)
+        : [{ id: generateClipId(), name: 'Acordes', type: 'chord' as const, clips }];
+      return {
+        ...prev,
+        tracks: newTracks,
+        totalDuration
+      };
+    });
+
+    setIsInitializing(false);
+  }, [selectedChords, isInitializing, playbackTotalDurationMs, minClipDurationMs, setTimelineState]);
+
+  // Quando selectedChords muda externamente (novo acorde adicionado)
+  useEffect(() => {
+    if (isInitializing) return;
+
+    const chordTrack = timelineState.tracks.find(t => t.type === 'chord');
+    if (!chordTrack) return;
+
+    const currentClipCount = chordTrack.clips.length || 0;
+
+    if (selectedChords.length > currentClipCount) {
+      const newClips = [...chordTrack.clips];
+
+      for (let i = currentClipCount; i < selectedChords.length; i++) {
+        const chordWithTiming = selectedChords[i];
+        if (chordWithTiming && chordWithTiming.chord) {
+          const lastClip = newClips[newClips.length - 1];
           const newStart = lastClip ? lastClip.start + lastClip.duration : 0;
           const duration = Math.max(chordWithTiming.duration || 2000, minClipDurationMs);
           const { finalChord, transportDisplay } = getChordDisplayData(chordWithTiming.chord);
@@ -299,14 +299,7 @@ export function TimelinePanel({
         {/* Elementos de áudio ocultos para sincronizar com a animação */}
         {getAllAudioClips(timelineState.tracks).map((clip) => {
           // Type guard: only render for audio clips
-          if (clip.type !== 'audio') return null;          
-          
-          // Utilitário para obter todos os clipes de áudio da timeline
-          function getAllAudioClips(tracks: TimelineTrack[]) {
-            return tracks
-              .filter(t => t.type === 'audio')
-              .flatMap(t => t.clips);
-          }
+          if (clip.type !== 'audio') return null;
           const audioKey = clip.id != null ? String(clip.id) : undefined;
           return (
             <audio
