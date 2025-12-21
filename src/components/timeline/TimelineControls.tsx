@@ -14,7 +14,9 @@ interface TimelineControlsProps {
   handleResume: () => void;
   handleRenderVideo: () => void;
   isTimelineEmpty: boolean;
-
+  onAudioUpload: (file: File) => void;
+  audioUploaded: boolean;
+}
 }
 
   isAnimating,
@@ -25,9 +27,7 @@ interface TimelineControlsProps {
   handleResume,
   handleRenderVideo,
   isTimelineEmpty,
-  onAudioUpload,
-  audioUploaded
-}: TimelineControlsProps & { onAudioUpload: (file: File) => void; audioUploaded: boolean }) {
+}: TimelineControlsProps) {
   const { isRendering } = useAppContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
