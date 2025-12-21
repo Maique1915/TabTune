@@ -114,50 +114,8 @@ export function TimelinePanel({
       </div>
     </div>
   );
-}
 
-    selectedChords.forEach((chordWithTiming, index) => {
-      if (chordWithTiming && chordWithTiming.chord) {
-        const duration = Math.max(chordWithTiming.duration || defaultDuration, minClipDurationMs);
-        const { finalChord, transportDisplay } = getChordDisplayData(chordWithTiming.chord);
-        clips.push({
-          id: `initial-clip-${index}`, // Deterministic ID for hydration safety
-          type: 'chord',
-          chord: chordWithTiming.chord, // Keep original chord
-          finalChord,                  // Add finalChord
-          transportDisplay,            // Add transportDisplay
-          start: currentStart,
-          duration
-        });
-        currentStart += duration;
-      }
-    });
-
-    const totalNeeded = Math.max(currentStart, 1000);
-    const totalFromPlayback = playbackTotalDurationMs > 0 ? playbackTotalDurationMs : totalNeeded;
-    const totalDuration = Math.max(totalNeeded, totalFromPlayback);
-
-    setTimelineState(prev => {
-      // Atualiza apenas a track de acordes, mantendo as outras
-      const newTracks = prev.tracks.length > 0
-        ? prev.tracks.map(t => t.type === 'chord' ? { ...t, clips } : t)
-        : [{ id: generateClipId(), name: 'Acordes', type: 'chord' as const, clips }];
-      return {
-        ...prev,
-        tracks: newTracks,
-        totalDuration
-      };
-    });
-
-    setIsInitializing(false);
-  }, [selectedChords, isInitializing, playbackTotalDurationMs, minClipDurationMs, setTimelineState]);
-
-  // Quando selectedChords muda externamente (novo acorde adicionado)
-  useEffect(() => {
-    if (isInitializing) return;
-
-    const chordTrack = timelineState.tracks.find(t => t.type === 'chord');
-    if (!chordTrack) return;
+// (restante dos hooks e lógica devem estar aqui, dentro da função TimelinePanel, antes do return)
 
     const currentClipCount = chordTrack.clips.length || 0;
 
