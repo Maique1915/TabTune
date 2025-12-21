@@ -187,7 +187,6 @@ console.log("Renderizando TimelinePanel");
   return (
     <div className="flex flex-row w-full h-full bg-gradient-to-br from-[#181c24] via-[#23283a] to-[#181c24]">
       {/* Painel lateral esquerdo (exemplo visual) */}
-      <div className="shrink-0 w-[260px] bg-[#23283a] border-r border-[#23283a] shadow-xl rounded-r-2xl flex flex-col items-center py-6 mr-2">
         {/* Conteúdo do painel esquerdo (ex: Library) */}
       </div>
       {/* Área central fixa, destacada */}
