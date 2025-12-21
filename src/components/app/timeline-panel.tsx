@@ -168,6 +168,7 @@ export function TimelinePanel({
       id: generateClipId(),
       type: 'audio',
       fileName: file.name,
+      audioUrl: URL.createObjectURL(file),
       start: 0,
       duration: 5000, // valor padrão, pode ser ajustado depois
       waveform: [],
