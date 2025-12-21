@@ -1,0 +1,7 @@
+/* Oculta o painel de filtro se o checkbox não estiver checado */
+#filter-toggle:not(:checked) ~ .flex.flex-1 .filter-panel-wrapper .filter-panel {
+  display: none;
+}
+#filter-toggle:checked ~ .flex.flex-1 .filter-panel-wrapper .filter-panel {
+  display: block;
+}

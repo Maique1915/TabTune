@@ -1,32 +1,7 @@
 "use client";
 
-import { useState, useMemo, Component, ReactNode } from "react";
-// ErrorBoundary para capturar erros de remoção de nó
-class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
-  constructor(props: { children: ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-  static getDerivedStateFromError(error: Error) {
-    // Captura qualquer erro de renderização
-    return { hasError: true };
-  }
-  componentDidCatch(error: Error, info: any) {
-    // Opcional: logar o erro
-    if (error.message && error.message.includes('removeChild')) {
-      // Ignorar erro específico
-      return;
-    }
-    // Outros erros podem ser tratados aqui
-  }
-  render() {
-    if (this.state.hasError) {
-      // Renderiza nada se erro capturado
-      return null;
-    }
-    return this.props.children;
-  }
-}
+import { useState, useMemo } from "react";
+import "@/complements/app/library-panel.css";
 import {
   Select,
   SelectContent,
@@ -51,6 +26,7 @@ interface LibraryPanelProps {
   onClose?: () => void;
 }
 
+
 export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
   const { setSelectedChords } = useAppContext();
   const { toast } = useToast();
@@ -60,7 +36,8 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
   const [selectedQuality, setSelectedQuality] = useState<string>("all");
   const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
   const [selectedBass, setSelectedBass] = useState<string>("all");
-  const [showFilters, setShowFilters] = useState(!isMobile);
+  // id fixo para o checkbox
+  const filterId = "filter-toggle";
 
   const handleChordSelect = (chord: ChordDiagramProps) => {
     const { finalChord, transportDisplay } = getChordDisplayData(chord);
@@ -212,17 +189,20 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Library</h2>
           <p className="text-xs text-muted-foreground">{filteredChords.length} chords</p>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setShowFilters(!showFilters)}>
-          <Filter className={cn("h-5 w-5", { "text-primary": showFilters })} />
-        </Button>
+        {/* Checkbox oculto para controlar o filtro */}
+        <input id={filterId} type="checkbox" className="filter-toggle-checkbox hidden" defaultChecked={!isMobile} />
+        <label htmlFor={filterId} className="cursor-pointer flex items-center justify-center w-10 h-10 rounded-full hover:bg-accent/30 transition">
+          <Filter className="h-5 w-5 text-primary" />
+        </label>
       </div>
       
       <div className="flex flex-1 overflow-hidden">
-        <ErrorBoundary>
+        {/* Filtro controlado só por CSS */}
+        <div className="filter-panel-wrapper">
           <FiltersContent />
-        </ErrorBoundary>
+        </div>
         <div className="flex-1 overflow-y-auto p-3">
-          <div className={cn("grid gap-3", isMobile || showFilters ? "grid-cols-2" : "grid-cols-3")}>
+          <div className={cn("grid gap-3", isMobile ? "grid-cols-2" : "grid-cols-3")}> 
             {filteredChords.map((chord) => (
               <div
                 key={`${chord.chord.note}-${chord.chord.complement}-${chord.chord.bass}-${JSON.stringify(chord.positions)}`}
