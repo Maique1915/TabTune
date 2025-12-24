@@ -24,11 +24,7 @@ const ChordDiagram: React.FC<ChordDiagramProps> = ({ chord, size = 'sm', showLab
 
   return (
     <div className={`flex flex-col items-center ${isSmall ? 'p-1' : 'p-4'}`}>
-      {showLabels && (
-        <span className={`${isSmall ? 'text-[10px]' : 'text-xl font-bold mb-2'} text-gray-300`}>
-          {chord.name}
-        </span>
-      )}
+
       <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
         {/* Frets */}
         {Array.from({ length: fretCount + 1 }).map((_, i) => (
@@ -76,7 +72,7 @@ const ChordDiagram: React.FC<ChordDiagramProps> = ({ chord, size = 'sm', showLab
         {/* Fingers/Positions */}
         {chord.positions.map((pos, idx) => {
           if (pos.fret === 0) return null;
-          
+
           const x = margin + (pos.string - 1) * stringSpacing;
           const y = margin + (pos.fret - 0.5) * fretSpacing;
           const radius = isSmall ? 4 : 12;
