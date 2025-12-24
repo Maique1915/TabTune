@@ -106,7 +106,7 @@ export function HomePage() {
   };
 
   const mainContent = (
-    <main className="flex flex-1 flex-col overflow-hidden" style={{ display: 'grid', gridTemplateRows: '60% 40%' }}>
+    <main className="flex flex-1 flex-col overflow-hidden min-w-0" style={{ display: 'grid', gridTemplateRows: '60% 40%' }}>
       <MainStage
         ref={videoCanvasRef}
         onAnimationStateChange={(animating, paused) => {
@@ -114,14 +114,16 @@ export function HomePage() {
           setIsPaused(paused);
         }}
       />
-      <TimelinePanel
-        isAnimating={isAnimating}
-        isPaused={isPaused}
-        ffmpegLoaded={true}
-        handleAnimate={handleAnimate}
-        handlePause={handlePause}
-        handleResume={handleResume}
-        handleRenderVideo={handleRenderVideo} isTimelineEmpty={false}      />
+      <div className="w-full h-full min-w-0 overflow-hidden relative">
+        <TimelinePanel
+          isAnimating={isAnimating}
+          isPaused={isPaused}
+          ffmpegLoaded={true}
+          handleAnimate={handleAnimate}
+          handlePause={handlePause}
+          handleResume={handleResume}
+          handleRenderVideo={handleRenderVideo} isTimelineEmpty={false} />
+      </div>
     </main>
   );
 
@@ -162,9 +164,12 @@ export function HomePage() {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col bg-background text-foreground">
-      <RenderingProgressCard />
-      <div className="flex flex-1 overflow-hidden">
+    <div className="flex h-screen w-full flex-col bg-gradient-to-br from-[#1a0b2e] via-[#0f0518] to-black text-foreground relative overflow-hidden">
+      {/* Retro Grid Background Overlay (Optional subtle effect) */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(18,18,18,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(255,0,0,0.02))] bg-[length:100%_4px,6px_100%] pointer-events-none z-0" />
+
+      <div className="relative z-10 flex flex-1 overflow-hidden">
+        <RenderingProgressCard />
         <LibraryPanel isMobile={false} />
         {mainContent}
         <SettingsPanel isMobile={false} />

@@ -8,8 +8,8 @@ import { ZoomIn, ZoomOut } from "lucide-react"; // Re-adicionar Importar ícones
 import type { TimelineState, DragState, TimelineClip } from "@/lib/timeline/types";
 import { formatTimeMs } from "@/lib/timeline/utils";
 import { TimelineControls } from "./TimelineControls"; // Importar o novo componente
-import { xDeltaToTime, clamp } from "@/lib/timeline/utils";                         
-       
+import { xDeltaToTime, clamp } from "@/lib/timeline/utils";
+
 interface TimelineProps {
   value: TimelineState;
   onChange: (newState: TimelineState) => void;
@@ -65,10 +65,10 @@ export function Timeline({
   const totalWidthPx = (effectiveDurationMs / 1000) * value.zoom;
   const currentTimeMs = Math.round(Math.max(0, Math.min(1, playheadProgress)) * effectiveDurationMs);
 
-    const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+  const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
-    // Removido bloco JSX solto que estava fora do return
-    const playheadMotionRef = useRef({
+  // Removido bloco JSX solto que estava fora do return
+  const playheadMotionRef = useRef({
     targetProgress: 0,
     lastTargetProgress: 0,
     lastTargetPerfMs: 0,
@@ -289,7 +289,7 @@ export function Timeline({
     });
   };
 
-  
+
   return (
     <div className={className}>
       <div className="flex items-center gap-2 mb-2 px-2">
@@ -310,7 +310,10 @@ export function Timeline({
       </div>
 
       <div ref={containerRef} className="relative border border-border rounded-lg overflow-x-auto bg-background">
-        <div className="relative w-max min-w-full">
+        <div
+          className="relative w-max min-w-full"
+          style={{ width: `${Math.max(0, totalWidthPx) + TRACK_LABEL_WIDTH}px` }}
+        >
           {showPlayhead && (
             <div
               className="absolute top-0 bottom-0 z-50"

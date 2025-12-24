@@ -97,7 +97,7 @@ const SliderSetting = ({ label, colorKey, min = 0, max = 1, step = 0.05 }: { lab
   );
 };
 
-const SettingsContent = () => {
+const SettingsContent = ({ isMobile }: { isMobile?: boolean }) => {
   const { animationType, setAnimationType, setColors } = useAppContext();
 
   const handleResetToDefault = () => {
@@ -106,68 +106,61 @@ const SettingsContent = () => {
 
   return (
     <>
-      <div className="p-4 border-b">
-        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-          <Palette />
-          Customize
-        </h2>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4">
-        <Tabs defaultValue="animation" className="w-full pr-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="animation">Animation</TabsTrigger>
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="fingers">Fingers</TabsTrigger>
+      <div className="flex-1 overflow-y-auto p-0">
+        <Tabs defaultValue="animation" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 bg-black/40 border border-white/10 mb-4 p-1 rounded-lg">
+            <TabsTrigger value="animation" className="data-[state=active]:bg-pink-500/20 data-[state=active]:text-pink-300 data-[state=active]:border-pink-500/30 data-[state=active]:shadow-[0_0_10px_rgba(236,72,153,0.2)] rounded-md transition-all text-xs font-bold uppercase">Anim</TabsTrigger>
+            <TabsTrigger value="general" className="data-[state=active]:bg-pink-500/20 data-[state=active]:text-pink-300 data-[state=active]:border-pink-500/30 data-[state=active]:shadow-[0_0_10px_rgba(236,72,153,0.2)] rounded-md transition-all text-xs font-bold uppercase">Gen</TabsTrigger>
+            <TabsTrigger value="fingers" className="data-[state=active]:bg-pink-500/20 data-[state=active]:text-pink-300 data-[state=active]:border-pink-500/30 data-[state=active]:shadow-[0_0_10px_rgba(236,72,153,0.2)] rounded-md transition-all text-xs font-bold uppercase">Finger</TabsTrigger>
           </TabsList>
-          <TabsContent value="animation" className="space-y-4 pt-4">
+
+          <TabsContent value="animation" className="space-y-4">
             <div className="space-y-3">
-              <Label>Animation Style</Label>
+              <Label className="text-pink-200/70 text-xs font-bold uppercase tracking-wider mb-2 block">Animation Style</Label>
               <RadioGroup value={animationType} onValueChange={(value) => setAnimationType(value as AnimationType)}>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border border-border hover:bg-accent/50">
-                  <RadioGroupItem value="carousel" id="carousel" />
+                <div className={cn("flex items-center space-x-3 p-3 rounded-lg border transition-all cursor-pointer", animationType === 'carousel' ? "bg-pink-950/30 border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.1)]" : "bg-black/20 border-white/5 hover:bg-white/5")}>
+                  <RadioGroupItem value="carousel" id="carousel" className="text-pink-500 border-pink-500/50" />
                   <Label htmlFor="carousel" className="flex-1 cursor-pointer">
-                    <div className="font-medium">Carousel</div>
-                    <div className="text-xs text-muted-foreground">Chords slide across the screen like a carousel</div>
+                    <div className="font-bold text-pink-100">Carousel</div>
+                    <div className="text-xs text-pink-200/50">Chords slide across the screen</div>
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2 p-3 rounded-lg border border-border hover:bg-accent/50">
-                  <RadioGroupItem value="static-fingers" id="static-fingers" />
+                <div className={cn("flex items-center space-x-3 p-3 rounded-lg border transition-all cursor-pointer", animationType === 'static-fingers' ? "bg-pink-950/30 border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.1)]" : "bg-black/20 border-white/5 hover:bg-white/5")}>
+                  <RadioGroupItem value="static-fingers" id="static-fingers" className="text-pink-500 border-pink-500/50" />
                   <Label htmlFor="static-fingers" className="flex-1 cursor-pointer">
-                    <div className="font-medium">Static Fretboard</div>
-                    <div className="text-xs text-muted-foreground">Fretboard stays centered, fingers animate smoothly between positions</div>
+                    <div className="font-bold text-pink-100">Static Fretboard</div>
+                    <div className="text-xs text-pink-200/50">Only fingers move</div>
                   </Label>
                 </div>
               </RadioGroup>
             </div>
           </TabsContent>
-          <TabsContent value="general" className="space-y-4 pt-4">
-            {/* General Settings */}
+
+          <TabsContent value="general" className="space-y-4">
             <ColorSetting label="Background" colorKey="cardColor" />
-            <SliderSetting label="Scale (Tamanho)" colorKey="fretboardScale" min={0.5} max={1.5} step={0.1} />
+            <SliderSetting label="Scale" colorKey="fretboardScale" min={0.5} max={1.5} step={0.1} />
             <ColorSetting label="Guitar Neck" colorKey="fretboardColor" />
-            <ColorSetting label="Strings (Cordas)" colorKey="borderColor" />
-            <ColorSetting label="Frets (Trastes)" colorKey="fretColor" />
+            <ColorSetting label="Strings" colorKey="borderColor" />
+            <ColorSetting label="Frets" colorKey="fretColor" />
             <ColorSetting label="Text" colorKey="textColor" />
             <ColorSetting label="Chord Name" colorKey="chordNameColor" />
             <NumberSetting label="Border Width" colorKey="borderWidth" />
             <NumberSetting label="String Thickness" colorKey="stringThickness" />
           </TabsContent>
-          <TabsContent value="fingers" className="space-y-4 pt-4">
-            {/* Finger Settings */}
+
+          <TabsContent value="fingers" className="space-y-4">
             <ColorSetting label="Background" colorKey="fingerColor" />
             <ColorSetting label="Text" colorKey="fingerTextColor" />
             <ColorSetting label="Border" colorKey="fingerBorderColor" />
             <NumberSetting label="Border Width" colorKey="fingerBorderWidth" />
-            <NumberSetting label="Shadow H-Offset" colorKey="fingerBoxShadowHOffset" />
-            <NumberSetting label="Shadow V-Offset" colorKey="fingerBoxShadowVOffset" />
-            <NumberSetting label="Shadow Blur" colorKey="fingerBoxShadowBlur" />
-            <NumberSetting label="Shadow Spread" colorKey="fingerBoxShadowSpread" />
+            <NumberSetting label="Shadow H" colorKey="fingerBoxShadowHOffset" />
+            <NumberSetting label="Shadow V" colorKey="fingerBoxShadowVOffset" />
             <ColorSetting label="Shadow Color" colorKey="fingerBoxShadowColor" />
             <SliderSetting label="BG Opacity" colorKey="fingerBackgroundAlpha" />
           </TabsContent>
         </Tabs>
-        <Button onClick={handleResetToDefault} className="w-full mt-4">
+
+        <Button onClick={handleResetToDefault} className="w-full mt-6 bg-pink-900/30 border border-pink-500/30 text-pink-300 hover:bg-pink-900/50 hover:text-white transition-all shadow-[0_0_15px_rgba(236,72,153,0.1)]">
           Reset to Default
         </Button>
       </div>
@@ -176,31 +169,33 @@ const SettingsContent = () => {
 };
 
 export function SettingsPanel({ isMobile, isOpen, onClose }: SettingsPanelProps) {
-  // Main component now only handles layout/visibility logic
-
   const rootClasses = cn(
-    "flex flex-col bg-surface-light dark:bg-surface-dark transition-transform duration-300 ease-in-out",
+    "flex flex-col bg-black/40 backdrop-blur-xl border-l border-pink-500/30 shadow-[-5px_0_30px_rgba(236,72,153,0.15)] transition-transform duration-300 ease-in-out z-20",
     isMobile
-      ? `fixed inset-x-0 bottom-0 h-[70vh] rounded-t-2xl shadow-2xl z-50 ${isOpen ? "translate-y-0" : "translate-y-full"}`
-      : "relative w-80 h-full border-l border-gray-200 dark:border-gray-800"
+      ? `fixed inset-x-0 bottom-0 h-[70vh] rounded-t-2xl border-t border-l-0 border-pink-500/30 shadow-[0_-5px_30px_rgba(236,72,153,0.15)] ${isOpen ? "translate-y-0" : "translate-y-full"}`
+      : "relative w-80 h-full"
   );
 
   return (
     <div className={rootClasses}>
       {isMobile && (
-        <div className="w-full flex justify-center pt-3 pb-1 cursor-pointer" onClick={onClose}>
-          <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+        <div className="w-full flex justify-center pt-3 pb-1 cursor-pointer bg-black/50 rounded-t-2xl" onClick={onClose}>
+          <div className="w-12 h-1.5 bg-pink-900/50 rounded-full"></div>
         </div>
       )}
-      <div className={cn("flex flex-col flex-1 overflow-hidden", { "hidden lg:flex": !isMobile })}>
-        <SettingsContent />
+
+      <div className={cn("flex flex-col flex-1 overflow-hidden", { "hidden lg:flex": !isMobile, "flex": isMobile })}>
+        <div className="p-4 border-b border-pink-500/20">
+          <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-500 tracking-wider uppercase drop-shadow-[0_0_2px_rgba(236,72,153,0.5)] flex items-center gap-2">
+            <Palette className="w-5 h-5 text-pink-400" />
+            Customize
+          </h2>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+          <SettingsContent isMobile={isMobile} />
+        </div>
       </div>
-      {isMobile && isOpen && (
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <SettingsContent />
-        </div>
-      )}
     </div>
   );
 }
-

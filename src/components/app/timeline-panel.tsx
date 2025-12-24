@@ -181,77 +181,89 @@ export function TimelinePanel({
       } as ChordWithTiming));
     setSelectedChords(reorderedChordsWithTiming);
   };
-console.log("Renderizando TimelinePanel");
+  console.log("Renderizando TimelinePanel");
 
   // --- RENDER ---
   return (
-    <div className="flex flex-row w-full h-full bg-gradient-to-br from-[#181c24] via-[#23283a] to-[#181c24]">
-      {/* Painel lateral esquerdo (exemplo visual) */}
-      <div className="flex-1 flex flex-col items-center justify-center min-w-[900px] max-w-[1500px] mx-auto px-8 py-6 bg-[#23283a] rounded-2xl shadow-2xl border border-[#23283a]">
-        <TimelineControls
-          isAnimating={isAnimating}
-          isPaused={isPaused}
-          ffmpegLoaded={ffmpegLoaded}
-          handleAnimate={handleAnimate}
-          handlePause={handlePause}
-          handleResume={handleResume}
-          handleRenderVideo={handleRenderVideo}
-          isTimelineEmpty={isTimelineEmpty}
-          onAudioUpload={handleAudioUpload}
-          audioUploaded={audioUploaded}
-        />
-        <div className="border-t border-border bg-[#23283a] p-6 w-full overflow-hidden flex flex-col rounded-xl shadow-lg mt-4">
-          {/* Elementos de áudio ocultos para sincronizar com a animação */}
-          {getAllAudioClips(timelineState.tracks).map((clip) => {
-            if (clip.type !== 'audio') return null;
-            const audioKey = clip.id != null ? String(clip.id) : undefined;
-            return (
-              <audio
-                key={audioKey}
-                ref={el => {
-                  if (audioKey !== undefined) {
-                    audioRefs.current[audioKey] = el;
-                  }
-                }}
-                src={clip.audioUrl}
-                preload="auto"
-                style={{ display: 'none' }}
-              />
-            );
-          })}
-          <div className="">
-            <Timeline
-              value={timelineState}
-              onChange={handleTimelineChange}
-              playheadProgress={playbackProgress}
-              playheadTotalDurationMs={playbackTotalDurationMs || timelineState.totalDuration}
-              minClipDurationMs={minClipDurationMs}
-              showPlayhead
-              onPlayheadScrubStart={() => setPlaybackIsScrubbing(true)}
-              onPlayheadScrub={(progress) => {
-                setPlaybackProgress(progress);
-                requestPlaybackSeek(progress);
-              }}
-              onPlayheadScrubEnd={(progress) => {
-                setPlaybackProgress(progress);
-                requestPlaybackSeek(0);
-              }}
+    <div className="flex flex-row w-full h-full bg-transparent p-4 items-end justify-center">
+      {/* Synthesizer Deck Container */}
+      <div className="w-full max-w-[1500px] bg-[#1a1b26] rounded-t-xl border-t-2 border-x-2 border-white/5 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden flex flex-col">
+
+        {/* Metallic Texture Overlay */}
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none mix-blend-overlay" />
+
+        {/* Top Control Bar (Like a synth strip) */}
+        <div className="h-2 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 w-full opacity-80" />
+
+        <div className="p-6 flex-1 flex flex-col gap-4 relative z-10">
+          {/* Controls Area */}
+          <div className="bg-black/30 rounded-lg p-2 border border-white/5 shadow-inner">
+            <TimelineControls
               isAnimating={isAnimating}
               isPaused={isPaused}
               ffmpegLoaded={ffmpegLoaded}
-              isTimelineEmpty={isTimelineEmpty}
               handleAnimate={handleAnimate}
               handlePause={handlePause}
               handleResume={handleResume}
               handleRenderVideo={handleRenderVideo}
+              isTimelineEmpty={isTimelineEmpty}
+              onAudioUpload={handleAudioUpload}
+              audioUploaded={audioUploaded}
             />
           </div>
+
+          {/* Main Timeline Display */}
+          <div className="flex-1 bg-black/40 rounded-lg border border-white/5 overflow-hidden relative shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]">
+            {/* Audio Elements */}
+            {getAllAudioClips(timelineState.tracks).map((clip) => {
+              if (clip.type !== 'audio') return null;
+              const audioKey = clip.id != null ? String(clip.id) : undefined;
+              return (
+                <audio
+                  key={audioKey}
+                  ref={el => {
+                    if (audioKey !== undefined) {
+                      audioRefs.current[audioKey] = el;
+                    }
+                  }}
+                  src={clip.audioUrl}
+                  preload="auto"
+                  style={{ display: 'none' }}
+                />
+              );
+            })}
+
+            <div className="h-full">
+              <Timeline
+                value={timelineState}
+                onChange={handleTimelineChange}
+                playheadProgress={playbackProgress}
+                playheadTotalDurationMs={playbackTotalDurationMs || timelineState.totalDuration}
+                minClipDurationMs={minClipDurationMs}
+                showPlayhead
+                onPlayheadScrubStart={() => setPlaybackIsScrubbing(true)}
+                onPlayheadScrub={(progress) => {
+                  setPlaybackProgress(progress);
+                  requestPlaybackSeek(progress);
+                }}
+                onPlayheadScrubEnd={(progress) => {
+                  setPlaybackProgress(progress);
+                  requestPlaybackSeek(0);
+                }}
+                isAnimating={isAnimating}
+                isPaused={isPaused}
+                ffmpegLoaded={ffmpegLoaded}
+                isTimelineEmpty={isTimelineEmpty}
+                handleAnimate={handleAnimate}
+                handlePause={handlePause}
+                handleResume={handleResume}
+                handleRenderVideo={handleRenderVideo}
+              />
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col items-center justify-center p-4 bg-[#23283a] border-t border-border rounded-b-xl mt-2"></div>
-        <div style={{ display: 'none' }} />
-        <div className="absolute"></div>
-        <style>{`.timeline-controls-upload { display: none; }`}</style>
       </div>
+      <style>{`.timeline-controls-upload { display: none; }`}</style>
     </div>
   );
 }

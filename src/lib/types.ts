@@ -13,33 +13,39 @@ export interface ChordWithTiming {
 }
 
 export interface Achord {
-  note: number;
-  complement: number;
-  bass: number;
+  note: number; // Nota do acorde
+  complement: number; // Complemento do acorde
+  extension: number[]; // Extensão do acorde
+  bass: number; // Basso do acorde
 }
 
-export type Position = { [key: number]: [number, number, number] };
+export type Position = {
+  [
+  key: number // Chave da posição
+  ]: [
+    number, // Dedo
+    number, // Corda
+    number // Traste
+  ]
+};
 
 export interface nutForm {
   vis: boolean; // Se a pestana é visível
   str: [number, number]; // Cordas que a pestana abrange (ex: [1, 5] para cordas 1 a 5)
   pos: number; // Posição do traste (casa) onde a pestana está
   fin: number; // Dedo usado para a pestana
-  add: boolean; // Informação adicional (uso específico não claro)
-  trn: number; // Transposição
+  add: boolean; // se a pestana é feita relmente ou só representa onde o dedo deve ficar
+  trn: number; // Transposição no dedo, se o valor de todos os dedos mudam ao aparecer a pestana e pra qual numero a mais vai. 0 significa que o numero dos dedos não muda
 }
 
 export interface ChordDiagramProps {
-  chord: Achord;
-  origin: number;
-  positions: Position;
-  avoid: number[];
-  scale?: number;
-  transport?: number;
-  nut: nutForm; // Define a pestana (barre) do acorde.
-  add?: Position;
+  chord: Achord; // Acorde original, sem transposição
+  origin: number; // Transposição original
+  positions: Position; // Posições dos dedos no acorde
+  avoid: number[]; // Cordas a evitar
+  scale?: number; // Escala
+  nut?: nutForm; // Define a pestana (barre) do acorde.
+  transport?: number; // Transposição
+  unique?: boolean; // se o acord pode ser tranposto ou só funciona na posição original
   list?: boolean;
-  ffinger?: number;
-  flat?: boolean;
-  transition?: number;
 }
