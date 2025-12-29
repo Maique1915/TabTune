@@ -250,8 +250,12 @@ const MeasureThumbnail = memo(({
             {/* Playhead Overlay */}
             {isActive && !renderError && (
                 <div
-                    className="absolute top-0 bottom-0 w-1 bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.8)] z-10 pointer-events-none transition-transform will-change-transform"
-                    style={{ left: `${progress}%` }}
+                    className="absolute top-0 bottom-0 w-1 z-10 pointer-events-none transition-transform will-change-transform"
+                    style={{
+                        left: `${progress}%`,
+                        backgroundColor: style.playheadColor || '#06b6d4',
+                        boxShadow: `0 0 15px ${style.playheadColor || '#06b6d4'}`
+                    }}
                 />
             )}
         </div>

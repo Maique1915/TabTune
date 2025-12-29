@@ -21,6 +21,7 @@ const StyleSidebar: React.FC<StyleSidebarProps> = ({ style, onChange, onReset })
         { label: 'Symbols', key: 'symbols' as keyof ScoreStyle },
         { label: 'Staff Lines', key: 'staffLines' as keyof ScoreStyle },
         { label: 'Background (Fundo)', key: 'background' as keyof ScoreStyle },
+        { label: 'Playhead (Tocador)', key: 'playheadColor' as keyof ScoreStyle },
     ];
 
     const handleThemeChange = (key: keyof ScoreStyle, value: string) => {
