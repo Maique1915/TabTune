@@ -4,14 +4,15 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { animate, type JSAnimation } from "animejs";
 import type { ChordWithTiming } from "@/lib/types";
 import { useAppContext } from "@/app/context/app--context";
-import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { drawStaticFingersAnimation } from "@/lib/static-fingers-drawer";
 import { drawCarouselAnimation } from "@/lib/carousel-drawer";
 import { ChordDrawerBase } from "@/lib/chord-drawer-base";
 import { FretboardDrawer } from "@/lib/fretboard-drawer";
 import { TimelineState } from "@/lib/timeline/types";
 import { ScoreDrawer } from "@/lib/score-drawer";
+import { useCanvasRecorder, CanvasRecorderOptions } from "@/lib/shared/hooks/useCanvasRecorder";
+import { VideoRenderSettingsModal, VideoRenderSettings } from "@/components/shared/VideoRenderSettingsModal";
+import { RenderProgressModal } from "@/components/shared/RenderProgressModal";
 
 export interface VideoCanvasStageRef {
   startAnimation: () => void;
@@ -62,6 +63,7 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
   prebufferMs = 0,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<JSAnimation | null>(null);
   const playheadAnimationRef = useRef<JSAnimation | null>(null);
   const playheadStateRef = useRef<{ t: number }>({ t: 0 });
@@ -100,10 +102,14 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
   } = useAppContext();
   const [isAnimating, setIsAnimating] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  // Removed unused frames state
-  const [isRendering, setIsRendering] = useState(false);
-  const ffmpegRef = useRef<FFmpeg | null>(null);
+
   const isRenderCancelledRef = useRef(false);
+
+  // Recorder Integration
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [recorderOptions, setRecorderOptions] = useState<CanvasRecorderOptions>({});
+  const recorder = useCanvasRecorder(canvasRef, recorderOptions);
+
 
   const drawFrame = useCallback((state: AnimationState, timeMs: number) => {
     // 1. Draw Chords if available
@@ -126,12 +132,16 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
 
       if (currentChordData) {
         if (animationType === "static-fingers") {
+          const isExporting = recorder.isRendering;
+          const shouldSkipFretboard = !isExporting;
+
           drawStaticFingersAnimation({
             drawer: chordDrawerRef.current,
             currentDisplayChord: { finalChord: currentChordData.finalChord, transportDisplay: currentChordData.transportDisplay },
             nextDisplayChord: nextChordData ? { finalChord: nextChordData.finalChord, transportDisplay: nextChordData.transportDisplay } : null,
             transitionProgress: state.transitionProgress,
             buildProgress: state.buildProgress,
+            skipFretboard: shouldSkipFretboard
           });
         } else {
           // Map all chords to display format (could be memoized if perf issue, but chords length usually small)
@@ -165,7 +175,7 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
         }
       });
     }
-  }, [animationType, chords, height, timelineState, width]);
+  }, [animationType, chords, height, timelineState, width, recorder.isRendering]);
 
   const drawAnimatedChord = useCallback(() => {
     if (!canvasRef.current || !chords || chords.length === 0) return;
@@ -209,6 +219,28 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
       drawAnimatedChord();
     }
   }, [colors, width, height, isAnimating, drawAnimatedChord]);
+
+  // Handle Static Background Rendering (Layered Optimization)
+  useEffect(() => {
+    if (!backgroundCanvasRef.current || !chordDrawerRef.current) return;
+    const bgCtx = backgroundCanvasRef.current.getContext('2d');
+    if (!bgCtx) return;
+
+    if (animationType === 'static-fingers') {
+      const originalCtx = chordDrawerRef.current.ctx;
+
+      // Temporarily switch context to background canvas
+      chordDrawerRef.current.setCtx(bgCtx);
+      chordDrawerRef.current.clearCanvas(); // Fill with background color
+      chordDrawerRef.current.drawFretboard(); // Draw static fretboard
+
+      // Restore context to main canvas
+      chordDrawerRef.current.setCtx(originalCtx);
+    } else {
+      // Clear background if not in static mode
+      bgCtx.clearRect(0, 0, width, height);
+    }
+  }, [width, height, colors, animationType]);
 
   const baseTransitionDurationSec = animationType === "carousel" ? 1.0 : 0.8;
   const transitionDurationSec = transitionsEnabled ? baseTransitionDurationSec : 0;
@@ -523,69 +555,6 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     setPlaybackProgress,
   ]);
 
-  // Move loadFFmpeg to be accessible by cancelRender
-  const loadFFmpeg = useCallback(async () => {
-    if (ffmpegRef.current?.loaded) {
-      return;
-    }
-
-    // Check for SharedArrayBuffer support (required for FFmpeg.wasm)
-    if (typeof SharedArrayBuffer === "undefined") {
-      throw new Error(
-        "SharedArrayBuffer is not available. Ensure that the site is 'Cross-Origin Isolated' " +
-        "via COOP/COEP headers in next.config.ts."
-      );
-    }
-
-    const ffmpeg = new FFmpeg();
-    ffmpegRef.current = ffmpeg;
-
-    ffmpeg.on("log", ({ message }) => {
-      console.log("[FFmpeg Log]:", message);
-    });
-
-    try {
-      const baseURL = "https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/umd";
-      const workerURL = await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, "text/javascript");
-      await ffmpeg.load({
-        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-        workerURL,
-      });
-      console.log("FFmpeg loaded successfully.");
-    } catch (error) {
-      ffmpegRef.current = null;
-      if ((error as Error).message === "called FFmpeg.terminate()") {
-        console.log("FFmpeg loading cancelled.");
-      } else {
-        console.error("FFmpeg Load Error:", error);
-        throw error; // Rethrow to let caller handle it
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      // Cleanup FFmpeg on unmount
-      if (ffmpegRef.current) {
-        try {
-          ffmpegRef.current.terminate();
-          console.log("FFmpeg terminated on unmount");
-        } catch (e) {
-          console.error("Error terminating FFmpeg on unmount", e);
-        }
-      }
-
-      // Cleanup bitmaps
-      if (frameCacheRef.current) {
-        frameCacheRef.current.bitmaps.forEach(b => b?.close());
-        frameCacheRef.current = null;
-      }
-    };
-  }, []);
-
-
-
   const startPlaybackRafLoop = useCallback((totalDurationMs: number) => {
     if (playbackRafIdRef.current !== null) {
       cancelAnimationFrame(playbackRafIdRef.current);
@@ -704,8 +673,6 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
 
       startPlaybackRafLoop(totalMs);
     })();
-
-    // obs: o loop começa após o prebuffer.
   };
 
   const pauseAnimation = () => {
@@ -738,189 +705,74 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     startPlaybackRafLoop(totalMs);
   };
 
-  const handleRender = () => new Promise<void>(async (resolve, reject) => {
-    if (!chords || chords.length === 0 || !canvasRef.current) {
-      return reject(new Error("Canvas or chords not ready"));
-    }
+  // UNIFIED RENDER LOGIC
+  const startUnifiedRender = useCallback(async (settings: VideoRenderSettings) => {
+    if (!chords || chords.length === 0 || !canvasRef.current) return;
 
-    try {
-      await loadFFmpeg();
-      if (!ffmpegRef.current) {
-        return reject(new Error("FFmpeg instance not available after loading attempt"));
-      }
+    setShowSettingsModal(false);
+    setRecorderOptions({ fps: settings.fps, format: settings.format, quality: settings.quality });
 
+    setTimeout(async () => {
+      recorder.setIsRendering(true);
+      recorder.setRenderProgress(0);
       isRenderCancelledRef.current = false;
-      setIsRendering(true);
-      const canvas = canvasRef.current;
-      const ffmpeg = ffmpegRef.current;
-      const fps = 30;
-      let frameCount = 0;
+      const fps = settings.fps;
+      const totalDurationMs = computeTotalPlaybackDurationMs();
+      const totalFrames = Math.ceil((totalDurationMs / 1000) * fps);
 
-      const processFrame = async () => {
-        if (isRenderCancelledRef.current) throw new Error("Render cancelled by user");
-        await new Promise<void>((res) => {
-          canvas.toBlob(async (blob) => {
-            if (blob) {
-              const frameData = await fetchFile(blob);
-              await ffmpeg.writeFile(`frame${String(frameCount++).padStart(5, "0")}.jpg`, frameData);
-            }
-            res();
-          }, "image/jpeg", 0.95);
-        });
-      };
+      try {
+        let globalFrameIndex = 0;
+        // Use fixed time step based on FPS
+        const msPerFrame = 1000 / fps;
 
-      let totalFrames = 0;
-      chords.forEach(chord => {
-        totalFrames += Math.ceil(getSegmentDurationSec(chord) * fps);
-      });
+        for (let i = 0; i < totalFrames; i++) {
+          if (isRenderCancelledRef.current) throw new Error("Render cancelled");
 
-      for (let chordIndex = 0; chordIndex < chords.length; chordIndex++) {
-        if (isRenderCancelledRef.current) throw new Error("Render cancelled by user");
-        const segmentDuration = getSegmentDurationSec(chords[chordIndex]);
-        const incomingHalf = chordIndex > 0 ? halfTransitionSec : 0;
-        const outgoingHalf = chordIndex < chords.length - 1 ? halfTransitionSec : 0;
-        const staticDuration = Math.max(0, segmentDuration - incomingHalf - outgoingHalf);
+          const currentTime = i * msPerFrame;
+          const state = computeStateAtTimeMs(currentTime);
 
-        const processSegment = async (duration: number, getProgress: (p: number) => { chordIndex: number; transitionProgress: number; buildProgress: number; }) => {
-          const frameCountForSegment = Math.ceil(fps * duration);
-          for (let i = 0; i < frameCountForSegment; i++) {
-            if (isRenderCancelledRef.current) throw new Error("Render cancelled by user");
-            const p = duration > 0 ? i / frameCountForSegment : 1;
-            animationStateRef.current = { fingerOpacity: 1, fingerScale: 1, cardY: 0, nameOpacity: 1, ...getProgress(p) };
-            // Estimate time based on progress and chord timing for score drawing
-            // This is tricky as we process per chord segment. 
-            // We need absolute time.
-            // Calculate start time of this chord
-            let startTime = 0;
-            for (let k = 0; k < chordIndex; k++) startTime += getSegmentDurationSec(chords[k]) * 1000;
-            const currentTime = startTime + (duration * 1000 * p);
-
+          if (state) {
+            animationStateRef.current = {
+              fingerOpacity: 1,
+              fingerScale: 1,
+              cardY: 0,
+              nameOpacity: 1,
+              ...state
+            };
             drawFrame(animationStateRef.current, currentTime);
-            await processFrame();
-            if (onRenderProgress) {
-              const overallProgress = (frameCount / totalFrames) * 90;
-              onRenderProgress(Math.round(overallProgress * 100) / 100);
+            // Capture
+            if (canvasRef.current) {
+              await recorder.captureFrame(canvasRef.current, globalFrameIndex++);
+              recorder.setRenderProgress(i / totalFrames);
             }
           }
-        };
-
-        if (animationType === "static-fingers") {
-          if (incomingHalf > 0) await processSegment(incomingHalf, p => ({ chordIndex: chordIndex - 1, transitionProgress: 0.5 + 0.5 * p, buildProgress: 1 }));
-          const buildDuration = (buildEnabled && chordIndex === 0) ? Math.min(buildDurationSec, staticDuration) : 0;
-          const holdDuration = chordIndex === 0 ? Math.max(0, staticDuration - buildDuration) : staticDuration;
-          if (buildDuration > 0) await processSegment(buildDuration, p => ({ chordIndex, transitionProgress: 0, buildProgress: p }));
-          if (holdDuration > 0) await processSegment(holdDuration, p => ({ chordIndex, transitionProgress: 0, buildProgress: 1 }));
-          if (outgoingHalf > 0) await processSegment(outgoingHalf, p => ({ chordIndex, transitionProgress: 0.5 * p, buildProgress: 1 }));
-        } else {
-          if (incomingHalf > 0) await processSegment(incomingHalf, p => ({ chordIndex: chordIndex - 1, transitionProgress: 0.5 + 0.5 * p, buildProgress: 1 }));
-          if (staticDuration > 0) await processSegment(staticDuration, p => ({ chordIndex, transitionProgress: 0, buildProgress: 1 }));
-          if (outgoingHalf > 0) await processSegment(outgoingHalf, p => ({ chordIndex, transitionProgress: 0.5 * p, buildProgress: 1 }));
         }
-      }
 
-      if (onRenderProgress) {
-        onRenderProgress(90); // Transition to encoding phase
-      }
-
-      // Add progress listener specifically for the encoding phase
-      const progressHandler = ({ progress: encProgress }: { progress: number }) => {
-        if (onRenderProgress) {
-          // Map encoding progress (0-1) to the 90-100% range
-          const mappedProgress = 90 + (encProgress * 10);
-          onRenderProgress(Math.round(mappedProgress * 100) / 100);
+        const blob = await recorder.renderFramesToVideo(globalFrameIndex);
+        if (blob) {
+          recorder.downloadVideo(blob, `tabtune-studio-export-${Date.now()}.${settings.format}`);
         }
-      };
-      ffmpeg.on("progress", progressHandler);
 
-      try {
-        console.log("Starting FFmpeg encoding with ultrafast preset...");
-        await ffmpeg.exec([
-          "-framerate", String(fps),
-          "-i", "frame%05d.jpg",
-          "-c:v", "libx264",
-          "-pix_fmt", "yuv420p",
-          "-preset", "ultrafast",
-          "-crf", "22",
-          "-movflags", "+faststart",
-          "output.mp4"
-        ]);
-      } finally {
-        ffmpeg.off("progress", progressHandler);
+      } catch (e: any) {
+        if (e.message !== "Render cancelled") console.error("Render Error:", e);
+        recorder.cancelRender();
       }
-
-      if (isRenderCancelledRef.current) throw new Error("Render cancelled after encoding");
-
-      const data = await ffmpeg.readFile("output.mp4");
-      const videoBlob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/mp4" });
-
-      // Cleanup: Delete PNG frames and temporary MP4 to free up WASM memory
-      console.log("Cleaning up temporary files...");
-      for (let i = 0; i < frameCount; i++) {
-        try {
-          await ffmpeg.deleteFile(`frame${String(i).padStart(5, "0")}.jpg`);
-        } catch (e) {
-          // Ignore deletion errors if file was never created
-        }
-      }
-      try {
-        await ffmpeg.deleteFile("output.mp4");
-      } catch (e) { }
-      const url = URL.createObjectURL(videoBlob);
-      const a = document.createElement("a");
-      a.style.display = 'none'; // Ensure it's not visible
-      a.href = url;
-      a.download = `chords-animation-${Date.now()}.mp4`;
-
-      // Modern browsers allow clicking a detached anchor
-      a.click();
-
-      // Revoke the URL after a short delay to ensure the browser has started the download
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-        a.remove();
-      }, 100);
-
-      console.log("Video rendered successfully");
-      resolve();
-
-    } catch (e) {
-      if ((e as Error).message.includes("cancelled")) {
-        console.log("Render process was cancelled.");
-      } else {
-        console.error("Frame generation or encoding failed:", e);
-      }
-      reject(e);
-    }
-  });
-
-  const cancelRender = () => {
-    isRenderCancelledRef.current = true;
-    if (ffmpegRef.current) {
-      // FFmpeg.terminate() is a more forceful way to stop
-      // This is a workaround since the library doesn't have a clean abort signal for exec
-      try {
-        ffmpegRef.current.terminate();
-        console.log("FFmpeg process terminated at user request.");
-      } catch (e) {
-        console.error("Could not terminate FFmpeg:", e)
-      }
-    }
-  };
+      recorder.setIsRendering(false);
+    }, 100);
+  }, [chords, canvasRef, computeTotalPlaybackDurationMs, computeStateAtTimeMs, drawFrame, recorder]);
 
   React.useImperativeHandle(ref, () => ({
     startAnimation,
     pauseAnimation,
     resumeAnimation,
-    handleRender,
-    cancelRender,
+    handleRender: async () => setShowSettingsModal(true),
+    cancelRender: () => { isRenderCancelledRef.current = true; recorder.cancelRender(); },
     isAnimating,
-    isRendering,
-    ffmpegLoaded: !!ffmpegRef.current,
+    isRendering: recorder.isRendering,
     isPaused
   }));
 
-
-  // Para renderização contínua durante a gravação
+  // Para renderização contínua durante a gravação (opcional, legacy logic)
   useEffect(() => {
     if (isRecording) {
       const interval = setInterval(() => {
@@ -929,21 +781,47 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
 
       return () => clearInterval(interval);
     }
-  }, [isRecording, chords, colors, width, height]);
+  }, [isRecording, drawAnimatedChord]);
 
   return (
-    <div className="flex items-center justify-center w-full h-full">
-      <canvas
-        ref={canvasRef}
-        width={width}
-        height={height}
-        className="max-w-full max-h-full"
-        style={{
-          aspectRatio: `${width} / ${height}`,
-          imageRendering: "pixelated"
+    <>
+      <div className="relative w-full h-full">
+        <canvas
+          ref={backgroundCanvasRef}
+          width={width}
+          height={height}
+          className="absolute inset-0 z-0 w-full h-full object-contain pointer-events-none"
+        />
+        <canvas
+          ref={canvasRef}
+          width={width}
+          height={height}
+          className="absolute inset-0 z-10 w-full h-full object-contain"
+        />
+      </div>
+      {showSettingsModal && !recorder.isRendering && !recorder.isComplete && (
+        <VideoRenderSettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          onRender={startUnifiedRender}
+          settings={{ fps: 30, format: 'mp4', quality: 'medium' }}
+        />
+      )}
+      <RenderProgressModal
+        isOpen={recorder.isRendering || recorder.isComplete}
+        isComplete={recorder.isComplete}
+        progress={recorder.renderProgress}
+        status={recorder.renderStatus || 'Renderizando...'}
+        onCancel={() => {
+          if (recorder.isComplete) {
+            recorder.setIsComplete(false);
+          } else {
+            isRenderCancelledRef.current = true;
+            recorder.cancelRender();
+          }
         }}
       />
-    </div>
+    </>
   );
 });
 

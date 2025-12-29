@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Loader2, X, CheckCircle2 } from 'lucide-react';
 
 interface RenderProgressModalProps {
@@ -18,10 +19,17 @@ export const RenderProgressModal: React.FC<RenderProgressModalProps> = ({
     estimatedTime = null,
     onCancel
 }) => {
-    if (!isOpen) return null;
+    const [mounted, setMounted] = useState(false);
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    useEffect(() => {
+        setMounted(true);
+        return () => setMounted(false);
+    }, []);
+
+    if (!isOpen || !mounted) return null;
+
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
             <div className="bg-slate-900 border border-white/10 rounded-2xl p-8 w-full max-w-md shadow-[0_0_50px_rgba(6,182,212,0.2)]">
                 {/* Header */}
                 <div className="text-center mb-6">
@@ -31,7 +39,10 @@ export const RenderProgressModal: React.FC<RenderProgressModalProps> = ({
                                 <CheckCircle2 className="w-10 h-10 text-green-400" />
                             </div>
                         ) : (
-                            <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
+                            <div className="relative">
+                                <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
+                                <div className="absolute inset-0 blur-lg bg-cyan-500/30 rounded-full animate-pulse" />
+                            </div>
                         )}
                     </div>
                     <h2 className="text-xl font-black text-white uppercase mb-2">
@@ -81,13 +92,14 @@ export const RenderProgressModal: React.FC<RenderProgressModalProps> = ({
                 <button
                     onClick={onCancel}
                     className={`w-full px-4 py-3 rounded-xl transition-all font-black uppercase tracking-wider ${isComplete
-                        ? 'bg-green-500 text-slate-950 hover:bg-green-400'
+                        ? 'bg-green-500 text-slate-950 hover:bg-green-400 shadow-[0_0_20px_rgba(34,197,94,0.3)]'
                         : 'bg-slate-800/50 border border-white/5 text-slate-400 hover:bg-slate-800 hover:text-red-400'
                         }`}
                 >
                     {isComplete ? 'Fechar' : 'Cancelar'}
                 </button>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

@@ -845,7 +845,7 @@ export class ChordDrawerBase {
   /**
    * Desenha um acorde completo
    */
-  drawChord(inputChord: ChordDiagramProps, inputTransportDisplay: number, offsetX: number = 0): void {
+  drawChord(inputChord: ChordDiagramProps, inputTransportDisplay: number, offsetX: number = 0, options: { skipFretboard?: boolean } = {}): void {
     const { finalChord, transportDisplay } = this._transposeForDisplay(inputChord, inputTransportDisplay);
 
     if (offsetX !== 0) {
@@ -856,9 +856,12 @@ export class ChordDrawerBase {
     const barreInfo = this._detectBarre(finalChord);
 
     this.drawChordName(chordName, offsetX);
-    // Reset flag for static draw
-    this._skipFretboard = false;
-    this.drawFretboard();
+
+    if (!options.skipFretboard) {
+      // Reset flag for static draw
+      this._skipFretboard = false;
+      this.drawFretboard();
+    }
 
     if (
       barreInfo &&
@@ -884,7 +887,7 @@ export class ChordDrawerBase {
    * @param progress - Progresso da animação (0-1)
    * @param offsetX - Deslocamento horizontal
    */
-  drawChordWithBuildAnimation(inputChord: ChordDiagramProps, inputTransportDisplay: number, progress: number, offsetX: number = 0): void {
+  drawChordWithBuildAnimation(inputChord: ChordDiagramProps, inputTransportDisplay: number, progress: number, offsetX: number = 0, options: { skipFretboard?: boolean } = {}): void {
     const { finalChord, transportDisplay } = this._transposeForDisplay(inputChord, inputTransportDisplay);
 
     console.log("Chord animation started (build-in):", finalChord);
@@ -910,7 +913,8 @@ export class ChordDrawerBase {
     }
 
     // Fase 2-6: Fretboard (neck, stringNames, strings, frets, nut)
-    if (phases.neck > 0) {
+    // Only draw if NOT skipping fretboard
+    if (!options.skipFretboard && phases.neck > 0) {
       this.fretboardDrawer.drawAnimatedFretboard({
         neckProgress: phases.neck,
         stringNamesProgress: phases.stringNames,
@@ -1024,7 +1028,8 @@ export class ChordDrawerBase {
     nextFinalChord: ChordDiagramProps,
     nextTransportDisplay: number,
     originalProgress: number,
-    offsetX: number = 0
+    offsetX: number = 0,
+    options: { skipFretboard?: boolean } = {}
   ): void {
     console.log("Chord animation started (transition - current):", currentFinalChord);
     console.log("Chord animation started (transition - next):", nextFinalChord);
@@ -1075,8 +1080,8 @@ export class ChordDrawerBase {
       centerY
     );
 
-    // Fretboard drawing – skip if flag is set
-    if (!this._skipFretboard) {
+    // Fretboard drawing – skip if flag is set OR options.skipFretboard is true
+    if (!this._skipFretboard && !options.skipFretboard) {
       this.drawFretboard();
     }
     // When transition finishes, set flag to skip further fretboard draws for this chord

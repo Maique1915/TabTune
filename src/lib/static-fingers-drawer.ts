@@ -3,42 +3,49 @@ import { ChordDrawerBase } from "@/lib/chord-drawer-base";
 
 interface DrawStaticFingersParams {
   drawer: ChordDrawerBase;
-  currentDisplayChord: { finalChord: ChordDiagramProps; transportDisplay: number; }; // Changed
-  nextDisplayChord: { finalChord: ChordDiagramProps; transportDisplay: number; } | null; // Changed
+  currentDisplayChord: { finalChord: ChordDiagramProps; transportDisplay: number; };
+  nextDisplayChord: { finalChord: ChordDiagramProps; transportDisplay: number; } | null;
   transitionProgress: number;
   buildProgress?: number;
+  skipFretboard?: boolean;
 }
 
 export function drawStaticFingersAnimation(params: DrawStaticFingersParams) {
-  const { drawer, currentDisplayChord, nextDisplayChord, transitionProgress, buildProgress } = params; // Changed
+  const { drawer, currentDisplayChord, nextDisplayChord, transitionProgress, buildProgress, skipFretboard } = params;
 
-  if (!currentDisplayChord) return; // Still check for existence
+  if (!currentDisplayChord) return;
 
-  // Limpar canvas
-  drawer.clearCanvas();
+  // Clear canvas
+  if (skipFretboard) {
+    // If skipping fretboard (layered mode), we clear to transparent
+    const { width, height } = drawer.dimensions;
+    drawer.ctx.clearRect(0, 0, width, height);
+  } else {
+    // Normal mode: fill with background color
+    drawer.clearCanvas();
+  }
 
   const centeringOffset = drawer.applyCentering();
 
   const currentFinalChord = currentDisplayChord.finalChord;
   const currentTransportDisplay = currentDisplayChord.transportDisplay;
   const nextFinalChord = nextDisplayChord?.finalChord || null;
-  const nextTransportDisplay = nextDisplayChord?.transportDisplay || null; // Will need to handle null for next
+  const nextTransportDisplay = nextDisplayChord?.transportDisplay || null;
+
+  const drawOptions = { skipFretboard };
 
   if (buildProgress !== undefined && buildProgress < 1) {
-    drawer.drawChordWithBuildAnimation(currentFinalChord, currentTransportDisplay, buildProgress); // Updated params
-  } else if (nextDisplayChord && transitionProgress > 0) { // Check for nextDisplayChord existence
-    // If there is a next chord and transition is in progress, use transition animation
-    // nextTransportDisplay might be null if nextDisplayChord is null. Need to check
-    if (nextFinalChord && nextTransportDisplay !== null) { // Additional null check
-      drawer.drawChordWithTransition(currentFinalChord, currentTransportDisplay, nextFinalChord, nextTransportDisplay, transitionProgress); // Updated params
+    drawer.drawChordWithBuildAnimation(currentFinalChord, currentTransportDisplay, buildProgress, 0, drawOptions);
+  } else if (nextDisplayChord && transitionProgress > 0) {
+    if (nextFinalChord && nextTransportDisplay !== null) {
+      drawer.drawChordWithTransition(currentFinalChord, currentTransportDisplay, nextFinalChord, nextTransportDisplay, transitionProgress, 0, drawOptions);
     } else {
-      drawer.drawChord(currentFinalChord, currentTransportDisplay); // Fallback if next is somehow invalid
+      drawer.drawChord(currentFinalChord, currentTransportDisplay, 0, drawOptions);
     }
   } else {
-    // No transition, draw static chord
-    drawer.drawChord(currentFinalChord, currentTransportDisplay); // Updated params
+    drawer.drawChord(currentFinalChord, currentTransportDisplay, 0, drawOptions);
   }
-  
+
   drawer.removeCentering(centeringOffset);
 }
 
