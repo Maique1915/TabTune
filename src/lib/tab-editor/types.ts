@@ -3,10 +3,18 @@ export type Duration = 'w' | 'h' | 'q' | '8' | '16' | '32';
 export type Accidental = 'none' | '#' | '##' | 'b' | 'bb' | 'n';
 
 export interface NoteDecorator {
-    staccato?: boolean;
-    accent?: boolean;
-    marcato?: boolean;
-    tenuto?: boolean;
+    staccato?: boolean;       // a.
+    staccatissimo?: boolean;   // av
+    accent?: boolean;          // a>
+    tenuto?: boolean;          // a-
+    marcato?: boolean;         // a^
+    pizzicato?: boolean;       // a+ (Left Hand)
+    snapPizzicato?: boolean;   // ao
+    fermata?: boolean;         // a@a (Up)
+    fermataDown?: boolean;     // a@u (Down)
+    bowUp?: boolean;           // a|
+    bowDown?: boolean;         // am
+    open?: boolean;            // ah
     dot?: boolean;
 }
 
@@ -18,10 +26,13 @@ export interface NoteData {
     accidental?: Accidental;
     type: 'note' | 'rest';
     decorators: NoteDecorator;
+    noteHead?: 'standard' | 'x' | 'diamond' | 'square' | 'triangle';
     technique?: string; // h, p, s, b, v, etc.
     slideTargetId?: string; // Explicitly link to another note for techniques
     tuplet?: string;
     isSlurred?: boolean;
+    annotation?: string; // Text above/below note
+    chord?: string;      // Simple chord name above note
 }
 
 export interface MeasureData {
@@ -29,6 +40,7 @@ export interface MeasureData {
     notes: NoteData[];
     isCollapsed?: boolean;
     showClef?: boolean;
+    clef?: 'treble' | 'bass' | 'alto' | 'tenor' | 'tab';
     showTimeSig?: boolean;
 }
 
@@ -74,6 +86,7 @@ export interface ScoreStyle {
 
     // Legacy mapping (optional, or removed later)
     width?: number;
+    staveSpace?: number;
 }
 
 export const DEFAULT_SCORE_STYLE: ScoreStyle = {

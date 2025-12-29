@@ -24,6 +24,8 @@ interface VisualEditorProps {
     onPasteMeasure: (id: string) => void;
     onReorderMeasures: (from: number, to: number) => void;
     onRemoveNote: (id: string) => void;
+    onSelectMeasure: (id: string) => void;
+    selectedMeasureId: string | null;
 }
 
 const VisualEditor: React.FC<VisualEditorProps> = ({
@@ -42,7 +44,9 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
     onCopyMeasure,
     onPasteMeasure,
     onReorderMeasures,
-    onRemoveNote
+    onRemoveNote,
+    onSelectMeasure,
+    selectedMeasureId
 }) => {
     const capacity = getMeasureCapacity(timeSignature);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -98,7 +102,7 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
     return (
         <div className="w-full h-full flex flex-col bg-[#0a0a0a]">
             {/* Header / Toolbar */}
-            <div className="flex items-center justify-between px-6 py-4 bg-[#0a0a0a] border-b border-[#222] shrink-0 z-20 shadow-md">
+            <div className="flex items-center justify-between px-6 py-2 bg-[#0a0a0a] border-b border-[#222] shrink-0 z-20 shadow-md">
                 <div className="flex flex-col">
                     <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-500 tracking-wider uppercase drop-shadow-[0_0_2px_rgba(6,182,212,0.5)] flex items-center gap-2">
                         <Icons.Grip />
@@ -125,7 +129,7 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
             </div>
 
             {/* Horizontal Timeline Container */}
-            <div className="flex-1 overflow-x-auto overflow-y-hidden p-6 custom-scrollbar bg-[#050505]">
+            <div className="flex-1 overflow-x-auto overflow-y-hidden p-3 custom-scrollbar bg-[#050505]">
                 <div className="flex flex-row gap-4 min-w-max h-full items-start">
                     {measures.map((measure, mIdx) => {
                         const currentTotal = measure.notes.reduce((sum, n) => sum + getNoteDurationValue(n.duration, !!n.decorators.dot), 0);
@@ -134,10 +138,12 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
                         const isCollapsed = measure.isCollapsed;
                         const isDragging = draggedIndex === mIdx;
                         const isOver = dragOverIndex === mIdx;
+                        const isMeasureSelected = measure.id === selectedMeasureId;
 
                         return (
                             <div
                                 key={measure.id}
+                                onClick={(e) => { e.stopPropagation(); onSelectMeasure(measure.id); }}
                                 draggable={true}
                                 onDragStart={(e) => handleDragStart(e, mIdx)}
                                 onDragOver={(e) => handleDragOver(e, mIdx)}
@@ -148,8 +154,11 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
                                     flex flex-col
                                     relative group transition-all duration-300
                                     rounded-2xl border
-                                    ${isCollapsed ? 'w-20' : 'min-w-[280px]'}
-                                    ${isDragging ? 'opacity-40 border-dashed border-slate-600' : 'opacity-100 border-[#222] bg-[#0f0f0f] hover:border-[#333] hover:bg-[#111]'}
+                                    ${isCollapsed ? 'w-20' : 'min-w-[220px]'}
+                                    ${isDragging ? 'opacity-40 border-dashed border-slate-600' :
+                                        isMeasureSelected
+                                            ? 'opacity-100 border-cyan-500 bg-[#161616] shadow-[0_0_20px_rgba(6,182,212,0.15)]'
+                                            : 'opacity-100 border-[#222] bg-[#0f0f0f] hover:border-[#333] hover:bg-[#111]'}
                                     ${isOver ? 'border-cyan-500/50 scale-[1.01]' : ''}
                                     h-[90%] 
                                 `}
@@ -222,11 +231,11 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
                                                 return (
                                                     <div
                                                         key={note.id}
-                                                        onClick={(e) => onSelectNote(note.id, e.shiftKey || e.ctrlKey)}
+                                                        onClick={(e) => { e.stopPropagation(); onSelectNote(note.id, e.shiftKey || e.ctrlKey); }}
                                                         onDoubleClick={() => onDoubleClickNote(note.id)}
                                                         className={`
                                                             relative cursor-pointer transition-all duration-200 group/note
-                                                            w-12 h-16 rounded-lg border flex flex-col items-center justify-center select-none
+                                                            w-10 h-14 rounded-lg border flex flex-col items-center justify-center select-none
                                                             ${isSelected
                                                                 ? (isRest ? 'bg-slate-800 border-slate-500' : 'bg-cyan-900/30 border-cyan-500/50')
                                                                 : 'bg-[#151515] border-[#222] hover:border-[#444] hover:bg-[#1a1a1a]'}
@@ -248,7 +257,7 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
 
                                                         {/* Main Value */}
                                                         <div className={`transition-transform duration-300 group-hover/note:scale-110 ${isRest ? 'text-[#333]' : 'text-slate-200'}`}>
-                                                            {isRest ? Icons.MusicRest(note.duration) : <span className="text-xl font-black">{note.fret}</span>}
+                                                            {isRest ? Icons.MusicRest(note.duration) : <span className="text-lg font-black">{note.fret}</span>}
                                                         </div>
 
                                                         {/* String Info */}
@@ -266,7 +275,7 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
                                             {!isFull && (
                                                 <button
                                                     onClick={() => onAddNote(measure.id)}
-                                                    className="w-12 h-16 border border-dashed border-[#222] rounded-lg flex flex-col items-center justify-center text-[#333] hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all active:scale-95 group/add"
+                                                    className="w-10 h-14 border border-dashed border-[#222] rounded-lg flex flex-col items-center justify-center text-[#333] hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all active:scale-95 group/add"
                                                     title="Add Note"
                                                 >
                                                     <span className="scale-75 opacity-50 group-hover/add:opacity-100 transition-opacity">

@@ -13,7 +13,10 @@ export function convertToVextab(measures: MeasureData[], settings: GlobalSetting
 
         // Omitimos os parâmetros se não forem necessários. 
         // O Vextab colocará padrões, que removeremos manualmente no ScorePreview.
-        const clefPart = measure.showClef ? `clef=${settings.clef}` : "clef=none";
+        const val = measure.clef || settings.clef;
+        const shouldShowClef = measure.showClef && val !== 'tab';
+        const clefPart = shouldShowClef ? `clef=${val}` : "clef=none";
+
         const timePart = measure.showTimeSig ? `time=${settings.time}` : "";
 
         vextab += `tabstave notation=${notation} tablature=${tablature} key=${settings.key} ${clefPart} ${timePart}\n`;
@@ -24,12 +27,14 @@ export function convertToVextab(measures: MeasureData[], settings: GlobalSetting
         let lastType = measure.notes[0]?.type || 'note';
         let currentGroup: string[] = [];
         const groups: string[] = [];
+        let textLine = "text";
+        let hasText = false;
 
         measure.notes.forEach((n, nIdx) => {
             let prefix = "";
             const isRest = n.type === 'rest';
 
-            const typeChanged = isRest !== lastWasRest; // Used for prefix calculation
+            const typeChanged = isRest !== lastWasRest;
             // Check for group split (Note <-> Rest)
             if (n.type !== lastType) {
                 if (currentGroup.length > 0) groups.push(currentGroup.join(" "));
@@ -45,18 +50,49 @@ export function convertToVextab(measures: MeasureData[], settings: GlobalSetting
                 currentDuration = durationStr;
             }
 
+            let decoratorsStr = "";
+            const textSymbols: string[] = [];
+
+            // Native VexTab Articulations (Safe keys)
+            if (n.decorators.staccato) decoratorsStr += " $.a./bottom.$";
+            if (n.decorators.accent) decoratorsStr += " $.a>/bottom.$";
+            if (n.decorators.staccatissimo) decoratorsStr += " $.av/bottom.$";
+            if (n.decorators.snapPizzicato) decoratorsStr += " $.ao/top.$";
+
+            // Fallback to Text for Special Char Articulations
+            if (n.decorators.pizzicato) textSymbols.push('+');
+            if (n.decorators.tenuto) { console.log('Converter: Tenuto'); textSymbols.push('-'); }
+            if (n.decorators.marcato) { console.log('Converter: Marcato'); textSymbols.push('^'); }
+            if (n.decorators.fermata) { console.log('Converter: Fermata'); textSymbols.push('𝄐'); }
+            if (n.decorators.fermataDown) textSymbols.push('𝄑');
+            if (n.decorators.bowUp) textSymbols.push('∨');
+            if (n.decorators.bowDown) textSymbols.push('⊓');
+            if (n.decorators.open) textSymbols.push('o');
+
+            // Annotations & Chords
+            if (n.chord) textSymbols.unshift(n.chord); // Chords first
+            if (n.annotation) textSymbols.push(n.annotation);
+
+            // Text Sync
+            textLine += ` :${n.duration}${n.decorators.dot ? 'd' : ''}, ${textSymbols.join(" ")},`;
+            if (textSymbols.length > 0) hasText = true;
+
             lastWasRest = isRest;
             const accidentalStr = n.accidental && n.accidental !== 'none' ? n.accidental : '';
+
+            let headStr = '';
+            // VexTab Note Head Suffixes
+            switch (n.noteHead) {
+                case 'x': headStr = 'X'; break; // Ghost
+                case 'diamond': headStr = 'd'; break; // Diamond
+                case 'square': headStr = 'sq'; break; // Square (Try sq)
+                case 'triangle': headStr = 'tu'; break; // Triangle Up (Try tu)
+            }
 
             if (isRest) {
                 currentGroup.push(`  ${prefix} ##  `);
                 return;
             }
-
-            let decoratorsStr = "";
-            if (n.decorators.staccato) decoratorsStr += "v";
-            if (n.decorators.accent) decoratorsStr += "V";
-            if (n.decorators.marcato) decoratorsStr += "^";
 
             let tech = n.technique || "";
             let connector = "";
@@ -96,7 +132,7 @@ export function convertToVextab(measures: MeasureData[], settings: GlobalSetting
                 }
             }
 
-            currentGroup.push(`${prefix}${n.fret}${accidentalStr}/${n.string}${beam}${vibrato}${decoratorsStr}${connector}`);
+            currentGroup.push(`${prefix}${n.fret}${accidentalStr}${headStr}/${n.string}${beam}${vibrato}${decoratorsStr}${connector}`);
         });
 
         if (currentGroup.length > 0) groups.push(currentGroup.join(" "));
@@ -105,6 +141,12 @@ export function convertToVextab(measures: MeasureData[], settings: GlobalSetting
         groups.forEach(g => {
             vextab += `notes ${g}\n`;
         });
+
+        if (hasText) {
+            if (textLine.endsWith(",")) textLine = textLine.slice(0, -1);
+            console.log("Converter: TextLine ->", textLine);
+            vextab += `${textLine}\n`;
+        }
     });
 
     return vextab;

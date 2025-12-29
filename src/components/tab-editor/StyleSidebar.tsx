@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { Palette, RotateCcw, ChevronDown, ChevronRight, Sun, Layers, Zap } from 'lucide-react';
+import { HexColorPicker } from 'react-colorful';
+import * as Popover from '@radix-ui/react-popover';
 import { ScoreStyle, ElementStyle } from '@/lib/tab-editor/types';
 
 interface StyleSidebarProps {
@@ -72,6 +74,43 @@ const PRESET_THEMES = {
             activeNoteColor: '#8b4513',
         }
     }
+};
+
+const ColorPicker = ({ color, onChange }: { color: string; onChange: (c: string) => void }) => {
+    return (
+        <Popover.Root>
+            <Popover.Trigger asChild>
+                <button
+                    className="w-8 h-8 rounded-full ring-2 ring-zinc-700 overflow-hidden cursor-pointer shadow-sm hover:ring-pink-500/50 transition-all relative"
+                    style={{ backgroundColor: color }}
+                    onClick={(e) => e.stopPropagation()}
+                />
+            </Popover.Trigger>
+            <Popover.Portal>
+                <Popover.Content
+                    className="z-50 rounded-xl bg-[#111] border border-zinc-800 shadow-xl p-3 w-[200px] animate-in fade-in zoom-in-95 duration-200"
+                    side="left"
+                    align="start"
+                    sideOffset={10}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="flex flex-col gap-3">
+                        <HexColorPicker color={color} onChange={onChange} style={{ width: '100%', height: '160px' }} />
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-zinc-500 font-bold">#</span>
+                            <input
+                                type="text"
+                                value={color.replace('#', '')}
+                                onChange={(e) => onChange(`#${e.target.value}`)}
+                                className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-200 font-mono focus:border-pink-500/50 outline-none uppercase"
+                            />
+                        </div>
+                    </div>
+                    <Popover.Arrow className="fill-zinc-800" />
+                </Popover.Content>
+            </Popover.Portal>
+        </Popover.Root>
+    );
 };
 
 const StyleSidebar: React.FC<StyleSidebarProps> = ({ style, onChange, onReset }) => {
@@ -172,20 +211,13 @@ const StyleSidebar: React.FC<StyleSidebarProps> = ({ style, onChange, onReset })
                                 </span>
                             </div>
                             <div className="relative group/picker" onClick={(e) => e.stopPropagation()}>
-                                <div
-                                    className="w-8 h-8 rounded-full ring-2 ring-zinc-700 overflow-hidden cursor-pointer shadow-sm group-hover/picker:ring-pink-500/50 transition-all"
-                                    style={{ backgroundColor: colorValue }}
-                                >
-                                    <input
-                                        type="color"
-                                        value={colorValue}
-                                        onChange={(e) => {
-                                            if (isSimple || isLegacyString) handleThemeChange(control.key, e.target.value);
-                                            else handleNestedChange(control.key, 'color', e.target.value);
-                                        }}
-                                        className="opacity-0 w-full h-full cursor-pointer absolute inset-0"
-                                    />
-                                </div>
+                                <ColorPicker
+                                    color={colorValue}
+                                    onChange={(newColor) => {
+                                        if (isSimple || isLegacyString) handleThemeChange(control.key, newColor);
+                                        else handleNestedChange(control.key, 'color', newColor);
+                                    }}
+                                />
                             </div>
                         </div>
 
@@ -241,15 +273,10 @@ const StyleSidebar: React.FC<StyleSidebarProps> = ({ style, onChange, onReset })
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[9px] font-medium text-zinc-500 uppercase">Color</span>
                                                 <div className="relative group/picker">
-                                                    <div
-                                                        className="w-6 h-6 rounded-full ring-1 ring-zinc-700 overflow-hidden cursor-pointer shadow-sm group-hover/picker:ring-pink-500/50 transition-all"
-                                                        style={{ backgroundColor: (value as ElementStyle).shadowColor || colorValue }}
-                                                    >
-                                                        <input
-                                                            type="color"
-                                                            value={(value as ElementStyle).shadowColor || colorValue}
-                                                            onChange={(e) => handleNestedChange(control.key, 'shadowColor', e.target.value)}
-                                                            className="opacity-0 w-full h-full cursor-pointer absolute inset-0"
+                                                    <div className="w-6 h-6">
+                                                        <ColorPicker
+                                                            color={(value as ElementStyle).shadowColor || colorValue}
+                                                            onChange={(newColor) => handleNestedChange(control.key, 'shadowColor', newColor)}
                                                         />
                                                     </div>
                                                 </div>

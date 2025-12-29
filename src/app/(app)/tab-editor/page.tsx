@@ -29,6 +29,8 @@ export default function TabEditorPage() {
         setIsClient(true);
     }, []);
 
+    const [selectedMeasureId, setSelectedMeasureId] = useState<string | null>(null);
+
     const [measures, setMeasures] = useState<MeasureData[]>([
         {
             id: generateId(),
@@ -79,6 +81,10 @@ export default function TabEditorPage() {
         return getPitchFromMidi(midi);
     }, [editingNote]);
 
+    const activeMeasure = useMemo(() => {
+        return measures.find(m => m.id === selectedMeasureId) || null;
+    }, [measures, selectedMeasureId]);
+
     // previewData removed as per user request
 
     useEffect(() => {
@@ -110,7 +116,7 @@ export default function TabEditorPage() {
     };
 
     const handleUpdateMeasure = (id: string, updates: Partial<MeasureData>) => {
-        setMeasures(measures.map(m => m.id === id ? { ...m, ...updates } : m));
+        setMeasures(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
     };
 
     const handleToggleCollapse = (measureId: string) => {
@@ -139,6 +145,15 @@ export default function TabEditorPage() {
         const [moved] = newMeasures.splice(fromIndex, 1);
         newMeasures.splice(toIndex, 0, moved);
         setMeasures(newMeasures);
+    };
+
+    const handleSelectMeasure = (id: string) => {
+        const index = measures.findIndex(m => m.id === id);
+        if (index !== -1) setCurrentMeasureIndex(index);
+
+        setSelectedMeasureId(id);
+        setEditingNoteId(null);
+        setSelectedNoteIds([]);
     };
 
     const handleRemoveNote = (noteId: string) => {
@@ -249,12 +264,15 @@ export default function TabEditorPage() {
         });
     };
 
-    const handleAddNote = (measureId: string) => {
+    const handleAddNote = (measureId: string, durationOverride?: Duration) => {
         const measure = measures.find(m => m.id === measureId);
         if (!measure) return;
+
+        const durationToAdd = durationOverride || activeDuration;
+
         const currentTotal = measure.notes.reduce((sum, n) => sum + getNoteDurationValue(n.duration, !!n.decorators.dot), 0);
         const capacity = getMeasureCapacity(settings.time);
-        const newNoteValue = getNoteDurationValue(activeDuration, false);
+        const newNoteValue = getNoteDurationValue(durationToAdd, false);
 
         if (currentTotal + newNoteValue > capacity + 0.001) {
             const newMeasureId = generateId();
@@ -262,7 +280,7 @@ export default function TabEditorPage() {
                 id: generateId(),
                 fret: '0',
                 string: '1',
-                duration: activeDuration,
+                duration: durationToAdd,
                 type: 'note' as const,
                 decorators: {},
                 accidental: 'none' as const
@@ -282,7 +300,7 @@ export default function TabEditorPage() {
                 if (m.id === measureId) {
                     return {
                         ...m,
-                        notes: [...m.notes, { id: generateId(), fret: '0', string: '1', duration: activeDuration, type: 'note', decorators: {}, accidental: 'none' }]
+                        notes: [...m.notes, { id: generateId(), fret: '0', string: '1', duration: durationToAdd, type: 'note', decorators: {}, accidental: 'none' }]
                     };
                 }
                 return m;
@@ -357,8 +375,20 @@ export default function TabEditorPage() {
 
     const handleInsert = (code: string) => {
         if (code.startsWith('clef=')) {
-            const clefValue = code.split('=')[1] as GlobalSettings['clef'];
-            setSettings(prev => ({ ...prev, clef: clefValue }));
+            const clefValue = code.split('=')[1] as any; // Allow 'tab' etc.
+
+            let targetIndex = currentMeasureIndex;
+            if (selectedNoteIds.length > 0) {
+                const foundIndex = measures.findIndex(m => m.notes.some(n => selectedNoteIds.includes(n.id)));
+                if (foundIndex !== -1) targetIndex = foundIndex;
+            }
+
+            setMeasures(prev => prev.map((m, idx) => {
+                if (idx === targetIndex) {
+                    return { ...m, clef: clefValue, showClef: true };
+                }
+                return m;
+            }));
             return;
         }
 
@@ -485,6 +515,8 @@ export default function TabEditorPage() {
             <div className="relative z-10 flex flex-1 overflow-hidden">
                 <Sidebar
                     onInsert={handleInsert}
+                    onAddNote={handleAddNote}
+                    onUpdateNote={(updates) => updateSelectedNotes(updates)}
                     activeDuration={activeDuration}
                     onSelectDuration={setActiveDuration}
                     // Inspector Props
@@ -497,9 +529,11 @@ export default function TabEditorPage() {
                     onStringChange={handleStringChange}
                     onAccidentalChange={handleAccidentalChange}
                     onDecoratorChange={handleDecoratorChange}
+                    activeMeasure={activeMeasure}
+                    onMeasureUpdate={handleUpdateMeasure}
                 />
 
-                <main className="flex flex-1 flex-col overflow-hidden min-w-0" style={{ display: 'grid', gridTemplateRows: '60% 40%' }}>
+                <main className="flex flex-1 flex-col overflow-hidden min-w-0" style={{ display: 'grid', gridTemplateRows: '70% 30%' }}>
                     <div className="flex flex-col h-full overflow-hidden relative">
                         {/* Integrated Header Controls */}
                         <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between p-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/5">
@@ -578,6 +612,8 @@ export default function TabEditorPage() {
                             onReorderMeasures={handleReorderMeasures}
                             onRemoveNote={handleRemoveNote}
                             hasClipboard={!!clipboard}
+                            onSelectMeasure={handleSelectMeasure}
+                            selectedMeasureId={selectedMeasureId}
                         />
                     </div>
                 </main>

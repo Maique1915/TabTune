@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Duration, NoteData } from '@/lib/tab-editor/types';
+import { Duration, NoteData, MeasureData } from '@/lib/tab-editor/types';
 import { Icons } from '@/lib/tab-editor/constants';
+import VexFlowIcon from './VexFlowIcon';
 
 interface SidebarProps {
     onInsert: (text: string) => void;
@@ -18,7 +19,30 @@ interface SidebarProps {
     onStringChange?: (stringFret: string) => void;
     onAccidentalChange?: (accidental: string) => void;
     onDecoratorChange?: (decorator: string) => void;
+    // Measure Props
+    activeMeasure?: MeasureData | null;
+    onMeasureUpdate?: (id: string, updates: Partial<MeasureData>) => void;
+    onAddNote?: (measureId: string, duration: Duration) => void;
+    // Generic update for new properties
+    onUpdateNote?: (updates: Partial<NoteData>) => void;
 }
+
+interface ArticulationBtnProps {
+    label: string;
+    symbol: string;
+    isActive: boolean;
+    onClick: () => void;
+}
+
+const ArticulationButton: React.FC<ArticulationBtnProps> = ({ label, symbol, isActive, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`p-2 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${isActive ? 'bg-pink-500/20 border-pink-500/50 text-pink-300 shadow-[0_0_10px_rgba(236,72,153,0.2)]' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}
+    >
+        <span className="text-sm font-bold">{symbol}</span>
+        <span className="text-[7px] uppercase font-black">{label}</span>
+    </button>
+);
 
 const Sidebar: React.FC<SidebarProps> = ({
     onInsert,
@@ -32,8 +56,14 @@ const Sidebar: React.FC<SidebarProps> = ({
     onPitchChange,
     onStringChange,
     onAccidentalChange,
-    onDecoratorChange
+    onDecoratorChange,
+    activeMeasure,
+    onMeasureUpdate,
+    onAddNote,
+    onUpdateNote
 }) => {
+    const [activeTab, setActiveTab] = React.useState<'main' | 'articulations' | 'effects' | 'text'>('main');
+
     const durationItems = [
         { label: 'Whole', code: 'w' as Duration },
         { label: 'Half', code: 'h' as Duration },
@@ -43,13 +73,19 @@ const Sidebar: React.FC<SidebarProps> = ({
         { label: '32nd', code: '32' as Duration },
     ];
 
+
     const isInspector = !!editingNote;
+    const isMeasureProperties = !!activeMeasure && !isInspector;
 
     const handleDurationClick = (code: Duration) => {
         if (isInspector && onNoteRhythmChange) {
             onNoteRhythmChange(code);
         } else {
             onSelectDuration(code);
+            // If strictly in measure context (no note editing), clicking adds a note
+            if (isMeasureProperties && activeMeasure && onAddNote) {
+                onAddNote(activeMeasure.id, code);
+            }
         }
     };
 
@@ -87,10 +123,10 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="p-6 border-b border-white/5 flex items-center justify-between min-h-[80px]">
                 <div className="flex flex-col">
                     <h2 className="text-[12px] font-black text-white uppercase tracking-[0.2em] drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-                        {isInspector ? 'PROPERTIES' : 'LIBRARY'}
+                        {isInspector ? 'PROPERTIES' : isMeasureProperties ? 'PROPERTIES' : 'LIBRARY'}
                     </h2>
                     <span className="text-[8px] text-cyan-500 font-bold uppercase tracking-widest mt-1">
-                        {isInspector ? `Editing ${editingNote?.type}` : 'Note Controls'}
+                        {isInspector ? `Editing ${editingNote?.type}` : isMeasureProperties ? 'Data Controls' : 'Note Controls'}
                     </span>
                 </div>
                 {isInspector && onCloseInspector && (
@@ -120,11 +156,17 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 <button
                                     key={item.label}
                                     onClick={() => handleDurationClick(item.code)}
-                                    className={`py-3 rounded-xl border border-white/5 font-black transition-all text-[10px] flex flex-col items-center justify-center space-y-1 ${active
+                                    className={`py-2 rounded-xl border border-white/5 font-black transition-all text-[10px] flex flex-col items-center justify-center space-y-1 ${active
                                         ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)]'
-                                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200'}`}
+                                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200'
+                                        }`}
                                 >
-                                    <span className={`origin-center scale-50 transition-all ${active ? 'opacity-100 scale-75' : 'opacity-40'}`}>{Icons.MusicRest(item.code)}</span>
+                                    <div className={`transition-all ${active ? 'opacity-100' : 'opacity-40 grayscale'}`}>
+                                        <VexFlowIcon
+                                            duration={item.code}
+                                            fillColor={active ? '#67e8f9' : '#94a3b8'} // cyan-300 vs slate-400
+                                        />
+                                    </div>
                                     <span>{item.label}</span>
                                 </button>
                             );
@@ -134,98 +176,194 @@ const Sidebar: React.FC<SidebarProps> = ({
 
                 {/* Conditional Content */}
                 {isInspector && editingNote ? (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-                        {/* Dotted Toggle */}
-                        <button
-                            onClick={() => onNoteRhythmChange?.(undefined, !editingNote.decorators.dot)}
-                            className={`w-full py-3 rounded-xl border transition-all text-xs font-bold flex items-center justify-center space-x-2 ${editingNote.decorators.dot ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'}`}
-                        >
-                            <div className={`w-1.5 h-1.5 rounded-full ${editingNote.decorators.dot ? 'bg-amber-400' : 'bg-slate-600'}`} />
-                            <span>DOTTED NOTE</span>
-                        </button>
+                        {/* Tab Navigation */}
+                        <div className="flex p-1 bg-black/40 rounded-xl border border-white/5 space-x-1 overflow-x-auto custom-scrollbar">
+                            {['main', 'articulations', 'text'].map((tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab as any)}
+                                    className={`flex-1 py-1.5 px-3 text-[9px] font-black rounded-lg uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === tab ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-500 hover:text-slate-300'}`}
+                                >
+                                    {tab}
+                                </button>
+                            ))}
+                        </div>
 
-                        {/* Note/Rest Actions */}
-                        <div className="space-y-3 pt-4 border-t border-white/5">
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Type</h3>
+                        {/* TAB: MAIN */}
+                        {activeTab === 'main' && (
+                            <div className="space-y-6">
+                                {/* Dotted & Type */}
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        onClick={() => onNoteRhythmChange?.(undefined, !editingNote.decorators.dot)}
+                                        className={`py-3 rounded-xl border transition-all text-xs font-bold flex items-center justify-center space-x-2 ${editingNote.decorators.dot ? 'bg-amber-500/20 border-amber-500/50 text-amber-300' : 'bg-white/5 border-white/5 text-slate-400'}`}
+                                    >
+                                        <div className={`w-1.5 h-1.5 rounded-full ${editingNote.decorators.dot ? 'bg-amber-400' : 'bg-slate-600'}`} />
+                                        <span className="text-[9px] uppercase">Dotted</span>
+                                    </button>
+
+                                    <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
+                                        <button onClick={() => onNoteTypeChange?.('note')} className={`flex-1 text-[9px] font-black rounded-lg transition-all ${editingNote.type === 'note' ? 'bg-teal-500/20 text-teal-300' : 'text-slate-600'}`}>NOTE</button>
+                                        <button onClick={() => onNoteTypeChange?.('rest')} className={`flex-1 text-[9px] font-black rounded-lg transition-all ${editingNote.type === 'rest' ? 'bg-white/10 text-white' : 'text-slate-600'}`}>REST</button>
+                                    </div>
+                                </div>
+
+                                {editingNote.type === 'note' && (
+                                    <div className="space-y-3 pt-2 border-t border-white/5">
+                                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Note Heads</h3>
+                                        <div className="grid grid-cols-5 gap-1.5">
+                                            {[
+                                                { id: undefined, label: 'Std', symbol: '●' },
+                                                { id: 'x', label: 'Ghost', symbol: 'X' },
+                                                { id: 'diamond', label: 'Diam.', symbol: '◇' },
+                                                { id: 'square', label: 'Square', symbol: '□' },
+                                                { id: 'triangle', label: 'Tri.', symbol: '△' }
+                                            ].map((head) => (
+                                                <ArticulationButton
+                                                    key={head.id || 'std'}
+                                                    label={head.label}
+                                                    symbol={head.symbol}
+                                                    isActive={editingNote.noteHead === head.id}
+                                                    onClick={() => onUpdateNote?.({ noteHead: head.id as any })}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Pitch Controls */}
+                                {editingNote.type === 'note' && (
+                                    <div className="space-y-3 pt-2 border-t border-white/5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-black text-slate-500 uppercase">Pitch</span>
+                                            <span className="text-[9px] text-white bg-white/10 px-1.5 rounded">{currentPitch?.name}{currentPitch?.accidental}{currentPitch?.octave}</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <div className="grid grid-cols-7 gap-1">
+                                                {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map(n => (
+                                                    <button key={n} onClick={() => onPitchChange?.(n)} className={`h-8 rounded-lg border font-black text-xs transition-all ${currentPitch?.name === n ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'bg-white/5 border-white/5 text-slate-500'}`}>{n}</button>
+                                                ))}
+                                            </div>
+                                            <div className="flex bg-black/40 rounded-xl border border-white/5 p-0.5">
+                                                {[2, 3, 4, 5, 6].map(o => (
+                                                    <button key={o} onClick={() => onPitchChange?.(undefined, undefined, o)} className={`flex-1 py-1 text-[9px] font-bold rounded-lg transition-all ${currentPitch?.octave === o ? 'bg-white/10 text-white' : 'text-slate-600'}`}>{o}</button>
+                                                ))}
+                                            </div>
+                                            {/* Accidentals */}
+                                            <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
+                                                {[{ l: '♭', v: 'b' }, { l: '♮', v: 'n' }, { l: '♯', v: '#' }].map(acc => (
+                                                    <button key={acc.v} onClick={() => onAccidentalChange?.(acc.v)} className={`flex-1 py-1 text-sm font-serif rounded-lg transition-all ${editingNote.accidental === acc.v || (editingNote.accidental === 'none' && acc.v === 'n') ? 'bg-white/10 text-white' : 'text-slate-600'}`}>{acc.l}</button>
+                                                ))}
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-1.5 pt-1">
+                                                {[1, 2, 3, 4, 5, 6].map(s => (
+                                                    <button key={s} onClick={() => onStringChange?.(s.toString())} className={`py-1.5 rounded-lg border font-bold text-[9px] transition-all ${editingNote.string === s.toString() ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'bg-white/5 border-white/5 text-slate-500'}`}>STR {s}</button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* TAB: ARTICULATIONS */}
+                        {activeTab === 'articulations' && editingNote.type === 'note' && (
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    { k: 'staccato', l: 'Staccato', s: '.' },
+                                    { k: 'staccatissimo', l: 'Staccatis.', s: '▼' },
+                                    { k: 'accent', l: 'Accent', s: '>' },
+                                    { k: 'tenuto', l: 'Tenuto', s: '-' },
+                                    { k: 'marcato', l: 'Marcato', s: '^' },
+                                    { k: 'fermata', l: 'Fermata', s: '𝄐' },
+                                    { k: 'fermataDown', l: 'Fermata D.', s: '𝄑' },
+                                    { k: 'pizzicato', l: 'Pizz.', s: '+' },
+                                    { k: 'snapPizzicato', l: 'Snap', s: '○' },
+                                    { k: 'bowUp', l: 'Bow Up', s: '∨' },
+                                    { k: 'bowDown', l: 'Bow Down', s: 'sqcap' }, // approx
+                                    { k: 'open', l: 'Open', s: 'o' }
+                                ].map((art) => (
+                                    <ArticulationButton
+                                        key={art.k}
+                                        label={art.l}
+                                        symbol={art.s}
+                                        isActive={!!editingNote.decorators[art.k as keyof typeof editingNote.decorators]}
+                                        onClick={() => onDecoratorChange?.(art.k)}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        {/* TAB: TEXT */}
+                        {activeTab === 'text' && editingNote.type === 'note' && (
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Chord Symbol</label>
+                                    <input
+                                        type="text"
+                                        value={editingNote.chord || ''}
+                                        onChange={(e) => onUpdateNote?.({ chord: e.target.value })}
+                                        placeholder="e.g. Amaj7"
+                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-cyan-300 focus:border-cyan-500 outline-none placeholder:text-slate-700"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Annotation</label>
+                                    <input
+                                        type="text"
+                                        value={editingNote.annotation || ''}
+                                        onChange={(e) => onUpdateNote?.({ annotation: e.target.value })}
+                                        placeholder="e.g. Text"
+                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-slate-300 focus:border-slate-500 outline-none placeholder:text-slate-700"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
+                ) : isMeasureProperties && activeMeasure ? (
+                    // Measure Properties
+                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <div className="space-y-4">
+                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
+                                Clef
+                            </h3>
                             <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
-                                <button onClick={() => onNoteTypeChange?.('note')} className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${editingNote.type === 'note' ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' : 'text-slate-600 hover:text-slate-400'}`}>NOTE</button>
-                                <button onClick={() => onNoteTypeChange?.('rest')} className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${editingNote.type === 'rest' ? 'bg-white/10 text-white border border-white/10' : 'text-slate-600 hover:text-slate-400'}`}>REST</button>
+                                {['treble', 'bass', 'tab'].map(c => (
+                                    <button
+                                        key={c}
+                                        onClick={() => onMeasureUpdate?.(activeMeasure.id, { clef: c as any, showClef: true })}
+                                        className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all uppercase ${activeMeasure.clef === c || (!activeMeasure.clef && c === 'treble') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
+                                    >
+                                        {c}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
-                        {/* Pitch Controls */}
-                        {editingNote.type === 'note' && (
-                            <div className="space-y-4 pt-4 border-t border-white/5">
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center justify-between">
-                                    <span>Pitch & Fret</span>
-                                    <span className="text-white bg-white/10 px-1.5 rounded border border-white/5">{currentPitch?.name}{currentPitch?.accidental}{currentPitch?.octave}</span>
-                                </h3>
-
-                                <div className="space-y-2">
-                                    <div className="grid grid-cols-7 gap-1">
-                                        {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map(n => (
-                                            <button key={n} onClick={() => onPitchChange?.(n)} className={`h-8 rounded-lg md:rounded-xl border font-black text-xs transition-all ${currentPitch?.name === n ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}>{n}</button>
-                                        ))}
-                                    </div>
-                                    <div className="flex bg-black/40 rounded-xl border border-white/5 p-0.5">
-                                        {[2, 3, 4, 5, 6].map(o => (
-                                            <button key={o} onClick={() => onPitchChange?.(undefined, undefined, o)} className={`flex-1 py-1 text-[10px] font-bold rounded-lg transition-all ${currentPitch?.octave === o ? 'bg-white/10 text-white' : 'text-slate-600 hover:text-slate-400 hover:bg-white/5'}`}>{o}</button>
-                                        ))}
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-1.5 pt-2">
-                                        {[1, 2, 3, 4, 5, 6].map(s => (
-                                            <button key={s} onClick={() => onStringChange?.(s.toString())} className={`py-1.5 rounded-lg border font-bold text-[10px] transition-all ${editingNote.string === s.toString() ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}>STR {s}</button>
-                                        ))}
-                                    </div>
-                                </div>
+                        <div className="space-y-4">
+                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
+                                Visibility
+                            </h3>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    onClick={() => onMeasureUpdate?.(activeMeasure.id, { showClef: !activeMeasure.showClef })}
+                                    className={`py-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${activeMeasure.showClef ? 'bg-purple-500/20 border-purple-500/50 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.2)]' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}
+                                >
+                                    <span className="text-lg font-serif">𝄞</span>
+                                    <span className="text-[9px] font-black uppercase">Show Clef</span>
+                                </button>
+                                <button
+                                    onClick={() => onMeasureUpdate?.(activeMeasure.id, { showTimeSig: !activeMeasure.showTimeSig })}
+                                    className={`py-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${activeMeasure.showTimeSig ? 'bg-purple-500/20 border-purple-500/50 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.2)]' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}
+                                >
+                                    <span className="text-xs font-serif font-bold pt-1">4/4</span>
+                                    <span className="text-[9px] font-black uppercase">Show Time</span>
+                                </button>
                             </div>
-                        )}
-
-                        {/* Note Props (Accidentals & Decorators) */}
-                        {editingNote.type === 'note' && (
-                            <div className="space-y-4 pt-4 border-t border-white/5">
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Properties</h3>
-
-                                <div className="space-y-2">
-                                    {/* Accidentals */}
-                                    <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
-                                        {[
-                                            { label: '♭', value: 'b', name: 'Flat' },
-                                            { label: '♮', value: 'n', name: 'Natural' },
-                                            { label: '♯', value: '#', name: 'Sharp' }
-                                        ].map(acc => (
-                                            <button
-                                                key={acc.value}
-                                                onClick={() => onAccidentalChange?.(acc.value)}
-                                                className={`flex-1 py-1.5 text-lg leading-none font-serif rounded-lg transition-all ${editingNote.accidental === acc.value || (editingNote.accidental === 'none' && acc.value === 'n') ? 'bg-white/10 text-white border border-white/10' : 'text-slate-600 hover:text-slate-400'}`}
-                                                title={acc.name}
-                                            >
-                                                {acc.label}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    {/* Decorators */}
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <button
-                                            onClick={() => onDecoratorChange?.('staccato')}
-                                            className={`py-2 rounded-xl border flex items-center justify-center space-x-2 transition-all ${editingNote.decorators.staccato ? 'bg-pink-500/20 border-pink-500/50 text-pink-300' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}
-                                        >
-                                            <span className="font-bold text-lg mb-2">.</span>
-                                            <span className="text-[10px] font-black uppercase">Staccato</span>
-                                        </button>
-                                        <button
-                                            onClick={() => onDecoratorChange?.('accent')}
-                                            className={`py-2 rounded-xl border flex items-center justify-center space-x-2 transition-all ${editingNote.decorators.accent ? 'bg-pink-500/20 border-pink-500/50 text-pink-300' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}
-                                        >
-                                            <span className="font-bold text-lg">{'>'}</span>
-                                            <span className="text-[10px] font-black uppercase">Accent</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        </div>
                     </div>
                 ) : (
                     // Toolkit Palettes
