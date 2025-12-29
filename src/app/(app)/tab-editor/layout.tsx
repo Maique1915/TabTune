@@ -15,11 +15,7 @@ export default function TabEditorLayout({
                 src="https://unpkg.com/vexflow@4.2.2/build/cjs/vexflow.js"
                 strategy="beforeInteractive"
             />
-            <Script
-                type="text/javascript"
-                src="https://unpkg.com/vextab@3.0.6/releases/vextab-div.js"
-                strategy="beforeInteractive"
-            />
+
             {children}
         </>
     );

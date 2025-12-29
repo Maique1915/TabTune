@@ -22,6 +22,12 @@ export function getPitchFromMidi(midi: number): Pitch {
     return { name, accidental, octave };
 }
 
+export function getNoteKeyFromFret(fret: number, stringIdx: number): string {
+    const midi = getMidiFromPosition(fret, stringIdx);
+    const { name, accidental, octave } = getPitchFromMidi(midi);
+    return `${name.toLowerCase()}${accidental}/${octave}`;
+}
+
 export function getMidiFromPitch(name: string, accidental: string, octave: number): number {
     let noteIdx = NOTE_NAMES.indexOf(name);
     if (accidental === '#') noteIdx = NOTE_NAMES.indexOf(name + '#');
@@ -114,39 +120,3 @@ export function decomposeValue(value: number): { duration: string, dotted: boole
     }
     return result;
 }
-
-// Helper for VexFlow note keys
-export const getNoteKeyFromFret = (string: number, fret: number): string => {
-    // Standard Tuning (E A D G B E - low to high)
-    // Strings are 1-based index from high E (1) to low E (6) in VexFlow usually, 
-    // but often 6 is low E. Let's assume standard VexFlow TabNote convention:
-    // String 1 = High E (E4)
-    // String 2 = B (B3)
-    // String 3 = G (G3)
-    // String 4 = D (D3)
-    // String 5 = A (A2)
-    // String 6 = Low E (E2)
-
-    // MIDI note numbers for open strings (using standard guitar tuning)
-    const stringBaseNotes: Record<number, number> = {
-        1: 64, // E4
-        2: 59, // B3
-        3: 55, // G3
-        4: 50, // D3
-        5: 45, // A2
-        6: 40  // E2
-    };
-
-    const baseNote = stringBaseNotes[string];
-    if (baseNote === undefined) return "b/4"; // Default fallback
-
-    const noteValue = baseNote + fret;
-
-    // Convert MIDI note value to VexFlow key string (e.g., "c/4", "f#/5")
-    const notes = ["c", "c#", "d", "d#", "e", "f", "f#", "g", "g#", "a", "a#", "b"];
-    const octave = Math.floor(noteValue / 12) - 1;
-    const noteIndex = noteValue % 12;
-    const noteName = notes[noteIndex];
-
-    return `${noteName}/${octave}`;
-};
