@@ -44,15 +44,24 @@ export interface GlobalSettings {
 export type TransitionType = 'snap' | 'slide' | 'fade' | 'assemble';
 
 // Adapted from NoteForge ScoreTheme
+export interface ElementStyle {
+    color: string;
+    opacity: number;
+    shadow: boolean;
+    shadowColor?: string;
+    shadowBlur?: number;
+}
+
 export interface ScoreStyle {
-    // Core NoteForge properties
-    clefs: string;
-    timeSignature: string;
-    notes: string;
-    rests: string;
-    tabNumbers: string;
-    symbols: string;
-    staffLines: string;
+    // Core NoteForge properties (Refactored to ElementStyle)
+    clefs: ElementStyle;
+    timeSignature: ElementStyle;
+    notes: ElementStyle;
+    rests: ElementStyle;
+    tabNumbers: ElementStyle;
+    symbols: ElementStyle;
+    staffLines: ElementStyle;
+
     background: string; // Used for "paperColor"
 
     // Legacy/Animation properties kept for App compatibility
@@ -69,13 +78,14 @@ export interface ScoreStyle {
 
 export const DEFAULT_SCORE_STYLE: ScoreStyle = {
     // NoteForge Defaults
-    clefs: '#ffffff',
-    timeSignature: '#ffffff',
-    notes: '#00e5ff',
-    rests: '#00e5ff',
-    tabNumbers: '#00e5ff',
-    symbols: '#ffffff',
-    staffLines: '#3f3f46',
+    clefs: { color: '#ffffff', opacity: 1, shadow: false, shadowColor: '#ffffff', shadowBlur: 10 },
+    timeSignature: { color: '#ffffff', opacity: 1, shadow: false, shadowColor: '#ffffff', shadowBlur: 10 },
+    notes: { color: '#00e5ff', opacity: 1, shadow: true, shadowColor: '#00e5ff', shadowBlur: 15 },
+    rests: { color: '#00e5ff', opacity: 1, shadow: false, shadowColor: '#00e5ff', shadowBlur: 10 },
+    tabNumbers: { color: '#00e5ff', opacity: 1, shadow: false, shadowColor: '#00e5ff', shadowBlur: 10 },
+    symbols: { color: '#ffffff', opacity: 1, shadow: false, shadowColor: '#ffffff', shadowBlur: 10 },
+    staffLines: { color: '#3f3f46', opacity: 1, shadow: false, shadowColor: '#3f3f46', shadowBlur: 5 },
+
     background: '#09090b',
 
     // App Defaults

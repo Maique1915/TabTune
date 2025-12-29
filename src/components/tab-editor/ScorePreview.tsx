@@ -55,20 +55,49 @@ const MeasureThumbnail = memo(({
         // Explicitly set background on container (NoteForge style)
         container.style.backgroundColor = style.background || '#09090b';
 
+        // Helper for Opacity
+        const hexToRgba = (hex: string, alpha: number) => {
+            let c: any;
+            if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
+                c = hex.substring(1).split('');
+                if (c.length == 3) {
+                    c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+                }
+                c = '0x' + c.join('');
+                return 'rgba(' + [(c >> 16) & 255, (c >> 8) & 255, c & 255].join(',') + ',' + alpha + ')';
+            }
+            return hex;
+        }
+
         // NoteForge-compatible styling helper
-        const applyStyles = (obj: any, color: string, bg: string = 'transparent') => {
-            if (!obj) return;
-            const styleOpts = {
-                fillStyle: color,
-                strokeStyle: color,
+        const applyStyles = (obj: any, styleDef: any, bg: string = 'transparent') => {
+            if (!obj || !styleDef) return;
+
+            // Handle both legacy string and new ElementStyle
+            const color = typeof styleDef === 'string' ? styleDef : styleDef.color;
+            const opacity = typeof styleDef === 'string' ? 1 : (styleDef.opacity ?? 1);
+            const shadow = typeof styleDef === 'string' ? false : (styleDef.shadow ?? false);
+
+            const rgbaColor = hexToRgba(color, opacity);
+
+            const styleOpts: any = {
+                fillStyle: rgbaColor,
+                strokeStyle: rgbaColor,
                 backgroundColor: bg
             };
 
+            if (shadow) {
+                styleOpts.shadowColor = color;
+                styleOpts.shadowBlur = 10;
+            } else {
+                styleOpts.shadowBlur = 0; // Clear shadow if disabled
+            }
+
             if (obj.setStyle) obj.setStyle(styleOpts);
-            if (obj.setStemStyle) obj.setStemStyle({ strokeStyle: color });
+            if (obj.setStemStyle) obj.setStemStyle({ strokeStyle: rgbaColor });
 
             if (obj.modifiers) {
-                obj.modifiers.forEach((m: any) => applyStyles(m, color, bg));
+                obj.modifiers.forEach((m: any) => applyStyles(m, styleDef, bg));
             }
         };
 
@@ -79,13 +108,6 @@ const MeasureThumbnail = memo(({
             renderer.resize(800, 340);
             const context = renderer.getContext();
             context.setFillStyle('transparent');
-
-            // Determine what staves to show based on global settings (implicit or explicit in data)
-            // For now assuming we show both if data exists, or based on 'notation=true' equivalent logic
-            // Since we moved away from string parsing, we'll default to showing both unless tailored.
-            // NoteForge shows both by default in 'both' mode.
-            // const showNotation = true; // Replaced by prop
-            // const showTab = true; // Replaced by prop
 
             let x = 10;
             const width = 780;
@@ -107,28 +129,51 @@ const MeasureThumbnail = memo(({
                 const mods = stave.getModifiers();
                 mods.forEach((mod: any) => {
                     const category = (mod.getCategory ? mod.getCategory() : "").toLowerCase();
-                    let color = style.notes; // Default fallback
+                    let targetStyle = style.notes; // Default
 
-                    if (category.includes('clef')) color = style.clefs || style.notes;
-                    else if (category.includes('timesignature') || category.includes('time')) color = style.timeSignature || style.notes;
-                    else if (category.includes('keysignature') || category.includes('key')) color = style.symbols || style.notes;
-                    else if (category.includes('barline')) color = style.staffLines || style.notes;
+                    if (category.includes('clef')) targetStyle = style.clefs;
+                    else if (category.includes('timesignature') || category.includes('time')) targetStyle = style.timeSignature;
+                    else if (category.includes('keysignature') || category.includes('key')) targetStyle = style.symbols;
+                    else if (category.includes('barline')) targetStyle = style.staffLines;
 
-                    applyStyles(mod, color, style.background || 'transparent');
+                    applyStyles(mod, targetStyle, style.background || 'transparent');
                 });
 
                 stave.setContext(context);
-                stave.setStyle({ strokeStyle: style.staffLines || '#555', fillStyle: style.staffLines || '#555' });
+                // Apply Staff Lines style
+                const linesColor = hexToRgba(style.staffLines.color, style.staffLines.opacity);
+                const linesStyle: any = { strokeStyle: linesColor, fillStyle: linesColor };
+                if (style.staffLines.shadow) {
+                    linesStyle.shadowColor = style.staffLines.color;
+                    linesStyle.shadowBlur = 10;
+                }
+                stave.setStyle(linesStyle);
                 stave.draw();
+
+                // Calculate total duration for progress
+                const totalDuration = measureData.notes.reduce((sum, note) => sum + (1 / parseInt(note.duration.replace('d', '').replace('r', ''))), 0);
+                let currentDurationAccumulator = 0;
 
                 // Generate Notes
                 const notes = measureData.notes.map(note => {
+                    const noteValue = (1 / parseInt(note.duration.replace('d', '').replace('r', '')));
+                    const startProgress = (currentDurationAccumulator / totalDuration) * 100;
+                    const endProgress = ((currentDurationAccumulator + noteValue) / totalDuration) * 100;
+
+                    const isActiveNote = isActive && progress >= startProgress && progress < endProgress;
+
+                    // Construct style object for active note vs normal note
+                    let noteStyle = isActiveNote
+                        ? { color: style.activeNoteColor, opacity: 1, shadow: true }
+                        : style.notes;
+
+                    currentDurationAccumulator += noteValue;
+
                     if (note.type === 'rest') {
-                        const sn = new StaveNote({
-                            keys: ["b/4"],
-                            duration: note.duration + "r"
-                        });
-                        applyStyles(sn, style.rests || style.notes, style.background || 'transparent');
+                        const finalRestStyle = isActiveNote ? { color: style.activeNoteColor, opacity: 1, shadow: true } : style.rests;
+
+                        const sn = new StaveNote({ keys: ["b/4"], duration: note.duration + "r" });
+                        applyStyles(sn, finalRestStyle, style.background || 'transparent');
                         return sn;
                     } else {
                         // Calculate key
@@ -143,7 +188,7 @@ const MeasureThumbnail = memo(({
                             Dot.buildAndAttach([sn], { all: true });
                         }
 
-                        applyStyles(sn, style.notes, style.background || 'transparent');
+                        applyStyles(sn, noteStyle, style.background || 'transparent');
                         return sn;
                     }
                 });
@@ -179,37 +224,44 @@ const MeasureThumbnail = memo(({
                 const mods = tabStave.getModifiers();
                 mods.forEach((mod: any) => {
                     // Tab glyph usually considered 'clef' or 'tabglyph'
-                    applyStyles(mod, style.clefs || style.notes, style.background || 'transparent');
+                    applyStyles(mod, style.clefs, style.background || 'transparent');
                 });
 
                 tabStave.setContext(context);
-                tabStave.setStyle({ strokeStyle: style.staffLines || '#555', fillStyle: style.staffLines || '#555' });
+                // Staff Lines Style
+                const linesColor = hexToRgba(style.staffLines.color, style.staffLines.opacity);
+                tabStave.setStyle({ strokeStyle: linesColor, fillStyle: linesColor });
                 tabStave.draw();
 
+                // Reset accumulator for tab notes if needed for active state
+                let currentDurationAccumulatorTab = 0;
+                const totalDurationTab = measureData.notes.reduce((sum, note) => sum + (1 / parseInt(note.duration.replace('d', '').replace('r', ''))), 0);
+
                 const tabNotes = measureData.notes.map(note => {
+                    const noteValue = (1 / parseInt(note.duration.replace('d', '').replace('r', '')));
+                    const startProgress = (currentDurationAccumulatorTab / totalDurationTab) * 100;
+                    const endProgress = ((currentDurationAccumulatorTab + noteValue) / totalDurationTab) * 100;
+
+                    const isActiveNote = isActive && progress >= startProgress && progress < endProgress;
+                    currentDurationAccumulatorTab += noteValue;
+
                     if (note.type === 'rest') {
-                        // VexFlow TabRest... or just hidden positions?
-                        // NoteForge uses TabNote with position 'X' for rests usually or similar hack
-                        // Simplest: 
-                        return new TabNote({
+                        const tn = new TabNote({
                             positions: [{ str: 3, fret: 'X' }], // Dummy position for rest visualization
                             duration: note.duration + "r"
                         });
+                        const finalRestStyle = isActiveNote ? { color: style.activeNoteColor, opacity: 1, shadow: true } : style.rests;
+                        applyStyles(tn, finalRestStyle, style.background || 'transparent');
+                        return tn;
                     } else {
                         const tn = new TabNote({
                             positions: [{ str: parseInt(note.string), fret: parseInt(note.fret) }],
                             duration: note.duration
                         });
+                        const finalTabNoteStyle = isActiveNote ? { color: style.activeNoteColor, opacity: 1, shadow: true } : style.tabNumbers;
+                        applyStyles(tn, finalTabNoteStyle, style.background || 'transparent');
                         return tn;
                     }
-                });
-
-                // Style Tab Notes
-                tabNotes.forEach((tn: any) => {
-                    // Check if rest
-                    const isRest = tn.isRest();
-                    const color = isRest ? (style.rests || style.notes) : (style.tabNumbers || style.notes);
-                    applyStyles(tn, color, style.background || 'transparent');
                 });
 
                 if (tabNotes.length > 0) {
@@ -250,12 +302,8 @@ const MeasureThumbnail = memo(({
             {/* Playhead Overlay */}
             {isActive && !renderError && (
                 <div
-                    className="absolute top-0 bottom-0 w-1 z-10 pointer-events-none transition-transform will-change-transform"
-                    style={{
-                        left: `${progress}%`,
-                        backgroundColor: style.playheadColor || '#06b6d4',
-                        boxShadow: `0 0 15px ${style.playheadColor || '#06b6d4'}`
-                    }}
+                    className="absolute top-0 bottom-0 w-1 bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.8)] z-10 pointer-events-none transition-transform will-change-transform"
+                    style={{ left: `${progress}%` }}
                 />
             )}
         </div>
