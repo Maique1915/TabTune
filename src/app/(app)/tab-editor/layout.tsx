@@ -16,6 +16,12 @@ export default function TabEditorLayout({
                 strategy="beforeInteractive"
             />
 
+            <Script
+                type="text/javascript"
+                src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+                strategy="beforeInteractive"
+            />
+
             {children}
         </>
     );

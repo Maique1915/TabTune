@@ -552,6 +552,8 @@ export default function TabEditorPage() {
                                 onSelectNote={handleSelectNote}
                                 onDoubleClickNote={(id) => setEditingNoteId(id)}
                                 currentMeasureIndex={currentMeasureIndex}
+                                onPlaybackControl={setIsPlaying}
+                                onPlaybackPositionChange={setPlaybackPosition}
                             />
                         </div>
                     </div>
