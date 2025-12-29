@@ -124,7 +124,7 @@ const MeasureThumbnail = memo(({
                             if (!vfStave) return;
 
                             // --- STYLE STAFF LINES ---
-                            const sColor = targetColor || style.staffLines;
+                            const sColor = targetColor || style.staffLines.color;
                             if (vfStave.setStyle) vfStave.setContext(context).setStyle({ strokeStyle: sColor, fillStyle: sColor });
 
                             // --- HANDLE MODIFIERS ---
@@ -153,7 +153,7 @@ const MeasureThumbnail = memo(({
 
                                     // Explicitly apply styles based on type
                                     if (isClef) {
-                                        const color = targetColor || style.clefs || style.notes;
+                                        const color = targetColor || style.clefs.color || style.notes.color;
                                         if (mod.setStyle) mod.setStyle({ fillStyle: color, strokeStyle: color });
                                         if (mod.setAttribute) mod.setAttribute('fill', color);
                                         // Tag for DOM access - try AddClass logic
@@ -161,18 +161,18 @@ const MeasureThumbnail = memo(({
                                         // Tag via ID if attrs exists (common in VexFlow)
                                         if (mod.attrs) mod.attrs.id = 'vf-custom-clef-id';
                                     } else if (isTime) {
-                                        const color = targetColor || style.timeSignature || style.notes;
+                                        const color = targetColor || style.timeSignature.color || style.notes.color;
                                         if (mod.setStyle) mod.setStyle({ fillStyle: color, strokeStyle: color });
                                         if (mod.addClass) mod.addClass('vf-custom-time-sig');
                                         if (mod.attrs) mod.attrs.id = 'vf-custom-time-sig-id';
                                     } else if (isKey) {
-                                        const color = targetColor || style.symbols || style.notes;
+                                        const color = targetColor || style.symbols.color || style.notes.color;
                                         applyElementStyle(mod, color);
                                         if (mod.addClass) mod.addClass('vf-custom-key-sig');
                                         if (mod.attrs) mod.attrs.id = 'vf-custom-key-sig-id';
                                     } else {
                                         // Default fallback for other modifiers
-                                        const color = targetColor || style.notes;
+                                        const color = targetColor || style.notes.color;
                                         applyElementStyle(mod, color);
                                     }
                                 });
@@ -185,7 +185,7 @@ const MeasureThumbnail = memo(({
                                     notesGroup.forEach((note: any) => {
                                         try {
                                             const isRest = note.isRest === true || (typeof note.isRest === 'function' && note.isRest());
-                                            const finalColor = targetColor || (isRest ? style.rests : style.notes);
+                                            const finalColor = targetColor || (isRest ? style.rests.color : style.notes.color);
 
                                             applyElementStyle(note, finalColor);
                                             if (note.setStemStyle) note.setStemStyle({ strokeStyle: finalColor });
@@ -198,7 +198,7 @@ const MeasureThumbnail = memo(({
                                             }
 
                                             if (note.getAccidentals) {
-                                                note.getAccidentals().forEach((acc: any) => applyElementStyle(acc, style.notes));
+                                                note.getAccidentals().forEach((acc: any) => applyElementStyle(acc, style.notes.color));
                                             }
 
                                             if (note.getDots) {
@@ -248,20 +248,20 @@ const MeasureThumbnail = memo(({
                     };
 
                     // Try multiple selectors for redundancy
-                    if (style.clefs) {
-                        paintElements('.vf-custom-clef', style.clefs);
-                        paintElements('#vf-custom-clef-id', style.clefs);
-                        paintElements('.vf-clef', style.clefs); // Standard VF class
+                    if (style.clefs.color) {
+                        paintElements('.vf-custom-clef', style.clefs.color);
+                        paintElements('#vf-custom-clef-id', style.clefs.color);
+                        paintElements('.vf-clef', style.clefs.color); // Standard VF class
                     }
-                    if (style.timeSignature) {
-                        paintElements('.vf-custom-time-sig', style.timeSignature);
-                        paintElements('#vf-custom-time-sig-id', style.timeSignature);
-                        paintElements('.vf-time-signature', style.timeSignature); // Standard VF class
+                    if (style.timeSignature.color) {
+                        paintElements('.vf-custom-time-sig', style.timeSignature.color);
+                        paintElements('#vf-custom-time-sig-id', style.timeSignature.color);
+                        paintElements('.vf-time-signature', style.timeSignature.color); // Standard VF class
                     }
-                    if (style.symbols) {
-                        paintElements('.vf-custom-key-sig', style.symbols);
-                        paintElements('#vf-custom-key-sig-id', style.symbols);
-                        paintElements('.vf-key-signature', style.symbols); // Standard VF class
+                    if (style.symbols.color) {
+                        paintElements('.vf-custom-key-sig', style.symbols.color);
+                        paintElements('#vf-custom-key-sig-id', style.symbols.color);
+                        paintElements('.vf-key-signature', style.symbols.color); // Standard VF class
                     }
                 }, 0);
 

@@ -16,6 +16,8 @@ interface SidebarProps {
     onNoteTypeChange?: (type: 'note' | 'rest') => void;
     onPitchChange?: (name?: string, accidental?: string, octave?: number) => void;
     onStringChange?: (stringFret: string) => void;
+    onAccidentalChange?: (accidental: string) => void;
+    onDecoratorChange?: (decorator: string) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -28,7 +30,9 @@ const Sidebar: React.FC<SidebarProps> = ({
     onNoteRhythmChange,
     onNoteTypeChange,
     onPitchChange,
-    onStringChange
+    onStringChange,
+    onAccidentalChange,
+    onDecoratorChange
 }) => {
     const durationItems = [
         { label: 'Whole', code: 'w' as Duration },
@@ -173,6 +177,51 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         {[1, 2, 3, 4, 5, 6].map(s => (
                                             <button key={s} onClick={() => onStringChange?.(s.toString())} className={`py-1.5 rounded-lg border font-bold text-[10px] transition-all ${editingNote.string === s.toString() ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}>STR {s}</button>
                                         ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Note Props (Accidentals & Decorators) */}
+                        {editingNote.type === 'note' && (
+                            <div className="space-y-4 pt-4 border-t border-white/5">
+                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Properties</h3>
+
+                                <div className="space-y-2">
+                                    {/* Accidentals */}
+                                    <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
+                                        {[
+                                            { label: '♭', value: 'b', name: 'Flat' },
+                                            { label: '♮', value: 'n', name: 'Natural' },
+                                            { label: '♯', value: '#', name: 'Sharp' }
+                                        ].map(acc => (
+                                            <button
+                                                key={acc.value}
+                                                onClick={() => onAccidentalChange?.(acc.value)}
+                                                className={`flex-1 py-1.5 text-lg leading-none font-serif rounded-lg transition-all ${editingNote.accidental === acc.value || (editingNote.accidental === 'none' && acc.value === 'n') ? 'bg-white/10 text-white border border-white/10' : 'text-slate-600 hover:text-slate-400'}`}
+                                                title={acc.name}
+                                            >
+                                                {acc.label}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Decorators */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={() => onDecoratorChange?.('staccato')}
+                                            className={`py-2 rounded-xl border flex items-center justify-center space-x-2 transition-all ${editingNote.decorators.staccato ? 'bg-pink-500/20 border-pink-500/50 text-pink-300' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}
+                                        >
+                                            <span className="font-bold text-lg mb-2">.</span>
+                                            <span className="text-[10px] font-black uppercase">Staccato</span>
+                                        </button>
+                                        <button
+                                            onClick={() => onDecoratorChange?.('accent')}
+                                            className={`py-2 rounded-xl border flex items-center justify-center space-x-2 transition-all ${editingNote.decorators.accent ? 'bg-pink-500/20 border-pink-500/50 text-pink-300' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}
+                                        >
+                                            <span className="font-bold text-lg">{'>'}</span>
+                                            <span className="text-[10px] font-black uppercase">Accent</span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>

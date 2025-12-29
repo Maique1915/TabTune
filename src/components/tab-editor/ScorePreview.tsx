@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useMemo, memo, useState } from 'react';
 import { ScoreStyle, MeasureData } from '@/lib/tab-editor/types';
 import { getNoteKeyFromFret } from '@/lib/tab-editor/utils/musicMath';
+import { Music, MousePointerClick, MoreHorizontal, MoveLeft, MoveRight } from 'lucide-react';
 
 interface ScorePreviewProps {
     code: string; // Kept for interface compatibility but largely unused now
@@ -14,6 +15,11 @@ interface ScorePreviewProps {
     showControls?: boolean;
     showNotation?: boolean;
     showTablature?: boolean;
+    onMeasuresChange?: (measures: MeasureData[]) => void;
+    selectedNoteIds?: string[];
+    onSelectNote?: (noteId: string, isMulti: boolean) => void;
+    onDoubleClickNote?: (noteId: string) => void;
+    currentMeasureIndex?: number;
 }
 
 declare global {
@@ -22,6 +28,8 @@ declare global {
         VexTab: any; // Kept to avoid breaking global types if used elsewhere
     }
 }
+
+
 
 const MeasureThumbnail = memo(({
     measureData,
@@ -32,7 +40,10 @@ const MeasureThumbnail = memo(({
     shouldAnimate,
     timeSignatureStr,
     showNotation,
-    showTablature
+    showTablature,
+    onNoteClick,
+    onNoteDoubleClick,
+    selectedNoteIds
 }: {
     measureData: MeasureData;
     measureIndex: number;
@@ -43,6 +54,9 @@ const MeasureThumbnail = memo(({
     timeSignatureStr: string;
     showNotation: boolean;
     showTablature: boolean;
+    onNoteClick?: (measureIndex: number, noteIndex: number, isMulti: boolean) => void;
+    onNoteDoubleClick?: (noteId: string) => void;
+    selectedNoteIds?: string[];
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [renderError, setRenderError] = useState<string | null>(null);
@@ -54,6 +68,29 @@ const MeasureThumbnail = memo(({
         container.innerHTML = '';
         // Explicitly set background on container (NoteForge style)
         container.style.backgroundColor = style.background || '#09090b';
+
+        // Create canvas element for VexFlow
+        const canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 340;
+        container.appendChild(canvas);
+
+        // Helper for Interaction
+        const attachInteraction = (vexNote: any, noteIndex: number, noteId: string) => {
+            if (!vexNote || !onNoteClick) return;
+            const el = vexNote.attrs?.el;
+            if (el) {
+                el.style.cursor = 'pointer';
+                el.onclick = (e: MouseEvent) => {
+                    e.stopPropagation();
+                    onNoteClick(measureIndex, noteIndex, e.shiftKey || e.metaKey);
+                };
+                el.ondblclick = (e: MouseEvent) => {
+                    e.stopPropagation();
+                    if (onNoteDoubleClick) onNoteDoubleClick(noteId);
+                };
+            }
+        };
 
         // Helper for Opacity
         const hexToRgba = (hex: string, alpha: number) => {
@@ -77,6 +114,9 @@ const MeasureThumbnail = memo(({
             const color = typeof styleDef === 'string' ? styleDef : styleDef.color;
             const opacity = typeof styleDef === 'string' ? 1 : (styleDef.opacity ?? 1);
             const shadow = typeof styleDef === 'string' ? false : (styleDef.shadow ?? false);
+            // New Shadow Props
+            const shadowColor = typeof styleDef === 'string' ? color : (styleDef.shadowColor || color);
+            const shadowBlur = typeof styleDef === 'string' ? 10 : (styleDef.shadowBlur ?? 10);
 
             const rgbaColor = hexToRgba(color, opacity);
 
@@ -87,8 +127,8 @@ const MeasureThumbnail = memo(({
             };
 
             if (shadow) {
-                styleOpts.shadowColor = color;
-                styleOpts.shadowBlur = 10;
+                styleOpts.shadowColor = shadowColor;
+                styleOpts.shadowBlur = shadowBlur;
             } else {
                 styleOpts.shadowBlur = 0; // Clear shadow if disabled
             }
@@ -102,9 +142,9 @@ const MeasureThumbnail = memo(({
         };
 
         try {
-            const { Renderer, Stave, StaveNote, TabStave, TabNote, Formatter, Dot } = window.Vex.Flow;
+            const { Renderer, Stave, StaveNote, TabStave, TabNote, Formatter, Dot, Accidental, Articulation } = window.Vex.Flow;
 
-            const renderer = new Renderer(container, Renderer.Backends.SVG);
+            const renderer = new Renderer(canvas, Renderer.Backends.CANVAS);
             renderer.resize(800, 340);
             const context = renderer.getContext();
             context.setFillStyle('transparent');
@@ -144,8 +184,8 @@ const MeasureThumbnail = memo(({
                 const linesColor = hexToRgba(style.staffLines.color, style.staffLines.opacity);
                 const linesStyle: any = { strokeStyle: linesColor, fillStyle: linesColor };
                 if (style.staffLines.shadow) {
-                    linesStyle.shadowColor = style.staffLines.color;
-                    linesStyle.shadowBlur = 10;
+                    linesStyle.shadowColor = style.staffLines.shadowColor || style.staffLines.color;
+                    linesStyle.shadowBlur = style.staffLines.shadowBlur || 10;
                 }
                 stave.setStyle(linesStyle);
                 stave.draw();
@@ -155,22 +195,25 @@ const MeasureThumbnail = memo(({
                 let currentDurationAccumulator = 0;
 
                 // Generate Notes
-                const notes = measureData.notes.map(note => {
+                const notes = measureData.notes.map((note, i) => {
                     const noteValue = (1 / parseInt(note.duration.replace('d', '').replace('r', '')));
                     const startProgress = (currentDurationAccumulator / totalDuration) * 100;
                     const endProgress = ((currentDurationAccumulator + noteValue) / totalDuration) * 100;
 
                     const isActiveNote = isActive && progress >= startProgress && progress < endProgress;
+                    const isSelected = selectedNoteIds?.includes(note.id);
 
                     // Construct style object for active note vs normal note
                     let noteStyle = isActiveNote
                         ? { color: style.activeNoteColor, opacity: 1, shadow: true }
-                        : style.notes;
+                        : (isSelected ? { color: '#fbbf24', opacity: 1, shadow: true, shadowColor: '#fbbf24', shadowBlur: 15 } : style.notes);
 
                     currentDurationAccumulator += noteValue;
 
                     if (note.type === 'rest') {
-                        const finalRestStyle = isActiveNote ? { color: style.activeNoteColor, opacity: 1, shadow: true } : style.rests;
+                        const finalRestStyle = isActiveNote
+                            ? { color: style.activeNoteColor, opacity: 1, shadow: true }
+                            : (isSelected ? { color: '#fbbf24', opacity: 1, shadow: true } : style.rests);
 
                         const sn = new StaveNote({ keys: ["b/4"], duration: note.duration + "r" });
                         applyStyles(sn, finalRestStyle, style.background || 'transparent');
@@ -181,11 +224,22 @@ const MeasureThumbnail = memo(({
                         const sn = new StaveNote({
                             keys: [key],
                             duration: note.duration
-                        });
+                        })
 
-                        // Handle dots if needed (simple check for now)
-                        if (note.duration.includes('d')) {
+                        // Handle dots if needed
+                        if (note.decorators?.dot) {
                             Dot.buildAndAttach([sn], { all: true });
+                        }
+
+                        // Add Accidental
+                        if (note.accidental && note.accidental !== 'none') {
+                            sn.addModifier(new Accidental(note.accidental));
+                        }
+
+                        // Add Decorators
+                        if (note.decorators) {
+                            if (note.decorators.staccato) sn.addModifier(new Articulation('a.')); // Staccato
+                            if (note.decorators.accent) sn.addModifier(new Articulation('a>'));   // Accent
                         }
 
                         applyStyles(sn, noteStyle, style.background || 'transparent');
@@ -208,6 +262,9 @@ const MeasureThumbnail = memo(({
                     beams.forEach((beam: any) => {
                         beam.setContext(context).draw();
                     });
+
+                    // Attach Interaction
+                    notes.forEach((n: any, i: number) => attachInteraction(n, i, measureData.notes[i].id));
                 }
             }
 
@@ -237,12 +294,13 @@ const MeasureThumbnail = memo(({
                 let currentDurationAccumulatorTab = 0;
                 const totalDurationTab = measureData.notes.reduce((sum, note) => sum + (1 / parseInt(note.duration.replace('d', '').replace('r', ''))), 0);
 
-                const tabNotes = measureData.notes.map(note => {
+                const tabNotes = measureData.notes.map((note, i) => {
                     const noteValue = (1 / parseInt(note.duration.replace('d', '').replace('r', '')));
                     const startProgress = (currentDurationAccumulatorTab / totalDurationTab) * 100;
                     const endProgress = ((currentDurationAccumulatorTab + noteValue) / totalDurationTab) * 100;
 
                     const isActiveNote = isActive && progress >= startProgress && progress < endProgress;
+                    const isSelected = selectedNoteIds?.includes(note.id);
                     currentDurationAccumulatorTab += noteValue;
 
                     if (note.type === 'rest') {
@@ -250,7 +308,9 @@ const MeasureThumbnail = memo(({
                             positions: [{ str: 3, fret: 'X' }], // Dummy position for rest visualization
                             duration: note.duration + "r"
                         });
-                        const finalRestStyle = isActiveNote ? { color: style.activeNoteColor, opacity: 1, shadow: true } : style.rests;
+                        const finalRestStyle = isActiveNote
+                            ? { color: style.activeNoteColor, opacity: 1, shadow: true }
+                            : (isSelected ? { color: '#fbbf24', opacity: 1, shadow: true } : style.rests);
                         applyStyles(tn, finalRestStyle, style.background || 'transparent');
                         return tn;
                     } else {
@@ -258,7 +318,9 @@ const MeasureThumbnail = memo(({
                             positions: [{ str: parseInt(note.string), fret: parseInt(note.fret) }],
                             duration: note.duration
                         });
-                        const finalTabNoteStyle = isActiveNote ? { color: style.activeNoteColor, opacity: 1, shadow: true } : style.tabNumbers;
+                        const finalTabNoteStyle = isActiveNote
+                            ? { color: style.activeNoteColor, opacity: 1, shadow: true }
+                            : (isSelected ? { color: '#fbbf24', opacity: 1, shadow: true } : style.tabNumbers);
                         applyStyles(tn, finalTabNoteStyle, style.background || 'transparent');
                         return tn;
                     }
@@ -266,6 +328,8 @@ const MeasureThumbnail = memo(({
 
                 if (tabNotes.length > 0) {
                     Formatter.FormatAndDraw(context, tabStave, tabNotes);
+                    // Attach Interaction
+                    tabNotes.forEach((n: any, i: number) => attachInteraction(n, i, measureData.notes[i].id));
                 }
             }
 
@@ -277,22 +341,13 @@ const MeasureThumbnail = memo(({
         }
     };
 
-    useEffect(() => { draw(); }, [measureData, style, shouldAnimate, timeSignatureStr, showNotation, showTablature]);
+    useEffect(() => { draw(); }, [measureData, style, shouldAnimate, timeSignatureStr, showNotation, showTablature, selectedNoteIds]);
 
     return (
         <div
             className="rounded-[3.5rem] shadow-[0_80px_160px_rgba(0,0,0,0.6)] overflow-hidden border border-white/10 relative flex items-center justify-center min-h-[310px]"
             style={{ backgroundColor: style.background }}
         >
-            <style>
-                {`
-                  .score-canvas-viewport svg rect[fill="white"],
-                  .score-canvas-viewport svg rect[fill="#ffffff"] {
-                    fill: ${style.background || '#09090b'} !important;
-                  }
-                `}
-            </style>
-
             <div
                 ref={containerRef}
                 className="score-canvas-viewport w-full h-full flex items-center justify-center transition-opacity duration-300"
@@ -319,19 +374,25 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({
     showControls = true,
     timeSignature,
     showNotation = true,
-    showTablature = true
+    showTablature = true,
+    onMeasuresChange,
+    selectedNoteIds = [],
+    onSelectNote,
+    onDoubleClickNote,
+    currentMeasureIndex: externalMeasureIndex
 }) => {
     // Current Measure Calculation
-    // We assume 'measures' maps 1:1 to 'rawMeasureCodes' logic from before
-
-    // Safety check
     const safeMeasures = measures || [];
 
-    const currentMeasureIndex = useMemo(() => {
+    const calculatedMeasureIndex = useMemo(() => {
         if (safeMeasures.length === 0) return 0;
         const idx = Math.floor((playbackPosition / 100) * safeMeasures.length);
         return Math.min(idx, safeMeasures.length - 1);
     }, [playbackPosition, safeMeasures.length]);
+
+
+    // When playing, use calculated index from playback; otherwise use external (manual selection)
+    const currentMeasureIndex = isPlaying ? calculatedMeasureIndex : (externalMeasureIndex !== undefined ? externalMeasureIndex : calculatedMeasureIndex);
 
     const measureProgress = useMemo(() => {
         if (safeMeasures.length === 0) return 0;
@@ -342,11 +403,22 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({
     const shouldAnimate = currentMeasureIndex === 0 || currentMeasureIndex === safeMeasures.length - 1;
     const activeMeasureData = safeMeasures[currentMeasureIndex];
 
+    const handleNoteClick = (measureIndex: number, noteIndex: number, isMulti: boolean) => {
+        const measure = safeMeasures[measureIndex];
+        const note = measure?.notes[noteIndex];
+        if (!note || !onSelectNote) return;
+
+        onSelectNote(note.id, isMulti);
+    };
+
+
+
     if (!activeMeasureData) return null;
 
     return (
         <div className="w-full h-full flex flex-col bg-slate-950 overflow-hidden relative">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_rgba(6,182,212,0.08)_0%,_transparent_60%)] pointer-events-none" />
+
             <div className="flex-1 flex items-center justify-center p-12 overflow-hidden relative">
                 <div className="w-full max-w-5xl relative h-[310px]">
                     {safeMeasures.map((measure, idx) => (
@@ -365,6 +437,9 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({
                                     timeSignatureStr={timeSignature}
                                     showNotation={showNotation}
                                     showTablature={showTablature}
+                                    onNoteClick={handleNoteClick}
+                                    onNoteDoubleClick={onDoubleClickNote}
+                                    selectedNoteIds={selectedNoteIds}
                                 />
                             </div>
                         )
@@ -404,7 +479,7 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({
           0% { opacity: 0; filter: blur(15px); }
           100% { opacity: 1; filter: blur(0); }
         }
-        .score-canvas-viewport svg { width: 100%; height: auto; }
+        .score-canvas-viewport canvas { width: 100%; height: auto; }
       `}</style>
         </div>
     );

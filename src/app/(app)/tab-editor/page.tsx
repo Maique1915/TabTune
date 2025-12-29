@@ -11,6 +11,7 @@ import { MeasureData, NoteData, GlobalSettings, ScoreStyle, DEFAULT_SCORE_STYLE,
 import { convertToVextab } from '@/lib/tab-editor/utils/vextabConverter';
 import {
     getPitchFromMidi,
+    NOTE_NAMES,
     getMidiFromPosition,
     findBestFretForPitch,
     getMidiFromPitch,
@@ -57,6 +58,7 @@ export default function TabEditorPage() {
     const [scoreStyle, setScoreStyle] = useState<ScoreStyle>(DEFAULT_SCORE_STYLE);
     const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
     const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+    const [currentMeasureIndex, setCurrentMeasureIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [playbackPosition, setPlaybackPosition] = useState(0);
 
@@ -290,7 +292,16 @@ export default function TabEditorPage() {
 
     const handleSelectNote = (id: string, multi: boolean) => {
         if (multi) setSelectedNoteIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-        else setSelectedNoteIds([id]);
+        else {
+            setSelectedNoteIds([id]);
+            setEditingNoteId(id); // Open inspector on single click
+
+            // Auto-focus the measure containing this note
+            const measureIndex = measures.findIndex(m => m.notes.some(n => n.id === id));
+            if (measureIndex !== -1) {
+                setCurrentMeasureIndex(measureIndex);
+            }
+        }
     };
 
     const updateSelectedNotes = (updates: Partial<NoteData> | ((n: NoteData) => Partial<NoteData>)) => {
@@ -425,6 +436,45 @@ export default function TabEditorPage() {
         });
     };
 
+    const handleAccidentalChange = (accidental: string) => {
+        updateSelectedNotes(n => {
+            const desiredAccidental = (n.accidental === accidental ? 'none' : accidental) as any;
+            const currentMidi = getMidiFromPosition(parseInt(n.fret), parseInt(n.string));
+            const { name, octave } = getPitchFromMidi(currentMidi);
+
+            // Calculate Natural MIDI for this pitch class/octave
+            const baseIndex = NOTE_NAMES.indexOf(name);
+            const naturalMidi = (octave + 1) * 12 + baseIndex;
+
+            let offset = 0;
+            if (desiredAccidental === '#') offset = 1;
+            else if (desiredAccidental === 'b') offset = -1;
+            else if (desiredAccidental === 'none') {
+                // When deselecting, we need to find the natural note
+                // If current note has an accidental, remove it to get natural
+                if (n.accidental === '#') offset = -1; // Remove sharp
+                else if (n.accidental === 'b') offset = 1; // Remove flat
+            }
+
+            const newMidi = naturalMidi + offset;
+            const { fret } = findBestFretForPitch(newMidi, parseInt(n.string));
+
+            return {
+                accidental: desiredAccidental,
+                fret: fret.toString()
+            };
+        });
+    };
+
+    const handleDecoratorChange = (decorator: string) => {
+        updateSelectedNotes(n => ({
+            decorators: {
+                ...n.decorators,
+                [decorator]: !n.decorators[decorator as keyof typeof n.decorators]
+            }
+        }));
+    };
+
     if (!isClient) return <div className="h-screen w-full bg-black flex items-center justify-center text-slate-500">Loading...</div>;
 
     return (
@@ -445,6 +495,8 @@ export default function TabEditorPage() {
                     onNoteTypeChange={(type) => updateSelectedNotes({ type })}
                     onPitchChange={handlePitchChange}
                     onStringChange={handleStringChange}
+                    onAccidentalChange={handleAccidentalChange}
+                    onDecoratorChange={handleDecoratorChange}
                 />
 
                 <main className="flex flex-1 flex-col overflow-hidden min-w-0" style={{ display: 'grid', gridTemplateRows: '60% 40%' }}>
@@ -495,6 +547,11 @@ export default function TabEditorPage() {
                                 style={scoreStyle}
                                 showNotation={settings.showNotation}
                                 showTablature={settings.showTablature}
+                                onMeasuresChange={setMeasures}
+                                selectedNoteIds={selectedNoteIds}
+                                onSelectNote={handleSelectNote}
+                                onDoubleClickNote={(id) => setEditingNoteId(id)}
+                                currentMeasureIndex={currentMeasureIndex}
                             />
                         </div>
                     </div>
