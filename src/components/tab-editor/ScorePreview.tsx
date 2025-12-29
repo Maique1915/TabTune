@@ -142,7 +142,20 @@ const MeasureThumbnail = memo(({
                 });
 
                 if (notes.length > 0) {
+                    // Generate Beams
+                    const beams = window.Vex.Flow.Beam.generateBeams(notes);
+
+                    // Style Beams
+                    beams.forEach((beam: any) => {
+                        applyStyles(beam, style.notes, style.background || 'transparent');
+                    });
+
                     Formatter.FormatAndDraw(context, stave, notes);
+
+                    // Draw Beams
+                    beams.forEach((beam: any) => {
+                        beam.setContext(context).draw();
+                    });
                 }
             }
 
