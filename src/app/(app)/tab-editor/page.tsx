@@ -486,7 +486,16 @@ export default function TabEditorPage() {
 
                         {/* Top: Score Preview (Canvas) */}
                         <div className="w-full h-full min-w-0 overflow-hidden relative">
-                            <ScorePreview code={vextabCode} measures={measures} timeSignature={settings.time} playbackPosition={playbackPosition} isPlaying={isPlaying} style={scoreStyle} />
+                            <ScorePreview
+                                code={vextabCode}
+                                measures={measures}
+                                timeSignature={settings.time}
+                                playbackPosition={playbackPosition}
+                                isPlaying={isPlaying}
+                                style={scoreStyle}
+                                showNotation={settings.showNotation}
+                                showTablature={settings.showTablature}
+                            />
                         </div>
                     </div>
 

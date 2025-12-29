@@ -12,6 +12,8 @@ interface ScorePreviewProps {
     isPlaying: boolean;
     style: ScoreStyle;
     showControls?: boolean;
+    showNotation?: boolean;
+    showTablature?: boolean;
 }
 
 declare global {
@@ -28,7 +30,9 @@ const MeasureThumbnail = memo(({
     progress,
     style,
     shouldAnimate,
-    timeSignatureStr
+    timeSignatureStr,
+    showNotation,
+    showTablature
 }: {
     measureData: MeasureData;
     measureIndex: number;
@@ -37,6 +41,8 @@ const MeasureThumbnail = memo(({
     style: ScoreStyle;
     shouldAnimate: boolean;
     timeSignatureStr: string;
+    showNotation: boolean;
+    showTablature: boolean;
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [renderError, setRenderError] = useState<string | null>(null);
@@ -78,15 +84,16 @@ const MeasureThumbnail = memo(({
             // For now assuming we show both if data exists, or based on 'notation=true' equivalent logic
             // Since we moved away from string parsing, we'll default to showing both unless tailored.
             // NoteForge shows both by default in 'both' mode.
-            const showNotation = true;
-            const showTab = true;
+            // const showNotation = true; // Replaced by prop
+            // const showTab = true; // Replaced by prop
 
             let x = 10;
             const width = 780;
 
             // --- NOTATION STAVE ---
             if (showNotation) {
-                const stave = new Stave(x, 40, width);
+                const staveY = showTablature ? 40 : 120; // Center if only notation
+                const stave = new Stave(x, staveY, width);
 
                 // Add Modifiers if needed
                 if (measureData.showClef || measureIndex === 0) {
@@ -160,8 +167,8 @@ const MeasureThumbnail = memo(({
             }
 
             // --- TABLATURE STAVE ---
-            if (showTab) {
-                const yOffset = showNotation ? 150 : 40;
+            if (showTablature) {
+                const yOffset = showNotation ? 150 : 100; // Center if only tab
                 const tabStave = new TabStave(x, yOffset, width);
 
                 if (measureData.showClef || measureIndex === 0) {
@@ -218,7 +225,7 @@ const MeasureThumbnail = memo(({
         }
     };
 
-    useEffect(() => { draw(); }, [measureData, style, shouldAnimate, timeSignatureStr]);
+    useEffect(() => { draw(); }, [measureData, style, shouldAnimate, timeSignatureStr, showNotation, showTablature]);
 
     return (
         <div
@@ -258,7 +265,9 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({
     style,
     measures,
     showControls = true,
-    timeSignature
+    timeSignature,
+    showNotation = true,
+    showTablature = true
 }) => {
     // Current Measure Calculation
     // We assume 'measures' maps 1:1 to 'rawMeasureCodes' logic from before
@@ -291,7 +300,7 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({
                     {safeMeasures.map((measure, idx) => (
                         idx === currentMeasureIndex && (
                             <div
-                                key={`${measure.id || idx}-${style.transitionType}-${timeSignature}`}
+                                key={`${measure.id || idx}-${style.transitionType}-${timeSignature}-${showNotation}-${showTablature}`}
                                 className={`absolute inset-0 w-full ${shouldAnimate ? `score-animation-${style.transitionType}` : ''}`}
                             >
                                 <MeasureThumbnail
@@ -302,6 +311,8 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({
                                     style={style}
                                     shouldAnimate={shouldAnimate}
                                     timeSignatureStr={timeSignature}
+                                    showNotation={showNotation}
+                                    showTablature={showTablature}
                                 />
                             </div>
                         )
