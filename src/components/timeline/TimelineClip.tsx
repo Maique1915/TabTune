@@ -1,12 +1,13 @@
 "use client";
 
 import React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 import type { TimelineClip as TimelineClipType } from "@/lib/timeline/types";
 import { formatTimeMs } from "@/lib/timeline/utils";
 import { getNome } from "@/lib/chords";
 import { Music } from "lucide-react";
 import { AudioClipVisual } from "./AudioClipVisual";
+import { VexFlowIcon } from "../tab-editor/vexflow-icon";
 
 interface TimelineClipProps {
   clip: TimelineClipType;
@@ -16,6 +17,7 @@ interface TimelineClipProps {
   onResizeLeftStart: (e: React.MouseEvent) => void;
   onResizeRightStart: (e: React.MouseEvent) => void;
   onDelete?: () => void;
+  onEdit?: () => void;
 }
 
 export function TimelineClip({
@@ -25,7 +27,8 @@ export function TimelineClip({
   onMouseDown,
   onResizeLeftStart,
   onResizeRightStart,
-  onDelete
+  onDelete,
+  onEdit
 }: TimelineClipProps) {
   const left = (clip.start / 1000) * zoom;
   const width = (clip.duration / 1000) * zoom;
@@ -33,9 +36,9 @@ export function TimelineClip({
   let clipContent;
   let clipBgColor = "bg-primary/20 border-primary/50 hover:bg-primary/30";
   let visualContent = null;
-  
+
   if (clip.type === 'chord') {
-    const chordName = clip.chord?.chord 
+    const chordName = clip.chord?.chord
       ? getNome(clip.chord.chord).replace(/#/g, "♯").replace(/b/g, "♭")
       : 'Chord';
     clipContent = <span className="text-sm font-semibold truncate">{chordName}</span>;
@@ -43,7 +46,7 @@ export function TimelineClip({
     visualContent = (
       <div className="absolute inset-0 flex flex-col justify-end pointer-events-none">
         <AudioClipVisual waveform={clip.waveform} />
-        <div className="absolute bottom-0 left-0 right-0 text-white text-[11px] px-1 py-0.5 flex items-center gap-1 drop-shadow-sm select-none" style={{background: 'none', textShadow: '0 1px 4px #000a'}}>
+        <div className="absolute bottom-0 left-0 right-0 text-white text-[11px] px-1 py-0.5 flex items-center gap-1 drop-shadow-sm select-none" style={{ background: 'none', textShadow: '0 1px 4px #000a' }}>
           <Music className="h-3 w-3 shrink-0 opacity-80" />
           <span className="truncate">{clip.fileName}</span>
         </div>
@@ -51,6 +54,19 @@ export function TimelineClip({
     );
     clipContent = null;
     clipBgColor = "bg-green-500/20 border-green-500/50 hover:bg-green-500/30";
+  } else if (clip.type === 'symbol') {
+    // Styles for VexFlow Symbol
+    clipBgColor = "bg-[#2a2a2e] border-cyan-500/50 hover:border-cyan-400 hover:bg-[#323236] shadow-sm";
+    clipContent = (
+      <div className="w-full h-full flex items-center justify-center pointer-events-none">
+        <VexFlowIcon
+          {...clip.vexFlowProps}
+          width={Math.max(40, width)} // Adaptive width?
+          height={40} // Fit inside clip
+          staveWidth={Math.max(40, width)}
+        />
+      </div>
+    );
   }
 
   return (
@@ -59,8 +75,8 @@ export function TimelineClip({
         "absolute top-2 h-12 rounded-md border-2 transition-all",
         "flex items-center justify-between px-2 gap-2",
         "select-none cursor-move",
-        isSelected 
-          ? "bg-blue-500/30 border-blue-500 z-20" 
+        isSelected
+          ? "bg-blue-500/30 border-blue-500 z-20"
           : clipBgColor
       )}
       style={{
@@ -68,6 +84,10 @@ export function TimelineClip({
         width: `${Math.max(width, 10)}px`,
       }}
       onMouseDown={onMouseDown}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onEdit?.();
+      }}
     >
       {/* Visual do clipe (waveform + label para áudio) */}
       {visualContent}

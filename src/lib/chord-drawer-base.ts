@@ -848,7 +848,6 @@ export class ChordDrawerBase {
   drawChord(inputChord: ChordDiagramProps, inputTransportDisplay: number, offsetX: number = 0): void {
     const { finalChord, transportDisplay } = this._transposeForDisplay(inputChord, inputTransportDisplay);
 
-    console.log("Chord selected (static draw):", finalChord);
     if (offsetX !== 0) {
       this.calculateWithOffset(offsetX);
     }

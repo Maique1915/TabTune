@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import { Play, Pause, Film } from "lucide-react";
 import { useAppContext } from "@/app/context/app--context";
 
@@ -16,6 +16,7 @@ interface TimelineControlsProps {
   isTimelineEmpty: boolean;
   onAudioUpload: (file: File) => void;
   audioUploaded: boolean;
+  onAddScoreClip: () => void;
 }
 
 export function TimelineControls({
@@ -28,7 +29,8 @@ export function TimelineControls({
   handleRenderVideo,
   isTimelineEmpty,
   onAudioUpload,
-  audioUploaded
+  audioUploaded,
+  onAddScoreClip
 }: TimelineControlsProps) {
   const { isRendering } = useAppContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,6 +80,16 @@ export function TimelineControls({
           title={audioUploaded ? "Áudio já adicionado" : "Adicionar áudio à timeline"}
         >
           {audioUploaded ? "Áudio adicionado" : "Adicionar áudio"}
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="whitespace-nowrap"
+          onClick={onAddScoreClip}
+          title="Adicionar Partitura"
+        >
+          + Partitura
         </Button>
       </div>
 

@@ -1,0 +1,271 @@
+"use client";
+
+
+import React, { useState, useEffect, useRef } from "react";
+
+interface TimelinePanelProps {
+  isAnimating: boolean;
+  isPaused: boolean;
+  ffmpegLoaded: boolean;
+  handleAnimate: () => void;
+  handlePause: () => void;
+  handleResume: () => void;
+  handleRenderVideo: () => void;
+  isTimelineEmpty: boolean;
+}
+import { useAppContext } from "@/app/context/app--context";
+import { StudioTimeline } from "@/components/studio/timeline/Timeline";
+import { TimelineControls } from "@/components/studio/timeline/TimelineControls";
+import type { TimelineState, TimelineClip, ChordClip, TimelineTrack } from "@/lib/timeline/types";
+import { generateClipId } from "@/lib/timeline/utils";
+import { getChordDisplayData } from "@/lib/chord-logic";
+import type { ChordWithTiming } from "@/lib/types";
+
+
+// Utilitário para obter todos os clipes de áudio da timeline
+function getAllAudioClips(tracks: TimelineTrack[]) {
+  return tracks
+    .filter(t => t.type === 'audio')
+    .flatMap(t => t.clips);
+}
+
+export function TimelinePanel({
+  isAnimating,
+  isPaused,
+  ffmpegLoaded,
+  handleAnimate,
+  handlePause,
+  handleResume,
+  handleRenderVideo,
+  isTimelineEmpty
+}: TimelinePanelProps) {
+  // Aqui ficam os hooks e lógica do componente
+  const {
+    timelineState,
+    setTimelineState,
+    selectedChords,
+    setSelectedChords,
+    minClipDurationMs,
+    playbackProgress,
+    setPlaybackProgress,
+    playbackTotalDurationMs,
+    setPlaybackIsScrubbing,
+    requestPlaybackSeek,
+    animationType,
+    audioRefs
+  } = useAppContext();
+
+  // Estado para controlar se o áudio já foi adicionado
+  const [audioUploaded, setAudioUploaded] = useState(false);
+
+  // Função para adicionar o clipe de áudio à timeline
+  const handleAudioUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const arrayBuffer = e.target?.result;
+      if (!arrayBuffer) return;
+      try {
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer as ArrayBuffer);
+        const rawData = audioBuffer.getChannelData(0);
+        const samples = 100;
+        const blockSize = Math.floor(rawData.length / samples);
+        const waveform = Array(samples).fill(0).map((_, i) => {
+          let sum = 0;
+          for (let j = 0; j < blockSize; j++) {
+            sum += Math.abs(rawData[i * blockSize + j] || 0);
+          }
+          return sum / blockSize;
+        });
+        const durationMs = Math.floor(audioBuffer.duration * 1000);
+        const audioClip = {
+          id: generateClipId(),
+          type: 'audio' as const,
+          fileName: file.name,
+          audioUrl: URL.createObjectURL(file),
+          start: 0,
+          duration: durationMs,
+          waveform,
+        };
+        setTimelineState(prev => {
+          let audioTrackIndex = prev.tracks.findIndex(t => t.type === 'audio');
+          let newTracks = [...prev.tracks];
+          if (audioTrackIndex === -1) {
+            const newAudioTrack = {
+              id: generateClipId(),
+              name: 'Áudio',
+              type: 'audio' as const,
+              clips: [audioClip],
+            };
+            const chordIndex = prev.tracks.findIndex(t => t.type === 'chord');
+            if (chordIndex !== -1) {
+              newTracks.splice(chordIndex + 1, 0, newAudioTrack);
+            } else {
+              newTracks.push(newAudioTrack);
+            }
+          } else {
+            newTracks = newTracks.map((t, idx) =>
+              idx === audioTrackIndex
+                ? { ...t, clips: [...t.clips, audioClip] }
+                : t
+            );
+          }
+          return {
+            ...prev,
+            tracks: newTracks,
+          };
+        });
+        setAudioUploaded(true);
+      } catch (err) {
+        alert('Erro ao processar áudio.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  // Atualiza os acordes na timeline se o usuário selecionar mais
+  useEffect(() => {
+    const chordTrack = timelineState.tracks.find(t => t.type === 'chord');
+    if (!chordTrack) return;
+    const currentClipCount = chordTrack.clips.length || 0;
+    if (selectedChords.length > currentClipCount) {
+      const newClips = [...chordTrack.clips];
+      for (let i = currentClipCount; i < selectedChords.length; i++) {
+        const chordWithTiming = selectedChords[i];
+        if (chordWithTiming && chordWithTiming.chord) {
+          const lastClip = newClips[newClips.length - 1];
+          const newStart = lastClip ? lastClip.start + lastClip.duration : 0;
+          const duration = Math.max(chordWithTiming.duration || 2000, minClipDurationMs);
+          const { finalChord, transportDisplay } = getChordDisplayData(chordWithTiming.chord);
+          newClips.push({
+            id: generateClipId(),
+            type: 'chord',
+            chord: chordWithTiming.chord,
+            finalChord,
+            transportDisplay,
+            start: newStart,
+            duration
+          });
+        }
+      }
+      const totalNeeded = newClips.reduce((max, clip) => Math.max(max, clip.start + clip.duration), 0);
+      const totalDuration = Math.max(1000, playbackTotalDurationMs, totalNeeded);
+      setTimelineState(prev => ({
+        ...prev,
+        tracks: prev.tracks.map(t => t.id === chordTrack.id ? { ...t, clips: newClips } : t),
+        totalDuration
+      }));
+    }
+  }, [selectedChords.length, timelineState.tracks, playbackTotalDurationMs, minClipDurationMs, setTimelineState]);
+
+  useEffect(() => {
+    if (!playbackTotalDurationMs) return;
+    setTimelineState(prev => ({
+      ...prev,
+      totalDuration: Math.max(1000, playbackTotalDurationMs)
+    }));
+  }, [animationType, playbackTotalDurationMs, setTimelineState]);
+
+  const handleTimelineChange = (newTimeline: TimelineState) => {
+    setTimelineState(newTimeline);
+    const chordTrack = newTimeline.tracks.find(t => t.type === 'chord');
+    if (!chordTrack) return;
+    const sortedClips = [...chordTrack.clips].sort((a, b) => a.start - b.start);
+    const reorderedChordsWithTiming: ChordWithTiming[] = sortedClips
+      .filter((clip): clip is ChordClip => clip.type === 'chord')
+      .map(clip => ({
+        chord: clip.chord,
+        duration: Math.max(clip.duration, minClipDurationMs),
+        finalChord: clip.finalChord,
+        transportDisplay: clip.transportDisplay,
+      } as ChordWithTiming));
+    setSelectedChords(reorderedChordsWithTiming);
+  };
+
+  // --- RENDER ---
+  return (
+    <div className="flex flex-row w-full h-full bg-transparent p-4 items-end justify-center">
+      {/* Synthesizer Deck Container */}
+      <div className="w-full max-w-[1500px] bg-[#1a1b26] rounded-t-xl border-t-2 border-x-2 border-white/5 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden flex flex-col">
+
+        {/* Metallic Texture Overlay */}
+        <div
+          className="absolute inset-0 opacity-10 pointer-events-none mix-blend-overlay"
+          style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.1) 2px, rgba(255,255,255,0.1) 4px)" }}
+        />
+
+        {/* Top Control Bar (Like a synth strip) */}
+        <div className="h-2 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 w-full opacity-80" />
+
+        <div className="p-6 flex-1 flex flex-col gap-4 relative z-10">
+          {/* Controls Area */}
+          <div className="bg-black/30 rounded-lg p-2 border border-white/5 shadow-inner">
+            <TimelineControls
+              isAnimating={isAnimating}
+              isPaused={isPaused}
+              ffmpegLoaded={ffmpegLoaded}
+              handleAnimate={handleAnimate}
+              handlePause={handlePause}
+              handleResume={handleResume}
+              handleRenderVideo={handleRenderVideo}
+              isTimelineEmpty={isTimelineEmpty}
+              onAudioUpload={handleAudioUpload}
+              audioUploaded={audioUploaded}
+            />
+          </div>
+
+          {/* Main Timeline Display */}
+          <div className="flex-1 bg-black/40 rounded-lg border border-white/5 overflow-hidden relative shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]">
+            {/* Audio Elements */}
+            {getAllAudioClips(timelineState.tracks).map((clip) => {
+              if (clip.type !== 'audio') return null;
+              const audioKey = clip.id != null ? String(clip.id) : undefined;
+              return (
+                <audio
+                  key={audioKey}
+                  ref={el => {
+                    if (audioKey !== undefined) {
+                      audioRefs.current[audioKey] = el;
+                    }
+                  }}
+                  src={clip.audioUrl}
+                  preload="auto"
+                  style={{ display: 'none' }}
+                />
+              );
+            })}
+
+            <div className="h-full">
+              <StudioTimeline
+                value={timelineState}
+                onChange={handleTimelineChange}
+                playheadProgress={playbackProgress}
+                playheadTotalDurationMs={playbackTotalDurationMs || timelineState.totalDuration}
+                minClipDurationMs={minClipDurationMs}
+                showPlayhead
+                onPlayheadScrubStart={() => setPlaybackIsScrubbing(true)}
+                onPlayheadScrub={(progress) => {
+                  setPlaybackProgress(progress);
+                  requestPlaybackSeek(progress);
+                }}
+                onPlayheadScrubEnd={(progress) => {
+                  setPlaybackProgress(progress);
+                  requestPlaybackSeek(0);
+                }}
+                isAnimating={isAnimating}
+                isPaused={isPaused}
+                ffmpegLoaded={ffmpegLoaded}
+                isTimelineEmpty={isTimelineEmpty}
+                handleAnimate={handleAnimate}
+                handlePause={handlePause}
+                handleResume={handleResume}
+                handleRenderVideo={handleRenderVideo}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      <style>{`.timeline-controls-upload { display: none; }`}</style>
+    </div>
+  );
+}

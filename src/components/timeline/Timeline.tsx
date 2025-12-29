@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { TimelineRuler } from "./TimelineRuler";
 import { TimelineTrack } from "./TimelineTrack";
-import { Button } from "@/components/ui/button"; // Re-adicionar Importar Button
+import { Button } from "@/shared/components/ui/button"; // Re-adicionar Importar Button
 import { ZoomIn, ZoomOut } from "lucide-react"; // Re-adicionar Importar ícones de zoom
 import type { TimelineState, DragState, TimelineClip } from "@/lib/timeline/types";
 import { formatTimeMs } from "@/lib/timeline/utils";
@@ -30,6 +30,7 @@ interface TimelineProps {
   handleResume: () => void;
   handleRenderVideo: () => void;
   isTimelineEmpty: boolean;
+  onClipEdit?: (clipId: string) => void;
 }
 
 export function Timeline({
@@ -52,6 +53,7 @@ export function Timeline({
   handleResume,
   handleRenderVideo,
   isTimelineEmpty,
+  onClipEdit
 }: TimelineProps) {
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -289,6 +291,42 @@ export function Timeline({
     });
   };
 
+  // NEW: Handle adding clips from drag and drop
+  const handleAddClip = (trackId: string, time: number, item: any) => {
+    // Find the track
+    const trackIndex = value.tracks.findIndex(t => t.id === trackId);
+    if (trackIndex === -1) return;
+
+    const track = value.tracks[trackIndex];
+
+    // Generate ID manually here since we can't easily import generateClipId if it's not exported or if we want to keep it simple
+    // Actually we should use a util or UUID. I'll use a simple Math.random for now or import uuid if available.
+    // Better to check context or utils.
+    // I'll assume we can use Date.now() + random string for ID.
+    const newId = `clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Create new clip
+    const newClip: TimelineClip = {
+      id: newId,
+      start: time,
+      duration: 1000, // Default duration, maybe get from item or context
+      type: 'symbol',
+      name: item.name,
+      vexFlowProps: item.vexFlowProps
+    };
+
+    // Add to track
+    const newTracks = [...value.tracks];
+    newTracks[trackIndex] = {
+      ...track,
+      clips: repackClips([...track.clips, newClip])
+    };
+
+    onChange({
+      ...value,
+      tracks: newTracks
+    });
+  };
 
   return (
     <div className={className}>
@@ -309,28 +347,32 @@ export function Timeline({
         </Button>
       </div>
 
-      <div ref={containerRef} className="relative border border-border rounded-lg overflow-x-auto bg-background">
+      <div ref={containerRef} className="relative border border-white/10 rounded-lg overflow-x-auto bg-[#0a0a0a]">
         <div
           className="relative w-max min-w-full"
           style={{ width: `${Math.max(0, totalWidthPx) + TRACK_LABEL_WIDTH}px` }}
         >
           {showPlayhead && (
             <div
-              className="absolute top-0 bottom-0 z-50"
+              className="absolute top-0 bottom-0 z-50 pointer-events-none"
               style={{
                 left: `${TRACK_LABEL_WIDTH - 6}px`,
                 width: "12px",
                 transform: `translateX(${totalWidthPx * clamp01(playheadProgress)}px)`,
                 willChange: "transform",
                 touchAction: "none",
-                cursor: "ew-resize",
               }}
-              ref={playheadRef}
-              onPointerDown={handlePlayheadPointerDown}
-              onPointerMove={handlePlayheadPointerMove}
-              onPointerUp={handlePlayheadPointerUp}
             >
-              <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-1 bg-primary rounded-full" />
+              {/* Playhead Line */}
+              <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[1px] bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
+              {/* Playhead Handle */}
+              <div
+                className="absolute left-1/2 -translate-x-1/2 top-0 w-3 h-3 bg-cyan-400 rotate-45 -mt-1.5 shadow-[0_0_5px_rgba(34,211,238,0.8)] cursor-ew-resize pointer-events-auto"
+                ref={playheadRef}
+                onPointerDown={handlePlayheadPointerDown}
+                onPointerMove={handlePlayheadPointerMove}
+                onPointerUp={handlePlayheadPointerUp}
+              />
             </div>
           )}
 
@@ -345,6 +387,8 @@ export function Timeline({
               onClipSelect={setSelectedClipId}
               onDragStart={setDragState}
               onClipDelete={handleClipDelete}
+              onAddClip={handleAddClip}
+              onClipEdit={onClipEdit}
             />
           ))}
         </div>

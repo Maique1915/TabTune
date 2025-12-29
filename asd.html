@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>VexFlow Custom Layers</title>
+    <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #121212;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        #controls {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        #output {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 95%;
+            max-width: 800px;
+        }
+
+        input[type="color"] {
+            border: none;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            background: none;
+            border-radius: 4px;
+            border: 2px solid #333;
+        }
+
+        label {
+            min-width: 150px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Configurador VexFlow (Partitura + Tab)</h2>
+
+    <div id="controls">
+        <div class="control-group">
+            <label>Pautas (Linhas):</label>
+            <input type="color" id="color-stave" value="#FF0000">
+        </div>
+        <div class="control-group">
+            <label>Notas Musicais:</label>
+            <input type="color" id="color-notes" value="#0000FF">
+        </div>
+        <div class="control-group">
+            <label>Números da Tab:</label>
+            <input type="color" id="color-tab" value="#008000">
+        </div>
+        <div class="control-group">
+            <label>Claves e Símbolos:</label>
+            <input type="color" id="color-glyphs" value="#000000">
+        </div>
+        <div class="control-group">
+            <label>Fundo da Página:</label>
+            <input type="color" id="color-bg" value="#FFFFFF">
+        </div>
+    </div>
+
+    <div id="output"></div>
+
+    <script>
+        const { Renderer, Stave, StaveNote, TabStave, TabNote, Formatter, Accidental } = Vex.Flow;
+
+        function draw() {
+            const div = document.getElementById("output");
+            div.innerHTML = "";
+
+            const renderer = new Renderer(div, Renderer.Backends.SVG);
+            renderer.resize(700, 500);
+            const context = renderer.getContext();
+
+            // Cores do Menu
+            const cStave = document.getElementById("color-stave").value;
+            const cNotes = document.getElementById("color-notes").value;
+            const cTab = document.getElementById("color-tab").value;
+            const cGlyphs = document.getElementById("color-glyphs").value;
+            const cBg = document.getElementById("color-bg").value;
+
+            // Aplicar cor de fundo ao container
+            div.style.backgroundColor = cBg;
+
+            // 1. Renderizar Pauta Superior (Pentagrama)
+            const stave = new Stave(50, 60, 600);
+
+            context.save();
+            context.setStrokeStyle(cStave);
+            context.setFillStyle(cStave);
+
+            stave.setContext(context);
+
+            // Adicionar clave e compasso
+            stave.addClef("treble");
+            stave.addKeySignature("C");
+            stave.addTimeSignature("4/4");
+
+            // Desenhar pauta
+            stave.draw();
+
+            // Aplicar cor aos glifos
+            applyColorToGlyphs(context, cGlyphs);
+            context.restore();
+
+            // 2. Renderizar Pauta Inferior (Tablatura)
+            const tabStave = new TabStave(50, 220, 600);
+
+            context.save();
+            context.setStrokeStyle(cStave);
+            context.setFillStyle(cStave);
+
+            tabStave.setContext(context);
+            tabStave.addTabGlyph();
+            tabStave.draw();
+
+            // Aplicar cor ao glifo da tablatura
+            applyColorToGlyphs(context, cGlyphs);
+            context.restore();
+
+            // 3. Notas da Partitura
+            const notes1 = [
+                new StaveNote({ keys: ["e/4", "b/4", "e/5"], duration: "h" })
+                    .addAccidental(0, new Accidental("n"))
+                    .addModifier(new Vex.Flow.Annotation("Em").setFont("Arial", 12), 0),
+                new StaveNote({ keys: ["f#/4", "a/4", "d/5"], duration: "h" })
+                    .addAccidental(0, new Accidental("#"))
+                    .addModifier(new Vex.Flow.Annotation("D").setFont("Arial", 12), 0)
+            ].map(n => n.setStyle({ fillStyle: cNotes, strokeStyle: cNotes }));
+
+            // 4. Notas da Tablatura - SEM RETÂNGULO DE FUNDO BRANCO
+            const tabNotes = [
+                new TabNote({
+                    positions: [{ str: 6, fret: 0 }, { str: 5, fret: 2 }, { str: 4, fret: 2 }],
+                    duration: "h"
+                }),
+                new TabNote({
+                    positions: [{ str: 6, fret: 2 }, { str: 5, fret: 3 }, { str: 4, fret: 2 }],
+                    duration: "h"
+                })
+            ].map(tn => {
+                // Aplicar estilo SEM fundo branco
+                tn.setStyle({
+                    fillStyle: cTab,
+                    strokeStyle: cTab,
+                    // Remover fundo branco configurando o fundo como transparente
+                    backgroundFillStyle: 'transparent'
+                });
+                return tn;
+            });
+
+            // 5. Alinhamento e Desenho Final
+            Formatter.FormatAndDraw(context, stave, notes1, { auto_beam: false });
+
+            // Adicionar segunda linha de notas
+            const stave2 = new Stave(50, 140, 600);
+            context.save();
+            context.setStrokeStyle(cStave);
+            context.setFillStyle(cStave);
+            stave2.setContext(context).draw();
+            context.restore();
+
+            const notes2 = [
+                new StaveNote({ keys: ["c/4", "e/4", "g/4"], duration: "h" })
+                    .addModifier(new Vex.Flow.Annotation("C").setFont("Arial", 12), 0),
+                new StaveNote({ keys: ["d/4", "f#/4", "a/4"], duration: "h" })
+                    .addAccidental(1, new Accidental("#"))
+                    .addModifier(new Vex.Flow.Annotation("D").setFont("Arial", 12), 0)
+            ].map(n => n.setStyle({ fillStyle: cNotes, strokeStyle: cNotes }));
+
+            Formatter.FormatAndDraw(context, stave2, notes2, { auto_beam: false });
+
+            // Desenhar notas da tablatura
+            Formatter.FormatAndDraw(context, tabStave, tabNotes, { auto_beam: false });
+
+            // 6. PÓS-PROCESSAMENTO: Remover retângulos brancos da tablatura
+            removeTabBackgrounds(context, cBg);
+        }
+
+        // Função auxiliar para aplicar cor aos glifos
+        function applyColorToGlyphs(context, color) {
+            const svg = context.svg;
+            const textElements = svg.getElementsByTagName('text');
+            const pathElements = svg.getElementsByTagName('path');
+
+            // Aplicar cor a textos
+            for (let i = 0; i < textElements.length; i++) {
+                if (textElements[i].getAttribute('data-type') !== 'note') {
+                    textElements[i].setAttribute('fill', color);
+                }
+            }
+
+            // Aplicar cor a paths (símbolos como clave, etc.)
+            for (let i = 0; i < pathElements.length; i++) {
+                const className = pathElements[i].getAttribute('class') || '';
+                if (className.includes('vf-clef') ||
+                    className.includes('vf-timesig') ||
+                    className.includes('vf-keysignature')) {
+                    pathElements[i].setAttribute('fill', color);
+                    pathElements[i].setAttribute('stroke', color);
+                }
+            }
+        }
+
+        // Função para remover os retângulos de fundo branco da tablatura
+        function removeTabBackgrounds(context, bgColor) {
+            const svg = context.svg;
+            const rectElements = svg.getElementsByTagName('rect');
+
+            // Encontrar e remover/modificar retângulos de fundo da tablatura
+            for (let i = 0; i < rectElements.length; i++) {
+                const rect = rectElements[i];
+
+                // Verificar se é um retângulo de fundo (geralmente tem fill="white")
+                if (rect.getAttribute('fill') === 'white' ||
+                    rect.getAttribute('fill') === '#ffffff' ||
+                    rect.style.fill === 'white') {
+
+                    // Opção 1: Remover completamente o retângulo
+                    // rect.remove();
+
+                    // Opção 2: Fazer o retângulo ter a mesma cor do fundo
+                    rect.setAttribute('fill', bgColor);
+                    rect.setAttribute('stroke', 'none');
+                }
+            }
+
+            // Também procurar por elementos de fundo em grupos
+            const gElements = svg.getElementsByTagName('g');
+            for (let i = 0; i < gElements.length; i++) {
+                const g = gElements[i];
+                const rectsInG = g.getElementsByTagName('rect');
+
+                for (let j = 0; j < rectsInG.length; j++) {
+                    const rect = rectsInG[j];
+                    if (rect.getAttribute('fill') === 'white' ||
+                        rect.getAttribute('fill') === '#ffffff') {
+                        rect.setAttribute('fill', bgColor);
+                        rect.setAttribute('stroke', 'none');
+                    }
+                }
+            }
+        }
+
+        // Inicializar cor de fundo
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('color-bg').value = '#FFFFFF';
+            document.getElementById('output').style.backgroundColor = '#FFFFFF';
+
+            document.querySelectorAll('input[type="color"]').forEach(i => {
+                i.addEventListener('input', draw);
+            });
+
+            draw();
+        });
+    </script>
+</body>
+
+</html>

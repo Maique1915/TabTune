@@ -5,7 +5,25 @@
 
 import type { ChordDiagramProps } from "@/lib/types";
 
-export type ClipType = 'chord' | 'audio';
+export type ClipType = 'chord' | 'audio' | 'symbol' | 'score';
+
+export interface ScoreNote {
+  keys: string[]; // e.g., ["c/4"]
+  duration: string; // "w", "h", "q", "8", "16"
+  positions?: { str: number; fret: number }[]; // For tablature
+  dots?: number;
+  clef?: string;
+  isRest?: boolean;
+}
+
+export interface ScoreClip extends BaseClip {
+  type: 'score';
+  name?: string;
+  notes: ScoreNote[];
+  clef?: string;
+  timeSignature?: string;
+  keySignature?: string;
+}
 
 /**
  * Base interface for all timeline clips
@@ -14,6 +32,15 @@ export interface BaseClip {
   id: string;
   start: number;    // tempo de início em ms
   duration: number; // duração em ms
+}
+
+/**
+ * Represents a musical symbol clip (notes, clefs, etc.)
+ */
+export interface SymbolClip extends BaseClip {
+  type: 'symbol';
+  name: string; // e.g., "Treble Clef"
+  vexFlowProps: any; // Props to pass to VexFlowIcon
 }
 
 /**
@@ -37,7 +64,7 @@ export interface AudioClip extends BaseClip {
 }
 
 // A clip can be one of the defined types
-export type TimelineClip = ChordClip | AudioClip;
+export type TimelineClip = ChordClip | AudioClip | SymbolClip | ScoreClip;
 
 /**
  * Representa uma track (faixa/layer) na timeline
