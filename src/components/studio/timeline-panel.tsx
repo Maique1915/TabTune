@@ -185,25 +185,7 @@ export function TimelinePanel({
   // --- RENDER ---
   return (
     <div className="flex flex-col w-full h-full bg-black/20 backdrop-blur-xl border-t border-white/5 relative">
-
       <div className="flex-1 overflow-hidden relative p-4 flex flex-col gap-4">
-
-        {/* Controls Area */}
-        <div className="bg-black/40 rounded-xl border border-white/5 p-1 shadow-sm">
-          <TimelineControls
-            isAnimating={isAnimating}
-            isPaused={isPaused}
-            ffmpegLoaded={ffmpegLoaded}
-            handleAnimate={handleAnimate}
-            handlePause={handlePause}
-            handleResume={handleResume}
-            handleRenderVideo={handleRenderVideo}
-            isTimelineEmpty={isTimelineEmpty}
-            onAudioUpload={handleAudioUpload}
-            audioUploaded={audioUploaded}
-          />
-        </div>
-
         {/* Main Timeline Display */}
         <div className="flex-1 bg-black/40 rounded-xl border border-white/5 overflow-hidden relative shadow-inner">
           {/* Audio Elements */}
@@ -254,7 +236,6 @@ export function TimelinePanel({
           </div>
         </div>
       </div>
-      <style>{`.timeline-controls-upload { display: none; }`}</style>
     </div>
   );
 }

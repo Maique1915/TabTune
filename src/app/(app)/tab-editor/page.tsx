@@ -135,6 +135,14 @@ export default function TabEditorPage() {
         return () => clearInterval(interval);
     }, [isPlaying, settings.bpm, settings.time, measures.length, isLooping]);
 
+    // Cleanup and reset playback when it reaches the end
+    useEffect(() => {
+        if (isPlaying && playbackPosition >= 100 && !isLooping) {
+            setIsPlaying(false);
+            setPlaybackPosition(0);
+        }
+    }, [isPlaying, playbackPosition, isLooping]);
+
     const handleAddMeasure = () => {
         setMeasures([...measures, {
             id: generateId(),
@@ -549,7 +557,7 @@ export default function TabEditorPage() {
     if (!isClient) return <div className="h-screen w-full bg-black flex items-center justify-center text-slate-500">Loading...</div>;
 
     return (
-        <div className="flex h-screen w-full flex-col bg-gradient-to-br from-[#1a0b2e] via-[#0f0518] to-black text-slate-200 overflow-hidden relative font-['Inter']">
+        <div className="flex h-screen w-full flex-col bg-gradient-to-br from-[#1a0b2e] via-[#0f0518] to-black text-slate-200 overflow-hidden relative font-body">
             {/* Retro Grid Background Overlay */}
             <div className="absolute inset-0 bg-[linear-gradient(rgba(18,18,18,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(255,0,0,0.02))] bg-[length:100%_4px,6px_100%] pointer-events-none z-0" />
 
@@ -574,12 +582,20 @@ export default function TabEditorPage() {
                     onMeasureUpdate={handleUpdateMeasure}
                 />
 
-                <main className="flex flex-1 flex-col overflow-hidden min-w-0" style={{ display: 'grid', gridTemplateRows: '70% 30%' }}>
+                <main className="flex flex-1 flex-col overflow-hidden min-w-0" style={{ display: 'grid', gridTemplateRows: '65% 35%' }}>
                     <div className="flex flex-col h-full overflow-hidden relative">
                         {/* Integrated Studio Controls - Bottom Position */}
                         <div className="absolute bottom-6 left-6 right-6 z-30 flex items-center justify-between p-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/5 shadow-2xl">
                             <div className="flex items-center space-x-4">
-                                <button onClick={() => setIsPlaying(!isPlaying)} className={`px-6 py-2 rounded-xl flex items-center space-x-3 text-xs font-black transition-all ${isPlaying ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'bg-cyan-500 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.4)]'}`}>
+                                <button
+                                    onClick={() => {
+                                        if (!isPlaying && playbackPosition >= 100) {
+                                            setPlaybackPosition(0);
+                                        }
+                                        setIsPlaying(!isPlaying);
+                                    }}
+                                    className={`px-6 py-2 rounded-xl flex items-center space-x-3 text-xs font-black transition-all ${isPlaying ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'bg-cyan-500 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.4)]'}`}
+                                >
                                     {isPlaying ? <Icons.Pause /> : <Icons.Play />}
                                     <span>{isPlaying ? 'STOP' : 'PLAY'}</span>
                                 </button>

@@ -12,6 +12,8 @@ import { useAppContext } from "@/app/context/app--context";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { VideoCanvasStageRef } from "./video-canvas-stage";
 import { cn } from "@/shared/lib/utils";
+import { TimelineControls } from "./timeline/TimelineControls";
+import { generateClipId } from "@/lib/timeline/utils";
 
 export function HomePage() {
   const {
@@ -20,6 +22,9 @@ export function HomePage() {
     setRenderProgress,
     renderCancelRequested,
     setRenderCancelRequested,
+    timelineState,
+    setTimelineState,
+    playbackTotalDurationMs,
   } = useAppContext();
 
   const videoCanvasRef = useRef<VideoCanvasStageRef>(null);
@@ -29,6 +34,7 @@ export function HomePage() {
   const isMobile = useIsMobile();
   const [mobilePanel, setMobilePanel] = useState<'studio' | 'library' | 'settings'>('studio');
   const [hasMounted, setHasMounted] = useState(false);
+  const [audioUploaded, setAudioUploaded] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
@@ -97,6 +103,76 @@ export function HomePage() {
     }
   };
 
+  const handleAudioUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const arrayBuffer = e.target?.result;
+      if (!arrayBuffer) return;
+      try {
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer as ArrayBuffer);
+        const rawData = audioBuffer.getChannelData(0);
+        const samples = 100;
+        const blockSize = Math.floor(rawData.length / samples);
+        const waveform = Array(samples).fill(0).map((_, i) => {
+          let sum = 0;
+          for (let j = 0; j < blockSize; j++) {
+            sum += Math.abs(rawData[i * blockSize + j] || 0);
+          }
+          return sum / blockSize;
+        });
+        const durationMs = Math.floor(audioBuffer.duration * 1000);
+        const audioClip = {
+          id: generateClipId(),
+          type: 'audio' as const,
+          fileName: file.name,
+          audioUrl: URL.createObjectURL(file),
+          start: 0,
+          duration: durationMs,
+          waveform,
+        };
+        setTimelineState(prev => {
+          let audioTrackIndex = prev.tracks.findIndex(t => t.type === 'audio');
+          let newTracks = [...prev.tracks];
+          if (audioTrackIndex === -1) {
+            const newAudioTrack = {
+              id: generateClipId(),
+              name: 'Áudio',
+              type: 'audio' as const,
+              clips: [audioClip],
+            };
+            const chordIndex = prev.tracks.findIndex(t => t.type === 'chord');
+            if (chordIndex !== -1) {
+              newTracks.splice(chordIndex + 1, 0, newAudioTrack);
+            } else {
+              newTracks.push(newAudioTrack);
+            }
+          } else {
+            newTracks = newTracks.map((t, idx) =>
+              idx === audioTrackIndex
+                ? { ...t, clips: [...t.clips, audioClip] }
+                : t
+            );
+          }
+          return {
+            ...prev,
+            tracks: newTracks,
+          };
+        });
+        setAudioUploaded(true);
+      } catch (err) {
+        alert('Erro ao processar áudio.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleResetPlayback = () => {
+    if (videoCanvasRef.current) {
+      videoCanvasRef.current.cancelRender();
+    }
+  };
+
   const handlePanelChange = (panel: 'studio' | 'library' | 'settings') => {
     if (panel === 'studio') {
       setMobilePanel('studio');
@@ -106,15 +182,34 @@ export function HomePage() {
   };
 
   const mainContent = (
-    <main className="flex flex-1 flex-col overflow-hidden min-w-0" style={{ display: 'grid', gridTemplateRows: '60% 40%' }}>
-      <MainStage
-        ref={videoCanvasRef}
-        onAnimationStateChange={(animating, paused) => {
-          setIsAnimating(animating);
-          setIsPaused(paused);
-        }}
-      />
-      <div className="w-full h-full min-w-0 overflow-hidden relative">
+    <main className="flex flex-1 flex-col overflow-hidden min-w-0 bg-black/20" style={{ display: 'grid', gridTemplateRows: '65% 35%' }}>
+      <div className="flex flex-col h-full overflow-hidden relative">
+        {/* Floating Controls Bar */}
+        <div className="absolute bottom-6 left-6 right-6 z-30 flex items-center justify-between p-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/5 shadow-2xl">
+          <TimelineControls
+            isAnimating={isAnimating}
+            isPaused={isPaused}
+            ffmpegLoaded={true}
+            handleAnimate={handleAnimate}
+            handlePause={handlePause}
+            handleResume={handleResume}
+            handleRenderVideo={handleRenderVideo}
+            isTimelineEmpty={timelineState.tracks.every(t => t.clips.length === 0)}
+            onAudioUpload={handleAudioUpload}
+            audioUploaded={audioUploaded}
+            onResetPlayback={handleResetPlayback}
+          />
+        </div>
+
+        <MainStage
+          ref={videoCanvasRef}
+          onAnimationStateChange={(animating, paused) => {
+            setIsAnimating(animating);
+            setIsPaused(paused);
+          }}
+        />
+      </div>
+      <div className="w-full h-full min-w-0 overflow-hidden relative border-t border-white/5 bg-black/20 backdrop-blur-sm">
         <TimelinePanel
           isAnimating={isAnimating}
           isPaused={isPaused}
@@ -122,7 +217,9 @@ export function HomePage() {
           handleAnimate={handleAnimate}
           handlePause={handlePause}
           handleResume={handleResume}
-          handleRenderVideo={handleRenderVideo} isTimelineEmpty={false} />
+          handleRenderVideo={handleRenderVideo}
+          isTimelineEmpty={false}
+        />
       </div>
     </main>
   );
