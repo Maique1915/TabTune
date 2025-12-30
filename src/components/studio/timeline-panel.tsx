@@ -14,7 +14,7 @@ interface TimelinePanelProps {
   isTimelineEmpty: boolean;
 }
 import { useAppContext } from "@/app/context/app--context";
-import { StudioTimeline } from "@/components/studio/timeline/Timeline";
+import { Timeline } from "@/components/studio/timeline/Timeline";
 import { TimelineControls } from "@/components/studio/timeline/TimelineControls";
 import type { TimelineState, TimelineClip, ChordClip, TimelineTrack } from "@/lib/timeline/types";
 import { generateClipId } from "@/lib/timeline/utils";
@@ -235,7 +235,7 @@ export function TimelinePanel({
           })}
 
           <div className="h-full">
-            <StudioTimeline
+            <Timeline
               value={timelineState}
               onChange={handleTimelineChange}
               playheadProgress={playbackProgress}
