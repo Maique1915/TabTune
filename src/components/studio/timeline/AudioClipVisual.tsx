@@ -16,15 +16,15 @@ export const AudioClipVisual: React.FC<AudioClipVisualProps> = ({ waveform }) =>
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const resizeObserver = new ResizeObserver(entries => {
       if (!entries || entries.length === 0) return;
       const { width, height } = entries[0].contentRect;
       setSize({ width, height });
     });
-    
+
     resizeObserver.observe(canvas);
-    
+
     return () => resizeObserver.disconnect();
   }, []);
 
@@ -36,7 +36,7 @@ export const AudioClipVisual: React.FC<AudioClipVisualProps> = ({ waveform }) =>
     // Set the canvas buffer size to match its display size
     canvas.width = size.width;
     canvas.height = size.height;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -46,13 +46,20 @@ export const AudioClipVisual: React.FC<AudioClipVisualProps> = ({ waveform }) =>
     ctx.clearRect(0, 0, width, height);
 
     const barWidth = width / waveform.length;
-    ctx.fillStyle = colors.textColor;
+    // Use a high-contrast color for the waveform
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
 
+    ctx.beginPath();
     for (let i = 0; i < waveform.length; i++) {
-        const val = waveform[i];
-        const barHeight = val * height;
-        const y = (height - barHeight) / 2;
-        ctx.fillRect(i * barWidth, y, 1, barHeight); // Draw thin lines for better detail
+      const val = waveform[i];
+      // Scale vertical amplitude slightly for better visibility
+      const barHeight = Math.max(2, val * height * 0.8);
+      const x = i * barWidth;
+      const y = (height - barHeight) / 2;
+
+      // Draw rounded bars or simple rects, filling the gap
+      // Using barWidth + 0.5 to prevent sub-pixel gaps
+      ctx.fillRect(x, y, barWidth + 0.5, barHeight);
     }
 
   }, [waveform, colors.textColor, size]);

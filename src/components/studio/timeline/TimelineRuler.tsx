@@ -28,9 +28,9 @@ export function TimelineRuler({ totalDuration, zoom }: TimelineRulerProps) {
   const TRACK_LABEL_WIDTH = 128;
 
   return (
-    <div className="relative h-9 bg-[#0f0f13] border-b border-white/10 select-none overflow-hidden">
+    <div className="relative h-8 bg-black/40 border-b border-white/5 select-none overflow-hidden sticky top-0 z-20 backdrop-blur-sm">
       {/* Label Area Background */}
-      <div className="absolute left-0 top-0 bottom-0 w-32 bg-[#121214] border-r border-white/10 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.3)]" />
+      <div className="absolute left-0 top-0 bottom-0 w-32 bg-black/20 border-r border-white/5 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.3)]" />
 
       {marks.map((time) => {
         const x = TRACK_LABEL_WIDTH + (time / 1000) * zoom;

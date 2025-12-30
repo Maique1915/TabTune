@@ -72,7 +72,7 @@ export function TimelineClip({
   return (
     <div
       className={cn(
-        "absolute top-2 h-12 rounded-md border-2 transition-all",
+        "absolute top-1 bottom-1 h-auto rounded-md border-2 transition-all",
         "flex items-center justify-between px-2 gap-2",
         "select-none cursor-move",
         isSelected

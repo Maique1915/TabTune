@@ -154,30 +154,6 @@ export function StudioTimeline({
     return clamp01(xOnTimeline / totalWidthPx);
   }, [totalWidthPx]);
 
-  const handlePlayheadPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsPlayheadDragging(true);
-    onPlayheadScrubStart?.();
-    onPlayheadScrub?.(eventToPlayheadProgress(e));
-    e.currentTarget.setPointerCapture(e.pointerId);
-  }, [eventToPlayheadProgress, onPlayheadScrub, onPlayheadScrubStart]);
-
-  const handlePlayheadPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isPlayheadDragging) return;
-    e.preventDefault();
-    e.stopPropagation();
-    onPlayheadScrub?.(eventToPlayheadProgress(e));
-  }, [eventToPlayheadProgress, isPlayheadDragging, onPlayheadScrub]);
-
-  const handlePlayheadPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isPlayheadDragging) return;
-    e.preventDefault();
-    e.stopPropagation();
-    setIsPlayheadDragging(false);
-    onPlayheadScrubEnd?.(eventToPlayheadProgress(e));
-  }, [eventToPlayheadProgress, isPlayheadDragging, onPlayheadScrubEnd]);
-
   const repackClips = (clips: TimelineClip[]): TimelineClip[] => {
     const sorted = [...clips].sort((a, b) => a.start - b.start);
     let currentStart = 0;
@@ -330,26 +306,46 @@ export function StudioTimeline({
 
   return (
     <div className={className}>
+      <style>{`
+        .custom-timeline-scroll::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        .custom-timeline-scroll::-webkit-scrollbar-track {
+          background: rgba(0,0,0,0.2);
+          border-radius: 4px;
+        }
+        .custom-timeline-scroll::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.3);
+          border-radius: 4px;
+        }
+        .custom-timeline-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.5);
+        }
+        .custom-timeline-scroll::-webkit-scrollbar-corner {
+          background: transparent;
+        }
+      `}</style>
       <div className="flex items-center gap-2 mb-2 px-2">
         {/* Controles da timeline agora são renderizados pelo TimelinePanel */}
         <div className="flex-1" />
-        <span className="text-xs text-muted-foreground tabular-nums">
+        <span className="text-xs text-muted-foreground tabular-nums font-mono">
           {formatTimeMs(currentTimeMs)} / {formatTimeMs(effectiveDurationMs)}
         </span>
-        <Button variant="outline" size="sm" onClick={handleZoomOut}>
-          <ZoomOut className="h-4 w-4" />
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleZoomOut}>
+          <ZoomOut className="h-3 w-3" />
         </Button>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-[10px] text-muted-foreground w-12 text-center">
           {Math.round(value.zoom)}px/s
         </span>
-        <Button variant="outline" size="sm" onClick={handleZoomIn}>
-          <ZoomIn className="h-4 w-4" />
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleZoomIn}>
+          <ZoomIn className="h-3 w-3" />
         </Button>
       </div>
 
-      <div ref={containerRef} className="relative border border-white/10 rounded-lg overflow-x-auto bg-[#0a0a0a]">
+      <div ref={containerRef} className="relative border border-white/5 rounded-xl overflow-x-auto overflow-y-hidden bg-black/20 custom-timeline-scroll shadow-inner h-full">
         <div
-          className="relative w-max min-w-full"
+          className="relative w-max min-w-full pb-8"
           style={{ width: `${Math.max(0, totalWidthPx) + TRACK_LABEL_WIDTH}px` }}
         >
           {showPlayhead && (
@@ -366,13 +362,7 @@ export function StudioTimeline({
               {/* Playhead Line */}
               <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[1px] bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
               {/* Playhead Handle */}
-              <div
-                className="absolute left-1/2 -translate-x-1/2 top-0 w-3 h-3 bg-cyan-400 rotate-45 -mt-1.5 shadow-[0_0_5px_rgba(34,211,238,0.8)] cursor-ew-resize pointer-events-auto"
-                ref={playheadRef}
-                onPointerDown={handlePlayheadPointerDown}
-                onPointerMove={handlePlayheadPointerMove}
-                onPointerUp={handlePlayheadPointerUp}
-              />
+
             </div>
           )}
 

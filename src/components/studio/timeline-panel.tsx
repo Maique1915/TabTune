@@ -184,84 +184,82 @@ export function TimelinePanel({
 
   // --- RENDER ---
   return (
-    <div className="flex flex-row w-full h-full bg-transparent p-4 items-end justify-center">
-      {/* Synthesizer Deck Container */}
-      <div className="w-full max-w-[1500px] bg-[#1a1b26] rounded-t-xl border-t-2 border-x-2 border-white/5 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] relative overflow-hidden flex flex-col">
+    <div className="flex flex-col w-full h-full bg-black/20 backdrop-blur-xl border-t border-white/5 relative">
+      {/* Header / Title Bar */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/20">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-[12px] font-black text-slate-500 uppercase tracking-[0.2em]">
+            TIMELINE
+          </h2>
+          <div className="w-8 h-1 bg-cyan-500 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.5)]"></div>
+        </div>
+      </div>
 
-        {/* Metallic Texture Overlay */}
-        <div
-          className="absolute inset-0 opacity-10 pointer-events-none mix-blend-overlay"
-          style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.1) 2px, rgba(255,255,255,0.1) 4px)" }}
-        />
+      <div className="flex-1 overflow-hidden relative p-4 flex flex-col gap-4">
 
-        {/* Top Control Bar (Like a synth strip) */}
-        <div className="h-2 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 w-full opacity-80" />
+        {/* Controls Area */}
+        <div className="bg-black/40 rounded-xl border border-white/5 p-1 shadow-sm">
+          <TimelineControls
+            isAnimating={isAnimating}
+            isPaused={isPaused}
+            ffmpegLoaded={ffmpegLoaded}
+            handleAnimate={handleAnimate}
+            handlePause={handlePause}
+            handleResume={handleResume}
+            handleRenderVideo={handleRenderVideo}
+            isTimelineEmpty={isTimelineEmpty}
+            onAudioUpload={handleAudioUpload}
+            audioUploaded={audioUploaded}
+          />
+        </div>
 
-        <div className="p-6 flex-1 flex flex-col gap-4 relative z-10">
-          {/* Controls Area */}
-          <div className="bg-black/30 rounded-lg p-2 border border-white/5 shadow-inner">
-            <TimelineControls
+        {/* Main Timeline Display */}
+        <div className="flex-1 bg-black/40 rounded-xl border border-white/5 overflow-hidden relative shadow-inner">
+          {/* Audio Elements */}
+          {getAllAudioClips(timelineState.tracks).map((clip) => {
+            if (clip.type !== 'audio') return null;
+            const audioKey = clip.id != null ? String(clip.id) : undefined;
+            return (
+              <audio
+                key={audioKey}
+                ref={el => {
+                  if (audioKey !== undefined) {
+                    audioRefs.current[audioKey] = el;
+                  }
+                }}
+                src={clip.audioUrl}
+                preload="auto"
+                style={{ display: 'none' }}
+              />
+            );
+          })}
+
+          <div className="h-full">
+            <StudioTimeline
+              value={timelineState}
+              onChange={handleTimelineChange}
+              playheadProgress={playbackProgress}
+              playheadTotalDurationMs={playbackTotalDurationMs || timelineState.totalDuration}
+              minClipDurationMs={minClipDurationMs}
+              showPlayhead
+              onPlayheadScrubStart={() => setPlaybackIsScrubbing(true)}
+              onPlayheadScrub={(progress) => {
+                setPlaybackProgress(progress);
+                requestPlaybackSeek(progress);
+              }}
+              onPlayheadScrubEnd={(progress) => {
+                setPlaybackProgress(progress);
+                requestPlaybackSeek(0);
+              }}
               isAnimating={isAnimating}
               isPaused={isPaused}
               ffmpegLoaded={ffmpegLoaded}
+              isTimelineEmpty={isTimelineEmpty}
               handleAnimate={handleAnimate}
               handlePause={handlePause}
               handleResume={handleResume}
               handleRenderVideo={handleRenderVideo}
-              isTimelineEmpty={isTimelineEmpty}
-              onAudioUpload={handleAudioUpload}
-              audioUploaded={audioUploaded}
             />
-          </div>
-
-          {/* Main Timeline Display */}
-          <div className="flex-1 bg-black/40 rounded-lg border border-white/5 overflow-hidden relative shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]">
-            {/* Audio Elements */}
-            {getAllAudioClips(timelineState.tracks).map((clip) => {
-              if (clip.type !== 'audio') return null;
-              const audioKey = clip.id != null ? String(clip.id) : undefined;
-              return (
-                <audio
-                  key={audioKey}
-                  ref={el => {
-                    if (audioKey !== undefined) {
-                      audioRefs.current[audioKey] = el;
-                    }
-                  }}
-                  src={clip.audioUrl}
-                  preload="auto"
-                  style={{ display: 'none' }}
-                />
-              );
-            })}
-
-            <div className="h-full">
-              <StudioTimeline
-                value={timelineState}
-                onChange={handleTimelineChange}
-                playheadProgress={playbackProgress}
-                playheadTotalDurationMs={playbackTotalDurationMs || timelineState.totalDuration}
-                minClipDurationMs={minClipDurationMs}
-                showPlayhead
-                onPlayheadScrubStart={() => setPlaybackIsScrubbing(true)}
-                onPlayheadScrub={(progress) => {
-                  setPlaybackProgress(progress);
-                  requestPlaybackSeek(progress);
-                }}
-                onPlayheadScrubEnd={(progress) => {
-                  setPlaybackProgress(progress);
-                  requestPlaybackSeek(0);
-                }}
-                isAnimating={isAnimating}
-                isPaused={isPaused}
-                ffmpegLoaded={ffmpegLoaded}
-                isTimelineEmpty={isTimelineEmpty}
-                handleAnimate={handleAnimate}
-                handlePause={handlePause}
-                handleResume={handleResume}
-                handleRenderVideo={handleRenderVideo}
-              />
-            </div>
           </div>
         </div>
       </div>

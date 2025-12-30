@@ -100,20 +100,20 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
 
     // Timeline / Horizontal Layout
     return (
-        <div className="w-full h-full flex flex-col bg-[#0a0a0a]">
-            {/* Header / Toolbar */}
-            <div className="flex items-center justify-between px-6 py-2 bg-[#0a0a0a] border-b border-[#222] shrink-0 z-20 shadow-md">
-                <div className="flex flex-col">
-                    <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-500 tracking-wider uppercase drop-shadow-[0_0_2px_rgba(6,182,212,0.5)] flex items-center gap-2">
-                        <Icons.Grip />
-                        Score Constructor
+        <div className="flex flex-col w-full h-full bg-black/20 backdrop-blur-xl border-t border-white/5 relative">
+            {/* Header / Title Bar */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/20 shrink-0 z-20">
+                <div className="flex flex-col gap-1">
+                    <h2 className="text-[12px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                        SCORE CONSTRUCTOR
                     </h2>
+                    <div className="w-8 h-1 bg-cyan-500 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.5)]"></div>
                 </div>
                 <div className="flex items-center space-x-3">
                     {hasClipboard && (
                         <button
                             onClick={() => onPasteMeasure('')}
-                            className="px-3 py-1.5 bg-emerald-950/30 text-emerald-400 border border-emerald-500/20 rounded-md text-[10px] font-black hover:bg-emerald-500/10 transition-all flex items-center space-x-2"
+                            className="h-9 px-4 bg-black/40 hover:bg-black/60 text-slate-300 border border-white/10 font-bold text-[10px] uppercase tracking-wider rounded-lg transition-all hover:border-cyan-500/50 hover:text-cyan-400 flex items-center gap-2"
                         >
                             <Icons.Paste />
                             <span>PASTE</span>
@@ -121,15 +121,16 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
                     )}
                     <button
                         onClick={onAddMeasure}
-                        className="px-3 py-1.5 bg-cyan-950/30 text-cyan-400 border border-cyan-500/20 rounded-md text-[10px] font-black hover:bg-cyan-500/10 hover:border-cyan-500/40 transition-all flex items-center space-x-2 shadow-[0_0_10px_rgba(6,182,212,0.05)]"
+                        className="relative overflow-hidden transition-all duration-300 font-black text-[10px] uppercase tracking-wider rounded-lg h-9 px-6 flex items-center gap-2 bg-cyan-500 text-black border border-cyan-400 hover:bg-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_20px_rgba(6,182,212,0.5)]"
                     >
+                        <Icons.Plus />
                         <span>+ NEW SECTION</span>
                     </button>
                 </div>
             </div>
 
             {/* Horizontal Timeline Container */}
-            <div className="flex-1 overflow-x-auto overflow-y-hidden p-3 custom-scrollbar bg-[#050505]">
+            <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 custom-scrollbar bg-black/40">
                 <div className="flex flex-row gap-4 min-w-max h-full items-start">
                     {measures.map((measure, mIdx) => {
                         const currentTotal = measure.notes.reduce((sum, n) => sum + getNoteDurationValue(n.duration, !!n.decorators.dot), 0);

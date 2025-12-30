@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ScrollArea } from "@/shared/components/ui/scroll-area"; // Add missing import
+import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import "./library-panel.css";
 // Usando apenas campos nativos
 import { Label } from "@/shared/components/ui/label";
@@ -12,7 +12,7 @@ import { useAppContext } from "@/app/context/app--context";
 import { useToast } from "@/hooks/use-toast";
 import { ChordDiagramProps } from "@/lib/types";
 import { ChordDiagram } from "./chord-diagram";
-import { Filter, X, Music } from "lucide-react";
+import { Filter, X, Home, ChevronDown } from "lucide-react";
 import Link from 'next/link';
 import { cn } from "@/shared/lib/utils";
 
@@ -24,7 +24,7 @@ interface LibraryPanelProps {
 
 
 export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
-  const { setSelectedChords, selectedChords } = useAppContext(); // Ensure we have context
+  const { setSelectedChords, selectedChords } = useAppContext();
   const { toast } = useToast();
 
   const [selectedScale, setSelectedScale] = useState<string>("C");
@@ -32,19 +32,15 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
   const [selectedQuality, setSelectedQuality] = useState<string>("all");
   const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
   const [selectedBass, setSelectedBass] = useState<string>("all");
-  // id fixo para o checkbox
-  // const filterId = "filter-toggle";
 
-  // Use the last selected chord as 'active' for visualization or simple selection logic
   const activeChord = selectedChords.length > 0 ? selectedChords[selectedChords.length - 1] : null;
 
   const handleChordSelect = (chord: ChordDiagramProps, e?: React.MouseEvent) => {
-    // Construct proper ChordWithTiming object expected by the renderer
     const newChord = {
       chord: chord,
-      duration: 2000, // Default duration
-      finalChord: chord, // Initial value (no transposition)
-      transportDisplay: 0 // Initial value
+      duration: 2000,
+      finalChord: chord,
+      transportDisplay: 0
     };
     setSelectedChords((prev) => [...prev, newChord]);
     toast({
@@ -65,168 +61,214 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
     );
   };
 
-  const FiltersContent = () => (
-    <div className="p-4 bg-black/20 border-b border-cyan-500/20 backdrop-blur-sm">
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
-          {/* Scale Filter */}
-          <div className="min-w-[70px] space-y-1">
-            <Label className="text-[10px] font-bold text-cyan-500/70 uppercase tracking-wider">Scale</Label>
-            <select
-              className="w-full bg-cyan-950/20 text-cyan-100 text-xs border border-cyan-500/30 rounded-md px-2 py-1.5 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
-              value={selectedScale}
-              onChange={e => setSelectedScale(e.target.value)}
-            >
-              {notes.map((note) => (
-                <option key={note} value={note} className="bg-[#0f172a]">{formatNoteName(note)}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Note Filter */}
-          <div className="min-w-[70px] space-y-1">
-            <Label className="text-[10px] font-bold text-cyan-500/70 uppercase tracking-wider">Note</Label>
-            <select
-              className="w-full bg-cyan-950/20 text-cyan-100 text-xs border border-cyan-500/30 rounded-md px-2 py-1.5 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
-              value={selectedNote}
-              onChange={e => setSelectedNote(e.target.value)}
-            >
-              <option value="all" className="bg-[#0f172a]">All</option>
-              {getScaleNotes(selectedScale).map((note) => (
-                <option key={note} value={note} className="bg-[#0f172a]">{formatNoteName(note)}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Quality Filter */}
-          <div className="min-w-[70px] space-y-1">
-            <Label className="text-[10px] font-bold text-cyan-500/70 uppercase tracking-wider">Quality</Label>
-            <select
-              className="w-full bg-cyan-950/20 text-cyan-100 text-xs border border-cyan-500/30 rounded-md px-2 py-1.5 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
-              value={selectedQuality}
-              onChange={e => setSelectedQuality(e.target.value)}
-            >
-              <option value="all" className="bg-[#0f172a]">All</option>
-              <option value="major" className="bg-[#0f172a]">Major</option>
-              <option value="minor" className="bg-[#0f172a]">Minor</option>
-              <option value="dim" className="bg-[#0f172a]">Dim</option>
-            </select>
-          </div>
-
-          {/* Bass Filter */}
-          <div className="min-w-[70px] space-y-1">
-            <Label className="text-[10px] font-bold text-cyan-500/70 uppercase tracking-wider">Bass</Label>
-            <select
-              className="w-full bg-cyan-950/20 text-cyan-100 text-xs border border-cyan-500/30 rounded-md px-2 py-1.5 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400/50"
-              value={selectedBass}
-              onChange={e => setSelectedBass(e.target.value)}
-            >
-              <option value="all" className="bg-[#0f172a]">All</option>
-              {basses.map((bass, index) => (
-                <option key={bass} value={bass} className="bg-[#0f172a]">{getBassNotes(selectedScale)[index]}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Extensions Filter - Horizontal Scroll if needed */}
-        <div className="space-y-1">
-          <Label className="text-[10px] font-bold text-cyan-500/70 uppercase tracking-wider">Extensions</Label>
-          <div className="flex flex-wrap gap-1.5">
-            {extensions.map((ext) => (
-              <button key={ext} onClick={() => handleExtensionToggle(ext)}
-                className={`px-2 py-1 rounded text-[10px] font-bold border transition-all ${selectedExtensions.includes(ext)
-                  ? "bg-cyan-500 text-black border-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.4)]"
-                  : "bg-black/40 text-cyan-500/50 border-cyan-500/20 hover:border-cyan-500/50 hover:text-cyan-400"
-                  }`}>
-                {ext}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   const rootClasses = cn(
-    "flex flex-col bg-surface-light dark:bg-surface-dark transition-transform duration-300 ease-in-out",
+    "flex flex-col bg-black/20 backdrop-blur-xl border-r border-white/5 h-full transition-transform duration-300 ease-in-out",
     isMobile
       ? `fixed inset-x-0 bottom-0 h-[85vh] rounded-t-2xl shadow-2xl z-50 ${isOpen ? "translate-y-0" : "translate-y-full"}`
-      : "relative w-[448px] h-full border-r border-gray-200 dark:border-gray-800"
+      : "relative w-[448px]"
   );
 
   return (
-    <div className={cn(rootClasses, "bg-black/40 backdrop-blur-xl border-r border-cyan-500/30 shadow-[5px_0_30px_rgba(6,182,212,0.15)]")}>
+    <div className={rootClasses}>
+      <style>{`
+        .custom-library-scroll::-webkit-scrollbar {
+          width: 5px;
+          height: 5px;
+        }
+        .custom-library-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-library-scroll::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 10px;
+        }
+        .custom-library-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.4);
+        }
+      `}</style>
+
       {isMobile && (
-        <div className="w-full flex justify-center pt-3 pb-1 cursor-pointer" onClick={onClose}>
-          <div className="w-12 h-1.5 bg-cyan-900/50 rounded-full"></div>
+        <div className="w-full flex justify-center pt-3 pb-1 cursor-pointer bg-black/40" onClick={onClose}>
+          <div className="w-12 h-1.5 bg-white/10 rounded-full"></div>
         </div>
       )}
 
-      <div className={cn("flex items-center justify-between p-4 border-b border-cyan-500/20", { "flex-row-reverse": isMobile })}>
-        <div>
-          <h2 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 tracking-wider uppercase drop-shadow-[0_0_2px_rgba(6,182,212,0.5)]">Library</h2>
-          <p className="text-xs text-cyan-200/50 font-mono">{filteredChords.length} signals detected</p>
+      {/* Header */}
+      <div className="p-6 border-b border-white/5 flex items-center justify-between min-h-[80px]">
+        <div className="flex flex-col">
+          <h2 className="text-[12px] font-black text-white uppercase tracking-[0.2em] drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+            LIBRARY
+          </h2>
+          <span className="text-[8px] text-cyan-500 font-bold uppercase tracking-widest mt-1">
+            Component Selection • {filteredChords.length} signals
+          </span>
         </div>
         <Link href="/">
-          <Button variant="secondary" size="sm" className="gap-2 bg-cyan-950/30 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-900/50 hover:text-cyan-200 hover:border-cyan-400/50 transition-all shadow-[0_0_10px_rgba(6,182,212,0.1)]">
-            <Music className="w-4 h-4" />
-            Início
+          <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white border border-white/5">
+            <Home className="w-4 h-4" />
           </Button>
         </Link>
       </div>
 
       <div className="flex flex-col flex-1 overflow-hidden">
-        <FiltersContent />
-        <ScrollArea className="flex-1">
-          <div className="p-4 space-y-3">
-            <div className="grid grid-cols-3 gap-3">
-              {filteredChords.map((chordData, index) => {
-                // Strict reference equality to identify the exact voicing (fixes multi-highlight issue)
-                const isSelected = activeChord?.chord === chordData;
+        {/* Filters Section */}
+        <div className="p-4 space-y-6 overflow-y-auto custom-library-scroll">
 
-                return (
-                  <div
-                    key={`${chordData.chord.note}-${chordData.chord.complement}-${index}`}
-                    onClick={(e) => handleChordSelect(chordData, e)}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData("application/json", JSON.stringify({
-                        type: 'chord',
-                        name: getFormattedNome(chordData.chord),
-                        chord: chordData
-                      }));
-                    }}
-                    className={cn(
-                      "relative group cursor-pointer rounded-lg border transition-all duration-300 overflow-hidden flex flex-col",
-                      isSelected
-                        ? "bg-cyan-950/40 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)] scale-[1.02] z-10"
-                        : "bg-black/40 border-white/5 hover:border-cyan-500/50 hover:shadow-[0_0_10px_rgba(6,182,212,0.2)]"
-                    )}
+          {/* Main Filters Grid */}
+          <div className="space-y-3">
+            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
+              Filter Chords
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              {/* Scale */}
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Scale</label>
+                <div className="relative">
+                  <select
+                    className="w-full px-3 py-2 bg-white/5 border border-white/5 rounded-xl text-xs font-bold text-slate-300 focus:outline-none focus:bg-white/10 focus:border-cyan-500/50 appearance-none transition-all cursor-pointer hover:bg-white/10"
+                    value={selectedScale}
+                    onChange={e => setSelectedScale(e.target.value)}
                   >
-                    {/* Chord Diagram Container with fixed height to prevent layout expansion */}
-                    <div className="relative w-full h-28 overflow-hidden bg-gradient-to-b from-transparent to-black/20">
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-[0.32]">
-                        <ChordDiagram
-                          {...chordData}
-                          scale={1.0}
-                          list={true}
-                        />
-                      </div>
-                    </div>
+                    {notes.map((note) => (
+                      <option key={note} value={note} className="bg-[#1a1a1a]">{formatNoteName(note)}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
+                </div>
+              </div>
 
-                    {/* Footer Name */}
-                    <div className={cn("px-1 py-1.5 text-center border-t z-20 relative", isSelected ? "bg-cyan-900/60 border-cyan-500/30" : "bg-black/60 border-white/5")}>
-                      <span className={cn("text-[10px] font-bold font-mono truncate block", isSelected ? "text-cyan-300" : "text-white/60 group-hover:text-cyan-200")}>
-                        {getFormattedNome(chordData.chord)}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+              {/* Note */}
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Root</label>
+                <div className="relative">
+                  <select
+                    className="w-full px-3 py-2 bg-white/5 border border-white/5 rounded-xl text-xs font-bold text-slate-300 focus:outline-none focus:bg-white/10 focus:border-cyan-500/50 appearance-none transition-all cursor-pointer hover:bg-white/10"
+                    value={selectedNote}
+                    onChange={e => setSelectedNote(e.target.value)}
+                  >
+                    <option value="all" className="bg-[#1a1a1a]">All</option>
+                    {getScaleNotes(selectedScale).map((note) => (
+                      <option key={note} value={note} className="bg-[#1a1a1a]">{formatNoteName(note)}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Quality */}
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Quality</label>
+                <div className="relative">
+                  <select
+                    className="w-full px-3 py-2 bg-white/5 border border-white/5 rounded-xl text-xs font-bold text-slate-300 focus:outline-none focus:bg-white/10 focus:border-cyan-500/50 appearance-none transition-all cursor-pointer hover:bg-white/10"
+                    value={selectedQuality}
+                    onChange={e => setSelectedQuality(e.target.value)}
+                  >
+                    <option value="all" className="bg-[#1a1a1a]">All</option>
+                    <option value="major" className="bg-[#1a1a1a]">Major</option>
+                    <option value="minor" className="bg-[#1a1a1a]">Minor</option>
+                    <option value="dim" className="bg-[#1a1a1a]">Dim</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Bass */}
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Bass</label>
+                <div className="relative">
+                  <select
+                    className="w-full px-3 py-2 bg-white/5 border border-white/5 rounded-xl text-xs font-bold text-slate-300 focus:outline-none focus:bg-white/10 focus:border-cyan-500/50 appearance-none transition-all cursor-pointer hover:bg-white/10"
+                    value={selectedBass}
+                    onChange={e => setSelectedBass(e.target.value)}
+                  >
+                    <option value="all" className="bg-[#1a1a1a]">All</option>
+                    {basses.map((bass, index) => (
+                      <option key={bass} value={bass} className="bg-[#1a1a1a]">{getBassNotes(selectedScale)[index]}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
+                </div>
+              </div>
             </div>
           </div>
-        </ScrollArea>
+
+          {/* Extensions */}
+          <div className="space-y-3">
+            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
+              Extensions
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {extensions.map((ext) => (
+                <button key={ext} onClick={() => handleExtensionToggle(ext)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-xl text-[10px] font-black border transition-all uppercase tracking-wider",
+                    selectedExtensions.includes(ext)
+                      ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]"
+                      : "bg-white/5 text-slate-500 border-white/5 hover:bg-white/10 hover:text-slate-300"
+                  )}>
+                  {ext}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Results Header */}
+          <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2 pt-2">
+            Results ({filteredChords.length})
+          </h3>
+
+          {/* Chords Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 pb-8">
+            {filteredChords.map((chordData, index) => {
+              const isSelected = activeChord?.chord === chordData;
+
+              return (
+                <div
+                  key={`${chordData.chord.note}-${chordData.chord.complement}-${index}`}
+                  onClick={(e) => handleChordSelect(chordData, e)}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("application/json", JSON.stringify({
+                      type: 'chord',
+                      name: getFormattedNome(chordData.chord),
+                      chord: chordData
+                    }));
+                  }}
+                  className={cn(
+                    "relative group cursor-pointer rounded-xl border transition-all duration-300 overflow-hidden flex flex-col",
+                    isSelected
+                      ? "bg-cyan-950/20 border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.15)] scale-[1.02] z-10"
+                      : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10"
+                  )}
+                >
+                  {/* Chord Diagram Container */}
+                  <div className="relative w-full h-24 overflow-hidden">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-[0.3]">
+                      <ChordDiagram
+                        {...chordData}
+                        scale={1.0}
+                        list={true}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Footer Name */}
+                  <div className={cn("px-2 py-2 text-center border-t border-white/5 relative bg-black/20")}>
+                    <span className={cn("text-[10px] font-black font-mono truncate block uppercase tracking-wider", isSelected ? "text-cyan-300" : "text-slate-400 group-hover:text-slate-200")}>
+                      {getFormattedNome(chordData.chord)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Hint */}
+      <div className="p-4 border-t border-white/5 text-[10px] text-slate-600 text-center bg-black/20 font-medium tracking-wide">
+        Click or Drag to add to timeline.
       </div>
     </div>
   );

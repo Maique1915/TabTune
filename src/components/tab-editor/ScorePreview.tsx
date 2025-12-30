@@ -330,7 +330,7 @@ const MeasureThumbnail = memo(({
     }, [isActive, progress]);
 
     return (
-        <div className="rounded-2xl shadow-[0_80px_160px_rgba(0,0,0,0.6)] overflow-hidden border border-white/10 relative flex items-center justify-center aspect-[800/340] w-full" style={{ backgroundColor: style.background }}>
+        <div className="rounded-2xl shadow-[0_80px_160px_rgba(0,0,0,0.6)] overflow-hidden border border-white/5 relative flex items-center justify-center aspect-[800/340] w-full" style={{ backgroundColor: style.background || '#050505' }}>
             <div className="score-canvas-viewport w-full h-full relative" style={{ opacity: renderError ? 0.2 : 1 }}>
                 <canvas
                     ref={notationCanvasRef}
@@ -586,60 +586,79 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({
     if (!activeMeasureData) return null;
 
     return (
-        <div ref={scoreContainerRef as React.RefObject<HTMLDivElement>} className="w-full h-full flex flex-col bg-slate-950 overflow-hidden relative">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_rgba(6,182,212,0.08)_0%,_transparent_60%)] pointer-events-none" />
+        <div ref={scoreContainerRef as React.RefObject<HTMLDivElement>} className="w-full h-full flex flex-col bg-[#050505] overflow-hidden relative">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_rgba(6,182,212,0.05)_0%,_transparent_70%)] pointer-events-none" />
 
-            <div className="flex-1 flex items-center justify-center p-6 overflow-hidden relative">
-                <div className="w-full max-w-5xl relative aspect-[800/340]">
-                    {safeMeasures.map((measure, idx) => (
-                        idx === currentMeasureIndex && (
-                            <div
-                                key={`${measure.id || idx}-${style.transitionType}-${timeSignature}-${showNotation}-${showTablature}`}
-                                className={`absolute inset-0 w-full ${shouldAnimate ? `score-animation-${style.transitionType}` : ''}`}
-                            >
-                                <MeasureThumbnail
-                                    measureData={measure}
-                                    measureIndex={idx}
-                                    isActive={isPlaying || isOfflineRendering}
-                                    progress={measureProgress}
-                                    style={style}
-                                    shouldAnimate={shouldAnimate}
-                                    timeSignatureStr={timeSignature}
-                                    showNotation={showNotation}
-                                    showTablature={showTablature}
-                                    onNoteClick={handleNoteClick}
-                                    onNoteDoubleClick={onDoubleClickNote}
-                                    selectedNoteIds={selectedNoteIds}
-                                    dpr={currentDPR}
-                                />
-                            </div>
-                        )
-                    ))}
+            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-transparent overflow-hidden relative">
+                {/* CRT Monitor Frame */}
+                <div className="relative w-full max-w-[800px]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        bg-[#0a0a0a] rounded-3xl border-4 border-[#333] shadow-[0_0_0_2px_#111,0_0_40px_rgba(0,0,0,0.5),0_0_100px_rgba(6,182,212,0.1)] overflow-hidden group z-10">
+                    {/* Screen Bezel/Inner Shadow */}
+                    <div className="absolute inset-0 rounded-2xl pointer-events-none z-20 shadow-[inset_0_0_40px_rgba(0,0,0,0.8)] border border-white/5" />
 
+                    {/* CRT Scanline Overlay */}
+                    <div className="absolute inset-0 pointer-events-none z-30 opacity-10 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(255,0,0,0.02))] bg-[length:100%_4px,3px_100%]" />
+
+                    {/* Subtle Screen Curved Reflection */}
+                    <div className="absolute inset-0 pointer-events-none z-30 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-30 rounded-2xl" />
+
+                    <div className="w-full h-full relative z-10 flex items-center justify-center bg-[#050505]">
+                        <div className="relative w-full aspect-[800/340]">
+                            {safeMeasures.map((measure, idx) => (
+                                idx === currentMeasureIndex && (
+                                    <div
+                                        key={`${measure.id || idx}-${style.transitionType}-${timeSignature}-${showNotation}-${showTablature}`}
+                                        className={`absolute inset-0 w-full ${shouldAnimate ? `score-animation-${style.transitionType}` : ''}`}
+                                    >
+                                        <MeasureThumbnail
+                                            measureData={measure}
+                                            measureIndex={idx}
+                                            isActive={isPlaying || isOfflineRendering}
+                                            progress={measureProgress}
+                                            style={style}
+                                            shouldAnimate={shouldAnimate}
+                                            timeSignatureStr={timeSignature}
+                                            showNotation={showNotation}
+                                            showTablature={showTablature}
+                                            onNoteClick={handleNoteClick}
+                                            onNoteDoubleClick={onDoubleClickNote}
+                                            selectedNoteIds={selectedNoteIds}
+                                            dpr={currentDPR}
+                                        />
+                                    </div>
+                                )
+                            ))}
+                        </div>
+                        <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-cyan-500/30 font-mono text-[10px] uppercase tracking-widest pointer-events-none">Signal: Active</p>
+                    </div>
                 </div>
+
+                {/* Decorative localized glow under the monitor */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-32 bg-cyan-500/10 blur-[100px] pointer-events-none z-0" />
             </div>
 
             {showControls && (
-                <div className="h-14 flex items-center justify-between px-6 z-20 bg-slate-950/90 backdrop-blur-2xl border-t border-white/5 shadow-2xl">
-                    <div className="flex flex-col">
-                        <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Timeline</span>
-                        <div className="flex space-x-2">
+                <div className="h-16 flex items-center justify-between px-6 z-20 bg-black/40 backdrop-blur-xl border-t border-white/5 relative">
+                    <div className="flex flex-col gap-1">
+                        <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                            TIMELINE
+                        </h2>
+                        <div className="flex space-x-1">
                             {safeMeasures.map((_, i) => (
                                 <div
                                     key={i}
-                                    className={`h-1.5 rounded-full transition-all duration-500 ${i === currentMeasureIndex ? 'bg-cyan-500 w-16 shadow-[0_0_15px_#06b6d4]' : 'bg-slate-800 w-4 hover:bg-slate-700'}`}
+                                    className={`h-1 rounded-full transition-all duration-500 ${i === currentMeasureIndex ? 'bg-cyan-500 w-8 shadow-[0_0_10px_#06b6d4]' : 'bg-white/10 w-2 hover:bg-white/20'}`}
                                 />
                             ))}
                         </div>
                     </div>
                     <div className="flex items-center space-x-3">
-                        <div className="flex items-center space-x-3 bg-slate-900/50 px-4 py-1.5 rounded-xl border border-white/5">
-                            <span className="text-[9px] font-black text-cyan-400 uppercase">Section {currentMeasureIndex + 1}</span>
-                            <div className="w-px h-3 bg-slate-800" />
-                            <span className="text-[9px] font-black text-slate-500 uppercase">{safeMeasures.length} MEAS</span>
+                        <div className="flex items-center space-x-3 bg-black/40 px-3 py-1.5 rounded-lg border border-white/5">
+                            <span className="text-[9px] font-black text-cyan-400 uppercase tracking-widest">Section {currentMeasureIndex + 1}</span>
+                            <div className="w-px h-3 bg-white/10" />
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{safeMeasures.length} MEAS</span>
                         </div>
 
-                        {/* Render Button - Opens settings if not rendering, otherwise cancels */}
+                        {/* Render Button - Standardized with Studio Style */}
                         <button
                             onClick={() => {
                                 if (isRendering) {
@@ -648,21 +667,24 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({
                                     setShowSettings(true);
                                 }
                             }}
-                            className={`flex items-center space-x-2 px-4 py-1.5 rounded-xl border transition-all ${isRendering
-                                ? 'bg-red-500/20 border-red-500/50 text-red-400 hover:bg-red-500/30'
-                                : 'bg-slate-900/50 border-white/5 text-slate-400 hover:bg-slate-800/50 hover:text-cyan-400'
-                                }`}
+                            className={`
+                                h-9 px-4 font-bold text-[10px] uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 border
+                                ${isRendering
+                                    ? 'bg-red-500/20 text-red-400 border-red-500/50 hover:bg-red-500/30'
+                                    : 'bg-black/40 text-slate-300 border-white/10 hover:border-cyan-500/50 hover:text-cyan-400 hover:bg-black/60'
+                                }
+                            `}
                             title={isRendering ? 'Stop Rendering' : 'Start Rendering'}
                         >
                             {isRendering ? (
                                 <>
                                     <Film className="w-3.5 h-3.5 animate-pulse" />
-                                    <span className="text-[10px] font-black uppercase">Rendering...</span>
+                                    <span>Rendering...</span>
                                 </>
                             ) : (
                                 <>
                                     <Film className="w-3.5 h-3.5" />
-                                    <span className="text-[10px] font-black uppercase">Render</span>
+                                    <span>Render</span>
                                 </>
                             )}
                         </button>

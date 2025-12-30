@@ -1,15 +1,97 @@
 "use client";
 
-import { Palette } from "lucide-react";
-import { Label } from "@/shared/components/ui/label";
-import { Input } from "@/shared/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
-import { Button } from "@/shared/components/ui/button";
-import { Slider } from "@/shared/components/ui/slider";
+import React, { useState } from "react";
+import {
+  Palette,
+  RotateCcw,
+  ChevronDown,
+  ChevronRight,
+  Sun,
+  Layers,
+  Zap,
+  Target,
+  Type,
+  Grid,
+  Music
+} from "lucide-react";
+import { HexColorPicker } from "react-colorful";
+import * as Popover from "@radix-ui/react-popover";
 import { useAppContext, DEFAULT_COLORS, AnimationType } from "@/app/context/app--context";
 import type { ChordDiagramColors } from "@/app/context/app--context";
-import { RadioGroup, RadioGroupItem } from "@/shared/components/ui/radio-group";
 import { cn } from "@/shared/lib/utils";
+
+// --- PRESETS ---
+
+const STUDIO_PRESETS = {
+  default: {
+    label: 'Default Dark',
+    style: DEFAULT_COLORS
+  },
+  classic: {
+    label: 'Classic Light',
+    style: {
+      ...DEFAULT_COLORS,
+      cardColor: "#ffffff",
+      fretboardColor: "#f5f5f5",
+      borderColor: "#cccccc",
+      fretColor: "#dddddd",
+      textColor: "#333333",
+      chordNameColor: "#000000",
+      fingerColor: "#333333",
+      fingerTextColor: "#ffffff",
+      fingerBorderColor: "#000000",
+      fingerBoxShadowColor: "#00000050",
+    }
+  },
+  cyberpunk: {
+    label: 'Cyberpunk',
+    style: {
+      ...DEFAULT_COLORS,
+      cardColor: "#0f0518",
+      fretboardColor: "#2d0036",
+      borderColor: "#fb00ff",
+      fretColor: "#fb00ff50",
+      textColor: "#00ff9d",
+      chordNameColor: "#fb00ff",
+      fingerColor: "#00ff9d",
+      fingerTextColor: "#000000",
+      fingerBorderColor: "#ffffff",
+      fingerBoxShadowColor: "#00ff9d80",
+    }
+  },
+  midnight: {
+    label: 'Midnight Blue',
+    style: {
+      ...DEFAULT_COLORS,
+      cardColor: "#020617",
+      fretboardColor: "#0f172a",
+      borderColor: "#1e293b",
+      fretColor: "#334155",
+      textColor: "#94a3b8",
+      chordNameColor: "#60a5fa",
+      fingerColor: "#3b82f6",
+      fingerTextColor: "#ffffff",
+      fingerBorderColor: "#60a5fa",
+      fingerBoxShadowColor: "#3b82f660",
+    }
+  },
+  vintage: {
+    label: 'Vintage',
+    style: {
+      ...DEFAULT_COLORS,
+      cardColor: "#efe6d5",
+      fretboardColor: "#e6dcc8",
+      borderColor: "#8b4513",
+      fretColor: "#a68b6c",
+      textColor: "#5c4033",
+      chordNameColor: "#3e2723",
+      fingerColor: "#5c4033",
+      fingerTextColor: "#efe6d5",
+      fingerBorderColor: "#3e2723",
+      fingerBoxShadowColor: "#5c403350",
+    }
+  }
+};
 
 interface SettingsPanelProps {
   isMobile: boolean;
@@ -17,163 +99,322 @@ interface SettingsPanelProps {
   onClose?: () => void;
 }
 
-// Helper components extracted to avoid re-renders
-const ColorSetting = ({ label, colorKey }: { label: string; colorKey: keyof ChordDiagramColors }) => {
-  const { colors, setColors } = useAppContext();
+// --- COMPONENTS ---
 
-  const handleColorChange = (key: keyof ChordDiagramColors, value: string) => {
-    setColors((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const rawValue = colors[colorKey] as string;
-  let safeValue = rawValue;
-  if (safeValue.startsWith('#') && safeValue.length > 7) {
-    safeValue = safeValue.substring(0, 7);
-  } else if (safeValue.startsWith('rgba') || safeValue.startsWith('rgb')) {
-    safeValue = "#000000";
-  }
-
+const ColorPicker = ({ color, onChange }: { color: string; onChange: (c: string) => void }) => {
   return (
-    <div className="flex items-center justify-between">
-      <Input
-        id={colorKey}
-        type="color"
-        value={safeValue}
-        onChange={(e) => handleColorChange(colorKey, e.target.value)}
-        className="w-10 h-10 p-1 bg-input border-none"
-      />
-      <Label htmlFor={colorKey} className="flex-1 text-right">{label}</Label>
-    </div>
-  );
-};
-
-const NumberSetting = ({ label, colorKey }: { label: string; colorKey: keyof ChordDiagramColors }) => {
-  const { colors, setColors } = useAppContext();
-
-  const handleColorChange = (key: keyof ChordDiagramColors, value: number) => {
-    setColors((prev) => ({ ...prev, [key]: value }));
-  };
-
-  return (
-    <div className="flex items-center justify-between">
-      <Label htmlFor={colorKey}>{label}</Label>
-      <Input
-        id={colorKey}
-        type="number"
-        value={isNaN(colors[colorKey] as number) ? 0 : (colors[colorKey] as number)}
-        onChange={(e) => {
-          const val = parseInt(e.target.value);
-          handleColorChange(colorKey, isNaN(val) ? 0 : val);
-        }}
-        className="w-20 bg-input"
-      />
-    </div>
-  );
-};
-
-const SliderSetting = ({ label, colorKey, min = 0, max = 1, step = 0.05 }: { label: string; colorKey: keyof ChordDiagramColors, min?: number, max?: number, step?: number }) => {
-  const { colors, setColors } = useAppContext();
-
-  const handleColorChange = (key: keyof ChordDiagramColors, value: number) => {
-    setColors((prev) => ({ ...prev, [key]: value }));
-  };
-
-  return (
-    <div className="flex items-center justify-between">
-      <Label htmlFor={colorKey}>{label}</Label>
-      <div className="flex items-center gap-2 w-32">
-        <Slider
-          id={colorKey}
-          min={min}
-          max={max}
-          step={step}
-          value={[colors[colorKey] as number]}
-          onValueChange={(value) => handleColorChange(colorKey, value[0])}
-          className="w-full"
+    <Popover.Root>
+      <Popover.Trigger asChild>
+        <button
+          className="w-8 h-8 rounded-full ring-2 ring-zinc-700 overflow-hidden cursor-pointer shadow-sm hover:ring-pink-500/50 transition-all relative"
+          style={{ backgroundColor: color }}
+          onClick={(e) => e.stopPropagation()}
         />
-        <span className="text-xs w-10 text-right">{Math.round((colors[colorKey] as number) * 100)}%</span>
-      </div>
-    </div>
-  );
-};
-
-const SettingsContent = ({ isMobile }: { isMobile?: boolean }) => {
-  const { animationType, setAnimationType, setColors } = useAppContext();
-
-  const handleResetToDefault = () => {
-    setColors(DEFAULT_COLORS);
-  };
-
-  return (
-    <>
-      <div className="flex-1 overflow-y-auto p-0">
-        <Tabs defaultValue="animation" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-black/40 border border-white/10 mb-4 p-1 rounded-lg">
-            <TabsTrigger value="animation" className="data-[state=active]:bg-pink-500/20 data-[state=active]:text-pink-300 data-[state=active]:border-pink-500/30 data-[state=active]:shadow-[0_0_10px_rgba(236,72,153,0.2)] rounded-md transition-all text-xs font-bold uppercase">Anim</TabsTrigger>
-            <TabsTrigger value="general" className="data-[state=active]:bg-pink-500/20 data-[state=active]:text-pink-300 data-[state=active]:border-pink-500/30 data-[state=active]:shadow-[0_0_10px_rgba(236,72,153,0.2)] rounded-md transition-all text-xs font-bold uppercase">Gen</TabsTrigger>
-            <TabsTrigger value="fingers" className="data-[state=active]:bg-pink-500/20 data-[state=active]:text-pink-300 data-[state=active]:border-pink-500/30 data-[state=active]:shadow-[0_0_10px_rgba(236,72,153,0.2)] rounded-md transition-all text-xs font-bold uppercase">Finger</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="animation" className="space-y-4">
-            <div className="space-y-3">
-              <Label className="text-pink-200/70 text-xs font-bold uppercase tracking-wider mb-2 block">Animation Style</Label>
-              <RadioGroup value={animationType} onValueChange={(value) => setAnimationType(value as AnimationType)}>
-                <div className={cn("flex items-center space-x-3 p-3 rounded-lg border transition-all cursor-pointer", animationType === 'carousel' ? "bg-pink-950/30 border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.1)]" : "bg-black/20 border-white/5 hover:bg-white/5")}>
-                  <RadioGroupItem value="carousel" id="carousel" className="text-pink-500 border-pink-500/50" />
-                  <Label htmlFor="carousel" className="flex-1 cursor-pointer">
-                    <div className="font-bold text-pink-100">Carousel</div>
-                    <div className="text-xs text-pink-200/50">Chords slide across the screen</div>
-                  </Label>
-                </div>
-                <div className={cn("flex items-center space-x-3 p-3 rounded-lg border transition-all cursor-pointer", animationType === 'static-fingers' ? "bg-pink-950/30 border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.1)]" : "bg-black/20 border-white/5 hover:bg-white/5")}>
-                  <RadioGroupItem value="static-fingers" id="static-fingers" className="text-pink-500 border-pink-500/50" />
-                  <Label htmlFor="static-fingers" className="flex-1 cursor-pointer">
-                    <div className="font-bold text-pink-100">Static Fretboard</div>
-                    <div className="text-xs text-pink-200/50">Only fingers move</div>
-                  </Label>
-                </div>
-              </RadioGroup>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          className="z-[9999] rounded-xl bg-[#111] border border-zinc-800 shadow-xl p-3 w-[200px] animate-in fade-in zoom-in-95 duration-200"
+          side="left"
+          align="start"
+          sideOffset={10}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex flex-col gap-3">
+            <HexColorPicker color={color} onChange={onChange} style={{ width: '100%', height: '160px' }} />
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-zinc-500 font-bold">#</span>
+              <input
+                type="text"
+                value={color.startsWith('#') ? color.replace('#', '') : color}
+                onChange={(e) => onChange(`#${e.target.value}`)}
+                className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-200 font-mono focus:border-pink-500/50 outline-none uppercase"
+              />
             </div>
-          </TabsContent>
-
-          <TabsContent value="general" className="space-y-4">
-            <ColorSetting label="Background" colorKey="cardColor" />
-            <SliderSetting label="Scale" colorKey="fretboardScale" min={0.5} max={1.5} step={0.1} />
-            <ColorSetting label="Guitar Neck" colorKey="fretboardColor" />
-            <ColorSetting label="Strings" colorKey="borderColor" />
-            <ColorSetting label="Frets" colorKey="fretColor" />
-            <ColorSetting label="Text" colorKey="textColor" />
-            <ColorSetting label="Chord Name" colorKey="chordNameColor" />
-            <NumberSetting label="Border Width" colorKey="borderWidth" />
-            <NumberSetting label="String Thickness" colorKey="stringThickness" />
-          </TabsContent>
-
-          <TabsContent value="fingers" className="space-y-4">
-            <ColorSetting label="Background" colorKey="fingerColor" />
-            <ColorSetting label="Text" colorKey="fingerTextColor" />
-            <ColorSetting label="Border" colorKey="fingerBorderColor" />
-            <NumberSetting label="Border Width" colorKey="fingerBorderWidth" />
-            <NumberSetting label="Shadow H" colorKey="fingerBoxShadowHOffset" />
-            <NumberSetting label="Shadow V" colorKey="fingerBoxShadowVOffset" />
-            <ColorSetting label="Shadow Color" colorKey="fingerBoxShadowColor" />
-            <SliderSetting label="BG Opacity" colorKey="fingerBackgroundAlpha" />
-          </TabsContent>
-        </Tabs>
-
-        <Button onClick={handleResetToDefault} className="w-full mt-6 bg-pink-900/30 border border-pink-500/30 text-pink-300 hover:bg-pink-900/50 hover:text-white transition-all shadow-[0_0_15px_rgba(236,72,153,0.1)]">
-          Reset to Default
-        </Button>
-      </div>
-    </>
+          </div>
+          <Popover.Arrow className="fill-zinc-800" />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 };
+
+// --- GROUPS DEFINITION ---
+
+type SettingControl =
+  | { type: 'color'; label: string; key: keyof ChordDiagramColors }
+  | { type: 'number'; label: string; key: keyof ChordDiagramColors; min?: number; max?: number; step?: number }
+  | { type: 'slider'; label: string; key: keyof ChordDiagramColors; min: number; max: number; step: number };
+
+interface SettingGroup {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  controls: SettingControl[];
+}
+
+const SETTING_GROUPS: SettingGroup[] = [
+  {
+    id: 'fretboard',
+    label: 'Fretboard Board',
+    icon: Grid,
+    controls: [
+      { type: 'color', label: 'Background', key: 'cardColor' },
+      { type: 'color', label: 'Neck Color', key: 'fretboardColor' },
+      { type: 'color', label: 'Frets Color', key: 'fretColor' },
+    ]
+  },
+  {
+    id: 'strings',
+    label: 'Strings & Structure',
+    icon: Music,
+    controls: [
+      { type: 'color', label: 'String Color', key: 'borderColor' }, // borderColor acts as string color in ChordDrawerBase
+      { type: 'number', label: 'String Thick.', key: 'stringThickness', min: 1, max: 10, step: 1 },
+    ]
+  },
+  {
+    id: 'fingers',
+    label: 'Fingers',
+    icon: Target,
+    controls: [
+      { type: 'color', label: 'Fill Color', key: 'fingerColor' },
+      { type: 'color', label: 'Text Color', key: 'fingerTextColor' },
+      { type: 'color', label: 'Border Color', key: 'fingerBorderColor' },
+      { type: 'slider', label: 'BG Opacity', key: 'fingerBackgroundAlpha', min: 0, max: 1, step: 0.1 },
+    ]
+  },
+  {
+    id: 'shadows',
+    label: 'Finger Shadows',
+    icon: Layers,
+    controls: [
+      { type: 'color', label: 'Shadow Color', key: 'fingerBoxShadowColor' },
+      { type: 'number', label: 'Offset X', key: 'fingerBoxShadowHOffset', min: -10, max: 10 },
+      { type: 'number', label: 'Offset Y', key: 'fingerBoxShadowVOffset', min: -10, max: 10 },
+    ]
+  },
+  {
+    id: 'text',
+    label: 'Typography',
+    icon: Type,
+    controls: [
+      { type: 'color', label: 'Chord Name', key: 'chordNameColor' },
+      { type: 'color', label: 'General Text', key: 'textColor' },
+    ]
+  }
+];
+
+// --- MAIN COMPONENT ---
 
 export function SettingsPanel({ isMobile, isOpen, onClose }: SettingsPanelProps) {
+  const { colors, setColors, animationType, setAnimationType } = useAppContext();
+  const [activeTab, setActiveTab] = useState<'basic' | 'advanced' | 'motion'>('basic');
+  const [expandedKey, setExpandedKey] = useState<string | null>('fretboard');
+
   const rootClasses = cn(
-    "flex flex-col bg-black/40 backdrop-blur-xl border-l border-pink-500/30 shadow-[-5px_0_30px_rgba(236,72,153,0.15)] transition-transform duration-300 ease-in-out z-20",
+    "flex flex-col bg-[#0d0d0f] border-l border-zinc-800/50 shadow-[-5px_0_30px_rgba(0,0,0,0.5)] transition-transform duration-300 ease-in-out z-20",
     isMobile
-      ? `fixed inset-x-0 bottom-0 h-[70vh] rounded-t-2xl border-t border-l-0 border-pink-500/30 shadow-[0_-5px_30px_rgba(236,72,153,0.15)] ${isOpen ? "translate-y-0" : "translate-y-full"}`
+      ? `fixed inset-x-0 bottom-0 h-[70vh] rounded-t-2xl border-t border-l-0 ${isOpen ? "translate-y-0" : "translate-y-full"}`
       : "relative w-80 h-full"
+  );
+
+  const handleColorChange = (key: keyof ChordDiagramColors, value: any) => {
+    setColors(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleReset = () => {
+    setColors(DEFAULT_COLORS);
+    setAnimationType('carousel');
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedKey(prev => prev === id ? null : id);
+  };
+
+  // --- TAB RENDERERS ---
+
+  const renderBasicTab = () => (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-3">
+        {Object.entries(STUDIO_PRESETS).map(([key, preset]) => (
+          <div
+            key={key}
+            onClick={() => setColors(preset.style)}
+            className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 hover:border-pink-500/50 cursor-pointer transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-full border-2 border-white/10 shadow-lg relative overflow-hidden"
+                style={{ backgroundColor: preset.style.cardColor }}
+              >
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: preset.style.fingerColor }}
+                  />
+                </div>
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-zinc-200 group-hover:text-pink-400 transition-colors uppercase tracking-wider">
+                  {preset.label}
+                </h3>
+                <p className="text-[9px] text-zinc-500">Click to apply preset</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderAdvancedTab = () => (
+    <div className="space-y-3 overflow-y-auto pr-2 pb-2 custom-scrollbar">
+      <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Components</p>
+
+      {SETTING_GROUPS.map((group) => {
+        const isExpanded = expandedKey === group.id;
+        const Icon = group.icon;
+
+        return (
+          <div
+            key={group.id}
+            className={`flex flex-col rounded-xl border transition-all duration-300 overflow-hidden ${isExpanded ? 'bg-zinc-900/60 border-pink-500/30' : 'bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-800/40'}`}
+          >
+            <div
+              className="flex items-center justify-between p-3 cursor-pointer group"
+              onClick={() => toggleExpand(group.id)}
+            >
+              <div className="flex items-center gap-3">
+                {isExpanded ? <ChevronDown className="w-3 h-3 text-pink-400" /> : <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-zinc-400" />}
+                <div className="flex items-center gap-2">
+                  <Icon className={`w-3 h-3 ${isExpanded ? 'text-pink-400' : 'text-zinc-500'}`} />
+                  <span className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${isExpanded ? 'text-pink-100' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+                    {group.label}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {isExpanded && (
+              <div className="px-3 pb-3 pt-0 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 border-t border-zinc-800/30 mt-1 pt-3">
+                {group.controls.map(control => {
+                  const currentValue = colors[control.key];
+
+                  if (control.type === 'color') {
+                    return (
+                      <div key={control.key} className="flex items-center justify-between">
+                        <span className="text-[10px] font-medium text-zinc-400 uppercase">{control.label}</span>
+                        <ColorPicker
+                          color={String(currentValue)}
+                          onChange={(val) => handleColorChange(control.key, val)}
+                        />
+                      </div>
+                    );
+                  }
+
+                  if (control.type === 'slider') {
+                    return (
+                      <div key={control.key} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-medium text-zinc-400 uppercase">{control.label}</span>
+                          <span className="text-[10px] font-mono text-zinc-500">{Math.round((currentValue as number) * 100)}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={control.min}
+                          max={control.max}
+                          step={control.step}
+                          value={Number(currentValue)}
+                          onChange={(e) => handleColorChange(control.key, parseFloat(e.target.value))}
+                          className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-pink-500 [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-pink-400 transition-all"
+                        />
+                      </div>
+                    );
+                  }
+
+                  if (control.type === 'number') {
+                    return (
+                      <div key={control.key} className="flex items-center justify-between">
+                        <span className="text-[10px] font-medium text-zinc-400 uppercase">{control.label}</span>
+                        <input
+                          type="number"
+                          min={control.min}
+                          max={control.max}
+                          step={control.step || 1}
+                          value={Number(currentValue)}
+                          onChange={(e) => handleColorChange(control.key, parseFloat(e.target.value))}
+                          className="w-16 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-300 font-mono focus:border-pink-500/50 outline-none text-right"
+                        />
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const renderMotionTab = () => (
+    <div className="space-y-6">
+      <div className="space-y-3">
+        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Animation Type</span>
+        <div className="grid grid-cols-1 gap-2">
+          <button
+            onClick={() => setAnimationType('carousel')}
+            className={`p-3 rounded-lg border text-left transition-all ${animationType === 'carousel'
+              ? 'bg-pink-500/10 border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.15)]'
+              : 'bg-zinc-900/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+              }`}
+          >
+            <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${animationType === 'carousel' ? 'text-pink-400' : 'text-zinc-300'}`}>
+              Carousel
+            </div>
+            <div className="text-[9px] opacity-70">
+              Flowing stream of chords sliding across the screen.
+            </div>
+          </button>
+
+          <button
+            onClick={() => setAnimationType('static-fingers')}
+            className={`p-3 rounded-lg border text-left transition-all ${animationType === 'static-fingers'
+              ? 'bg-pink-500/10 border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.15)]'
+              : 'bg-zinc-900/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+              }`}
+          >
+            <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${animationType === 'static-fingers' ? 'text-pink-400' : 'text-zinc-300'}`}>
+              Static Fretboard
+            </div>
+            <div className="text-[9px] opacity-70">
+              Only fingers move. Fretboard remains fixed.
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sun className="w-3 h-3 text-zinc-500" />
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Global Scale</span>
+          </div>
+          <span className="text-[10px] font-mono text-zinc-500">{colors.fretboardScale}x</span>
+        </div>
+        <input
+          type="range"
+          min="0.5"
+          max="1.5"
+          step="0.1"
+          value={colors.fretboardScale}
+          onChange={(e) => handleColorChange('fretboardScale', parseFloat(e.target.value))}
+          className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-pink-500 [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-pink-400 transition-all"
+        />
+      </div>
+    </div>
   );
 
   return (
@@ -185,15 +426,46 @@ export function SettingsPanel({ isMobile, isOpen, onClose }: SettingsPanelProps)
       )}
 
       <div className={cn("flex flex-col flex-1 overflow-hidden", { "hidden lg:flex": !isMobile, "flex": isMobile })}>
-        <div className="p-4 border-b border-pink-500/20">
-          <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-500 tracking-wider uppercase drop-shadow-[0_0_2px_rgba(236,72,153,0.5)] flex items-center gap-2">
-            <Palette className="w-5 h-5 text-pink-400" />
-            Customize
-          </h2>
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-pink-500/20 rounded-lg">
+              <Palette className="w-5 h-5 text-pink-400" />
+            </div>
+            <h1 className="text-sm font-bold tracking-widest text-zinc-100 uppercase">Customize</h1>
+          </div>
+          <button
+            onClick={handleReset}
+            className="p-2 bg-pink-500/10 rounded-lg text-pink-400 hover:bg-pink-500/20 transition-all"
+            title="Reset Defaults"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-          <SettingsContent isMobile={isMobile} />
+        {/* Tabs */}
+        <div className="px-6 mb-4">
+          <div className="flex bg-zinc-900/50 p-1 rounded-lg border border-zinc-800">
+            {(['basic', 'advanced', 'motion'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${activeTab === tab
+                  ? 'bg-zinc-800 text-pink-400 shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
+          {activeTab === 'basic' && renderBasicTab()}
+          {activeTab === 'advanced' && renderAdvancedTab()}
+          {activeTab === 'motion' && renderMotionTab()}
         </div>
       </div>
     </div>

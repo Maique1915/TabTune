@@ -52,13 +52,13 @@ export function TimelineTrack({
 
   return (
     <div
-      className="relative h-16 bg-background border-b border-border overflow-hidden"
+      className="relative h-16 bg-transparent border-b border-white/5 overflow-hidden group"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
       {/* Nome da track */}
-      <div className="absolute left-0 top-0 bottom-0 w-32 bg-muted/50 border-r border-border flex items-center px-3">
-        <span className="text-sm font-medium">{track.name}</span>
+      <div className="absolute left-0 top-0 bottom-0 w-32 bg-black/20 border-r border-white/5 flex items-center px-3 z-10 backdrop-blur-sm">
+        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{track.name}</span>
       </div>
 
       {/* Área de clips */}
