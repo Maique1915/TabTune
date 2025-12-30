@@ -8,7 +8,8 @@ interface RenderProgressModalProps {
     progress: number;
     status?: string | null;
     estimatedTime?: number | null;
-    onCancel: () => void;
+    onCancel?: () => void;
+    onClose?: () => void;
 }
 
 export const RenderProgressModal: React.FC<RenderProgressModalProps> = ({
@@ -17,7 +18,8 @@ export const RenderProgressModal: React.FC<RenderProgressModalProps> = ({
     progress,
     status = null,
     estimatedTime = null,
-    onCancel
+    onCancel,
+    onClose
 }) => {
     const [mounted, setMounted] = useState(false);
 
@@ -90,7 +92,7 @@ export const RenderProgressModal: React.FC<RenderProgressModalProps> = ({
 
                 {/* Cancel Button */}
                 <button
-                    onClick={onCancel}
+                    onClick={onClose || onCancel}
                     className={`w-full px-4 py-3 rounded-xl transition-all font-black uppercase tracking-wider ${isComplete
                         ? 'bg-green-500 text-slate-950 hover:bg-green-400 shadow-[0_0_20px_rgba(34,197,94,0.3)]'
                         : 'bg-slate-800/50 border border-white/5 text-slate-400 hover:bg-slate-800 hover:text-red-400'

@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Palette, RotateCcw, ChevronDown, ChevronRight, Sun, Layers, Zap } from 'lucide-react';
+import { Palette, RotateCcw, ChevronDown, ChevronRight, Sun, Layers, Zap, Brush, Component, Activity } from 'lucide-react';
 import { HexColorPicker } from 'react-colorful';
 import * as Popover from '@radix-ui/react-popover';
 import { ScoreStyle, ElementStyle } from '@/lib/tab-editor/types';
+import { PRESET_THEMES } from '@/lib/tab-editor/constants';
+import { GenericSidebar } from '@/components/shared/GenericSidebar';
 
 interface StyleSidebarProps {
     style: ScoreStyle;
@@ -12,93 +14,6 @@ interface StyleSidebarProps {
     onReset: () => void;
 }
 
-const PRESET_THEMES = {
-    default: {
-        label: 'Default Dark',
-        style: {
-            clefs: { color: '#ff9823ff', opacity: 1, shadow: true, shadowColor: '#000000', shadowBlur: 10 },
-            timeSignature: { color: '#ff9823ff', opacity: 1, shadow: true, shadowColor: '#000000', shadowBlur: 10 },
-            notes: { color: '#ffffffff', opacity: 1, shadow: true, shadowColor: '#000000', shadowBlur: 12 },
-            rests: { color: '#ffffffff', opacity: 0.8, shadow: false },
-            tabNumbers: { color: '#ffffffff', opacity: 1, shadow: false },
-            symbols: { color: '#ffffffff', opacity: 1, shadow: false },
-            staffLines: { color: '#ffffffff', opacity: 0.4, shadow: false },
-            background: '#020617',
-            playheadColor: '#ffffffff',
-            activeNoteColor: '#ffffffff',
-            scale: 1,
-            transitionType: 'snap'
-        }
-    },
-    classic: {
-        label: 'Classic Light',
-        style: {
-            clefs: { color: '#000000', opacity: 1, shadow: false },
-            timeSignature: { color: '#000000', opacity: 1, shadow: false },
-            notes: { color: '#111111', opacity: 1, shadow: false },
-            rests: { color: '#111111', opacity: 1, shadow: false },
-            tabNumbers: { color: '#111111', opacity: 1, shadow: false },
-            symbols: { color: '#111111', opacity: 1, shadow: false },
-            staffLines: { color: '#000000', opacity: 0.1, shadow: false },
-            background: '#fdfdfd',
-            playheadColor: '#2563eb',
-            activeNoteColor: '#ef4444',
-            scale: 1,
-            transitionType: 'snap'
-        }
-    },
-    cyberpunk: {
-        label: 'Cyberpunk',
-        style: {
-            clefs: { color: '#f63bddff', opacity: 1, shadow: true, shadowColor: '#3b82f6', shadowBlur: 10 },
-            timeSignature: { color: '#f63bddff', opacity: 1, shadow: true, shadowColor: '#3b82f6', shadowBlur: 10 },
-            notes: { color: '#7dff49ff', opacity: 1, shadow: true, shadowColor: '#ffffff', shadowBlur: 12 },
-            rests: { color: '#ffffff', opacity: 0.8, shadow: false },
-            tabNumbers: { color: '#ffffff', opacity: 1, shadow: false },
-            symbols: { color: '#ffffffff', opacity: 1, shadow: false },
-            staffLines: { color: '#ffffffff', opacity: 0.4, shadow: false },
-            background: '#020617',
-            playheadColor: '#3b82f6',
-            activeNoteColor: '#60a5fa',
-            scale: 1,
-            transitionType: 'assemble'
-        }
-    },
-    midnight: {
-        label: 'Midnight Blue',
-        style: {
-            clefs: { color: '#3b82f6', opacity: 1, shadow: true, shadowColor: '#3b82f6', shadowBlur: 10 },
-            timeSignature: { color: '#3b82f6', opacity: 1, shadow: true, shadowColor: '#3b82f6', shadowBlur: 10 },
-            notes: { color: '#ffffff', opacity: 1, shadow: true, shadowColor: '#ffffff', shadowBlur: 12 },
-            rests: { color: '#ffffff', opacity: 0.8, shadow: false },
-            tabNumbers: { color: '#ffffff', opacity: 1, shadow: false },
-            symbols: { color: '#3b82f6', opacity: 1, shadow: false },
-            staffLines: { color: '#3b82f6', opacity: 0.4, shadow: false },
-            background: '#020617',
-            playheadColor: '#3b82f6',
-            activeNoteColor: '#60a5fa',
-            scale: 1,
-            transitionType: 'assemble'
-        }
-    },
-    vintage: {
-        label: 'Vintage',
-        style: {
-            clefs: { color: '#451a03', opacity: 1, shadow: false },
-            timeSignature: { color: '#451a03', opacity: 1, shadow: false },
-            notes: { color: '#451a03', opacity: 1, shadow: false },
-            rests: { color: '#451a03', opacity: 1, shadow: false },
-            tabNumbers: { color: '#451a03', opacity: 1, shadow: false },
-            symbols: { color: '#78350f', opacity: 1, shadow: false },
-            staffLines: { color: '#78350f', opacity: 0.2, shadow: false },
-            background: '#f5f1e6',
-            playheadColor: '#b45309',
-            activeNoteColor: '#78350f',
-            scale: 1,
-            transitionType: 'assemble'
-        }
-    }
-};
 
 const ColorPicker = ({ color, onChange }: { color: string; onChange: (c: string) => void }) => {
     return (
@@ -382,50 +297,25 @@ const StyleSidebar: React.FC<StyleSidebarProps> = ({ style, onChange, onReset })
         </div>
     );
 
+    const tabs = [
+        { id: 'basic', label: 'Basic' },
+        { id: 'advanced', label: 'Advanced' },
+        { id: 'motion', label: 'Motion' }
+    ];
+
     return (
-        <aside className="w-80 border-l border-zinc-800/50 bg-[#0d0d0f] p-6 flex flex-col gap-6 z-10 transition-all duration-300">
-            <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-pink-500/20 rounded-lg">
-                        <Palette className="w-5 h-5 text-pink-400" />
-                    </div>
-                    <h1 className="text-sm font-bold tracking-widest text-zinc-100 uppercase">Customize</h1>
-                </div>
-                <button
-                    onClick={onReset}
-                    className="p-2 bg-pink-500/10 rounded-lg text-pink-400 hover:bg-pink-500/20 transition-all"
-                    title="Reset Defaults"
-                >
-                    <RotateCcw className="w-4 h-4" />
-                </button>
-            </div>
-
-            <div className="flex bg-zinc-900/50 p-1 rounded-lg border border-zinc-800 mb-4">
-                {(['basic', 'advanced', 'motion'] as const).map((tab) => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${activeTab === tab
-                            ? 'bg-zinc-800 text-pink-400 shadow-sm'
-                            : 'text-zinc-500 hover:text-zinc-300'
-                            }`}
-                    >
-                        {tab}
-                    </button>
-                ))}
-            </div>
-
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-                {activeTab === 'basic' && renderBasicTab()}
-                {activeTab === 'advanced' && renderAdvancedTab()}
-                {activeTab === 'motion' && renderMotionTab()}
-            </div>
-
-            {/* Legacy/Motion Controls Hint (Optional) */}
-            <div className="mt-auto pt-4 border-t border-zinc-800/30 text-center">
-                <p className="text-[9px] text-zinc-600 font-mono">NoteForge Styling Engine Active</p>
-            </div>
-        </aside>
+        <GenericSidebar
+            title="Customize"
+            icon={Palette}
+            onReset={onReset}
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+        >
+            {activeTab === 'basic' && renderBasicTab()}
+            {activeTab === 'advanced' && renderAdvancedTab()}
+            {activeTab === 'motion' && renderMotionTab()}
+        </GenericSidebar>
     );
 };
 

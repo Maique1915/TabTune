@@ -5,11 +5,19 @@ import { ScoreStyle, MeasureData } from '@/lib/tab-editor/types';
 import { getNoteKeyFromFret } from '@/lib/tab-editor/utils/musicMath';
 import { Music, MousePointerClick, MoreHorizontal, MoveLeft, MoveRight, Film, Settings } from 'lucide-react';
 import { useCanvasRecorder } from '@/lib/shared/hooks/useCanvasRecorder';
-import { VideoRenderSettingsModal, VideoRenderSettings } from '@/components/shared/VideoRenderSettingsModal';
-import { RenderProgressModal } from '@/components/shared/RenderProgressModal';
+import { VideoRenderSettings } from '@/components/shared/VideoRenderSettingsModal';
+import { PRESET_THEMES } from '@/lib/tab-editor/constants';
+
+export interface ScorePreviewRef {
+    startRender: (settings: VideoRenderSettings) => void;
+    cancelRender: () => void;
+    isRendering: boolean;
+    progress: number;
+    isComplete: boolean;
+}
 
 interface ScorePreviewProps {
-    code: string; // Kept for interface compatibility but largely unused now
+    code: string;
     measures: MeasureData[];
     timeSignature: string;
     playbackPosition: number;
@@ -25,6 +33,8 @@ interface ScorePreviewProps {
     currentMeasureIndex?: number;
     onPlaybackControl?: (isPlaying: boolean) => void;
     onPlaybackPositionChange?: (position: number) => void;
+    onToggleVisibility?: (type: 'notation' | 'tablature') => void;
+    onRenderStateChange?: (state: { isRendering: boolean; progress: number; isComplete: boolean }) => void;
 }
 
 declare global {
@@ -174,7 +184,7 @@ const MeasureThumbnail = memo(({
 
                 notes = measureData.notes.map((note) => {
                     const isSelected = selectedNoteIds?.includes(note.id);
-                    let noteStyle = isSelected ? { color: '#fbbf24', opacity: 1, shadow: true, shadowColor: '#fbbf24', shadowBlur: 15 } : style.notes;
+                    let noteStyle = isSelected ? PRESET_THEMES.default.style.notes : style.notes;
 
                     if (note.type === 'rest') {
                         const sn = new StaveNote({ keys: ["b/4"], duration: note.duration + "r" });
@@ -244,7 +254,7 @@ const MeasureThumbnail = memo(({
 
                 tabNotes = measureData.notes.map((note) => {
                     const isSelected = selectedNoteIds?.includes(note.id);
-                    const tabNoteStyle = isSelected ? { color: '#fbbf24', opacity: 1, shadow: true, shadowColor: '#fbbf24', shadowBlur: 15 } : (note.type === 'rest' ? style.rests : style.tabNumbers);
+                    const tabNoteStyle = isSelected ? PRESET_THEMES.default.style.notes : (note.type === 'rest' ? style.rests : style.tabNumbers);
 
                     if (note.type === 'rest') {
                         const tn = new TabNote({ positions: [{ str: 3, fret: 'X' }], duration: note.duration + "r" });
@@ -335,7 +345,7 @@ const MeasureThumbnail = memo(({
                         if (tech === 's') tieLabel = "sl.";
 
                         const tieStyle = selectedNoteIds?.includes(n.id) || selectedNoteIds?.includes(measureData.notes[targetIdx].id)
-                            ? { color: '#fbbf24', opacity: 1, shadow: true, shadowColor: '#fbbf24', shadowBlur: 15 }
+                            ? PRESET_THEMES.default.style.notes
                             : style.notes;
 
                         if (showNotation && notes[firstIdx] && notes[secondIdx]) {
@@ -564,7 +574,7 @@ const MeasureThumbnail = memo(({
     );
 });
 
-const ScorePreview: React.FC<ScorePreviewProps> = ({
+const ScorePreview = React.forwardRef<ScorePreviewRef, ScorePreviewProps>(({
     code,
     playbackPosition,
     isPlaying,
@@ -580,15 +590,17 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({
     onDoubleClickNote,
     currentMeasureIndex: externalMeasureIndex,
     onPlaybackControl,
-    onPlaybackPositionChange
-}) => {
+    onPlaybackPositionChange,
+    onToggleVisibility,
+    onRenderStateChange
+}, ref) => {
     // Current Measure Calculation
     const safeMeasures = measures || [];
     const scoreContainerRef = useRef<HTMLElement>(null);
 
 
-    // Video Render Settings
-    const [showSettings, setShowSettings] = useState(false);
+
+    // Video Render Settings (Internal state moved to page.tsx mostly, but we keep logic here for now)
     const [renderSettings, setRenderSettings] = useState<VideoRenderSettings>({
         format: 'mp4',
         fps: 30,
@@ -619,6 +631,34 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({
         setIsRendering,
         setIsComplete
     } = useCanvasRecorder(scoreContainerRef as React.RefObject<HTMLCanvasElement>, renderSettings);
+
+    useEffect(() => {
+        onRenderStateChange?.({ isRendering, progress: renderProgress, isComplete });
+    }, [isRendering, renderProgress, isComplete, onRenderStateChange]);
+
+    // Simplified Position calculation for internal use (glows, etc)
+    const displayMeasureCurrent = useMemo(() => {
+        if (isPlaying || (isRendering && renderSettings.format === 'mp4')) {
+            const pos = isRendering ? offlinePosition : playbackPosition;
+            return Math.min(Math.floor((pos / 100) * safeMeasures.length) + 1, safeMeasures.length);
+        }
+        return (externalMeasureIndex ?? 0) + 1;
+    }, [isPlaying, isRendering, playbackPosition, offlinePosition, safeMeasures.length, externalMeasureIndex, renderSettings.format]);
+
+    React.useImperativeHandle(ref, () => ({
+        startRender: (settings) => {
+            setRenderSettings(settings);
+            handleStartRender();
+        },
+        cancelRender: () => {
+            cancelRender();
+        },
+        isRendering,
+        progress: renderProgress,
+        isComplete,
+        status: renderStatus,
+        estimatedTime
+    }));
 
     const handleStartRender = async () => {
         if (!scoreContainerRef.current) {
@@ -849,104 +889,10 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-32 bg-cyan-500/10 blur-[100px] pointer-events-none z-0" />
             </div>
 
-            {showControls && (
-                <div className="h-16 flex items-center justify-between px-6 z-20 bg-black/40 backdrop-blur-xl border-t border-white/5 relative">
-                    <div className="flex flex-col gap-1">
-                        <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                            TIMELINE
-                        </h2>
-                        <div className="flex space-x-1">
-                            {safeMeasures.map((_, i) => (
-                                <div
-                                    key={i}
-                                    className={`h-1 rounded-full transition-all duration-500 ${i === currentMeasureIndex ? 'bg-cyan-500 w-8 shadow-[0_0_10px_#06b6d4]' : 'bg-white/10 w-2 hover:bg-white/20'}`}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                        <div className="flex items-center space-x-3 bg-black/40 px-3 py-1.5 rounded-lg border border-white/5">
-                            <span className="text-[9px] font-black text-cyan-400 uppercase tracking-widest">Section {currentMeasureIndex + 1}</span>
-                            <div className="w-px h-3 bg-white/10" />
-                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{safeMeasures.length} MEAS</span>
-                        </div>
-
-                        {/* Render Button - Standardized with Studio Style */}
-                        <button
-                            onClick={() => {
-                                if (isRendering) {
-                                    cancelRender();
-                                } else {
-                                    setShowSettings(true);
-                                }
-                            }}
-                            className={`
-                                h-9 px-4 font-bold text-[10px] uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 border
-                                ${isRendering
-                                    ? 'bg-red-500/20 text-red-400 border-red-500/50 hover:bg-red-500/30'
-                                    : 'bg-black/40 text-slate-300 border-white/10 hover:border-cyan-500/50 hover:text-cyan-400 hover:bg-black/60'
-                                }
-                            `}
-                            title={isRendering ? 'Stop Rendering' : 'Start Rendering'}
-                        >
-                            {isRendering ? (
-                                <>
-                                    <Film className="w-3.5 h-3.5 animate-pulse" />
-                                    <span>Rendering...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Film className="w-3.5 h-3.5" />
-                                    <span>Render</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Video Render Settings Modal */}
-            <VideoRenderSettingsModal
-                isOpen={showSettings}
-                settings={renderSettings}
-                onClose={() => setShowSettings(false)}
-                onRender={(settings) => {
-                    setRenderSettings(settings);
-                    setShowSettings(false);
-                    // Start render immediately after confirming settings
-                    handleStartRender();
-                }}
-            />
-
-            <RenderProgressModal
-                isOpen={isRendering}
-                isComplete={isComplete}
-                progress={renderProgress}
-                status={renderStatus}
-                estimatedTime={estimatedTime}
-                onCancel={cancelRender}
-            />
-
-            <style>{`
-        .score-animation-slide { animation: scoreSlideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .score-animation-fade { animation: scoreFadeIn 0.6s ease-out forwards; }
-        @keyframes scoreSlideIn {
-          0% { opacity: 0; transform: translateY(40px) scale(0.95); filter: blur(20px); }
-          100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
-        }
-        @keyframes scoreFadeIn {
-          0% { opacity: 0; filter: blur(15px); }
-          100% { opacity: 1; filter: blur(0); }
-        }
-        /* Canvas rendering styles */
-        .score-canvas-viewport canvas { 
-          width: 100%; 
-          height: auto;
-          image-rendering: auto;
-        }
-      `}</style>
         </div>
     );
-};
+});
+
+ScorePreview.displayName = 'ScorePreview';
 
 export default ScorePreview;

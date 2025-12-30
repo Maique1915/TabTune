@@ -1,14 +1,17 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Sidebar from '@/components/tab-editor/Sidebar';
 import StyleSidebar from '@/components/tab-editor/StyleSidebar';
-import ScorePreview from '@/components/tab-editor/ScorePreview';
+import ScorePreview, { ScorePreviewRef } from '@/components/tab-editor/ScorePreview';
 import VisualEditor from '@/components/tab-editor/VisualEditor';
 import { Icons } from '@/lib/tab-editor/constants';
 import { MeasureData, NoteData, GlobalSettings, ScoreStyle, DEFAULT_SCORE_STYLE, Duration } from '@/lib/tab-editor/types';
 import { convertToVextab } from '@/lib/tab-editor/utils/vextabConverter';
+import { Film } from 'lucide-react';
+import { VideoRenderSettingsModal, VideoRenderSettings } from '@/components/shared/VideoRenderSettingsModal';
+import { RenderProgressModal } from '@/components/shared/RenderProgressModal';
 import {
     getPitchFromMidi,
     NOTE_NAMES,
@@ -63,6 +66,21 @@ export default function TabEditorPage() {
     const [currentMeasureIndex, setCurrentMeasureIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [playbackPosition, setPlaybackPosition] = useState(0);
+    const [isLooping, setIsLooping] = useState(false);
+
+    // Rendering State
+    const scorePreviewRef = useRef<ScorePreviewRef>(null);
+    const [showRenderSettings, setShowRenderSettings] = useState(false);
+    const [renderState, setRenderState] = useState({
+        isRendering: false,
+        progress: 0,
+        isComplete: false
+    });
+    const [renderSettings, setRenderSettings] = useState<VideoRenderSettings>({
+        format: 'mp4',
+        fps: 30,
+        quality: 'medium'
+    });
 
     const vextabCode = useMemo(() => convertToVextab(measures, settings, scoreStyle), [measures, settings, scoreStyle]);
 
@@ -85,6 +103,13 @@ export default function TabEditorPage() {
         return measures.find(m => m.id === selectedMeasureId) || null;
     }, [measures, selectedMeasureId]);
 
+    const displayMeasureInfo = useMemo(() => {
+        const current = isPlaying || renderState.isRendering
+            ? Math.min(Math.floor((playbackPosition / 100) * measures.length) + 1, measures.length)
+            : currentMeasureIndex + 1;
+        return { current, total: measures.length };
+    }, [isPlaying, renderState.isRendering, playbackPosition, measures.length, currentMeasureIndex]);
+
     // previewData removed as per user request
 
     useEffect(() => {
@@ -99,11 +124,16 @@ export default function TabEditorPage() {
             const increment = (100 / (totalDuration * (1000 / frameRate)));
 
             interval = window.setInterval(() => {
-                setPlaybackPosition((prev) => (prev >= 100 ? 0 : prev + increment));
+                setPlaybackPosition((prev) => {
+                    if (prev >= 100) {
+                        return isLooping ? 0 : 100;
+                    }
+                    return prev + increment;
+                });
             }, frameRate);
         }
         return () => clearInterval(interval);
-    }, [isPlaying, settings.bpm, settings.time, measures.length]);
+    }, [isPlaying, settings.bpm, settings.time, measures.length, isLooping]);
 
     const handleAddMeasure = () => {
         setMeasures([...measures, {
@@ -546,14 +576,20 @@ export default function TabEditorPage() {
 
                 <main className="flex flex-1 flex-col overflow-hidden min-w-0" style={{ display: 'grid', gridTemplateRows: '70% 30%' }}>
                     <div className="flex flex-col h-full overflow-hidden relative">
-                        {/* Integrated Header Controls */}
-                        <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between p-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/5">
+                        {/* Integrated Studio Controls - Bottom Position */}
+                        <div className="absolute bottom-6 left-6 right-6 z-30 flex items-center justify-between p-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/5 shadow-2xl">
                             <div className="flex items-center space-x-4">
                                 <button onClick={() => setIsPlaying(!isPlaying)} className={`px-6 py-2 rounded-xl flex items-center space-x-3 text-xs font-black transition-all ${isPlaying ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'bg-cyan-500 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.4)]'}`}>
                                     {isPlaying ? <Icons.Pause /> : <Icons.Play />}
                                     <span>{isPlaying ? 'STOP' : 'PLAY'}</span>
                                 </button>
-                                <button onClick={() => { setIsPlaying(false); setPlaybackPosition(0); }} className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-white transition-colors border border-white/5">
+                                <button onClick={() => { setPlaybackPosition(0); }} className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-white transition-colors border border-white/5" title="Back to Start">
+                                    <Icons.SkipBack />
+                                </button>
+                                <button onClick={() => setIsLooping(!isLooping)} className={`p-2.5 rounded-xl border transition-all ${isLooping ? 'bg-pink-500/20 text-pink-400 border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.3)]' : 'bg-white/5 text-slate-400 hover:text-white border-white/5'}`} title="Toggle Loop">
+                                    <Icons.Repeat />
+                                </button>
+                                <button onClick={() => { setIsPlaying(false); setPlaybackPosition(0); }} className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-white transition-colors border border-white/5" title="Stop & Reset">
                                     <Icons.Reset />
                                 </button>
                                 <div className="h-6 w-px bg-white/10 mx-2" />
@@ -571,19 +607,56 @@ export default function TabEditorPage() {
                                         <option value="6/8">6/8</option>
                                     </select>
                                 </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <div className="text-[10px] font-mono text-cyan-500/30 truncate max-w-[200px] select-none mr-4">{vextabCode}</div>
-                                <div className="flex items-center space-x-1 bg-black/50 p-1 rounded-lg border border-white/10">
-                                    <button onClick={() => toggleVisibility('notation')} className={`px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all ${settings.showNotation ? 'bg-blue-500/20 text-blue-400' : 'text-slate-600'}`}>Partitura</button>
-                                    <button onClick={() => toggleVisibility('tablature')} className={`px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all ${settings.showTablature ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-600'}`}>Tablatura</button>
+                                <div className="h-6 w-px bg-white/10 mx-2" />
+
+                                <div className="flex items-center space-x-2">
+                                    <div className="flex items-center px-4 py-1.5 bg-black/40 rounded-xl border border-white/5 shadow-inner">
+                                        <span className="text-[10px] font-black text-cyan-400 tracking-wider uppercase">Section {displayMeasureInfo.current}/{displayMeasureInfo.total} Meas</span>
+                                    </div>
+                                    <div className="flex items-center space-x-1 bg-black/50 p-1 rounded-lg border border-white/10 ml-2">
+                                        <button onClick={() => toggleVisibility('notation')} className={`px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all ${settings.showNotation ? 'bg-blue-500/20 text-blue-400' : 'text-slate-600'}`}>Partitura</button>
+                                        <button onClick={() => toggleVisibility('tablature')} className={`px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all ${settings.showTablature ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-600'}`}>Tablatura</button>
+                                    </div>
                                 </div>
+                            </div>
+
+                            <div className="flex items-center space-x-3 pr-2">
+                                <button
+                                    onClick={() => {
+                                        if (renderState.isRendering) {
+                                            scorePreviewRef.current?.cancelRender();
+                                        } else {
+                                            setShowRenderSettings(true);
+                                        }
+                                    }}
+                                    className={`
+                                        h-9 px-5 font-black text-[10px] uppercase tracking-wider rounded-xl transition-all flex items-center gap-3 border
+                                        ${renderState.isRendering
+                                            ? 'bg-red-500/20 text-red-400 border-red-500/50 hover:bg-red-500/30'
+                                            : 'bg-white/5 text-slate-300 border-white/5 hover:border-cyan-500/50 hover:text-white hover:bg-white/10'
+                                        }
+                                    `}
+                                    title={renderState.isRendering ? 'Stop Rendering' : 'Start Rendering'}
+                                >
+                                    {renderState.isRendering ? (
+                                        <>
+                                            <Film className="w-4 h-4 animate-pulse" />
+                                            <span>Recording...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Film className="w-4 h-4" />
+                                            <span>Export Video</span>
+                                        </>
+                                    )}
+                                </button>
                             </div>
                         </div>
 
                         {/* Top: Score Preview (Canvas) */}
                         <div className="w-full h-full min-w-0 overflow-hidden relative">
                             <ScorePreview
+                                ref={scorePreviewRef}
                                 code={vextabCode}
                                 measures={measures}
                                 timeSignature={settings.time}
@@ -599,6 +672,8 @@ export default function TabEditorPage() {
                                 currentMeasureIndex={currentMeasureIndex}
                                 onPlaybackControl={setIsPlaying}
                                 onPlaybackPositionChange={setPlaybackPosition}
+                                onToggleVisibility={toggleVisibility}
+                                onRenderStateChange={setRenderState}
                             />
                         </div>
                     </div>
@@ -627,10 +702,29 @@ export default function TabEditorPage() {
                             selectedMeasureId={selectedMeasureId}
                         />
                     </div>
-                </main>
+                </main >
 
-                <StyleSidebar style={scoreStyle} onChange={(up) => setScoreStyle({ ...scoreStyle, ...up })} onReset={() => setScoreStyle(DEFAULT_SCORE_STYLE)} />
+                <StyleSidebar style={scoreStyle} onChange={(up: Partial<ScoreStyle>) => setScoreStyle({ ...scoreStyle, ...up })} onReset={() => setScoreStyle(DEFAULT_SCORE_STYLE)} />
             </div>
+
+            {/* Video Render Settings Modal */}
+            <VideoRenderSettingsModal
+                isOpen={showRenderSettings}
+                settings={renderSettings}
+                onClose={() => setShowRenderSettings(false)}
+                onRender={(settings: VideoRenderSettings) => {
+                    setRenderSettings(settings);
+                    setShowRenderSettings(false);
+                    scorePreviewRef.current?.startRender(settings);
+                }}
+            />
+
+            <RenderProgressModal
+                isOpen={renderState.isRendering}
+                isComplete={renderState.isComplete}
+                progress={renderState.progress}
+                onClose={() => setRenderState(prev => ({ ...prev, isRendering: false }))}
+            />
         </div>
     );
-};
+}

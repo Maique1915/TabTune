@@ -18,7 +18,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/components/ui/select";
-import { VexFlowIcon } from "../tab-editor/vexflow-icon";
+import { VexFlowIcon as VexFlowScoreIcon } from "../tab-editor/VexFlowScoreIcon";
 import type { SymbolClip } from "@/lib/timeline/types";
 
 interface ScoreEditorProps {
@@ -133,7 +133,7 @@ export function ScoreEditor({ clip, open, onOpenChange, onSave }: ScoreEditorPro
 
                 {/* Preview */}
                 <div className="border border-white/10 rounded-md p-4 bg-white/5 flex justify-center min-h-[150px] items-center overflow-auto">
-                    <VexFlowIcon
+                    <VexFlowScoreIcon
                         width={Math.max(400, staveWidth + 50)}
                         height={150}
                         staveWidth={staveWidth}
@@ -141,7 +141,7 @@ export function ScoreEditor({ clip, open, onOpenChange, onSave }: ScoreEditorPro
                         timeSignature="4/4"
                         notes={notes.split(",").map(n => n.trim()).filter(n => n)}
                         duration={duration}
-                        type={clef === 'tab' ? 'tab' : 'note'}
+                        isRest={clef === 'tab'} // Adjusted based on VexFlowScoreIcon props
                     />
                 </div>
 

@@ -1,5 +1,103 @@
-
 import React from 'react';
+import { ScoreStyle } from './types';
+
+export const PRESET_THEMES: Record<string, { label: string; style: ScoreStyle }> = {
+    default: {
+        label: 'Default Dark',
+        style: {
+            clefs: { color: '#ff9823ff', opacity: 1, shadow: true, shadowColor: '#000000', shadowBlur: 10 },
+            timeSignature: { color: '#ff9823ff', opacity: 1, shadow: true, shadowColor: '#000000', shadowBlur: 10 },
+            notes: { color: '#ffffffff', opacity: 1, shadow: true, shadowColor: '#000000', shadowBlur: 12 },
+            rests: { color: '#ffffffff', opacity: 0.8, shadow: false },
+            tabNumbers: { color: '#ffffffff', opacity: 1, shadow: false },
+            symbols: { color: '#ffffffff', opacity: 1, shadow: false },
+            staffLines: { color: '#ffffffff', opacity: 0.4, shadow: false },
+            background: '#020617',
+            playheadColor: '#ffffffff',
+            activeNoteColor: '#ffffffff',
+            shadowIntensity: 10,
+            glowEffect: true,
+            scale: 1,
+            transitionType: 'snap'
+        }
+    },
+    classic: {
+        label: 'Classic Light',
+        style: {
+            clefs: { color: '#000000', opacity: 1, shadow: false },
+            timeSignature: { color: '#000000', opacity: 1, shadow: false },
+            notes: { color: '#111111', opacity: 1, shadow: false },
+            rests: { color: '#111111', opacity: 1, shadow: false },
+            tabNumbers: { color: '#111111', opacity: 1, shadow: false },
+            symbols: { color: '#111111', opacity: 1, shadow: false },
+            staffLines: { color: '#000000', opacity: 0.1, shadow: false },
+            background: '#fdfdfd',
+            playheadColor: '#2563eb',
+            activeNoteColor: '#ef4444',
+            shadowIntensity: 0,
+            glowEffect: false,
+            scale: 1,
+            transitionType: 'snap'
+        }
+    },
+    cyberpunk: {
+        label: 'Cyberpunk',
+        style: {
+            clefs: { color: '#fb00ff', opacity: 1, shadow: true, shadowColor: '#3b82f6', shadowBlur: 10 },
+            timeSignature: { color: '#fb00ff', opacity: 1, shadow: true, shadowColor: '#3b82f6', shadowBlur: 10 },
+            notes: { color: '#00ff9d', opacity: 1, shadow: true, shadowColor: '#ffffff', shadowBlur: 12 },
+            rests: { color: '#ffffff', opacity: 0.8, shadow: false },
+            tabNumbers: { color: '#ffffff', opacity: 1, shadow: false },
+            symbols: { color: '#ffffffff', opacity: 1, shadow: false },
+            staffLines: { color: '#ffffffff', opacity: 0.4, shadow: false },
+            background: '#020617',
+            playheadColor: '#3b82f6',
+            activeNoteColor: '#60a5fa',
+            shadowIntensity: 15,
+            glowEffect: true,
+            scale: 1,
+            transitionType: 'assemble'
+        }
+    },
+    midnight: {
+        label: 'Midnight Blue',
+        style: {
+            clefs: { color: '#3b82f6', opacity: 1, shadow: true, shadowColor: '#3b82f6', shadowBlur: 10 },
+            timeSignature: { color: '#3b82f6', opacity: 1, shadow: true, shadowColor: '#3b82f6', shadowBlur: 10 },
+            notes: { color: '#ffffff', opacity: 1, shadow: true, shadowColor: '#ffffff', shadowBlur: 12 },
+            rests: { color: '#ffffff', opacity: 0.8, shadow: false },
+            tabNumbers: { color: '#ffffff', opacity: 1, shadow: false },
+            symbols: { color: '#3b82f6', opacity: 1, shadow: false },
+            staffLines: { color: '#3b82f6', opacity: 0.4, shadow: false },
+            background: '#020617',
+            playheadColor: '#3b82f6',
+            activeNoteColor: '#60a5fa',
+            shadowIntensity: 10,
+            glowEffect: true,
+            scale: 1,
+            transitionType: 'assemble'
+        }
+    },
+    vintage: {
+        label: 'Vintage',
+        style: {
+            clefs: { color: '#451a03', opacity: 1, shadow: false },
+            timeSignature: { color: '#451a03', opacity: 1, shadow: false },
+            notes: { color: '#451a03', opacity: 1, shadow: false },
+            rests: { color: '#451a03', opacity: 1, shadow: false },
+            tabNumbers: { color: '#451a03', opacity: 1, shadow: false },
+            symbols: { color: '#78350f', opacity: 1, shadow: false },
+            staffLines: { color: '#78350f', opacity: 0.2, shadow: false },
+            background: '#f5f1e6',
+            playheadColor: '#b45309',
+            activeNoteColor: '#78350f',
+            shadowIntensity: 0,
+            glowEffect: false,
+            scale: 1,
+            transitionType: 'assemble'
+        }
+    }
+};
 
 export const DEFAULT_VEXTAB = `options space=20
 tabstave notation=true key=A time=4/4
@@ -63,5 +161,11 @@ export const Icons = {
     ),
     ChevronLeft: () => (
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+    ),
+    SkipBack: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M19 20L9 12l10-8v16zM5 19V5" /></svg>
+    ),
+    Repeat: () => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m17 2 4 4-4 4" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></svg>
     )
 };

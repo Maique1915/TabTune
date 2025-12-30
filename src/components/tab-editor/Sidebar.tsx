@@ -3,7 +3,10 @@
 import React from 'react';
 import { Duration, NoteData, MeasureData } from '@/lib/tab-editor/types';
 import { Icons } from '@/lib/tab-editor/constants';
-import VexFlowIcon from './VexFlowIcon';
+import VexFlowRhythmIcon from './VexFlowRhythmIcon';
+import { GenericSidebar } from '@/components/shared/GenericSidebar';
+import Link from 'next/link';
+import { Music, Settings2, Info, Home } from 'lucide-react';
 
 interface SidebarProps {
     onInsert: (text: string) => void;
@@ -118,31 +121,41 @@ const Sidebar: React.FC<SidebarProps> = ({
         }
     ];
 
+    const tabs = [
+        { id: 'main', label: 'Main' },
+        { id: 'articulations', label: 'Articulations' },
+        { id: 'effects', label: 'Effects' },
+        { id: 'text', label: 'Text' }
+    ];
+
+    const title = isInspector ? 'PROPERTIES' : isMeasureProperties ? 'PROPERTIES' : 'LIBRARY';
+    const Icon = isInspector ? Settings2 : isMeasureProperties ? Info : Music;
+
     return (
-        <aside className={`w-80 border-r border-white/5 flex flex-col h-full transition-all duration-300 ${isInspector ? 'bg-black/40' : 'bg-black/20'} backdrop-blur-xl`}>
-            {/* Header */}
-            <div className="p-6 border-b border-white/5 flex items-center justify-between min-h-[80px]">
-                <div className="flex flex-col">
-                    <h2 className="text-[12px] font-black text-white uppercase tracking-[0.2em] drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
-                        {isInspector ? 'PROPERTIES' : isMeasureProperties ? 'PROPERTIES' : 'LIBRARY'}
-                    </h2>
-                    <span className="text-[8px] text-cyan-500 font-bold uppercase tracking-widest mt-1">
-                        {isInspector ? `Editing ${editingNote?.type}` : isMeasureProperties ? 'Data Controls' : 'Note Controls'}
-                    </span>
-                </div>
-                {isInspector && onCloseInspector && (
-                    <button
-                        onClick={onCloseInspector}
-                        className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all active:scale-90 border border-white/5"
-                        title="Close Inspector"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        <GenericSidebar
+            title={title}
+            icon={Icon}
+            onReset={undefined} // No reset for library
+            tabs={isInspector && editingNote ? tabs : undefined}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onClose={onCloseInspector}
+            side="left"
+            headerAction={!isInspector && !isMeasureProperties && (
+                <Link href="/">
+                    <button className="group relative p-2.5 bg-zinc-950/40 hover:bg-cyan-500/10 rounded-xl border border-zinc-800/60 hover:border-cyan-500/40 text-zinc-500 hover:text-cyan-400 transition-all duration-300 shadow-inner group overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <Home className="w-4 h-4 relative z-10 group-hover:scale-110 transition-transform duration-300" />
                     </button>
-                )}
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-8 custom-scrollbar">
-
+                </Link>
+            )}
+            footer={!isInspector ? (
+                <div className="text-[10px] text-slate-600 text-center font-medium">
+                    Select a duration, then click (+) in the editor.
+                </div>
+            ) : undefined}
+        >
+            <div className="space-y-8">
                 {/* Unified Duration Selector */}
                 <div className="space-y-3">
                     <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center space-x-2">
@@ -163,7 +176,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         }`}
                                 >
                                     <div className={`transition-all ${active ? 'opacity-100' : 'opacity-40 grayscale'}`}>
-                                        <VexFlowIcon
+                                        <VexFlowRhythmIcon
                                             duration={item.code}
                                             fillColor={active ? '#67e8f9' : '#94a3b8'} // cyan-300 vs slate-400
                                         />
@@ -177,22 +190,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 
                 {/* Conditional Content */}
                 {isInspector && editingNote ? (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-                        {/* Tab Navigation */}
-                        <div className="flex p-1 bg-black/40 rounded-xl border border-white/5 space-x-1 overflow-x-auto custom-scrollbar">
-                            {['main', 'articulations', 'effects', 'text'].map((tab) => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab as any)}
-                                    className={`flex-1 py-1.5 px-3 text-[9px] font-black rounded-lg uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === tab ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-slate-500 hover:text-slate-300'}`}
-                                >
-                                    {tab}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* TAB: MAIN */}
+                    <div className="space-y-6">
+                        {/* TAB CONTENT: MAIN */}
                         {activeTab === 'main' && (
                             <div className="space-y-6">
                                 {/* Dotted & Type */}
@@ -269,8 +268,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </div>
                         )}
 
-                        {/* TAB: ARTICULATIONS */}
-                        {activeTab === 'articulations' && editingNote.type === 'note' && (
+                        {/* TAB CONTENT: ARTICULATIONS */}
+                        {activeTab === 'articulations' && (
                             <div className="grid grid-cols-3 gap-2">
                                 {[
                                     { k: 'staccato', l: 'Staccato', s: '.' },
@@ -297,8 +296,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </div>
                         )}
 
-                        {/* TAB: EFFECTS/TECHNIQUES */}
-                        {activeTab === 'effects' && editingNote.type === 'note' && (
+                        {/* TAB CONTENT: EFFECTS */}
+                        {activeTab === 'effects' && (
                             <div className="space-y-4">
                                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
                                     Techniques
@@ -324,14 +323,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         </button>
                                     ))}
                                 </div>
-                                <p className="text-[8px] text-slate-600 italic leading-tight">
+                                <p className="text-[8px] text-zinc-500 italic leading-tight">
                                     Select two notes in the Timeline to connect them with a technique, or select one note to apply individual effects.
                                 </p>
                             </div>
                         )}
 
-                        {/* TAB: TEXT */}
-                        {activeTab === 'text' && editingNote.type === 'note' && (
+                        {/* TAB CONTENT: TEXT */}
+                        {activeTab === 'text' && (
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Chord Symbol</label>
@@ -355,11 +354,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 </div>
                             </div>
                         )}
-
                     </div>
                 ) : isMeasureProperties && activeMeasure ? (
                     // Measure Properties
-                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                    <div className="space-y-8">
                         <div className="space-y-4">
                             <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
                                 Clef
@@ -401,7 +399,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                 ) : (
                     // Toolkit Palettes
-                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                    <div className="space-y-8">
                         {palettes.map((section) => (
                             <div key={section.title} className="space-y-3">
                                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
@@ -423,13 +421,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                 )}
             </div>
-
-            {!isInspector && (
-                <div className="p-4 border-t border-white/5 text-[10px] text-slate-600 text-center bg-black/20 font-medium">
-                    Select a duration, then click (+) in the editor.
-                </div>
-            )}
-        </aside>
+        </GenericSidebar>
     );
 };
 

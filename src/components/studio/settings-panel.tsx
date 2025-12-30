@@ -19,6 +19,7 @@ import * as Popover from "@radix-ui/react-popover";
 import { useAppContext, DEFAULT_COLORS, AnimationType } from "@/app/context/app--context";
 import type { ChordDiagramColors } from "@/app/context/app--context";
 import { cn } from "@/shared/lib/utils";
+import { GenericSidebar } from "@/components/shared/GenericSidebar";
 
 // --- PRESETS ---
 
@@ -211,13 +212,6 @@ export function SettingsPanel({ isMobile, isOpen, onClose }: SettingsPanelProps)
   const [activeTab, setActiveTab] = useState<'basic' | 'advanced' | 'motion'>('basic');
   const [expandedKey, setExpandedKey] = useState<string | null>('fretboard');
 
-  const rootClasses = cn(
-    "flex flex-col bg-[#0d0d0f] border-l border-zinc-800/50 shadow-[-5px_0_30px_rgba(0,0,0,0.5)] transition-transform duration-300 ease-in-out z-20",
-    isMobile
-      ? `fixed inset-x-0 bottom-0 h-[70vh] rounded-t-2xl border-t border-l-0 ${isOpen ? "translate-y-0" : "translate-y-full"}`
-      : "relative w-80 h-full"
-  );
-
   const handleColorChange = (key: keyof ChordDiagramColors, value: any) => {
     setColors(prev => ({ ...prev, [key]: value }));
   };
@@ -268,7 +262,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose }: SettingsPanelProps)
   );
 
   const renderAdvancedTab = () => (
-    <div className="space-y-3 overflow-y-auto pr-2 pb-2 custom-scrollbar">
+    <div className="space-y-3">
       <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Components</p>
 
       {SETTING_GROUPS.map((group) => {
@@ -417,57 +411,27 @@ export function SettingsPanel({ isMobile, isOpen, onClose }: SettingsPanelProps)
     </div>
   );
 
+  const tabs = [
+    { id: 'basic', label: 'Basic' },
+    { id: 'advanced', label: 'Advanced' },
+    { id: 'motion', label: 'Motion' }
+  ];
+
   return (
-    <div className={rootClasses}>
-      {isMobile && (
-        <div className="w-full flex justify-center pt-3 pb-1 cursor-pointer bg-black/50 rounded-t-2xl" onClick={onClose}>
-          <div className="w-12 h-1.5 bg-pink-900/50 rounded-full"></div>
-        </div>
-      )}
-
-      <div className={cn("flex flex-col flex-1 overflow-hidden", { "hidden lg:flex": !isMobile, "flex": isMobile })}>
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-pink-500/20 rounded-lg">
-              <Palette className="w-5 h-5 text-pink-400" />
-            </div>
-            <h1 className="text-sm font-bold tracking-widest text-zinc-100 uppercase">Customize</h1>
-          </div>
-          <button
-            onClick={handleReset}
-            className="p-2 bg-pink-500/10 rounded-lg text-pink-400 hover:bg-pink-500/20 transition-all"
-            title="Reset Defaults"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="px-6 mb-4">
-          <div className="flex bg-zinc-900/50 p-1 rounded-lg border border-zinc-800">
-            {(['basic', 'advanced', 'motion'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${activeTab === tab
-                  ? 'bg-zinc-800 text-pink-400 shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-300'
-                  }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
-          {activeTab === 'basic' && renderBasicTab()}
-          {activeTab === 'advanced' && renderAdvancedTab()}
-          {activeTab === 'motion' && renderMotionTab()}
-        </div>
-      </div>
-    </div>
+    <GenericSidebar
+      title="Customize"
+      icon={Palette}
+      onReset={handleReset}
+      tabs={tabs}
+      activeTab={activeTab}
+      onTabChange={(id) => setActiveTab(id)}
+      isMobile={isMobile}
+      isOpen={isOpen}
+      onClose={onClose}
+    >
+      {activeTab === 'basic' && renderBasicTab()}
+      {activeTab === 'advanced' && renderAdvancedTab()}
+      {activeTab === 'motion' && renderMotionTab()}
+    </GenericSidebar>
   );
 }

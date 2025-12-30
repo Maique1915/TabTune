@@ -101,34 +101,6 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
     // Timeline / Horizontal Layout
     return (
         <div className="flex flex-col w-full h-full bg-black/20 backdrop-blur-xl border-t border-white/5 relative">
-            {/* Header / Title Bar */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/20 shrink-0 z-20">
-                <div className="flex flex-col gap-1">
-                    <h2 className="text-[12px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                        SCORE CONSTRUCTOR
-                    </h2>
-                    <div className="w-8 h-1 bg-cyan-500 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.5)]"></div>
-                </div>
-                <div className="flex items-center space-x-3">
-                    {hasClipboard && (
-                        <button
-                            onClick={() => onPasteMeasure('')}
-                            className="h-9 px-4 bg-black/40 hover:bg-black/60 text-slate-300 border border-white/10 font-bold text-[10px] uppercase tracking-wider rounded-lg transition-all hover:border-cyan-500/50 hover:text-cyan-400 flex items-center gap-2"
-                        >
-                            <Icons.Paste />
-                            <span>PASTE</span>
-                        </button>
-                    )}
-                    <button
-                        onClick={onAddMeasure}
-                        className="relative overflow-hidden transition-all duration-300 font-black text-[10px] uppercase tracking-wider rounded-lg h-9 px-6 flex items-center gap-2 bg-cyan-500 text-black border border-cyan-400 hover:bg-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_20px_rgba(6,182,212,0.5)]"
-                    >
-                        <Icons.Plus />
-                        <span>+ NEW SECTION</span>
-                    </button>
-                </div>
-            </div>
-
             {/* Horizontal Timeline Container */}
             <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 custom-scrollbar bg-black/40">
                 <div className="flex flex-row gap-4 min-w-max h-full items-start">
@@ -294,10 +266,11 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
                     {/* Add Section Button (End of Timeline) */}
                     <button
                         onClick={onAddMeasure}
-                        className="w-12 h-[90%] border border-dashed border-[#222] rounded-2xl flex items-center justify-center text-[#333] hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all shrink-0"
+                        className="w-14 h-[90%] border-2 border-dashed border-white/5 rounded-2xl flex flex-col items-center justify-center text-slate-600 hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all shrink-0 group/add-m"
                         title="Add New Measure"
                     >
                         <Icons.Plus />
+                        <span className="text-[8px] font-black uppercase tracking-tighter mt-2 opacity-0 group-hover/add-m:opacity-100 transition-opacity">Add</span>
                     </button>
                 </div>
             </div>

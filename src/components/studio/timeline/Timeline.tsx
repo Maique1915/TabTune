@@ -332,19 +332,19 @@ export function Timeline({
     <div className={className}>
       <style>{`
         .custom-timeline-scroll::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
+          width: 6px;
+          height: 6px;
         }
         .custom-timeline-scroll::-webkit-scrollbar-track {
-          background: rgba(0,0,0,0.2);
-          border-radius: 4px;
+          background: transparent;
         }
         .custom-timeline-scroll::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.3);
-          border-radius: 4px;
+          background: #27272a;
+          border-radius: 10px;
+          background-clip: padding-box;
         }
         .custom-timeline-scroll::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.5);
+          background: #3f3f46;
         }
         .custom-timeline-scroll::-webkit-scrollbar-corner {
           background: transparent;

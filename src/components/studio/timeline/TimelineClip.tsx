@@ -7,7 +7,7 @@ import { formatTimeMs } from "@/lib/timeline/utils";
 import { getNome } from "@/lib/chords";
 import { Music } from "lucide-react";
 import { AudioClipVisual } from "./AudioClipVisual";
-import { VexFlowIcon } from "@/components/tab-editor/vexflow-icon";
+import { VexFlowIcon as VexFlowScoreIcon } from "@/components/tab-editor/VexFlowScoreIcon";
 
 interface TimelineClipProps {
   clip: TimelineClipType;
@@ -59,7 +59,7 @@ export function TimelineClip({
     clipBgColor = "bg-[#2a2a2e] border-cyan-500/50 hover:border-cyan-400 hover:bg-[#323236] shadow-sm";
     clipContent = (
       <div className="w-full h-full flex items-center justify-center pointer-events-none">
-        <VexFlowIcon
+        <VexFlowScoreIcon
           {...clip.vexFlowProps}
           width={Math.max(40, width)} // Adaptive width?
           height={40} // Fit inside clip
