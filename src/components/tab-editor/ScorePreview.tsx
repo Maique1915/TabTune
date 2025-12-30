@@ -76,14 +76,25 @@ const MeasureThumbnail = memo(({
     const height = 340;
 
     const hexToRgba = (hex: string, alpha: number) => {
-        let c: any;
-        if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
-            c = hex.substring(1).split('');
-            if (c.length == 3) c = [c[0], c[0], c[1], c[1], c[2], c[2]];
-            c = '0x' + c.join('');
-            return `rgba(${[(c >> 16) & 255, (c >> 8) & 255, c & 255].join(',')},${alpha})`;
+        if (!hex || typeof hex !== 'string') return hex;
+        // Strip alpha from 8-digit hex if present, we prefer theme opacity
+        let cleanHex = hex.startsWith('#') ? hex.slice(1) : hex;
+        if (cleanHex.length === 8) cleanHex = cleanHex.slice(0, 6);
+        if (cleanHex.length === 4) cleanHex = cleanHex.slice(0, 3);
+
+        let r = 0, g = 0, b = 0;
+        if (cleanHex.length === 3) {
+            r = parseInt(cleanHex[0] + cleanHex[0], 16);
+            g = parseInt(cleanHex[1] + cleanHex[1], 16);
+            b = parseInt(cleanHex[2] + cleanHex[2], 16);
+        } else if (cleanHex.length === 6) {
+            r = parseInt(cleanHex.slice(0, 2), 16);
+            g = parseInt(cleanHex.slice(2, 4), 16);
+            b = parseInt(cleanHex.slice(4, 6), 16);
+        } else {
+            return hex; // Fallback for names or complex strings
         }
-        return hex;
+        return `rgba(${r},${g},${b},${alpha})`;
     };
 
     const applyStyles = (obj: any, styleDef: any, bg: string = 'transparent') => {
@@ -359,16 +370,60 @@ const MeasureThumbnail = memo(({
                 const currentFill = el.getAttribute('fill');
                 const currentStroke = el.getAttribute('stroke');
 
+                // Identify category from VexFlow classes
+                const cls = (el.getAttribute('class') || "") + (el.parentElement?.getAttribute('class') || "");
+                const d = el.getAttribute('d') || "";
+                let targetStyle = style.notes;
+
+                // Robust Staff/Stave detection
+                // VexFlow stave lines are often paths without classes, but they are long horizontal lines (e.g. "M... L...")
+                const isHorizontalLine = el.tagName === 'path' && d.includes('M') && d.includes('L') && !d.includes('C') && !d.includes('Q');
+
+                if (cls.includes('stave') || cls.includes('staffline') || cls.includes('barline') || isHorizontalLine) {
+                    targetStyle = style.staffLines;
+                } else if (cls.includes('clef')) {
+                    targetStyle = style.clefs;
+                } else if (cls.includes('time-signature') || cls.includes('timesignature')) {
+                    targetStyle = style.timeSignature;
+                } else if (cls.includes('tab-note') || cls.includes('tabnote')) {
+                    targetStyle = style.tabNumbers;
+                } else if (cls.includes('stave-note') || cls.includes('stavenote')) {
+                    targetStyle = style.notes;
+                } else if (cls.includes('rest')) {
+                    targetStyle = style.rests;
+                }
+
+                const targetColor = hexToRgba(targetStyle.color, targetStyle.opacity ?? 1);
+
                 // If element is black or default slate, force it to theme color (unless it's the background)
                 if (currentFill === '#000000' || currentFill === 'black' || !currentFill) {
                     if (el.tagName !== 'rect' || el.getAttribute('id') !== 'measure-bg') {
-                        el.setAttribute('fill', style.notes.color);
+                        el.setAttribute('fill', targetColor);
                     }
                 }
                 if (currentStroke === '#000000' || currentStroke === 'black' || !currentStroke) {
                     if (el.tagName !== 'rect' || el.getAttribute('id') !== 'measure-bg') {
-                        el.setAttribute('stroke', style.notes.color);
+                        el.setAttribute('stroke', targetColor);
                     }
+                }
+
+                // Apply shadows if enabled in theme
+                if (targetStyle.shadow) {
+                    const shadowId = `shadow-${targetStyle.color.replace(/#/g, '')}`;
+                    if (!svg.querySelector(`#${shadowId}`)) {
+                        const filter = document.createElementNS("http://www.w3.org/2000/svg", "filter");
+                        filter.setAttribute("id", shadowId);
+                        filter.innerHTML = `
+                            <feGaussianBlur stdDeviation="${(targetStyle.shadowBlur || 10) / 4}" />
+                            <feOffset dx="0" dy="0" />
+                            <feMerge>
+                                <feMergeNode />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        `;
+                        svg.prepend(filter);
+                    }
+                    el.setAttribute("filter", `url(#${shadowId})`);
                 }
 
                 // Fix for [object Object] - if text content starts/ends with object signs, hide or fix it

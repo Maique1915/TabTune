@@ -90,16 +90,16 @@ export interface ScoreStyle {
 }
 
 export const DEFAULT_SCORE_STYLE: ScoreStyle = {
-    // NoteForge Defaults
-    clefs: { color: '#ffffff', opacity: 1, shadow: true, shadowColor: '#ffffff', shadowBlur: 10 },
-    timeSignature: { color: '#06b6d4', opacity: 1, shadow: true, shadowColor: '#06b6d4', shadowBlur: 10 },
-    notes: { color: '#00e5ff', opacity: 1, shadow: true, shadowColor: '#00e5ff', shadowBlur: 15 },
-    rests: { color: '#00e5ff', opacity: 1, shadow: false, shadowColor: '#00e5ff', shadowBlur: 10 },
-    tabNumbers: { color: '#00e5ff', opacity: 1, shadow: false, shadowColor: '#00e5ff', shadowBlur: 10 },
-    symbols: { color: '#ffffff', opacity: 1, shadow: false, shadowColor: '#ffffff', shadowBlur: 10 },
-    staffLines: { color: '#3f3f46', opacity: 0.6, shadow: false, shadowColor: '#3f3f46', shadowBlur: 5 },
+    // NoteForge Defaults (Studio Sync)
+    clefs: { color: '#fbbf24', opacity: 1, shadow: true, shadowColor: '#fbbf24', shadowBlur: 10 },
+    timeSignature: { color: '#fbbf24', opacity: 1, shadow: true, shadowColor: '#fbbf24', shadowBlur: 10 },
+    notes: { color: '#ffffff', opacity: 1, shadow: true, shadowColor: '#ffffff', shadowBlur: 12 },
+    rests: { color: '#ffffff', opacity: 0.9, shadow: false, shadowColor: '#ffffff', shadowBlur: 10 },
+    tabNumbers: { color: '#ffffff', opacity: 1, shadow: false, shadowColor: '#ffffff', shadowBlur: 10 },
+    symbols: { color: '#fbbf24', opacity: 1, shadow: false, shadowColor: '#fbbf24', shadowBlur: 10 },
+    staffLines: { color: '#ffffff', opacity: 0.4, shadow: false, shadowColor: '#2e2e2e', shadowBlur: 5 },
 
-    background: '#040405',
+    background: '#080808',
 
     // App Defaults
     shadowIntensity: 10,
@@ -107,7 +107,7 @@ export const DEFAULT_SCORE_STYLE: ScoreStyle = {
     scale: 1.0,
     transitionType: 'assemble',
     playheadColor: '#06b6d4',
-    activeNoteColor: '#22d3ee'
+    activeNoteColor: '#fbbf24'
 };
 
 export interface ScoreState {
