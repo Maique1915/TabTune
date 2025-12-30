@@ -53,21 +53,22 @@ export function convertToVextab(measures: MeasureData[], settings: GlobalSetting
             let decoratorsStr = "";
             const textSymbols: string[] = [];
 
-            // Native VexTab Articulations (Safe keys)
-            if (n.decorators.staccato) decoratorsStr += " $.a./bottom.$";
-            if (n.decorators.accent) decoratorsStr += " $.a>/bottom.$";
-            if (n.decorators.staccatissimo) decoratorsStr += " $.av/bottom.$";
-            if (n.decorators.snapPizzicato) decoratorsStr += " $.ao/top.$";
+            // Native VexTab Articulations & Decorators
+            if (n.decorators.staccato) decoratorsStr += ".";
+            if (n.decorators.accent) decoratorsStr += ">";
+            if (n.decorators.staccatissimo) decoratorsStr += "v";
+            if (n.decorators.tenuto) decoratorsStr += "-";
+            if (n.decorators.marcato) decoratorsStr += "^";
+            if (n.decorators.pizzicato) decoratorsStr += "+";
+            if (n.decorators.snapPizzicato) decoratorsStr += "o";
+            if (n.decorators.fermataUp) decoratorsStr += "@a";
+            if (n.decorators.fermataDown) decoratorsStr += "@u";
+            if (n.decorators.bowUp) decoratorsStr += "u";
+            if (n.decorators.bowDown) decoratorsStr += "d";
+            if (n.decorators.openNote) decoratorsStr += "h";
 
-            // Fallback to Text for Special Char Articulations
-            if (n.decorators.pizzicato) textSymbols.push('+');
-            if (n.decorators.tenuto) { console.log('Converter: Tenuto'); textSymbols.push('-'); }
-            if (n.decorators.marcato) { console.log('Converter: Marcato'); textSymbols.push('^'); }
-            if (n.decorators.fermata) { console.log('Converter: Fermata'); textSymbols.push('𝄐'); }
-            if (n.decorators.fermataDown) textSymbols.push('𝄑');
-            if (n.decorators.bowUp) textSymbols.push('∨');
-            if (n.decorators.bowDown) textSymbols.push('⊓');
-            if (n.decorators.open) textSymbols.push('o');
+            // Fallback to Text for any remaining special annotations (if needed)
+            // Note: We've moved most to native VexTab symbols above.
 
             // Annotations & Chords
             if (n.chord) textSymbols.unshift(n.chord); // Chords first
@@ -96,8 +97,13 @@ export function convertToVextab(measures: MeasureData[], settings: GlobalSetting
 
             let tech = n.technique || "";
             let connector = "";
+            let techniquePrefix = "";
 
-            if (tech && ['s', 'h', 'p', 'b'].includes(tech)) {
+            if (tech === 't') {
+                techniquePrefix = "t";
+            }
+
+            if (tech && ['s', 'h', 'p', 'b', 't'].includes(tech)) {
                 const nextNote: NoteData | undefined = measure.notes[nIdx + 1];
                 if (n.slideTargetId) {
                     if (nextNote && nextNote.id === n.slideTargetId && nextNote.string === n.string) {
@@ -132,7 +138,7 @@ export function convertToVextab(measures: MeasureData[], settings: GlobalSetting
                 }
             }
 
-            currentGroup.push(`${prefix}${n.fret}${accidentalStr}${headStr}/${n.string}${beam}${vibrato}${decoratorsStr}${connector}`);
+            currentGroup.push(`${prefix}${techniquePrefix}${n.fret}${accidentalStr}${headStr}/${n.string}${beam}${vibrato}${decoratorsStr}${connector}`);
         });
 
         if (currentGroup.length > 0) groups.push(currentGroup.join(" "));

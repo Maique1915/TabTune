@@ -392,7 +392,7 @@ export default function TabEditorPage() {
             return;
         }
 
-        if (['s', 'h', 'p', 'b'].includes(code) && selectedNoteIds.length === 2) {
+        if (['s', 'h', 'p', 'b', 't'].includes(code) && selectedNoteIds.length === 2) {
             let firstNote: NoteData | null = null;
             let secondNote: NoteData | null = null;
 
@@ -497,12 +497,23 @@ export default function TabEditorPage() {
     };
 
     const handleDecoratorChange = (decorator: string) => {
-        updateSelectedNotes(n => ({
-            decorators: {
-                ...n.decorators,
-                [decorator]: !n.decorators[decorator as keyof typeof n.decorators]
+        updateSelectedNotes(n => {
+            const isAlreadyActive = !!n.decorators[decorator as keyof typeof n.decorators];
+
+            // Clean slate: start with only the dot if it exists
+            const nextDecorators: any = {
+                dot: n.decorators.dot
+            };
+
+            // Toggle logic: only set the new one if it wasn't already active
+            if (!isAlreadyActive) {
+                nextDecorators[decorator] = true;
             }
-        }));
+
+            return {
+                decorators: nextDecorators
+            };
+        });
     };
 
     if (!isClient) return <div className="h-screen w-full bg-black flex items-center justify-center text-slate-500">Loading...</div>;

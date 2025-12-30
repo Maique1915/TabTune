@@ -10,11 +10,11 @@ export interface NoteDecorator {
     marcato?: boolean;         // a^
     pizzicato?: boolean;       // a+ (Left Hand)
     snapPizzicato?: boolean;   // ao
-    fermata?: boolean;         // a@a (Up)
+    fermataUp?: boolean;       // a@a (Up)
     fermataDown?: boolean;     // a@u (Down)
     bowUp?: boolean;           // a|
     bowDown?: boolean;         // am
-    open?: boolean;            // ah
+    openNote?: boolean;            // ah
     dot?: boolean;
 }
 
@@ -91,15 +91,15 @@ export interface ScoreStyle {
 
 export const DEFAULT_SCORE_STYLE: ScoreStyle = {
     // NoteForge Defaults
-    clefs: { color: '#ffffff', opacity: 1, shadow: false, shadowColor: '#ffffff', shadowBlur: 10 },
-    timeSignature: { color: '#ffffff', opacity: 1, shadow: false, shadowColor: '#ffffff', shadowBlur: 10 },
+    clefs: { color: '#ffffff', opacity: 1, shadow: true, shadowColor: '#ffffff', shadowBlur: 10 },
+    timeSignature: { color: '#06b6d4', opacity: 1, shadow: true, shadowColor: '#06b6d4', shadowBlur: 10 },
     notes: { color: '#00e5ff', opacity: 1, shadow: true, shadowColor: '#00e5ff', shadowBlur: 15 },
     rests: { color: '#00e5ff', opacity: 1, shadow: false, shadowColor: '#00e5ff', shadowBlur: 10 },
     tabNumbers: { color: '#00e5ff', opacity: 1, shadow: false, shadowColor: '#00e5ff', shadowBlur: 10 },
     symbols: { color: '#ffffff', opacity: 1, shadow: false, shadowColor: '#ffffff', shadowBlur: 10 },
-    staffLines: { color: '#3f3f46', opacity: 1, shadow: false, shadowColor: '#3f3f46', shadowBlur: 5 },
+    staffLines: { color: '#3f3f46', opacity: 0.6, shadow: false, shadowColor: '#3f3f46', shadowBlur: 5 },
 
-    background: '#09090b',
+    background: '#040405',
 
     // App Defaults
     shadowIntensity: 10,

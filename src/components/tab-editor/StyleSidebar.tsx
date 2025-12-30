@@ -16,62 +16,86 @@ const PRESET_THEMES = {
     default: {
         label: 'Default Dark',
         style: {
-            // NoteForge Defaults (Dark)
-            clefs: { color: '#ffffff', opacity: 1, shadow: false, shadowColor: '#ffffff', shadowBlur: 10 },
-            timeSignature: { color: '#ffffff', opacity: 1, shadow: false, shadowColor: '#ffffff', shadowBlur: 10 },
-            notes: { color: '#00e5ff', opacity: 1, shadow: true, shadowColor: '#00e5ff', shadowBlur: 15 },
-            rests: { color: '#00e5ff', opacity: 1, shadow: false, shadowColor: '#00e5ff', shadowBlur: 10 },
-            tabNumbers: { color: '#00e5ff', opacity: 1, shadow: false, shadowColor: '#00e5ff', shadowBlur: 10 },
-            symbols: { color: '#ffffff', opacity: 1, shadow: false, shadowColor: '#ffffff', shadowBlur: 10 },
-            staffLines: { color: '#3f3f46', opacity: 1, shadow: false, shadowColor: '#3f3f46', shadowBlur: 5 },
-            background: '#09090b',
+            clefs: { color: '#ffffff', opacity: 1, shadow: true, shadowColor: '#ffffff', shadowBlur: 8 },
+            timeSignature: { color: '#ffffff', opacity: 1, shadow: true, shadowColor: '#ffffff', shadowBlur: 8 },
+            notes: { color: '#ffffff', opacity: 1, shadow: true, shadowColor: '#ffffff', shadowBlur: 10 },
+            rests: { color: '#ffffff', opacity: 1, shadow: false },
+            tabNumbers: { color: '#ffffff', opacity: 1, shadow: false },
+            symbols: { color: '#ffffff', opacity: 1, shadow: false },
+            staffLines: { color: '#2e2e2e', opacity: 0.8, shadow: false },
+            background: '#080808',
             playheadColor: '#06b6d4',
-            activeNoteColor: '#22d3ee',
+            activeNoteColor: '#fbbf24',
+            scale: 1,
+            transitionType: 'assemble'
         }
     },
     classic: {
-        label: 'Classic Sheet',
+        label: 'Classic Light',
         style: {
             clefs: { color: '#000000', opacity: 1, shadow: false },
             timeSignature: { color: '#000000', opacity: 1, shadow: false },
-            notes: { color: '#000000', opacity: 1, shadow: false },
-            rests: { color: '#000000', opacity: 1, shadow: false },
-            tabNumbers: { color: '#000000', opacity: 1, shadow: false },
-            symbols: { color: '#000000', opacity: 1, shadow: false },
-            staffLines: { color: '#666666', opacity: 1, shadow: false },
-            background: '#ffffff',
-            playheadColor: '#2563eb', // Blue playhead
-            activeNoteColor: '#ef4444', // Red active note
+            notes: { color: '#111111', opacity: 1, shadow: false },
+            rests: { color: '#111111', opacity: 1, shadow: false },
+            tabNumbers: { color: '#111111', opacity: 1, shadow: false },
+            symbols: { color: '#111111', opacity: 1, shadow: false },
+            staffLines: { color: '#d1d5db', opacity: 1, shadow: false },
+            background: '#fdfdfd',
+            playheadColor: '#2563eb',
+            activeNoteColor: '#ef4444',
+            scale: 1,
+            transitionType: 'snap'
         }
     },
     cyberpunk: {
         label: 'Cyberpunk',
         style: {
-            clefs: { color: '#fb00ff', opacity: 1, shadow: true, shadowColor: '#fb00ff', shadowBlur: 15 },
-            timeSignature: { color: '#fb00ff', opacity: 1, shadow: true, shadowColor: '#fb00ff', shadowBlur: 15 },
+            clefs: { color: '#00ff9d', opacity: 1, shadow: true, shadowColor: '#00ff9d', shadowBlur: 15 },
+            timeSignature: { color: '#00ff9d', opacity: 1, shadow: true, shadowColor: '#00ff9d', shadowBlur: 15 },
             notes: { color: '#00ff9d', opacity: 1, shadow: true, shadowColor: '#00ff9d', shadowBlur: 20 },
             rests: { color: '#00ff9d', opacity: 1, shadow: true, shadowColor: '#00ff9d', shadowBlur: 10 },
             tabNumbers: { color: '#00ff9d', opacity: 1, shadow: true, shadowColor: '#00ff9d', shadowBlur: 15 },
-            symbols: { color: '#fffb00', opacity: 1, shadow: true, shadowColor: '#fffb00', shadowBlur: 10 },
-            staffLines: { color: '#2d0036', opacity: 1, shadow: false },
-            background: '#1a0b1f',
-            playheadColor: '#fb00ff',
+            symbols: { color: '#00ff9d', opacity: 1, shadow: true, shadowColor: '#00ff9d', shadowBlur: 10 },
+            staffLines: { color: '#d946ef', opacity: 1, shadow: true, shadowColor: '#d946ef', shadowBlur: 2 },
+            background: '#0a0412',
+            playheadColor: '#d946ef',
             activeNoteColor: '#fffb00',
+            scale: 1,
+            transitionType: 'fade'
+        }
+    },
+    midnight: {
+        label: 'Midnight Blue',
+        style: {
+            clefs: { color: '#3b82f6', opacity: 1, shadow: true, shadowColor: '#3b82f6', shadowBlur: 10 },
+            timeSignature: { color: '#3b82f6', opacity: 1, shadow: true, shadowColor: '#3b82f6', shadowBlur: 10 },
+            notes: { color: '#3b82f6', opacity: 1, shadow: true, shadowColor: '#3b82f6', shadowBlur: 15 },
+            rests: { color: '#3b82f6', opacity: 1, shadow: false },
+            tabNumbers: { color: '#3b82f6', opacity: 1, shadow: false },
+            symbols: { color: '#3b82f6', opacity: 1, shadow: false },
+            staffLines: { color: '#1e293b', opacity: 0.8, shadow: false },
+            background: '#020617',
+            playheadColor: '#3b82f6',
+            activeNoteColor: '#60a5fa',
+            scale: 1,
+            transitionType: 'assemble'
         }
     },
     vintage: {
         label: 'Vintage',
         style: {
-            clefs: { color: '#5c4033', opacity: 0.9, shadow: false },
-            timeSignature: { color: '#5c4033', opacity: 0.9, shadow: false },
-            notes: { color: '#4a3b2a', opacity: 1, shadow: false },
-            rests: { color: '#4a3b2a', opacity: 1, shadow: false },
-            tabNumbers: { color: '#4a3b2a', opacity: 1, shadow: false },
-            symbols: { color: '#8b4513', opacity: 0.9, shadow: false },
-            staffLines: { color: '#a68b6c', opacity: 0.6, shadow: false },
-            background: '#efe6d5',
-            playheadColor: '#cd853f',
-            activeNoteColor: '#8b4513',
+            clefs: { color: '#451a03', opacity: 1, shadow: false },
+            timeSignature: { color: '#451a03', opacity: 1, shadow: false },
+            notes: { color: '#451a03', opacity: 1, shadow: false },
+            rests: { color: '#451a03', opacity: 1, shadow: false },
+            tabNumbers: { color: '#451a03', opacity: 1, shadow: false },
+            symbols: { color: '#78350f', opacity: 1, shadow: false },
+            staffLines: { color: '#78350f', opacity: 0.4, shadow: false },
+            background: '#f5f1e6',
+            playheadColor: '#b45309',
+            activeNoteColor: '#78350f',
+            scale: 1,
+            transitionType: 'assemble'
         }
     }
 };

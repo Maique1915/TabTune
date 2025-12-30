@@ -110,7 +110,7 @@ const MeasureThumbnail = memo(({
         if (typeof window === 'undefined' || !window.Vex) return null;
 
         const host = document.createElement('div');
-        const { Renderer, Stave, StaveNote, TabStave, TabNote, Formatter, Dot, Accidental, Articulation } = window.Vex.Flow;
+        const { Renderer, Stave, StaveNote, TabStave, TabNote, Formatter, Dot, Accidental, Articulation, TabTie, StaveTie, TabSlide, Vibrato, Bend, Annotation } = window.Vex.Flow;
         const renderer = new Renderer(host, Renderer.Backends.SVG);
         renderer.resize(width, height);
         const context = renderer.getContext();
@@ -123,11 +123,13 @@ const MeasureThumbnail = memo(({
             bgRect.setAttribute("width", "100%");
             bgRect.setAttribute("height", "100%");
             bgRect.setAttribute("fill", style.background || '#09090b');
+            bgRect.setAttribute("id", "measure-bg"); // Add an ID to identify the background rect
             svg.prepend(bgRect);
 
             let x = 10;
             const staveWidth = width - 20;
             let notes: any[] = [];
+            let tabNotes: any[] = [];
             let stave: any = null;
 
             if (showNotation) {
@@ -170,10 +172,41 @@ const MeasureThumbnail = memo(({
                     } else {
                         const key = getNoteKeyFromFret(parseInt(note.fret), parseInt(note.string));
                         const sn = new StaveNote({ keys: [key], duration: note.duration });
-                        if (note.decorators?.dot) Dot.buildAndAttach([sn], { all: true });
+                        const d = note.decorators || {};
+                        if (d.dot) Dot.buildAndAttach([sn], { all: true });
                         if (note.accidental && note.accidental !== 'none') sn.addModifier(new Accidental(note.accidental));
-                        if (note.decorators?.staccato) sn.addModifier(new Articulation('a.'));
-                        if (note.decorators?.accent) sn.addModifier(new Articulation('a>'));
+
+                        // Articulations
+                        if (d.staccato) sn.addModifier(new Articulation('a.'));
+                        if (d.staccatissimo) sn.addModifier(new Articulation('av'));
+                        if (d.accent) sn.addModifier(new Articulation('a>'));
+                        if (d.tenuto) sn.addModifier(new Articulation('a-'));
+                        if (d.marcato) sn.addModifier(new Articulation('a^'));
+                        if (d.pizzicato) sn.addModifier(new Articulation('a+'));
+                        if (d.snapPizzicato) sn.addModifier(new Articulation('ao'));
+                        if (d.fermataUp) sn.addModifier(new Articulation('a@a'));
+                        if (d.fermataDown) sn.addModifier(new Articulation('a@u'));
+                        if (d.bowUp) sn.addModifier(new Articulation('a|'));
+                        if (d.bowDown) sn.addModifier(new Articulation('am'));
+                        if (d.openNote) sn.addModifier(new Articulation('ah'));
+
+                        // Techniques Modifiers
+                        if (note.technique === 'v') {
+                            const vib = new Vibrato();
+                            applyStyles(vib, noteStyle, style.background || 'transparent');
+                            sn.addModifier(vib);
+                        }
+                        if (note.technique === 't') {
+                            const ann = new Annotation('T').setVerticalJustification(Annotation.VerticalJustify.TOP);
+                            applyStyles(ann, noteStyle, style.background || 'transparent');
+                            sn.addModifier(ann);
+                        }
+                        if (note.technique === 'b') {
+                            const bend = new Bend([{ type: 1, text: "Full" }]); // 1 = UP
+                            applyStyles(bend, noteStyle, style.background || 'transparent');
+                            sn.addModifier(bend);
+                        }
+
                         applyStyles(sn, noteStyle, style.background || 'transparent');
                         return sn;
                     }
@@ -198,16 +231,66 @@ const MeasureThumbnail = memo(({
                 const linesColor = hexToRgba(style.staffLines.color, style.staffLines.opacity);
                 tabStave.setStyle({ strokeStyle: linesColor, fillStyle: linesColor }).draw();
 
-                const tabNotes = measureData.notes.map((note) => {
+                tabNotes = measureData.notes.map((note) => {
                     const isSelected = selectedNoteIds?.includes(note.id);
-                    const tabNoteStyle = isSelected ? { color: '#fbbf24', opacity: 1, shadow: true } : (note.type === 'rest' ? style.rests : style.tabNumbers);
+                    const tabNoteStyle = isSelected ? { color: '#fbbf24', opacity: 1, shadow: true, shadowColor: '#fbbf24', shadowBlur: 15 } : (note.type === 'rest' ? style.rests : style.tabNumbers);
 
                     if (note.type === 'rest') {
                         const tn = new TabNote({ positions: [{ str: 3, fret: 'X' }], duration: note.duration + "r" });
                         applyStyles(tn, tabNoteStyle, style.background || 'transparent');
                         return tn;
                     } else {
-                        const tn = new TabNote({ positions: [{ str: parseInt(note.string), fret: parseInt(note.fret) }], duration: note.duration });
+                        // Check if this note is a target of a bend in the current measure
+                        const isBendTarget = measureData.notes.some(n => n.technique === 'b' && n.slideTargetId === note.id);
+                        const displayFret = isBendTarget ? `(${note.fret})` : note.fret;
+
+                        const tn = new TabNote({
+                            positions: [{ str: parseInt(note.string), fret: displayFret }],
+                            duration: note.duration
+                        });
+                        const d = note.decorators || {};
+
+                        // Articulations on Tab
+                        if (d.staccato) tn.addModifier(new Articulation('a.'));
+                        if (d.staccatissimo) tn.addModifier(new Articulation('av'));
+                        if (d.accent) tn.addModifier(new Articulation('a>'));
+                        if (d.tenuto) tn.addModifier(new Articulation('a-'));
+                        if (d.marcato) tn.addModifier(new Articulation('a^'));
+                        if (d.pizzicato) tn.addModifier(new Articulation('a+'));
+                        if (d.snapPizzicato) tn.addModifier(new Articulation('ao'));
+                        if (d.fermataUp) tn.addModifier(new Articulation('a@a'));
+                        if (d.fermataDown) tn.addModifier(new Articulation('a@u'));
+                        if (d.bowUp) tn.addModifier(new Articulation('a|'));
+                        if (d.bowDown) tn.addModifier(new Articulation('am'));
+                        if (d.openNote) tn.addModifier(new Articulation('ah'));
+
+                        // Techniques Modifiers on Tab
+                        if (note.technique === 'v') {
+                            const vib = new Vibrato();
+                            applyStyles(vib, tabNoteStyle, style.background || 'transparent');
+                            tn.addModifier(vib);
+                        }
+                        if (note.technique === 't') {
+                            const ann = new Annotation('T').setVerticalJustification(Annotation.VerticalJustify.TOP);
+                            applyStyles(ann, tabNoteStyle, style.background || 'transparent');
+                            tn.addModifier(ann);
+                        }
+                        if (note.technique === 'b') {
+                            let bendLabel = "Full";
+                            if (note.slideTargetId) {
+                                const target = measureData.notes.find(n => n.id === note.slideTargetId);
+                                if (target) {
+                                    const diff = parseInt(target.fret) - parseInt(note.fret);
+                                    if (diff === 1) bendLabel = "1/2";
+                                    else if (diff === 2) bendLabel = "Full";
+                                    else if (diff > 0) bendLabel = diff.toString();
+                                }
+                            }
+                            const bend = new Bend([{ type: 1, text: bendLabel }]); // 1 = UP
+                            applyStyles(bend, tabNoteStyle, style.background || 'transparent');
+                            tn.addModifier(bend);
+                        }
+
                         applyStyles(tn, tabNoteStyle, style.background || 'transparent');
                         return tn;
                     }
@@ -218,8 +301,83 @@ const MeasureThumbnail = memo(({
                 }
             }
 
+            // --- RENDER TIES & SLURS FOR TECHNIQUES ---
+            measureData.notes.forEach((n, nIdx) => {
+                const tech = n.technique;
+                if (tech && ['h', 'p', 's'].includes(tech)) {
+                    let targetIdx = -1;
+                    if (n.slideTargetId) {
+                        targetIdx = measureData.notes.findIndex(target => target.id === n.slideTargetId);
+                    } else if (nIdx + 1 < measureData.notes.length) {
+                        // Fallback to next note if targetId isn't set but it's a connector
+                        const next = measureData.notes[nIdx + 1];
+                        if (next.type === 'note' && next.string === n.string) targetIdx = nIdx + 1;
+                    }
+
+                    if (targetIdx !== -1) {
+                        const firstIdx = nIdx;
+                        const secondIdx = targetIdx;
+
+                        let tieLabel = "";
+                        if (tech === 'h') tieLabel = "h";
+                        if (tech === 'p') tieLabel = "p";
+                        if (tech === 's') tieLabel = "sl.";
+
+                        const tieStyle = selectedNoteIds?.includes(n.id) || selectedNoteIds?.includes(measureData.notes[targetIdx].id)
+                            ? { color: '#fbbf24', opacity: 1, shadow: true, shadowColor: '#fbbf24', shadowBlur: 15 }
+                            : style.notes;
+
+                        if (showNotation && notes[firstIdx] && notes[secondIdx]) {
+                            const slur = new StaveTie({
+                                first_note: notes[firstIdx],
+                                last_note: notes[secondIdx],
+                                first_indices: [0],
+                                last_indices: [0]
+                            }, tieLabel);
+                            applyStyles(slur, tieStyle, style.background || 'transparent');
+                            slur.setContext(context).draw();
+                        }
+
+                        if (showTablature && tabNotes[firstIdx] && tabNotes[secondIdx]) {
+                            const tie = new TabTie({
+                                first_note: tabNotes[firstIdx],
+                                last_note: tabNotes[secondIdx],
+                                first_indices: [0],
+                                last_indices: [0]
+                            }, tieLabel);
+                            applyStyles(tie, tieStyle, style.background || 'transparent');
+                            tie.setContext(context).draw();
+                        }
+                    }
+                }
+            });
+
             // --- POST-PROCESS SVG ---
-            // Fix white "boxes" behind tab numbers and other elements in dark mode
+            // Force colors on common elements that sometimes bypass VexFlow's setStyle (like Annotations, Ties text, etc.)
+            const svgElements = host.querySelectorAll('text, path, rect, circle');
+            svgElements.forEach((el: any) => {
+                const currentFill = el.getAttribute('fill');
+                const currentStroke = el.getAttribute('stroke');
+
+                // If element is black or default slate, force it to theme color (unless it's the background)
+                if (currentFill === '#000000' || currentFill === 'black' || !currentFill) {
+                    if (el.tagName !== 'rect' || el.getAttribute('id') !== 'measure-bg') {
+                        el.setAttribute('fill', style.notes.color);
+                    }
+                }
+                if (currentStroke === '#000000' || currentStroke === 'black' || !currentStroke) {
+                    if (el.tagName !== 'rect' || el.getAttribute('id') !== 'measure-bg') {
+                        el.setAttribute('stroke', style.notes.color);
+                    }
+                }
+
+                // Fix for [object Object] - if text content starts/ends with object signs, hide or fix it
+                if (el.textContent === '[object Object]') {
+                    el.textContent = ''; // Hide broken text
+                }
+            });
+
+            // Post-process SVG: Fix white "boxes" behind tab numbers and other elements in dark mode
             const bgHex = style.background || '#09090b';
             const rects = svg.querySelectorAll('rect');
             rects.forEach((rect: any) => {
@@ -591,7 +749,7 @@ const ScorePreview: React.FC<ScorePreviewProps> = ({
 
             <div className="flex-1 flex flex-col items-center justify-center p-6 bg-transparent overflow-hidden relative">
                 {/* CRT Monitor Frame */}
-                <div className="relative w-full max-w-[800px]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        bg-[#0a0a0a] rounded-3xl border-4 border-[#333] shadow-[0_0_0_2px_#111,0_0_40px_rgba(0,0,0,0.5),0_0_100px_rgba(6,182,212,0.1)] overflow-hidden group z-10">
+                <div className="relative w-full max-w-[800px] bg-[#0a0a0a] rounded-3xl border-4 border-[#333] shadow-[0_0_0_2px_#111,0_0_40px_rgba(0,0,0,0.5),0_0_100px_rgba(6,182,212,0.1)] overflow-hidden group z-10">
                     {/* Screen Bezel/Inner Shadow */}
                     <div className="absolute inset-0 rounded-2xl pointer-events-none z-20 shadow-[inset_0_0_40px_rgba(0,0,0,0.8)] border border-white/5" />
 

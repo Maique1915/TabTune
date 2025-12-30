@@ -110,6 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             items: [
                 { label: 'Hammer-on', code: 'h' },
                 { label: 'Pull-off', code: 'p' },
+                { label: 'Tap', code: 't' },
                 { label: 'Slide', code: 's' },
                 { label: 'Bend', code: 'b' },
                 { label: 'Vibrato', code: 'v' },
@@ -180,7 +181,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
                         {/* Tab Navigation */}
                         <div className="flex p-1 bg-black/40 rounded-xl border border-white/5 space-x-1 overflow-x-auto custom-scrollbar">
-                            {['main', 'articulations', 'text'].map((tab) => (
+                            {['main', 'articulations', 'effects', 'text'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab as any)}
@@ -273,17 +274,17 @@ const Sidebar: React.FC<SidebarProps> = ({
                             <div className="grid grid-cols-3 gap-2">
                                 {[
                                     { k: 'staccato', l: 'Staccato', s: '.' },
-                                    { k: 'staccatissimo', l: 'Staccatis.', s: '▼' },
+                                    { k: 'staccatissimo', l: 'Staccatissimo', s: 'v' },
                                     { k: 'accent', l: 'Accent', s: '>' },
                                     { k: 'tenuto', l: 'Tenuto', s: '-' },
                                     { k: 'marcato', l: 'Marcato', s: '^' },
-                                    { k: 'fermata', l: 'Fermata', s: '𝄐' },
-                                    { k: 'fermataDown', l: 'Fermata D.', s: '𝄑' },
-                                    { k: 'pizzicato', l: 'Pizz.', s: '+' },
-                                    { k: 'snapPizzicato', l: 'Snap', s: '○' },
-                                    { k: 'bowUp', l: 'Bow Up', s: '∨' },
-                                    { k: 'bowDown', l: 'Bow Down', s: 'sqcap' }, // approx
-                                    { k: 'open', l: 'Open', s: 'o' }
+                                    { k: 'pizzicato', l: 'LH Pizz', s: '+' },
+                                    { k: 'snapPizzicato', l: 'Snap Pizz', s: 'o' },
+                                    { k: 'openNote', l: 'Open Note', s: 'h' },
+                                    { k: 'fermataUp', l: 'Fermata Up', s: '𝄐' },
+                                    { k: 'fermataDown', l: 'Fermata Down', s: '𝄑' },
+                                    { k: 'bowUp', l: 'Bow Up', s: '⋁' },
+                                    { k: 'bowDown', l: 'Bow Down', s: '⊓' },
                                 ].map((art) => (
                                     <ArticulationButton
                                         key={art.k}
@@ -293,6 +294,39 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         onClick={() => onDecoratorChange?.(art.k)}
                                     />
                                 ))}
+                            </div>
+                        )}
+
+                        {/* TAB: EFFECTS/TECHNIQUES */}
+                        {activeTab === 'effects' && editingNote.type === 'note' && (
+                            <div className="space-y-4">
+                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
+                                    Techniques
+                                </h3>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        { l: 'Hammer-on', c: 'h' },
+                                        { l: 'Pull-off', c: 'p' },
+                                        { l: 'Tap', c: 't' },
+                                        { l: 'Slide', c: 's' },
+                                        { l: 'Bend', c: 'b' },
+                                        { l: 'Vibrato', c: 'v' },
+                                    ].map((item) => (
+                                        <button
+                                            key={item.c}
+                                            onClick={() => onInsert(item.c)}
+                                            className={`py-3 px-2 rounded-xl border font-black transition-all text-[10px] flex flex-col items-center justify-center ${editingNote.technique === item.c
+                                                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                                                : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'
+                                                }`}
+                                        >
+                                            {item.l}
+                                        </button>
+                                    ))}
+                                </div>
+                                <p className="text-[8px] text-slate-600 italic leading-tight">
+                                    Select two notes in the Timeline to connect them with a technique, or select one note to apply individual effects.
+                                </p>
                             </div>
                         )}
 
