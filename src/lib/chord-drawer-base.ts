@@ -517,6 +517,13 @@ export class ChordDrawerBase {
   }
 
   /**
+   * Alias para clearCanvas para compatibilidade
+   */
+  clear(): void {
+    this.clearCanvas();
+  }
+
+  /**
    * Desenha o nome do acorde
    */
   drawChordName(chordName: string, offsetX: number = 0): void {

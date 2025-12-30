@@ -12,6 +12,13 @@ export class ScoreDrawer {
         this.ctx = this.renderer.getContext();
     }
 
+    clear() {
+        const ctx = this.element.getContext('2d');
+        if (ctx) {
+            ctx.clearRect(0, 0, this.element.width, this.element.height);
+        }
+    }
+
     draw(width: number, height: number, clip: SymbolClip) {
         if (!clip || !clip.vexFlowProps) return;
 
