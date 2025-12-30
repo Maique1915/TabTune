@@ -185,15 +185,6 @@ export function TimelinePanel({
   // --- RENDER ---
   return (
     <div className="flex flex-col w-full h-full bg-black/20 backdrop-blur-xl border-t border-white/5 relative">
-      {/* Header / Title Bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/20">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-[12px] font-black text-slate-500 uppercase tracking-[0.2em]">
-            TIMELINE
-          </h2>
-          <div className="w-8 h-1 bg-cyan-500 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.5)]"></div>
-        </div>
-      </div>
 
       <div className="flex-1 overflow-hidden relative p-4 flex flex-col gap-4">
 

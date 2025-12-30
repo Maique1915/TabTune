@@ -13,7 +13,7 @@ export interface VexFlowIconProps {
     [key: string]: any;
 }
 
-export const VexFlowIcon: React.FC<VexFlowIconProps> = ({
+export const VexFlowScoreIcon: React.FC<VexFlowIconProps> = ({
     width = 60,
     height = 50,
     staveWidth = 60,

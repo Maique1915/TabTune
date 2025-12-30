@@ -154,30 +154,6 @@ export function Timeline({
     return clamp01(xOnTimeline / totalWidthPx);
   }, [totalWidthPx]);
 
-  const handlePlayheadPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsPlayheadDragging(true);
-    onPlayheadScrubStart?.();
-    onPlayheadScrub?.(eventToPlayheadProgress(e));
-    e.currentTarget.setPointerCapture(e.pointerId);
-  }, [eventToPlayheadProgress, onPlayheadScrub, onPlayheadScrubStart]);
-
-  const handlePlayheadPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isPlayheadDragging) return;
-    e.preventDefault();
-    e.stopPropagation();
-    onPlayheadScrub?.(eventToPlayheadProgress(e));
-  }, [eventToPlayheadProgress, isPlayheadDragging, onPlayheadScrub]);
-
-  const handlePlayheadPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isPlayheadDragging) return;
-    e.preventDefault();
-    e.stopPropagation();
-    setIsPlayheadDragging(false);
-    onPlayheadScrubEnd?.(eventToPlayheadProgress(e));
-  }, [eventToPlayheadProgress, isPlayheadDragging, onPlayheadScrubEnd]);
-
   const repackClips = (clips: TimelineClip[]): TimelineClip[] => {
     const sorted = [...clips].sort((a, b) => a.start - b.start);
     let currentStart = 0;
@@ -385,14 +361,7 @@ export function Timeline({
             >
               {/* Playhead Line */}
               <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[1px] bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
-              {/* Playhead Handle */}
-              <div
-                className="absolute left-1/2 -translate-x-1/2 top-0 w-3 h-3 bg-cyan-400 rotate-45 -mt-1.5 shadow-[0_0_5px_rgba(34,211,238,0.8)] cursor-ew-resize pointer-events-auto"
-                ref={playheadRef}
-                onPointerDown={handlePlayheadPointerDown}
-                onPointerMove={handlePlayheadPointerMove}
-                onPointerUp={handlePlayheadPointerUp}
-              />
+
             </div>
           )}
 

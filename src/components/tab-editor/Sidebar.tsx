@@ -3,7 +3,7 @@
 import React from 'react';
 import { Duration, NoteData, MeasureData } from '@/lib/tab-editor/types';
 import { Icons } from '@/lib/tab-editor/constants';
-import VexFlowRhythmIcon from './VexFlowRhythmIcon';
+import { VexFlowRhythmIcon } from './VexFlowRhythmIcon';
 import { GenericSidebar } from '@/components/shared/GenericSidebar';
 import Link from 'next/link';
 import { Music, Settings2, Info, Home } from 'lucide-react';

@@ -18,7 +18,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/shared/components/ui/select";
-import { VexFlowIcon as VexFlowScoreIcon } from "@/components/tab-editor/VexFlowScoreIcon";
+import { VexFlowScoreIcon } from "@/components/tab-editor/VexFlowScoreIcon";
 import type { SymbolClip } from "@/lib/timeline/types";
 
 interface ScoreEditorProps {

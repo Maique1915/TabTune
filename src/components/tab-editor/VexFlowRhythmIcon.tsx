@@ -8,7 +8,7 @@ interface VexFlowIconProps {
     fillColor?: string;
 }
 
-const VexFlowIcon: React.FC<VexFlowIconProps> = ({
+export const VexFlowRhythmIcon: React.FC<VexFlowIconProps> = ({
     duration,
     type = 'note',
     className = "w-10 h-14", // Default size class
@@ -106,4 +106,3 @@ const VexFlowIcon: React.FC<VexFlowIconProps> = ({
     return <div ref={containerRef} className={`flex items-center justify-center ${className}`} />;
 };
 
-export default VexFlowIcon;

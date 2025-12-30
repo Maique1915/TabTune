@@ -7,7 +7,7 @@ import { formatTimeMs } from "@/lib/timeline/utils";
 import { getNome } from "@/lib/chords";
 import { Music } from "lucide-react";
 import { AudioClipVisual } from "./AudioClipVisual";
-import { VexFlowIcon as VexFlowScoreIcon } from "@/components/tab-editor/VexFlowScoreIcon";
+import { VexFlowScoreIcon } from "@/components/tab-editor/VexFlowScoreIcon";
 
 interface TimelineClipProps {
   clip: TimelineClipType;
