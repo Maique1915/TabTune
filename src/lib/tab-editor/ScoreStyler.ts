@@ -94,7 +94,10 @@ export class ScoreStyler {
     public styleStave(stave: any) {
         if (!stave) return;
 
-        const { lineColor, clefColor, timeSigColor, symbolColor } = this.style;
+        const lineColor = this.style.staffLines.color;
+        const clefColor = this.style.clefs.color;
+        const timeSigColor = this.style.timeSignature.color;
+        const symbolColor = this.style.symbols.color;
 
         // Base Stave Lines
         if (stave.setStyle) {
@@ -139,7 +142,10 @@ export class ScoreStyler {
     public styleNotes(notes: any[], isTab: boolean = false) {
         if (!notes || !Array.isArray(notes)) return;
 
-        const { noteColor, restColor, tabNumberColor, symbolColor } = this.style;
+        const noteColor = this.style.notes.color;
+        const restColor = this.style.rests.color;
+        const tabNumberColor = this.style.tabNumbers.color;
+        const symbolColor = this.style.symbols.color;
 
         notes.forEach(note => {
             const isRest = note.isRest === true || (typeof note.isRest === 'function' && note.isRest());
@@ -190,7 +196,11 @@ export class ScoreStyler {
             });
         };
 
-        const { clefColor, timeSigColor, lineColor, tabNumberColor, symbolColor } = this.style;
+        const clefColor = this.style.clefs.color;
+        const timeSigColor = this.style.timeSignature.color;
+        const lineColor = this.style.staffLines.color;
+        const tabNumberColor = this.style.tabNumbers.color;
+        const symbolColor = this.style.symbols.color;
 
         // Apply colors matching ScoreStyle
         colorByClass('vf-clef', clefColor);
@@ -237,7 +247,7 @@ export class ScoreStyler {
     public removeBackgrounds(svg: SVGSVGElement | HTMLElement) {
         if (!svg) return;
 
-        const { paperColor } = this.style;
+        const paperColor = this.style.background;
         const bgRects = svg.querySelectorAll('rect[fill="white"], rect[fill="#ffffff"]');
 
         bgRects.forEach((rect: any) => {
