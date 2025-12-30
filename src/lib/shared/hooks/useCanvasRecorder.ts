@@ -78,10 +78,6 @@ export function useCanvasRecorder(
             const ffmpeg = new FFmpeg();
             ffmpegRef.current = ffmpeg;
 
-            ffmpeg.on('log', ({ message }) => {
-                console.log('[FFmpeg]:', message);
-            });
-
             try {
                 const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
                 setRenderStatus('Iniciando motor de vídeo...');
@@ -89,7 +85,6 @@ export function useCanvasRecorder(
                     coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
                     wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
                 });
-                console.log('FFmpeg loaded successfully');
             } catch (err) {
                 console.error('FFmpeg load error:', err);
                 ffmpegLoadPromiseRef.current = null;
