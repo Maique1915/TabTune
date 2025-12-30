@@ -28,6 +28,11 @@ interface SidebarProps {
     onAddNote?: (measureId: string, duration: Duration) => void;
     // Generic update for new properties
     onUpdateNote?: (updates: Partial<NoteData>) => void;
+    // Chord Props
+    activePositionIndex?: number;
+    onActivePositionIndexChange?: (index: number) => void;
+    onAddChordNote?: () => void;
+    onRemoveChordNote?: (index: number) => void;
 }
 
 interface ArticulationBtnProps {
@@ -63,7 +68,11 @@ const Sidebar: React.FC<SidebarProps> = ({
     activeMeasure,
     onMeasureUpdate,
     onAddNote,
-    onUpdateNote
+    onUpdateNote,
+    activePositionIndex = 0,
+    onActivePositionIndexChange,
+    onAddChordNote,
+    onRemoveChordNote
 }) => {
     const [activeTab, setActiveTab] = React.useState<'main' | 'articulations' | 'effects' | 'text'>('main');
 
@@ -141,7 +150,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             onTabChange={setActiveTab}
             onClose={onCloseInspector}
             side="left"
-            headerAction={!isInspector && !isMeasureProperties && (
+            headerAction={!isInspector && (
                 <Link href="/">
                     <button className="group relative p-2.5 bg-zinc-950/40 hover:bg-cyan-500/10 rounded-xl border border-zinc-800/60 hover:border-cyan-500/40 text-zinc-500 hover:text-cyan-400 transition-all duration-300 shadow-inner group overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -233,38 +242,67 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     </div>
                                 )}
 
-                                {/* Pitch Controls */}
-                                {editingNote.type === 'note' && (
-                                    <div className="space-y-3 pt-2 border-t border-white/5">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[10px] font-black text-slate-500 uppercase">Pitch</span>
-                                            <span className="text-[9px] text-white bg-white/10 px-1.5 rounded">{currentPitch?.name}{currentPitch?.accidental}{currentPitch?.octave}</span>
+                                <div className="space-y-3 pt-2 border-t border-white/5">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Chord Notes</h3>
+                                        <button
+                                            onClick={onAddChordNote}
+                                            className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[9px] font-bold hover:bg-cyan-500/30 transition-colors"
+                                        >
+                                            + ADD NOTE
+                                        </button>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1.5 bg-black/40 p-1.5 rounded-xl border border-white/5">
+                                        {editingNote.positions.map((pos, idx) => (
+                                            <div key={idx} className="relative group">
+                                                <button
+                                                    onClick={() => onActivePositionIndexChange?.(idx)}
+                                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border ${activePositionIndex === idx ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}
+                                                >
+                                                    {pos.fret}/{pos.string}
+                                                </button>
+                                                {editingNote.positions.length > 1 && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); onRemoveChordNote?.(idx); }}
+                                                        className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3 pt-2 border-t border-white/5">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-black text-slate-500 uppercase">Pitch (Active)</span>
+                                        <span className="text-[9px] text-white bg-white/10 px-1.5 rounded">{currentPitch?.name}{currentPitch?.accidental}{currentPitch?.octave}</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="grid grid-cols-7 gap-1">
+                                            {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map(n => (
+                                                <button key={n} onClick={() => onPitchChange?.(n)} className={`h-8 rounded-lg border font-black text-xs transition-all ${currentPitch?.name === n ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'bg-white/5 border-white/5 text-slate-500'}`}>{n}</button>
+                                            ))}
                                         </div>
-                                        <div className="space-y-2">
-                                            <div className="grid grid-cols-7 gap-1">
-                                                {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map(n => (
-                                                    <button key={n} onClick={() => onPitchChange?.(n)} className={`h-8 rounded-lg border font-black text-xs transition-all ${currentPitch?.name === n ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'bg-white/5 border-white/5 text-slate-500'}`}>{n}</button>
-                                                ))}
-                                            </div>
-                                            <div className="flex bg-black/40 rounded-xl border border-white/5 p-0.5">
-                                                {[2, 3, 4, 5, 6].map(o => (
-                                                    <button key={o} onClick={() => onPitchChange?.(undefined, undefined, o)} className={`flex-1 py-1 text-[9px] font-bold rounded-lg transition-all ${currentPitch?.octave === o ? 'bg-white/10 text-white' : 'text-slate-600'}`}>{o}</button>
-                                                ))}
-                                            </div>
-                                            {/* Accidentals */}
-                                            <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
-                                                {[{ l: '♭', v: 'b' }, { l: '♮', v: 'n' }, { l: '♯', v: '#' }].map(acc => (
-                                                    <button key={acc.v} onClick={() => onAccidentalChange?.(acc.v)} className={`flex-1 py-1 text-sm font-serif rounded-lg transition-all ${editingNote.accidental === acc.v || (editingNote.accidental === 'none' && acc.v === 'n') ? 'bg-white/10 text-white' : 'text-slate-600'}`}>{acc.l}</button>
-                                                ))}
-                                            </div>
-                                            <div className="grid grid-cols-3 gap-1.5 pt-1">
-                                                {[1, 2, 3, 4, 5, 6].map(s => (
-                                                    <button key={s} onClick={() => onStringChange?.(s.toString())} className={`py-1.5 rounded-lg border font-bold text-[9px] transition-all ${editingNote.string === s.toString() ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'bg-white/5 border-white/5 text-slate-500'}`}>STR {s}</button>
-                                                ))}
-                                            </div>
+                                        <div className="flex bg-black/40 rounded-xl border border-white/5 p-0.5">
+                                            {[2, 3, 4, 5, 6].map(o => (
+                                                <button key={o} onClick={() => onPitchChange?.(undefined, undefined, o)} className={`flex-1 py-1 text-[9px] font-bold rounded-lg transition-all ${currentPitch?.octave === o ? 'bg-white/10 text-white' : 'text-slate-600'}`}>{o}</button>
+                                            ))}
+                                        </div>
+                                        {/* Accidentals */}
+                                        <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
+                                            {[{ l: '♭', v: 'b' }, { l: '♮', v: 'n' }, { l: '♯', v: '#' }].map(acc => (
+                                                <button key={acc.v} onClick={() => onAccidentalChange?.(acc.v)} className={`flex-1 py-1 text-sm font-serif rounded-lg transition-all ${editingNote.accidental === acc.v || (editingNote.accidental === 'none' && acc.v === 'n') ? 'bg-white/10 text-white' : 'text-slate-600'}`}>{acc.l}</button>
+                                            ))}
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-1.5 pt-1">
+                                            {[1, 2, 3, 4, 5, 6].map(s => (
+                                                <button key={s} onClick={() => onStringChange?.(s.toString())} className={`py-1.5 rounded-lg border font-bold text-[9px] transition-all ${editingNote.positions[activePositionIndex]?.string === s.toString() ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'bg-white/5 border-white/5 text-slate-500'}`}>STR {s}</button>
+                                            ))}
                                         </div>
                                     </div>
-                                )}
+                                </div>
                             </div>
                         )}
 

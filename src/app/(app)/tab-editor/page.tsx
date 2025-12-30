@@ -9,9 +9,11 @@ import VisualEditor from '@/components/tab-editor/VisualEditor';
 import { Icons } from '@/lib/tab-editor/constants';
 import { MeasureData, NoteData, GlobalSettings, ScoreStyle, DEFAULT_SCORE_STYLE, Duration } from '@/lib/tab-editor/types';
 import { convertToVextab } from '@/lib/tab-editor/utils/vextabConverter';
-import { Film } from 'lucide-react';
+import { importScoreFile } from '@/lib/tab-editor/utils/musicXmlParser';
+import { Upload, Film, ChevronDown } from 'lucide-react';
 import { VideoRenderSettingsModal, VideoRenderSettings } from '@/components/shared/VideoRenderSettingsModal';
 import { RenderProgressModal } from '@/components/shared/RenderProgressModal';
+import { useToast } from '@/hooks/use-toast';
 import {
     getPitchFromMidi,
     NOTE_NAMES,
@@ -26,7 +28,10 @@ import {
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export default function TabEditorPage() {
+    const [isImporting, setIsImporting] = useState(false);
     const [isClient, setIsClient] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { toast } = useToast();
 
     useEffect(() => {
         setIsClient(true);
@@ -41,9 +46,9 @@ export default function TabEditorPage() {
             showClef: true,
             showTimeSig: true,
             notes: [
-                { id: generateId(), fret: '5', string: '3', duration: 'q', type: 'note', decorators: {}, accidental: 'none' },
-                { id: generateId(), fret: '7', string: '3', duration: 'q', type: 'note', decorators: {}, accidental: 'none' },
-                { id: generateId(), fret: '9', string: '3', duration: 'q', type: 'note', decorators: {}, accidental: 'none' },
+                { id: generateId(), positions: [{ fret: '5', string: '3' }], duration: 'q', type: 'note', decorators: {}, accidental: 'none' },
+                { id: generateId(), positions: [{ fret: '7', string: '3' }], duration: 'q', type: 'note', decorators: {}, accidental: 'none' },
+                { id: generateId(), positions: [{ fret: '9', string: '3' }], duration: 'q', type: 'note', decorators: {}, accidental: 'none' },
             ]
         }
     ]);
@@ -67,6 +72,7 @@ export default function TabEditorPage() {
     const [isPlaying, setIsPlaying] = useState(false);
     const [playbackPosition, setPlaybackPosition] = useState(0);
     const [isLooping, setIsLooping] = useState(false);
+    const [activePositionIndex, setActivePositionIndex] = useState(0);
 
     // Rendering State
     const scorePreviewRef = useRef<ScorePreviewRef>(null);
@@ -94,10 +100,11 @@ export default function TabEditorPage() {
     }, [editingNoteId, measures]);
 
     const currentPitch = useMemo(() => {
-        if (!editingNote || editingNote.type === 'rest') return null;
-        const midi = getMidiFromPosition(parseInt(editingNote.fret), parseInt(editingNote.string));
+        if (!editingNote || editingNote.type === 'rest' || !editingNote.positions[activePositionIndex]) return null;
+        const pos = editingNote.positions[activePositionIndex];
+        const midi = getMidiFromPosition(parseInt(pos.fret), parseInt(pos.string));
         return getPitchFromMidi(midi);
-    }, [editingNote]);
+    }, [editingNote, activePositionIndex]);
 
     const activeMeasure = useMemo(() => {
         return measures.find(m => m.id === selectedMeasureId) || null;
@@ -246,8 +253,7 @@ export default function TabEditorPage() {
                                 if (decomposed.length > 1) {
                                     const extraRests = decomposed.slice(1).map(d => ({
                                         id: generateId(),
-                                        fret: '0',
-                                        string: '1',
+                                        positions: [{ fret: '0', string: '1' }],
                                         duration: d.duration as Duration,
                                         type: 'rest' as const,
                                         decorators: { dot: d.dotted },
@@ -263,8 +269,7 @@ export default function TabEditorPage() {
                     const absDelta = Math.abs(delta);
                     const restsToAdd = decomposeValue(absDelta).map(d => ({
                         id: generateId(),
-                        fret: '0',
-                        string: '1',
+                        positions: [{ fret: '0', string: '1' }],
                         duration: d.duration as Duration,
                         type: 'rest' as const,
                         decorators: { dot: d.dotted },
@@ -316,8 +321,7 @@ export default function TabEditorPage() {
             const newMeasureId = generateId();
             const newNote = {
                 id: generateId(),
-                fret: '0',
-                string: '1',
+                positions: [{ fret: '0', string: '3' }],
                 duration: durationToAdd,
                 type: 'note' as const,
                 decorators: {},
@@ -338,7 +342,7 @@ export default function TabEditorPage() {
                 if (m.id === measureId) {
                     return {
                         ...m,
-                        notes: [...m.notes, { id: generateId(), fret: '0', string: '1', duration: durationToAdd, type: 'note', decorators: {}, accidental: 'none' }]
+                        notes: [...m.notes, { id: generateId(), positions: [{ fret: '0', string: '3' }], duration: durationToAdd, type: 'note', decorators: {}, accidental: 'none' }]
                     };
                 }
                 return m;
@@ -350,7 +354,8 @@ export default function TabEditorPage() {
         if (multi) setSelectedNoteIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
         else {
             setSelectedNoteIds([id]);
-            setEditingNoteId(id); // Open inspector on single click
+            setEditingNoteId(id);
+            setActivePositionIndex(0); // Reset to first note of chord
 
             // Auto-focus the measure containing this note
             const measureIndex = measures.findIndex(m => m.notes.some(n => n.id === id));
@@ -379,36 +384,38 @@ export default function TabEditorPage() {
         const acc = newAccidental ?? currentPitch.accidental;
         const oct = newOctave ?? currentPitch.octave;
         const midi = getMidiFromPitch(pitch, acc, oct);
-        const { fret, string } = findBestFretForPitch(midi, parseInt(editingNote.string));
-        updateSelectedNotes({ fret: fret.toString(), string: string.toString() });
+        const currentPos = editingNote.positions[activePositionIndex];
+        const { fret, string } = findBestFretForPitch(midi, parseInt(currentPos.string));
+
+        updateSelectedNotes(n => {
+            const newPositions = [...n.positions];
+            newPositions[activePositionIndex] = { fret: fret.toString(), string: string.toString() };
+            return { positions: newPositions };
+        });
     };
 
     const handleStringChange = (newString: string) => {
-        if (!editingNote) return;
-        const currentFret = parseInt(editingNote.fret);
-        const currentString = parseInt(editingNote.string);
+        if (!editingNote || !editingNote.positions[activePositionIndex]) return;
+        const currentPos = editingNote.positions[activePositionIndex];
+        const currentFret = parseInt(currentPos.fret);
+        const currentString = parseInt(currentPos.string);
         // Calculate current MIDI pitch
-        // Standard Tuning: E4(1)=64, B3(2)=59, G3(3)=55, D3(4)=50, A2(5)=45, E2(6)=40
-        const openStrings: Record<number, number> = { 1: 64, 2: 59, 3: 55, 4: 50, 5: 45, 6: 40 };
-
-        // Use helper if reliable, or manual calc since we need precise preservation
-        // getMidiFromPosition might abstract this, let's use it for consistency
         const currentMidi = getMidiFromPosition(currentFret, currentString);
 
         const newStringNum = parseInt(newString);
+        const openStrings: Record<number, number> = { 1: 64, 2: 59, 3: 55, 4: 50, 5: 45, 6: 40 };
         const openMidi = openStrings[newStringNum];
 
         if (openMidi === undefined) return;
 
         let newFret = currentMidi - openMidi;
-
-        // If impossible (negative fret), we can't preserve exact pitch on this string.
-        // User intention implies moving position. If impossible, defaulting to 0 
-        // changes the pitch, but it's the "best" we can do on that string for that note (closest?).
-        // Or we simply apply 0 and let them fix it.
         if (newFret < 0) newFret = 0;
 
-        updateSelectedNotes({ string: newString, fret: newFret.toString() });
+        updateSelectedNotes(n => {
+            const newPositions = [...n.positions];
+            newPositions[activePositionIndex] = { string: newString, fret: newFret.toString() };
+            return { positions: newPositions };
+        });
     };
 
     const handleInsert = (code: string) => {
@@ -450,7 +457,7 @@ export default function TabEditorPage() {
                 }
             }
 
-            if (firstNote && secondNote && firstNote.string === secondNote.string) {
+            if (firstNote && secondNote && firstNote.positions[0] && secondNote.positions[0] && firstNote.positions[0].string === secondNote.positions[0].string) {
                 const targetId = secondNote.id;
                 setMeasures(prev => prev.map(m => ({
                     ...m,
@@ -507,7 +514,10 @@ export default function TabEditorPage() {
     const handleAccidentalChange = (accidental: string) => {
         updateSelectedNotes(n => {
             const desiredAccidental = (n.accidental === accidental ? 'none' : accidental) as any;
-            const currentMidi = getMidiFromPosition(parseInt(n.fret), parseInt(n.string));
+            const currentPos = n.positions[activePositionIndex];
+            if (!currentPos) return {};
+
+            const currentMidi = getMidiFromPosition(parseInt(currentPos.fret), parseInt(currentPos.string));
             const { name, octave } = getPitchFromMidi(currentMidi);
 
             // Calculate Natural MIDI for this pitch class/octave
@@ -518,18 +528,19 @@ export default function TabEditorPage() {
             if (desiredAccidental === '#') offset = 1;
             else if (desiredAccidental === 'b') offset = -1;
             else if (desiredAccidental === 'none') {
-                // When deselecting, we need to find the natural note
-                // If current note has an accidental, remove it to get natural
                 if (n.accidental === '#') offset = -1; // Remove sharp
                 else if (n.accidental === 'b') offset = 1; // Remove flat
             }
 
             const newMidi = naturalMidi + offset;
-            const { fret } = findBestFretForPitch(newMidi, parseInt(n.string));
+            const { fret } = findBestFretForPitch(newMidi, parseInt(currentPos.string));
+
+            const newPositions = [...n.positions];
+            newPositions[activePositionIndex] = { ...currentPos, fret: fret.toString() };
 
             return {
                 accidental: desiredAccidental,
-                fret: fret.toString()
+                positions: newPositions
             };
         });
     };
@@ -554,7 +565,39 @@ export default function TabEditorPage() {
         });
     };
 
-    if (!isClient) return <div className="h-screen w-full bg-black flex items-center justify-center text-slate-500">Loading...</div>;
+    const handleImportMusicXML = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setIsImporting(true);
+        try {
+            const { measures: newMeasures, settings: newSettings } = await importScoreFile(file);
+
+            setMeasures(newMeasures);
+            setSettings(prev => ({
+                ...prev,
+                bpm: newSettings.bpm,
+                time: newSettings.time
+            }));
+            setEditingNoteId(null);
+            setSelectedNoteIds([]);
+
+            toast({
+                title: "Score Imported",
+                description: `Successfully imported ${newMeasures.length} measures.`,
+            });
+        } catch (error) {
+            console.error("Import error:", error);
+            toast({
+                title: "Import Failed",
+                description: "Could not parse MusicXML file. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsImporting(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
 
     return (
         <div className="flex h-screen w-full flex-col bg-gradient-to-br from-[#1a0b2e] via-[#0f0518] to-black text-slate-200 overflow-hidden relative font-body">
@@ -580,6 +623,24 @@ export default function TabEditorPage() {
                     onDecoratorChange={handleDecoratorChange}
                     activeMeasure={activeMeasure}
                     onMeasureUpdate={handleUpdateMeasure}
+                    activePositionIndex={activePositionIndex}
+                    onActivePositionIndexChange={setActivePositionIndex}
+                    onAddChordNote={() => {
+                        updateSelectedNotes(n => ({
+                            positions: [...n.positions, { fret: '0', string: (n.positions.length + 1).toString() }]
+                        }));
+                        setActivePositionIndex(editingNote ? editingNote.positions.length : 0);
+                    }}
+                    onRemoveChordNote={(idx: number) => {
+                        updateSelectedNotes(n => {
+                            if (n.positions.length <= 1) return {};
+                            const newPositions = n.positions.filter((_, i) => i !== idx);
+                            if (activePositionIndex >= newPositions.length) {
+                                setActivePositionIndex(Math.max(0, newPositions.length - 1));
+                            }
+                            return { positions: newPositions };
+                        });
+                    }}
                 />
 
                 <main className="flex flex-1 flex-col overflow-hidden min-w-0" style={{ display: 'grid', gridTemplateRows: '65% 35%' }}>
@@ -637,6 +698,22 @@ export default function TabEditorPage() {
                             </div>
 
                             <div className="flex items-center space-x-3 pr-2">
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleImportMusicXML}
+                                    accept=".musicxml,.xml,.mxl,.mscz"
+                                    className="hidden"
+                                />
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isImporting}
+                                    className="h-9 px-4 font-black text-[10px] uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 border bg-white/5 text-slate-300 border-white/5 hover:border-cyan-500/50 hover:text-white hover:bg-white/10 disabled:opacity-50"
+                                    title="Import MuseScore (MusicXML)"
+                                >
+                                    <Upload className="w-4 h-4" />
+                                    <span>{isImporting ? 'Importing...' : 'Import'}</span>
+                                </button>
                                 <button
                                     onClick={() => {
                                         if (renderState.isRendering) {

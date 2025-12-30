@@ -18,10 +18,14 @@ export interface NoteDecorator {
     dot?: boolean;
 }
 
-export interface NoteData {
-    id: string;
+export interface NotePosition {
     fret: string;
     string: string;
+}
+
+export interface NoteData {
+    id: string;
+    positions: NotePosition[];
     duration: Duration;
     accidental?: Accidental;
     type: 'note' | 'rest';

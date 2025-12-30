@@ -1,0 +1,5 @@
+{
+  "name": "MuseScore Visualizer Pro",
+  "description": "A high-performance MuseScore file visualizer that converts .mscz and .mscx scores into an interactive animated piano roll, highlighting notes as they play.",
+  "requestFramePermissions": []
+}

@@ -229,12 +229,14 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
                                                         </span>
 
                                                         {/* Main Value */}
-                                                        <div className={`transition-transform duration-300 group-hover/note:scale-110 ${isRest ? 'text-[#333]' : 'text-slate-200'}`}>
-                                                            {isRest ? Icons.MusicRest(note.duration) : <span className="text-lg font-black">{note.fret}</span>}
+                                                        <div className={`flex flex-col items-center justify-center transition-transform duration-300 group-hover/note:scale-105 ${isRest ? 'text-[#333]' : 'text-slate-200'} ${note.positions.length > 3 ? 'gap-0' : 'gap-0.5'}`}>
+                                                            {isRest ? Icons.MusicRest(note.duration) : note.positions.map((pos, idx) => (
+                                                                <div key={idx} className="flex flex-col items-center leading-none">
+                                                                    <span className={`${note.positions.length > 3 ? 'text-[9px]' : note.positions.length > 2 ? 'text-[11px]' : 'text-base'} font-black`}>{pos.fret}</span>
+                                                                    {note.positions.length <= 2 && <span className="text-[5px] font-bold text-[#444] uppercase">S{pos.string}</span>}
+                                                                </div>
+                                                            ))}
                                                         </div>
-
-                                                        {/* String Info */}
-                                                        {!isRest && <span className="text-[6px] font-bold text-[#444] uppercase mt-0.5">STR {note.string}</span>}
 
                                                         {/* Indicators */}
                                                         <div className="absolute bottom-1 flex gap-0.5">

@@ -191,8 +191,8 @@ const MeasureThumbnail = memo(({
                         applyStyles(sn, isSelected ? noteStyle : style.rests, style.background || 'transparent');
                         return sn;
                     } else {
-                        const key = getNoteKeyFromFret(parseInt(note.fret), parseInt(note.string));
-                        const sn = new StaveNote({ keys: [key], duration: note.duration });
+                        const keys = note.positions.map(p => getNoteKeyFromFret(parseInt(p.fret), parseInt(p.string)));
+                        const sn = new StaveNote({ keys: keys, duration: note.duration });
                         const d = note.decorators || {};
                         if (d.dot) Dot.buildAndAttach([sn], { all: true });
                         if (note.accidental && note.accidental !== 'none') sn.addModifier(new Accidental(note.accidental));
@@ -263,10 +263,14 @@ const MeasureThumbnail = memo(({
                     } else {
                         // Check if this note is a target of a bend in the current measure
                         const isBendTarget = measureData.notes.some(n => n.technique === 'b' && n.slideTargetId === note.id);
-                        const displayFret = isBendTarget ? `(${note.fret})` : note.fret;
+
+                        const positions = note.positions.map(p => ({
+                            str: parseInt(p.string),
+                            fret: isBendTarget ? `(${p.fret})` : p.fret
+                        })).filter(p => !isNaN(p.str));
 
                         const tn = new TabNote({
-                            positions: [{ str: parseInt(note.string), fret: displayFret }],
+                            positions,
                             duration: note.duration
                         });
                         const d = note.decorators || {};
@@ -300,8 +304,8 @@ const MeasureThumbnail = memo(({
                             let bendLabel = "Full";
                             if (note.slideTargetId) {
                                 const target = measureData.notes.find(n => n.id === note.slideTargetId);
-                                if (target) {
-                                    const diff = parseInt(target.fret) - parseInt(note.fret);
+                                if (target && target.positions.length > 0 && note.positions.length > 0) {
+                                    const diff = parseInt(target.positions[0].fret) - parseInt(note.positions[0].fret);
                                     if (diff === 1) bendLabel = "1/2";
                                     else if (diff === 2) bendLabel = "Full";
                                     else if (diff > 0) bendLabel = diff.toString();
@@ -325,14 +329,14 @@ const MeasureThumbnail = memo(({
             // --- RENDER TIES & SLURS FOR TECHNIQUES ---
             measureData.notes.forEach((n, nIdx) => {
                 const tech = n.technique;
-                if (tech && ['h', 'p', 's'].includes(tech)) {
+                if (tech && ['h', 'p', 's', 'l'].includes(tech)) {
                     let targetIdx = -1;
                     if (n.slideTargetId) {
                         targetIdx = measureData.notes.findIndex(target => target.id === n.slideTargetId);
                     } else if (nIdx + 1 < measureData.notes.length) {
                         // Fallback to next note if targetId isn't set but it's a connector
                         const next = measureData.notes[nIdx + 1];
-                        if (next.type === 'note' && next.string === n.string) targetIdx = nIdx + 1;
+                        if (next.type === 'note' && next.positions[0].string === n.positions[0].string) targetIdx = nIdx + 1;
                     }
 
                     if (targetIdx !== -1) {
@@ -343,6 +347,7 @@ const MeasureThumbnail = memo(({
                         if (tech === 'h') tieLabel = "h";
                         if (tech === 'p') tieLabel = "p";
                         if (tech === 's') tieLabel = "sl.";
+                        if (tech === 'l') tieLabel = ""; // Pure slur - no label
 
                         const tieStyle = selectedNoteIds?.includes(n.id) || selectedNoteIds?.includes(measureData.notes[targetIdx].id)
                             ? PRESET_THEMES.default.style.notes

@@ -9,14 +9,15 @@ export interface Pitch {
 }
 
 export function getMidiFromPosition(fret: number, stringIdx: number): number {
-    const base = STRING_BASES[stringIdx - 1];
-    return base + fret;
+    const base = STRING_BASES[stringIdx - 1] || STRING_BASES[0];
+    return base + (isNaN(fret) ? 0 : fret);
 }
 
 export function getPitchFromMidi(midi: number): Pitch {
+    if (isNaN(midi)) return { name: 'C', accidental: '', octave: 4 };
     const octave = Math.floor(midi / 12) - 1;
-    const noteIdx = midi % 12;
-    const fullName = NOTE_NAMES[noteIdx];
+    const noteIdx = ((midi % 12) + 12) % 12;
+    const fullName = NOTE_NAMES[noteIdx] || 'C';
     const name = fullName[0];
     const accidental = fullName.length > 1 ? fullName[1] : '';
     return { name, accidental, octave };

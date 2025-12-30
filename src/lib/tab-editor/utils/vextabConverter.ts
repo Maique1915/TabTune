@@ -105,14 +105,15 @@ export function convertToVextab(measures: MeasureData[], settings: GlobalSetting
 
             if (tech && ['s', 'h', 'p', 'b', 't'].includes(tech)) {
                 const nextNote: NoteData | undefined = measure.notes[nIdx + 1];
-                if (n.slideTargetId) {
-                    if (nextNote && nextNote.id === n.slideTargetId && nextNote.string === n.string) {
+                const firstPos = n.positions[0];
+                if (n.slideTargetId && firstPos) {
+                    if (nextNote && nextNote.id === n.slideTargetId && nextNote.positions.some(p => p.string === firstPos.string)) {
                         connector = ` ${tech} `;
                     }
-                } else {
+                } else if (firstPos) {
                     const canConnect = nextNote &&
                         nextNote.type === 'note' &&
-                        nextNote.string === n.string;
+                        nextNote.positions.some(p => p.string === firstPos.string);
                     if (canConnect) {
                         connector = ` ${tech} `;
                     }
@@ -121,24 +122,29 @@ export function convertToVextab(measures: MeasureData[], settings: GlobalSetting
 
             const vibrato = tech === 'v' ? 'v' : '';
 
+            // Positions string construction
+            let posStr = "";
+            if (n.positions.length > 1) {
+                posStr = "(" + n.positions.map(p => `${p.fret}/${p.string}`).join(".") + ")";
+            } else if (n.positions.length === 1) {
+                posStr = `${n.positions[0].fret}/${n.positions[0].string}`;
+            } else if (!isRest) {
+                // Should not happen for notes, but as fallback
+                posStr = "0/1";
+            }
+
             // Auto-beaming logic: Beam only consecutive notes (not rests) with duration 8, 16, 32
             let beam = "";
             const isBeamableDuration = (d: string) => ['8', '16', '32'].includes(d);
 
             if (!isRest && isBeamableDuration(n.duration)) {
-                // Only beam if we are NOT at the end of a group (checking next note type)
-                // Actually, if we split groups, the next note in THIS group is naturally a note.
-                // But we need to look ahead in the source array to see if we should beam *visually*.
-                // With explicit ^, we force it.
-                // The split prevents beaming across groups.
-
                 const nextNote = measure.notes[nIdx + 1];
                 if (nextNote && nextNote.type === 'note' && isBeamableDuration(nextNote.duration)) {
                     beam = "^";
                 }
             }
 
-            currentGroup.push(`${prefix}${techniquePrefix}${n.fret}${accidentalStr}${headStr}/${n.string}${beam}${vibrato}${decoratorsStr}${connector}`);
+            currentGroup.push(`${prefix}${techniquePrefix}${posStr}${accidentalStr}${headStr}${beam}${vibrato}${decoratorsStr}${connector}`);
         });
 
         if (currentGroup.length > 0) groups.push(currentGroup.join(" "));
