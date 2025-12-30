@@ -437,7 +437,7 @@ export default function TabEditorPage() {
             return;
         }
 
-        if (['s', 'h', 'p', 'b', 't'].includes(code) && selectedNoteIds.length === 2) {
+        if (['s', 'h', 'p', 'b', 't', 'l'].includes(code) && selectedNoteIds.length === 2) {
             let firstNote: NoteData | null = null;
             let secondNote: NoteData | null = null;
 

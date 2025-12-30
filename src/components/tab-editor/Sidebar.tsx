@@ -126,6 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 { label: 'Slide', code: 's' },
                 { label: 'Bend', code: 'b' },
                 { label: 'Vibrato', code: 'v' },
+                { label: 'Slur/Tie', code: 'l' },
             ]
         }
     ];
@@ -348,6 +349,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         { l: 'Slide', c: 's' },
                                         { l: 'Bend', c: 'b' },
                                         { l: 'Vibrato', c: 'v' },
+                                        { l: 'Slur/Tie', c: 'l' },
                                     ].map((item) => (
                                         <button
                                             key={item.c}

@@ -31,7 +31,7 @@ export interface NoteData {
     type: 'note' | 'rest';
     decorators: NoteDecorator;
     noteHead?: 'standard' | 'x' | 'diamond' | 'square' | 'triangle';
-    technique?: string; // h, p, s, b, v, etc.
+    technique?: string; // h, p, s, b, v, t, l (l = pure slur/tie without label)
     slideTargetId?: string; // Explicitly link to another note for techniques
     tuplet?: string;
     isSlurred?: boolean;
