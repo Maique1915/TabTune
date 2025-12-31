@@ -195,7 +195,14 @@ const parseStandardMusicXML = (xmlDoc: Document): { measures: MeasureData[], set
         });
     }
 
-    return { measures, settings: { bpm: currentBpm, time: currentTime } };
+    // Remove empty trailing measures
+    const trimmedMeasures = trimEmptyTrailingMeasures(measures);
+
+    if (trimmedMeasures.length < measures.length) {
+        console.log(`[MusicXML Parser] Removed ${measures.length - trimmedMeasures.length} empty trailing measure(s)`);
+    }
+
+    return { measures: trimmedMeasures, settings: { bpm: currentBpm, time: currentTime } };
 };
 
 const mapDuration = (duration: number, divisions: number): Duration => {
@@ -252,6 +259,39 @@ const parseTechnique = (xmlNote: Element): string | undefined => {
     return undefined;
 };
 
+/**
+ * Check if a measure contains only rests (is empty)
+ */
+const isMeasureEmpty = (measure: MeasureData): boolean => {
+    if (!measure.notes || measure.notes.length === 0) return true;
+    return measure.notes.every(note => note.type === 'rest');
+};
+
+/**
+ * Remove empty measures from the end of the measures array
+ * Keeps at least one measure even if all are empty
+ */
+const trimEmptyTrailingMeasures = (measures: MeasureData[]): MeasureData[] => {
+    if (measures.length === 0) return measures;
+
+    // Find the last non-empty measure
+    let lastNonEmptyIndex = -1;
+    for (let i = measures.length - 1; i >= 0; i--) {
+        if (!isMeasureEmpty(measures[i])) {
+            lastNonEmptyIndex = i;
+            break;
+        }
+    }
+
+    // If all measures are empty, keep at least the first one
+    if (lastNonEmptyIndex === -1) {
+        return [measures[0]];
+    }
+
+    // Return measures up to and including the last non-empty one
+    return measures.slice(0, lastNonEmptyIndex + 1);
+};
+
 const parseMuseScoreXML = (doc: Document): { measures: MeasureData[], settings: { bpm: number, time: string } } => {
     const measures: MeasureData[] = [];
     let currentBpm = 120;
@@ -276,7 +316,7 @@ const parseMuseScoreXML = (doc: Document): { measures: MeasureData[], settings: 
         const notes: NoteData[] = [];
         const voiceItems = measureEl.querySelectorAll('voice > Chord, voice > Rest');
 
-        voiceItems.forEach((item) => {
+        voiceItems.forEach((item, itemIndex) => {
             const isRest = item.tagName === 'Rest';
             const durationTypeStr = item.querySelector('durationType')?.textContent || 'quarter';
             const duration = mapMuseScoreDuration(durationTypeStr);
@@ -289,7 +329,14 @@ const parseMuseScoreXML = (doc: Document): { measures: MeasureData[], settings: 
 
             if (!isRest) {
                 const noteTags = item.querySelectorAll('Note');
-                noteTags.forEach(nTag => {
+                const usedStrings = new Set<number>(); // Track strings used in this chord
+
+                // Debug logging for chords
+                if (noteTags.length > 1) {
+                    console.log(`[MuseScore Parser] Measure ${index + 1}, Item ${itemIndex + 1}: Found chord with ${noteTags.length} notes`);
+                }
+
+                noteTags.forEach((nTag, noteIdx) => {
                     let fret = nTag.querySelector('fret')?.textContent;
                     let stringNum = nTag.querySelector('string')?.textContent;
 
@@ -298,13 +345,30 @@ const parseMuseScoreXML = (doc: Document): { measures: MeasureData[], settings: 
                         if (pitchEl) {
                             // MSCX uses MIDI pitch directly usually
                             const midi = parseInt(pitchEl.textContent || "60");
-                            const tab = getTabFromMidi(midi);
+
+                            // Pass usedStrings to avoid conflicts in chords
+                            const tab = getTabFromMidi(midi, usedStrings);
                             fret = tab.fret;
                             stringNum = tab.string;
+
+                            // Debug logging for MIDI conversion
+                            if (noteTags.length > 1) {
+                                console.log(`[MuseScore Parser]   Note ${noteIdx + 1}: MIDI ${midi} -> String ${stringNum}, Fret ${fret}`);
+                            }
                         }
                     }
 
-                    positions.push({ fret: fret || "0", string: stringNum || "1" });
+                    // Validate and track string usage
+                    const stringNumInt = parseInt(stringNum || "1");
+                    if (!isNaN(stringNumInt) && stringNumInt >= 1 && stringNumInt <= 6) {
+                        if (usedStrings.has(stringNumInt)) {
+                            console.warn(`[MuseScore Parser] WARNING: String ${stringNumInt} used multiple times in same chord! This may cause rendering issues.`);
+                        }
+                        usedStrings.add(stringNumInt);
+                        positions.push({ fret: fret || "0", string: stringNum || "1" });
+                    } else {
+                        console.error(`[MuseScore Parser] Invalid string number: ${stringNum} (parsed as ${stringNumInt}). Skipping note.`);
+                    }
 
                     // MuseScore accidentals
                     const accidTag = nTag.querySelector('accid')?.textContent;
@@ -340,6 +404,12 @@ const parseMuseScoreXML = (doc: Document): { measures: MeasureData[], settings: 
                 });
             }
 
+            // Validate positions before adding note
+            if (!isRest && positions.length === 0) {
+                console.warn(`[MuseScore Parser] Measure ${index + 1}, Item ${itemIndex + 1}: Note has no valid positions, skipping.`);
+                return; // Skip this note entirely
+            }
+
             notes.push({
                 id: generateId(),
                 type: isRest ? 'rest' : 'note',
@@ -360,7 +430,14 @@ const parseMuseScoreXML = (doc: Document): { measures: MeasureData[], settings: 
         });
     });
 
-    return { measures, settings: { bpm: currentBpm, time: currentTime } };
+    // Remove empty trailing measures (measures with only rests after the last note)
+    const trimmedMeasures = trimEmptyTrailingMeasures(measures);
+
+    if (trimmedMeasures.length < measures.length) {
+        console.log(`[MuseScore Parser] Removed ${measures.length - trimmedMeasures.length} empty trailing measure(s)`);
+    }
+
+    return { measures: trimmedMeasures, settings: { bpm: currentBpm, time: currentTime } };
 };
 
 const mapMuseScoreDuration = (msDuration: string): Duration => {
@@ -381,13 +458,41 @@ const getTabFromPitch = (step: string, octave: number, alter: number): { fret: s
     return getTabFromMidi(midi);
 };
 
-const getTabFromMidi = (midi: number): { fret: string, string: string } => {
-    const tuning = [64, 59, 55, 50, 45, 40]; // E4, B3, G3, D3, A2, E2
+/**
+ * Convert MIDI note to guitar tablature position
+ * @param midi - MIDI note number (0-127)
+ * @param usedStrings - Set of string numbers already used in this chord (to avoid conflicts)
+ * @returns Object with fret and string as strings
+ */
+const getTabFromMidi = (midi: number, usedStrings: Set<number> = new Set()): { fret: string, string: string } => {
+    const tuning = [64, 59, 55, 50, 45, 40]; // E4, B3, G3, D3, A2, E2 (strings 1-6)
+
+    // First pass: try to find a string that isn't already used and has a reasonable fret position
     for (let i = 0; i < tuning.length; i++) {
+        const stringNum = i + 1;
+        if (usedStrings.has(stringNum)) continue; // Skip strings already used in this chord
+
         if (midi >= tuning[i]) {
             const fret = midi - tuning[i];
-            if (fret <= 24) return { fret: fret.toString(), string: (i + 1).toString() };
+            if (fret <= 24) {
+                return { fret: fret.toString(), string: stringNum.toString() };
+            }
         }
     }
+
+    // Second pass: if all preferred strings are taken, find ANY available string
+    for (let i = 0; i < tuning.length; i++) {
+        const stringNum = i + 1;
+        if (usedStrings.has(stringNum)) continue;
+
+        const fret = Math.abs(midi - tuning[i]);
+        if (fret <= 24) {
+            console.warn(`[MuseScore Parser] Note MIDI ${midi} placed on string ${stringNum} at fret ${fret} (non-optimal)`);
+            return { fret: fret.toString(), string: stringNum.toString() };
+        }
+    }
+
+    // Fallback: if all strings are used (shouldn't happen in valid guitar music), use string 6
+    console.error(`[MuseScore Parser] Could not find valid position for MIDI ${midi}, all strings occupied. Using fallback.`);
     return { fret: "0", string: "6" };
 };

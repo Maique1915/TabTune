@@ -192,6 +192,14 @@ const MeasureThumbnail = memo(({
                         return sn;
                     } else {
                         const keys = note.positions.map(p => getNoteKeyFromFret(parseInt(p.fret), parseInt(p.string)));
+
+                        // Validate keys
+                        if (keys.length === 0) {
+                            console.error(`[ScorePreview] Note ${note.id} has no valid keys for notation! Positions:`, note.positions);
+                            // Return a placeholder rest to avoid breaking VexFlow
+                            return new StaveNote({ keys: ["b/4"], duration: note.duration + "r" });
+                        }
+
                         const sn = new StaveNote({ keys: keys, duration: note.duration });
                         const d = note.decorators || {};
                         if (d.dot) Dot.buildAndAttach([sn], { all: true });
@@ -267,7 +275,18 @@ const MeasureThumbnail = memo(({
                         const positions = note.positions.map(p => ({
                             str: parseInt(p.string),
                             fret: isBendTarget ? `(${p.fret})` : p.fret
-                        })).filter(p => !isNaN(p.str));
+                        })).filter(p => {
+                            const isValid = !isNaN(p.str);
+                            if (!isValid) {
+                                console.warn(`[ScorePreview] Filtered out invalid position: string="${p.str}" (NaN). Original: ${JSON.stringify(note.positions)}`);
+                            }
+                            return isValid;
+                        });
+
+                        // Validate we have positions after filtering
+                        if (positions.length === 0) {
+                            console.error(`[ScorePreview] Note ${note.id} has no valid positions after filtering! Original positions:`, note.positions);
+                        }
 
                         const tn = new TabNote({
                             positions,
