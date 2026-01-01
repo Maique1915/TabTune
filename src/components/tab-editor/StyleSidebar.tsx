@@ -12,6 +12,10 @@ interface StyleSidebarProps {
     style: ScoreStyle;
     onChange: (newStyle: Partial<ScoreStyle>) => void;
     onReset: () => void;
+    // Mobile props
+    isMobile?: boolean;
+    isOpen?: boolean;
+    onClose?: () => void;
 }
 
 
@@ -52,7 +56,7 @@ const ColorPicker = ({ color, onChange }: { color: string; onChange: (c: string)
     );
 };
 
-const StyleSidebar: React.FC<StyleSidebarProps> = ({ style, onChange, onReset }) => {
+const StyleSidebar: React.FC<StyleSidebarProps> = ({ style, onChange, onReset, isMobile = false, isOpen = true, onClose }) => {
     const [expandedKey, setExpandedKey] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'basic' | 'advanced' | 'motion'>('basic');
 
@@ -311,6 +315,9 @@ const StyleSidebar: React.FC<StyleSidebarProps> = ({ style, onChange, onReset })
             tabs={tabs}
             activeTab={activeTab}
             onTabChange={setActiveTab}
+            isMobile={isMobile}
+            isOpen={isOpen}
+            onClose={onClose}
         >
             {activeTab === 'basic' && renderBasicTab()}
             {activeTab === 'advanced' && renderAdvancedTab()}

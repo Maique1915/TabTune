@@ -1,4 +1,4 @@
-import type {Config} from 'tailwindcss';
+import type { Config } from 'tailwindcss';
 
 export default {
   darkMode: ['class'],
@@ -13,8 +13,20 @@ export default {
         body: ['"Space Grotesk"', 'sans-serif'],
         headline: ['"Space Grotesk"', 'sans-serif'],
         code: ['"Source Code Pro"', 'monospace'],
+        display: ['"Spline Sans"', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'],
       },
       colors: {
+        // Mobile Design System Colors
+        'primary-mobile': '#1A1A1A',
+        'background-light': '#f7f7f7',
+        'background-dark': '#191919',
+        'surface-light': '#FFFFFF',
+        'surface-dark': '#111827',
+        'panel-light': '#E5E7EB',
+        'panel-dark': '#1F2937',
+
+        // Existing shadcn colors
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

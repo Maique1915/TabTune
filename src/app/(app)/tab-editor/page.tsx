@@ -4,16 +4,28 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Sidebar from '@/components/tab-editor/Sidebar';
 import StyleSidebar from '@/components/tab-editor/StyleSidebar';
+import { TabEditorMobileNav } from '@/components/tab-editor/AppHeader';
+import { AppHeader } from '@/components/studio/app-header';
+import { SettingsPanel } from '@/components/studio/SettingsPanel';
 import ScorePreview, { ScorePreviewRef } from '@/components/tab-editor/ScorePreview';
 import VisualEditor from '@/components/tab-editor/VisualEditor';
 import { Icons } from '@/lib/tab-editor/constants';
 import { MeasureData, NoteData, GlobalSettings, ScoreStyle, DEFAULT_SCORE_STYLE, Duration } from '@/lib/tab-editor/types';
 import { convertToVextab } from '@/lib/tab-editor/utils/vextabConverter';
 import { importScoreFile } from '@/lib/tab-editor/utils/musicXmlParser';
-import { Upload, Film, ChevronDown } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { VideoRenderSettingsModal, VideoRenderSettings } from '@/components/shared/VideoRenderSettingsModal';
 import { RenderProgressModal } from '@/components/shared/RenderProgressModal';
+import { MobileHeader } from '@/components/shared/MobileHeader';
+import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
+import { MobilePlaybackControls } from '@/components/shared/MobilePlaybackControls';
+import { StageContainer } from '@/components/shared/StageContainer';
+import { UnifiedControls } from "@/components/shared/UnifiedControls";
+import { WorkspaceLayout } from "@/components/shared/WorkspaceLayout";
+import { EditorGrid } from "@/components/shared/EditorGrid";
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/shared/lib/utils';
 import {
     getPitchFromMidi,
     NOTE_NAMES,
@@ -32,6 +44,8 @@ export default function TabEditorPage() {
     const [isClient, setIsClient] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
+    const isMobile = useIsMobile();
+    const [activePanel, setActivePanel] = useState<'studio' | 'library' | 'mixer' | 'customize'>('studio');
 
     useEffect(() => {
         setIsClient(true);
@@ -193,12 +207,15 @@ export default function TabEditorPage() {
     };
 
     const handleSelectMeasure = (id: string) => {
-        const index = measures.findIndex(m => m.id === id);
-        if (index !== -1) setCurrentMeasureIndex(index);
-
-        setSelectedMeasureId(id);
-        setEditingNoteId(null);
+        setSelectedMeasureId(prev => prev === id ? null : id);
         setSelectedNoteIds([]);
+        setEditingNoteId(null);
+    };
+
+    const handleDeselectAll = () => {
+        setSelectedNoteIds([]);
+        setEditingNoteId(null);
+        setSelectedMeasureId(null);
     };
 
     const handleRemoveNote = (noteId: string) => {
@@ -493,6 +510,24 @@ export default function TabEditorPage() {
         }
     };
 
+    const handleAddChordNote = () => {
+        updateSelectedNotes(n => ({
+            positions: [...n.positions, { fret: '0', string: (n.positions.length + 1).toString() }]
+        }));
+        setActivePositionIndex(editingNote ? editingNote.positions.length : 0);
+    };
+
+    const handleRemoveChordNote = (idx: number) => {
+        updateSelectedNotes(n => {
+            if (n.positions.length <= 1) return {};
+            const newPositions = n.positions.filter((_, i) => i !== idx);
+            if (activePositionIndex >= newPositions.length) {
+                setActivePositionIndex(Math.max(0, newPositions.length - 1));
+            }
+            return { positions: newPositions };
+        });
+    };
+
     const toggleVisibility = (type: 'notation' | 'tablature') => {
         setSettings(prev => {
             const next = { ...prev };
@@ -599,19 +634,333 @@ export default function TabEditorPage() {
         }
     };
 
-    return (
-        <div className="flex h-screen w-full flex-col bg-gradient-to-br from-[#1a0b2e] via-[#0f0518] to-black text-slate-200 overflow-hidden relative font-body">
-            {/* Retro Grid Background Overlay */}
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,18,18,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(255,0,0,0.02))] bg-[length:100%_4px,6px_100%] pointer-events-none z-0" />
+    // Mobile Layout
+    if (isMobile) {
+        return (
+            <div className="flex h-screen w-full flex-col bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 font-sans antialiased selection:bg-primary-mobile selection:text-white">
+                <MobileHeader
+                    title="Tab Editor"
+                    showBack={true}
+                />
 
-            <div className="relative z-10 flex flex-1 overflow-hidden">
+                <main className="flex-1 px-4 py-2 flex flex-col min-h-[250px] relative overflow-hidden">
+                    {/* Blur effect background */}
+                    <div className="absolute w-full h-full max-w-sm bg-primary-mobile/10 blur-[60px] rounded-full pointer-events-none" />
+
+                    <div className={cn("h-full w-full flex flex-col", { "hidden": activePanel !== 'studio' })}>
+                        {/* Score Preview Container */}
+                        <div className="flex-1 relative flex items-center justify-center mb-4">
+                            <div className="w-full h-full bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-800 rounded-3xl shadow-xl flex flex-col items-center justify-center relative overflow-hidden group">
+                                <div className="w-full h-full flex items-center justify-center bg-gray-50 dark:bg-[#0F1218] p-4">
+                                    <ScorePreview
+                                        ref={scorePreviewRef}
+                                        code={vextabCode}
+                                        measures={measures}
+                                        timeSignature={settings.time}
+                                        playbackPosition={playbackPosition}
+                                        isPlaying={isPlaying}
+                                        style={scoreStyle}
+                                        showNotation={settings.showNotation}
+                                        showTablature={settings.showTablature}
+                                        onMeasuresChange={setMeasures}
+                                        selectedNoteIds={selectedNoteIds}
+                                        onSelectNote={handleSelectNote}
+                                        onDoubleClickNote={(id) => setEditingNoteId(id)}
+                                        currentMeasureIndex={currentMeasureIndex}
+                                        onPlaybackControl={setIsPlaying}
+                                        onPlaybackPositionChange={setPlaybackPosition}
+                                        onToggleVisibility={toggleVisibility}
+                                        onRenderStateChange={setRenderState}
+                                    />
+                                </div>
+                                <div className="absolute top-4 bg-black/80 backdrop-blur-md px-3 py-1 rounded-full text-xs font-mono text-white border border-white/10 shadow-lg transform translate-y-[-150%] group-hover:translate-y-0 transition-transform duration-300">
+                                    {settings.key} {settings.clef}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Compact Playback Controls (asd.html style) */}
+                        <div className="flex justify-center w-full mb-4">
+                            <div className="bg-white dark:bg-surface-dark/50 backdrop-blur-md border border-gray-200 dark:border-gray-800 p-1.5 rounded-2xl flex items-center gap-1 shadow-lg shadow-black/5 dark:shadow-black/20">
+                                {/* Play/Pause Button */}
+                                <button
+                                    onClick={() => {
+                                        if (!isPlaying && playbackPosition >= 100) {
+                                            setPlaybackPosition(0);
+                                        }
+                                        setIsPlaying(!isPlaying);
+                                    }}
+                                    className="w-12 h-12 flex items-center justify-center rounded-xl bg-primary-mobile text-white shadow-lg shadow-primary-mobile/30 hover:scale-105 active:scale-95 transition-all"
+                                >
+                                    <span className="material-icons-round text-3xl ml-0.5">
+                                        {isPlaying ? 'pause' : 'play_arrow'}
+                                    </span>
+                                </button>
+
+                                {/* Skip Back Button */}
+                                <button
+                                    onClick={() => setPlaybackPosition(0)}
+                                    className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-colors"
+                                >
+                                    <span className="material-icons-round text-xl">skip_previous</span>
+                                </button>
+
+                                {/* Loop Button */}
+                                <button
+                                    onClick={() => setIsLooping(!isLooping)}
+                                    className={`w-10 h-10 flex items-center justify-center rounded-xl transition-colors ${isLooping
+                                        ? 'bg-primary-mobile/20 text-primary-mobile'
+                                        : 'hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400'
+                                        }`}
+                                >
+                                    <span className="material-icons-round text-xl">replay</span>
+                                </button>
+
+                                {/* Divider */}
+                                <div className="w-[1px] h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+                                {/* Stop Button */}
+                                <button
+                                    onClick={() => { setIsPlaying(false); setPlaybackPosition(0); }}
+                                    className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-colors"
+                                >
+                                    <span className="material-icons-round text-xl">stop</span>
+                                </button>
+
+                                {/* Tempo Button */}
+                                <button
+                                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-gray-200 transition-colors border border-gray-200 dark:border-white/5"
+                                >
+                                    <span className="text-xs font-bold">{settings.bpm}</span>
+                                </button>
+
+                                {/* Import Button */}
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isImporting}
+                                    className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isImporting ? (
+                                        <span className="material-icons-round text-xl animate-spin">refresh</span>
+                                    ) : (
+                                        <span className="material-icons-round text-xl">upload_file</span>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Timeline (VisualEditor) */}
+                        <div className="mb-4">
+                            <VisualEditor
+                                measures={measures}
+                                selectedNoteIds={selectedNoteIds}
+                                timeSignature={settings.time}
+                                activeDuration={activeDuration}
+                                hasClipboard={!!clipboard}
+                                onSelectNote={handleSelectNote}
+                                onDoubleClickNote={(id) => setEditingNoteId(id)}
+                                onAddNote={handleAddNote}
+                                onUpdateNote={(id, updates) => updateSelectedNotes(updates)}
+                                onRemoveMeasure={(id) => setMeasures(measures.filter(m => m.id !== id))}
+                                onAddMeasure={handleAddMeasure}
+                                onUpdateMeasure={handleUpdateMeasure}
+                                onToggleCollapse={handleToggleCollapse}
+                                onCopyMeasure={handleCopyMeasure}
+                                onPasteMeasure={handlePasteMeasure}
+                                onReorderMeasures={handleReorderMeasures}
+                                onRemoveNote={handleRemoveNote}
+                                onSelectMeasure={handleSelectMeasure}
+                                selectedMeasureId={selectedMeasureId}
+                                onDeselectAll={handleDeselectAll}
+                            />
+                        </div>
+                    </div>
+                </main>
+
+                <MobileBottomNav
+                    activePanel={activePanel}
+                    onPanelChange={setActivePanel}
+                    onAddClick={() => handleAddMeasure()}
+                />
+
+                {/* Mobile Panels as Fullscreen Modals */}
+                {activePanel === 'library' && (
+                    <Sidebar
+                        isMobile={true}
+                        isOpen={true}
+                        onClose={() => setActivePanel('studio')}
+                        onInsert={handleInsert}
+                        onAddNote={handleAddNote}
+                        onUpdateNote={(updates) => updateSelectedNotes(updates)}
+                        activeDuration={activeDuration}
+                        onSelectDuration={setActiveDuration}
+                        editingNote={editingNote}
+                        currentPitch={currentPitch}
+                        onCloseInspector={() => setEditingNoteId(null)}
+                        onNoteRhythmChange={(d, dot) => editingNote && handleNoteRhythmChange(editingNote.id, d, dot)}
+                        onNoteTypeChange={(type) => updateSelectedNotes({ type })}
+                        onPitchChange={handlePitchChange}
+                        onStringChange={handleStringChange}
+                        onAccidentalChange={handleAccidentalChange}
+                        onDecoratorChange={handleDecoratorChange}
+                        activeMeasure={activeMeasure}
+                        onMeasureUpdate={handleUpdateMeasure}
+                        activePositionIndex={activePositionIndex}
+                        onActivePositionIndexChange={setActivePositionIndex}
+                        onAddChordNote={() => {
+                            updateSelectedNotes(n => ({
+                                positions: [...n.positions, { fret: '0', string: (n.positions.length + 1).toString() }]
+                            }));
+                            setActivePositionIndex(editingNote ? editingNote.positions.length : 0);
+                        }}
+                        onRemoveChordNote={(idx: number) => {
+                            updateSelectedNotes(n => {
+                                if (n.positions.length <= 1) return {};
+                                const newPositions = n.positions.filter((_, i) => i !== idx);
+                                if (activePositionIndex >= newPositions.length) {
+                                    setActivePositionIndex(Math.max(0, newPositions.length - 1));
+                                }
+                                return { positions: newPositions };
+                            });
+                        }}
+                    />
+                )}
+
+                {activePanel === 'mixer' && (
+                    <div className="fixed inset-0 z-50 bg-background-dark">
+                        <div className="h-full flex flex-col">
+                            <div className="flex items-center justify-between p-4 border-b border-gray-800">
+                                <h2 className="text-lg font-bold text-white">Mixer</h2>
+                                <button
+                                    onClick={() => setActivePanel('studio')}
+                                    className="p-2 rounded-full hover:bg-white/10 transition-colors"
+                                >
+                                    <span className="material-icons-round text-gray-400">close</span>
+                                </button>
+                            </div>
+                            <div className="flex-1 overflow-auto p-4">
+                                <p className="text-gray-400 text-center">Mixer controls coming soon...</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activePanel === 'customize' && (
+                    <StyleSidebar
+                        isMobile={true}
+                        isOpen={true}
+                        onClose={() => setActivePanel('studio')}
+                        style={scoreStyle}
+                        onChange={(up: Partial<ScoreStyle>) => setScoreStyle({ ...scoreStyle, ...up })}
+                        onReset={() => setScoreStyle(DEFAULT_SCORE_STYLE)}
+                    />
+                )}
+
+                {/* Hidden file input */}
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImportMusicXML}
+                    accept=".musicxml,.xml,.mxl,.mscz"
+                    className="hidden"
+                />
+
+                {/* Modals */}
+                <VideoRenderSettingsModal
+                    isOpen={showRenderSettings}
+                    settings={renderSettings}
+                    onClose={() => setShowRenderSettings(false)}
+                    onRender={(settings: VideoRenderSettings) => {
+                        setRenderSettings(settings);
+                        setShowRenderSettings(false);
+                        scorePreviewRef.current?.startRender(settings);
+                    }}
+                />
+
+                <RenderProgressModal
+                    isOpen={renderState.isRendering}
+                    isComplete={renderState.isComplete}
+                    progress={renderState.progress}
+                    onClose={() => setRenderState(prev => ({ ...prev, isRendering: false }))}
+                />
+            </div>
+        );
+    }
+
+    const floatingControls = (
+        <UnifiedControls
+            isPlaying={isPlaying}
+            isPaused={!isPlaying}
+            isLooping={isLooping}
+            onPlayPause={() => {
+                if (!isPlaying && playbackPosition >= 100) {
+                    setPlaybackPosition(0);
+                }
+                setIsPlaying(!isPlaying);
+            }}
+            onSkipBack={() => setPlaybackPosition(0)}
+            onToggleLoop={() => setIsLooping(!isLooping)}
+            onReset={() => { setIsPlaying(false); setPlaybackPosition(0); }}
+            onRender={() => {
+                if (renderState.isRendering) {
+                    scorePreviewRef.current?.cancelRender();
+                } else {
+                    setShowRenderSettings(true);
+                }
+            }}
+            isRendering={renderState.isRendering}
+            leftExtra={
+                <div className="flex items-center space-x-2 bg-black/50 p-1 rounded-lg border border-white/10">
+                    <div className="flex items-center px-3 space-x-2 border-r border-white/10">
+                        <span className="text-[10px] font-black text-slate-500 uppercase">Tempo</span>
+                        <input
+                            type="number"
+                            value={settings.bpm}
+                            min="40"
+                            max="240"
+                            onChange={(e) => setSettings({ ...settings, bpm: parseInt(e.target.value) || 120 })}
+                            className="w-12 bg-transparent text-xs font-black text-cyan-400 outline-none text-center"
+                        />
+                        <span className="text-[10px] font-bold text-slate-700">BPM</span>
+                    </div>
+                    <select
+                        value={settings.time}
+                        onChange={(e) => setSettings({ ...settings, time: e.target.value })}
+                        className="bg-transparent text-[10px] font-black text-slate-400 outline-none px-2 cursor-pointer hover:text-cyan-400 transition-colors"
+                    >
+                        <option value="4/4">4/4</option>
+                        <option value="3/4">3/4</option>
+                        <option value="2/4">2/4</option>
+                        <option value="6/8">6/8</option>
+                    </select>
+                </div>
+            }
+            rightExtra={
+                <div className="flex items-center p-0.5 bg-black/20 rounded-xl border border-white/5">
+                    <button
+                        onClick={toggleVisibility}
+                        className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all border border-white/5 active:scale-95 group"
+                    >
+                        <span className="text-[10px] font-black uppercase tracking-widest">{settings.showNotation ? 'Tab' : 'Notation'}</span>
+                    </button>
+                </div>
+            }
+        />
+    );
+
+    return (
+        <WorkspaceLayout
+            isMobile={isMobile}
+            header={<AppHeader />}
+            mobileHeader={<MobileHeader title="Tab Editor" showBack={true} />}
+            mobileBottomNav={<TabEditorMobileNav activePanel={activePanel} onPanelChange={setActivePanel} />}
+            leftSidebar={
                 <Sidebar
                     onInsert={handleInsert}
                     onAddNote={handleAddNote}
                     onUpdateNote={(updates) => updateSelectedNotes(updates)}
                     activeDuration={activeDuration}
                     onSelectDuration={setActiveDuration}
-                    // Inspector Props
                     editingNote={editingNote}
                     currentPitch={currentPitch}
                     onCloseInspector={() => setEditingNoteId(null)}
@@ -625,182 +974,76 @@ export default function TabEditorPage() {
                     onMeasureUpdate={handleUpdateMeasure}
                     activePositionIndex={activePositionIndex}
                     onActivePositionIndexChange={setActivePositionIndex}
-                    onAddChordNote={() => {
-                        updateSelectedNotes(n => ({
-                            positions: [...n.positions, { fret: '0', string: (n.positions.length + 1).toString() }]
-                        }));
-                        setActivePositionIndex(editingNote ? editingNote.positions.length : 0);
-                    }}
-                    onRemoveChordNote={(idx: number) => {
-                        updateSelectedNotes(n => {
-                            if (n.positions.length <= 1) return {};
-                            const newPositions = n.positions.filter((_, i) => i !== idx);
-                            if (activePositionIndex >= newPositions.length) {
-                                setActivePositionIndex(Math.max(0, newPositions.length - 1));
-                            }
-                            return { positions: newPositions };
-                        });
-                    }}
+                    onAddChordNote={handleAddChordNote}
+                    onRemoveChordNote={handleRemoveChordNote}
+                    isMobile={isMobile}
+                    isOpen={activePanel === 'library'}
+                    onClose={() => setActivePanel('studio')}
                 />
-
-                <main className="flex flex-1 flex-col overflow-hidden min-w-0" style={{ display: 'grid', gridTemplateRows: '65% 35%' }}>
-                    <div className="flex flex-col h-full overflow-hidden relative">
-                        {/* Integrated Studio Controls - Bottom Position */}
-                        <div className="absolute bottom-6 left-6 right-6 z-30 flex items-center justify-between p-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/5 shadow-2xl">
-                            <div className="flex items-center space-x-4">
-                                <button
-                                    onClick={() => {
-                                        if (!isPlaying && playbackPosition >= 100) {
-                                            setPlaybackPosition(0);
-                                        }
-                                        setIsPlaying(!isPlaying);
-                                    }}
-                                    className={`px-6 py-2 rounded-xl flex items-center space-x-3 text-xs font-black transition-all ${isPlaying ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'bg-cyan-500 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.4)]'}`}
-                                >
-                                    {isPlaying ? <Icons.Pause /> : <Icons.Play />}
-                                    <span>{isPlaying ? 'STOP' : 'PLAY'}</span>
-                                </button>
-                                <button onClick={() => { setPlaybackPosition(0); }} className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-white transition-colors border border-white/5" title="Back to Start">
-                                    <Icons.SkipBack />
-                                </button>
-                                <button onClick={() => setIsLooping(!isLooping)} className={`p-2.5 rounded-xl border transition-all ${isLooping ? 'bg-pink-500/20 text-pink-400 border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.3)]' : 'bg-white/5 text-slate-400 hover:text-white border-white/5'}`} title="Toggle Loop">
-                                    <Icons.Repeat />
-                                </button>
-                                <button onClick={() => { setIsPlaying(false); setPlaybackPosition(0); }} className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:text-white transition-colors border border-white/5" title="Stop & Reset">
-                                    <Icons.Reset />
-                                </button>
-                                <div className="h-6 w-px bg-white/10 mx-2" />
-
-                                <div className="flex items-center space-x-2 bg-black/50 p-1 rounded-lg border border-white/10">
-                                    <div className="flex items-center px-3 space-x-2 border-r border-white/10">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase">Tempo</span>
-                                        <input type="number" value={settings.bpm} min="40" max="240" onChange={(e) => setSettings({ ...settings, bpm: parseInt(e.target.value) || 120 })} className="w-12 bg-transparent text-xs font-black text-cyan-400 outline-none text-center" />
-                                        <span className="text-[10px] font-bold text-slate-700">BPM</span>
-                                    </div>
-                                    <select value={settings.time} onChange={(e) => setSettings({ ...settings, time: e.target.value })} className="bg-transparent text-xs font-black text-slate-300 px-3 outline-none cursor-pointer">
-                                        <option value="4/4">4/4</option>
-                                        <option value="3/4">3/4</option>
-                                        <option value="2/4">2/4</option>
-                                        <option value="6/8">6/8</option>
-                                    </select>
-                                </div>
-                                <div className="h-6 w-px bg-white/10 mx-2" />
-
-                                <div className="flex items-center space-x-2">
-                                    <div className="flex items-center px-4 py-1.5 bg-black/40 rounded-xl border border-white/5 shadow-inner">
-                                        <span className="text-[10px] font-black text-cyan-400 tracking-wider uppercase">Section {displayMeasureInfo.current}/{displayMeasureInfo.total} Meas</span>
-                                    </div>
-                                    <div className="flex items-center space-x-1 bg-black/50 p-1 rounded-lg border border-white/10 ml-2">
-                                        <button onClick={() => toggleVisibility('notation')} className={`px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all ${settings.showNotation ? 'bg-blue-500/20 text-blue-400' : 'text-slate-600'}`}>Partitura</button>
-                                        <button onClick={() => toggleVisibility('tablature')} className={`px-3 py-1.5 rounded text-[10px] font-black uppercase transition-all ${settings.showTablature ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-600'}`}>Tablatura</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center space-x-3 pr-2">
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handleImportMusicXML}
-                                    accept=".musicxml,.xml,.mxl,.mscz"
-                                    className="hidden"
-                                />
-                                <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={isImporting}
-                                    className="h-9 px-4 font-black text-[10px] uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 border bg-white/5 text-slate-300 border-white/5 hover:border-cyan-500/50 hover:text-white hover:bg-white/10 disabled:opacity-50"
-                                    title="Import MuseScore (MusicXML)"
-                                >
-                                    <Upload className="w-4 h-4" />
-                                    <span>{isImporting ? 'Importing...' : 'Import'}</span>
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        if (renderState.isRendering) {
-                                            scorePreviewRef.current?.cancelRender();
-                                        } else {
-                                            setShowRenderSettings(true);
-                                        }
-                                    }}
-                                    className={`
-                                        h-9 px-5 font-black text-[10px] uppercase tracking-wider rounded-xl transition-all flex items-center gap-3 border
-                                        ${renderState.isRendering
-                                            ? 'bg-red-500/20 text-red-400 border-red-500/50 hover:bg-red-500/30'
-                                            : 'bg-white/5 text-slate-300 border-white/5 hover:border-cyan-500/50 hover:text-white hover:bg-white/10'
-                                        }
-                                    `}
-                                    title={renderState.isRendering ? 'Stop Rendering' : 'Start Rendering'}
-                                >
-                                    {renderState.isRendering ? (
-                                        <>
-                                            <Film className="w-4 h-4 animate-pulse" />
-                                            <span>Recording...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Film className="w-4 h-4" />
-                                            <span>Export Video</span>
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Top: Score Preview (Canvas) */}
-                        <div className="w-full h-full min-w-0 overflow-hidden relative">
-                            <ScorePreview
-                                ref={scorePreviewRef}
-                                code={vextabCode}
-                                measures={measures}
-                                timeSignature={settings.time}
-                                playbackPosition={playbackPosition}
-                                isPlaying={isPlaying}
-                                style={scoreStyle}
-                                showNotation={settings.showNotation}
-                                showTablature={settings.showTablature}
-                                onMeasuresChange={setMeasures}
-                                selectedNoteIds={selectedNoteIds}
-                                onSelectNote={handleSelectNote}
-                                onDoubleClickNote={(id) => setEditingNoteId(id)}
-                                currentMeasureIndex={currentMeasureIndex}
-                                onPlaybackControl={setIsPlaying}
-                                onPlaybackPositionChange={setPlaybackPosition}
-                                onToggleVisibility={toggleVisibility}
-                                onRenderStateChange={setRenderState}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Bottom: Visual Editor (Timeline) */}
-                    <div className="w-full h-full min-w-0 overflow-hidden relative border-t border-white/5 bg-black/20 backdrop-blur-sm">
-                        <VisualEditor
+            }
+            rightSidebar={
+                <StyleSidebar
+                    style={scoreStyle}
+                    onChange={(up: Partial<ScoreStyle>) => setScoreStyle({ ...scoreStyle, ...up })}
+                    onReset={() => setScoreStyle(DEFAULT_SCORE_STYLE)}
+                    isMobile={isMobile}
+                    isOpen={activePanel === 'customize'}
+                    onClose={() => setActivePanel('studio')}
+                />
+            }
+        >
+            <EditorGrid
+                topSection={
+                    <StageContainer title="Score Preview" aspectRatio="aspect-[800/340]" background={scoreStyle.background}>
+                        <ScorePreview
+                            ref={scorePreviewRef}
                             measures={measures}
+                            playbackPosition={playbackPosition}
+                            isPlaying={isPlaying}
+                            style={scoreStyle}
+                            showNotation={settings.showNotation}
+                            showTablature={settings.showTablature}
+                            onMeasuresChange={setMeasures}
                             selectedNoteIds={selectedNoteIds}
-                            timeSignature={settings.time}
-                            activeDuration={activeDuration}
                             onSelectNote={handleSelectNote}
                             onDoubleClickNote={(id) => setEditingNoteId(id)}
-                            onAddNote={handleAddNote}
-                            onUpdateNote={(id, up) => updateSelectedNotes(up)}
-                            onRemoveMeasure={(id) => setMeasures(measures.filter(m => m.id !== id))}
-                            onAddMeasure={handleAddMeasure}
-                            onUpdateMeasure={handleUpdateMeasure}
-                            onToggleCollapse={handleToggleCollapse}
-                            onCopyMeasure={handleCopyMeasure}
-                            onPasteMeasure={handlePasteMeasure}
-                            onReorderMeasures={handleReorderMeasures}
-                            onRemoveNote={handleRemoveNote}
-                            hasClipboard={!!clipboard}
-                            onSelectMeasure={handleSelectMeasure}
-                            selectedMeasureId={selectedMeasureId}
+                            currentMeasureIndex={currentMeasureIndex}
+                            onPlaybackControl={setIsPlaying}
+                            onPlaybackPositionChange={setPlaybackPosition}
+                            onToggleVisibility={toggleVisibility}
+                            onRenderStateChange={setRenderState}
+                            code="" // Placeholder for required prop
+                            timeSignature={settings.time} // Required prop
                         />
-                    </div>
-                </main >
+                    </StageContainer>
+                }
+                bottomSection={
+                    <VisualEditor
+                        measures={measures}
+                        selectedNoteIds={selectedNoteIds}
+                        timeSignature={settings.time}
+                        activeDuration={activeDuration}
+                        onSelectNote={handleSelectNote}
+                        onDoubleClickNote={(id) => setEditingNoteId(id)}
+                        onAddNote={handleAddNote}
+                        onUpdateNote={(id, up) => updateSelectedNotes(up)}
+                        onRemoveMeasure={(id) => setMeasures(measures.filter(m => m.id !== id))}
+                        onAddMeasure={handleAddMeasure}
+                        onUpdateMeasure={handleUpdateMeasure}
+                        onToggleCollapse={handleToggleCollapse}
+                        onCopyMeasure={handleCopyMeasure}
+                        onPasteMeasure={handlePasteMeasure}
+                        onReorderMeasures={handleReorderMeasures}
+                        onRemoveNote={handleRemoveNote}
+                        hasClipboard={!!clipboard}
+                        onSelectMeasure={handleSelectMeasure}
+                        selectedMeasureId={selectedMeasureId}
+                        onDeselectAll={handleDeselectAll}
+                    />
+                }
+                floatingControls={floatingControls}
+            />
 
-                <StyleSidebar style={scoreStyle} onChange={(up: Partial<ScoreStyle>) => setScoreStyle({ ...scoreStyle, ...up })} onReset={() => setScoreStyle(DEFAULT_SCORE_STYLE)} />
-            </div>
-
-            {/* Video Render Settings Modal */}
             <VideoRenderSettingsModal
                 isOpen={showRenderSettings}
                 settings={renderSettings}
@@ -818,6 +1061,6 @@ export default function TabEditorPage() {
                 progress={renderState.progress}
                 onClose={() => setRenderState(prev => ({ ...prev, isRendering: false }))}
             />
-        </div>
+        </WorkspaceLayout>
     );
 }

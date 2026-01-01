@@ -55,8 +55,8 @@ const STUDIO_PRESETS = {
       textColor: "#00ff9d",
       chordNameColor: "#fb00ff",
       fingerColor: "#00ff9d",
-      fingerTextColor: "#000000",
-      fingerBorderColor: "#ffffff",
+      fingerTextColor: "#fffdfdff",
+      fingerBorderColor: "#fb00ff",
       fingerBoxShadowColor: "#00ff9d80",
     }
   },

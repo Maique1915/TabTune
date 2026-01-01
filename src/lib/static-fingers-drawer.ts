@@ -29,20 +29,33 @@ export function drawStaticFingersAnimation(params: DrawStaticFingersParams) {
 
   const currentFinalChord = currentDisplayChord.finalChord;
   const currentTransportDisplay = currentDisplayChord.transportDisplay;
-  const nextFinalChord = nextDisplayChord?.finalChord || null;
-  const nextTransportDisplay = nextDisplayChord?.transportDisplay || null;
+  const nextFinalChord = nextDisplayChord?.finalChord ?? null;
+  const nextTransportDisplay = nextDisplayChord?.transportDisplay ?? null;
 
   const drawOptions = { skipFretboard };
 
+  console.log('🎸 Static Fingers Draw:', {
+    buildProgress,
+    transitionProgress,
+    hasNextChord: !!nextDisplayChord,
+    currentChord: currentFinalChord.chord,
+    nextChord: nextFinalChord?.chord,
+    nextTransportDisplay
+  });
+
   if (buildProgress !== undefined && buildProgress < 1) {
+    console.log('📊 Drawing BUILD animation');
     drawer.drawChordWithBuildAnimation(currentFinalChord, currentTransportDisplay, buildProgress, 0, drawOptions);
   } else if (nextDisplayChord && transitionProgress > 0) {
-    if (nextFinalChord && nextTransportDisplay !== null) {
+    if (nextFinalChord && nextTransportDisplay != null) { // Use != to check both null and undefined
+      console.log('🔄 Drawing TRANSITION animation', transitionProgress);
       drawer.drawChordWithTransition(currentFinalChord, currentTransportDisplay, nextFinalChord, nextTransportDisplay, transitionProgress, 0, drawOptions);
     } else {
+      console.log('🎵 Drawing static chord (no next)', { nextFinalChord: !!nextFinalChord, nextTransportDisplay });
       drawer.drawChord(currentFinalChord, currentTransportDisplay, 0, drawOptions);
     }
   } else {
+    console.log('🎵 Drawing static chord (no transition)');
     drawer.drawChord(currentFinalChord, currentTransportDisplay, 0, drawOptions);
   }
 

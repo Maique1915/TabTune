@@ -785,20 +785,18 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
 
   return (
     <>
-      <div className="relative w-full h-full flex items-center justify-center">
+      <div className="relative w-full h-full">
         <canvas
           ref={backgroundCanvasRef}
           width={width}
           height={height}
-          className="absolute z-0 w-full h-full object-contain pointer-events-none"
-          style={{ maxWidth: '100%', maxHeight: '100%' }}
+          className="absolute inset-0 z-0 w-full h-full object-contain pointer-events-none"
         />
         <canvas
           ref={canvasRef}
           width={width}
           height={height}
-          className="absolute z-10 w-full h-full object-contain"
-          style={{ maxWidth: '100%', maxHeight: '100%' }}
+          className="absolute inset-0 z-10 w-full h-full object-contain"
         />
       </div>
       {showSettingsModal && !recorder.isRendering && !recorder.isComplete && (

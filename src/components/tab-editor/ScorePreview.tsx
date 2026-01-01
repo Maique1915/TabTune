@@ -577,7 +577,7 @@ const MeasureThumbnail = memo(({
     }, [isActive, progress]);
 
     return (
-        <div className="rounded-2xl shadow-[0_80px_160px_rgba(0,0,0,0.6)] overflow-hidden border border-white/5 relative flex items-center justify-center aspect-[800/340] w-full" style={{ backgroundColor: style.background || '#050505' }}>
+        <div className="overflow-hidden relative flex items-center justify-center aspect-[800/340] w-full bg-transparent">
             <div className="score-canvas-viewport w-full h-full relative" style={{ opacity: renderError ? 0.2 : 1 }}>
                 <canvas
                     ref={notationCanvasRef}
@@ -863,56 +863,33 @@ const ScorePreview = React.forwardRef<ScorePreviewRef, ScorePreviewProps>(({
     if (!activeMeasureData) return null;
 
     return (
-        <div ref={scoreContainerRef as React.RefObject<HTMLDivElement>} className="w-full h-full flex flex-col bg-[#050505] overflow-hidden relative">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_rgba(6,182,212,0.05)_0%,_transparent_70%)] pointer-events-none" />
-
-            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-transparent overflow-hidden relative">
-                {/* CRT Monitor Frame */}
-                <div className="relative w-full max-w-[800px] bg-[#0a0a0a] rounded-3xl border-4 border-[#333] shadow-[0_0_0_2px_#111,0_0_40px_rgba(0,0,0,0.5),0_0_100px_rgba(6,182,212,0.1)] overflow-hidden group z-10">
-                    {/* Screen Bezel/Inner Shadow */}
-                    <div className="absolute inset-0 rounded-2xl pointer-events-none z-20 shadow-[inset_0_0_40px_rgba(0,0,0,0.8)] border border-white/5" />
-
-                    {/* CRT Scanline Overlay */}
-                    <div className="absolute inset-0 pointer-events-none z-30 opacity-10 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(255,0,0,0.02))] bg-[length:100%_4px,3px_100%]" />
-
-                    {/* Subtle Screen Curved Reflection */}
-                    <div className="absolute inset-0 pointer-events-none z-30 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-30 rounded-2xl" />
-
-                    <div className="w-full h-full relative z-10 flex items-center justify-center bg-[#050505]">
-                        <div className="relative w-full aspect-[800/340]">
-                            {safeMeasures.map((measure, idx) => (
-                                idx === currentMeasureIndex && (
-                                    <div
-                                        key={`${measure.id || idx}-${style.transitionType}-${timeSignature}-${showNotation}-${showTablature}`}
-                                        className={`absolute inset-0 w-full ${shouldAnimate ? `score-animation-${style.transitionType}` : ''}`}
-                                    >
-                                        <MeasureThumbnail
-                                            measureData={measure}
-                                            measureIndex={idx}
-                                            isActive={isPlaying || isOfflineRendering}
-                                            progress={measureProgress}
-                                            style={style}
-                                            shouldAnimate={shouldAnimate}
-                                            timeSignatureStr={timeSignature}
-                                            showNotation={showNotation}
-                                            showTablature={showTablature}
-                                            onNoteClick={handleNoteClick}
-                                            onNoteDoubleClick={onDoubleClickNote}
-                                            selectedNoteIds={selectedNoteIds}
-                                            dpr={currentDPR}
-                                        />
-                                    </div>
-                                )
-                            ))}
+        <div ref={scoreContainerRef as React.RefObject<HTMLDivElement>} className="w-full h-full flex flex-col bg-transparent overflow-hidden relative">
+            <div className="flex-1 flex flex-col items-center justify-center bg-transparent overflow-hidden relative">
+                {safeMeasures.map((measure, idx) => (
+                    idx === currentMeasureIndex && (
+                        <div
+                            key={`${measure.id || idx}-${style.transitionType}-${timeSignature}-${showNotation}-${showTablature}`}
+                            className={`absolute inset-0 w-full ${shouldAnimate ? `score-animation-${style.transitionType}` : ''}`}
+                        >
+                            <MeasureThumbnail
+                                measureData={measure}
+                                measureIndex={idx}
+                                isActive={isPlaying || isOfflineRendering}
+                                progress={measureProgress}
+                                style={style}
+                                shouldAnimate={shouldAnimate}
+                                timeSignatureStr={timeSignature}
+                                showNotation={showNotation}
+                                showTablature={showTablature}
+                                onNoteClick={handleNoteClick}
+                                onNoteDoubleClick={onDoubleClickNote}
+                                selectedNoteIds={selectedNoteIds}
+                                dpr={currentDPR}
+                            />
                         </div>
-                        <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-cyan-500/30 font-mono text-[10px] uppercase tracking-widest pointer-events-none">Signal: Active</p>
-                    </div>
-                </div>
-
-                {/* Decorative localized glow under the monitor */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-32 bg-cyan-500/10 blur-[100px] pointer-events-none z-0" />
+                    )
+                ))}
             </div>
-
         </div>
     );
 });

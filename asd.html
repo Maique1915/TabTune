@@ -1,286 +1,236 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+
+<html class="dark" lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <title>VexFlow Custom Layers</title>
-    <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Mobile Video Editor Main Screen</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+    <script>tailwind.config = { darkMode: "class", theme: { extend: { colors: { primary: "#1A1A1A", "background-light": "#f7f7f7", "background-dark": "#191919", "surface-light": "#FFFFFF", "surface-dark": "#111827", "panel-light": "#E5E7EB", "panel-dark": "#1F2937" }, fontFamily: { display: "Spline Sans", sans: ["Inter", "sans-serif"] }, borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" } } } };</script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .timeline-grid {
+            background-size: 40px 100%;
+            background-image: linear-gradient(to right, rgba(100, 116, 139, 0.2) 1px, transparent 1px);
+        }
+    </style>
     <style>
         body {
-            font-family: sans-serif;
-            background: #121212;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
+            min-height: max(884px, 100dvh);
         }
-
-        #controls {
-            background: #1e1e1e;
-            padding: 20px;
-            border-radius: 8px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-            border: 1px solid #333;
+    </style>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
         }
-
-        .control-group {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        #output {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 95%;
-            max-width: 800px;
-        }
-
-        input[type="color"] {
-            border: none;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            background: none;
-            border-radius: 4px;
-            border: 2px solid #333;
-        }
-
-        label {
-            min-width: 150px;
-            font-weight: bold;
+    </style>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
         }
     </style>
 </head>
 
-<body>
-
-    <h2>Configurador VexFlow (Partitura + Tab)</h2>
-
-    <div id="controls">
-        <div class="control-group">
-            <label>Pautas (Linhas):</label>
-            <input type="color" id="color-stave" value="#FF0000">
+<body
+    class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 font-sans h-screen flex flex-col overflow-hidden antialiased selection:bg-primary selection:text-white">
+    <header class="flex-none px-6 pt-12 pb-4 flex items-center justify-between z-20">
+        <div class="flex items-center gap-2">
+            <span class="material-icons-round text-primary text-3xl">music_note</span>
+            <h1 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white">TabTune</h1>
         </div>
-        <div class="control-group">
-            <label>Notas Musicais:</label>
-            <input type="color" id="color-notes" value="#0000FF">
+        <button class="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+            <span class="material-icons-round text-gray-600 dark:text-gray-400">settings</span>
+        </button>
+    </header>
+    <main class="flex-1 flex flex-col relative overflow-hidden">
+        <section class="flex-1 px-4 py-2 flex items-center justify-center min-h-[250px] relative">
+            <div class="absolute w-full h-full max-w-sm bg-primary/10 blur-[60px] rounded-full pointer-events-none">
+            </div>
+            <canvas
+                class="w-full h-full bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-800 rounded-3xl shadow-xl flex flex-col items-center justify-center relative overflow-hidden group">
+                <div class="w-full h-full p-6 flex items-center justify-center bg-gray-50 dark:bg-[#0F1218]">
+                    <div class="w-full space-y-8 opacity-80">
+                        <div class="relative h-24 w-full">
+                            <div class="absolute top-1/2 left-0 w-full h-[1px] bg-gray-300 dark:bg-gray-700"></div>
+                            <div
+                                class="absolute top-[calc(50%-10px)] left-0 w-full h-[1px] bg-gray-300 dark:bg-gray-700">
+                            </div>
+                            <div
+                                class="absolute top-[calc(50%+10px)] left-0 w-full h-[1px] bg-gray-300 dark:bg-gray-700">
+                            </div>
+                            <div
+                                class="absolute top-[calc(50%-5px)] left-[15%] w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]">
+                            </div>
+                            <div class="absolute top-1/2 left-[15%] w-[1px] h-10 bg-amber-500 -mt-10"></div>
+                            <div
+                                class="absolute top-[calc(50%+5px)] left-[45%] w-3 h-3 rounded-full bg-white border border-gray-400 dark:border-gray-500">
+                            </div>
+                            <div class="absolute top-1/2 left-[45%] w-[1px] h-10 bg-gray-400 dark:bg-gray-500 -mt-10">
+                            </div>
+                            <div
+                                class="absolute top-[calc(50%-5px)] left-[75%] w-3 h-3 rounded-full bg-white border border-gray-400 dark:border-gray-500">
+                            </div>
+                            <div class="absolute top-1/2 left-[75%] w-[1px] h-10 bg-gray-400 dark:bg-gray-500 -mt-10">
+                            </div>
+                            <span
+                                class="absolute top-2 left-2 text-4xl text-amber-500 font-serif italic font-bold">𝄞</span>
+                            <span class="absolute top-6 left-10 text-xl text-amber-500 font-bold">4/4</span>
+                        </div>
+                        <div
+                            class="relative space-y-2 font-mono text-xs text-gray-400 dark:text-gray-600 pl-4 border-l-2 border-amber-500/50">
+                            <div class="w-full h-[1px] bg-gray-200 dark:bg-gray-800 relative"><span
+                                    class="absolute -top-2 left-[15%] text-gray-500 dark:text-gray-400">5</span></div>
+                            <div class="w-full h-[1px] bg-gray-200 dark:bg-gray-800 relative"><span
+                                    class="absolute -top-2 left-[45%] text-gray-500 dark:text-gray-400">7</span></div>
+                            <div class="w-full h-[1px] bg-gray-200 dark:bg-gray-800 relative"><span
+                                    class="absolute -top-2 left-[75%] text-gray-500 dark:text-gray-400">9</span></div>
+                            <div
+                                class="absolute bottom-1 right-4 text-[10px] text-primary tracking-widest uppercase opacity-70">
+                                Signal: Active</div>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    class="absolute top-4 bg-black/80 backdrop-blur-md px-3 py-1 rounded-full text-xs font-mono text-white border border-white/10 shadow-lg transform translate-y-[-150%] group-hover:translate-y-0 transition-transform duration-300">
+                    E Major
+                </div>
+            </canvas>
+        </section>
+        <section class="flex-none px-6 py-4 flex justify-center w-full">
+            <div
+                class="bg-white dark:bg-surface-dark/50 backdrop-blur-md border border-gray-200 dark:border-gray-800 p-1.5 rounded-2xl flex items-center gap-1 shadow-lg shadow-black/5 dark:shadow-black/20">
+                <button
+                    class="w-12 h-12 flex items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all">
+                    <span class="material-icons-round text-3xl ml-0.5">play_arrow</span>
+                </button>
+                <button
+                    class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-colors">
+                    <span class="material-icons-round text-xl">skip_previous</span>
+                </button>
+                <button
+                    class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-colors">
+                    <span class="material-icons-round text-xl">replay</span>
+                </button>
+                <div class="w-[1px] h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+                <button
+                    class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-colors">
+                    <span class="material-icons-round text-xl">timer</span>
+                </button>
+                <button
+                    class="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-gray-200 transition-colors border border-gray-200 dark:border-white/5">
+                    <span class="material-icons-round text-xl">view_sidebar</span>
+                </button>
+            </div>
+        </section>
+        <section class="flex-none pb-4 px-4 h-64 flex flex-col gap-3">
+            <div class="flex items-center justify-between px-2 text-xs font-mono text-gray-500 dark:text-gray-400">
+                <div class="flex items-center gap-2">
+                    <span>0:00.0</span>
+                    <span class="opacity-50">/</span>
+                    <span>0:02.0</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-1 cursor-pointer hover:text-primary transition-colors">
+                        <span>100px/s</span>
+                        <span class="material-icons-round text-[14px]">zoom_in</span>
+                    </div>
+                </div>
+            </div>
+            <div
+                class="relative flex-1 bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm">
+                <div
+                    class="absolute left-0 top-0 bottom-0 w-24 bg-gray-50 dark:bg-[#161b26] border-r border-gray-200 dark:border-gray-800 z-10 flex flex-col justify-center pl-4">
+                    <span
+                        class="text-[10px] font-bold tracking-wider text-gray-400 dark:text-gray-500 uppercase">Acordes</span>
+                </div>
+                <div class="absolute left-24 right-0 top-0 bottom-0 overflow-x-auto no-scrollbar timeline-grid">
+                    <div
+                        class="h-6 w-[800px] border-b border-gray-200 dark:border-gray-800 flex items-end text-[10px] text-gray-400 font-mono relative">
+                        <span class="absolute left-[40px] translate-x-[-50%] pb-1">0:00.0</span>
+                        <span class="absolute left-[240px] translate-x-[-50%] pb-1">0:01.0</span>
+                        <span class="absolute left-[440px] translate-x-[-50%] pb-1">0:02.0</span>
+                        <div class="absolute bottom-0 left-[40px] w-[1px] h-1.5 bg-gray-300 dark:bg-gray-600"></div>
+                        <div class="absolute bottom-0 left-[240px] w-[1px] h-1.5 bg-gray-300 dark:bg-gray-600"></div>
+                        <div class="absolute bottom-0 left-[440px] w-[1px] h-1.5 bg-gray-300 dark:bg-gray-600"></div>
+                    </div>
+                    <div class="h-full w-[800px] relative py-4">
+                        <div
+                            class="absolute top-0 bottom-0 left-[40px] w-[2px] bg-primary z-20 shadow-[0_0_10px_rgba(14,165,233,0.5)]">
+                            <div
+                                class="w-3 h-3 bg-primary rounded-full absolute -top-1.5 -left-[5px] ring-2 ring-white dark:ring-surface-dark">
+                            </div>
+                        </div>
+                        <div
+                            class="absolute left-[40px] top-2 h-14 w-[400px] bg-blue-50 dark:bg-primary/20 border-2 border-primary/50 dark:border-primary/40 rounded-lg flex items-center justify-between px-4 group cursor-pointer hover:bg-blue-100 dark:hover:bg-primary/30 transition-colors">
+                            <span class="text-primary dark:text-blue-100 font-bold text-lg">E</span>
+                            <span class="text-[10px] font-mono text-primary/70 dark:text-blue-200/70">0:02.0</span>
+                            <div
+                                class="absolute left-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-primary/20 rounded-l-md">
+                            </div>
+                            <div
+                                class="absolute right-0 top-0 bottom-0 w-3 cursor-ew-resize hover:bg-primary/20 rounded-r-md">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <nav class="flex-none bg-white dark:bg-surface-dark border-t border-gray-200 dark:border-gray-800 pb-8 pt-2 px-6">
+        <div class="flex items-center justify-between max-w-sm mx-auto">
+            <button class="flex flex-col items-center gap-1 group">
+                <div class="relative p-1">
+                    <div
+                        class="absolute inset-0 bg-primary/10 rounded-xl scale-0 group-hover:scale-100 transition-transform">
+                    </div>
+                    <span class="material-icons-round text-primary text-2xl relative z-10">music_video</span>
+                </div>
+                <span class="text-[10px] font-medium text-primary">Studio</span>
+            </button>
+            <button class="flex flex-col items-center gap-1 group">
+                <div class="relative p-1">
+                    <span
+                        class="material-icons-round text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 text-2xl transition-colors">library_music</span>
+                </div>
+                <span
+                    class="text-[10px] font-medium text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors">Library</span>
+            </button>
+            <button class="flex flex-col items-center justify-center -mt-8">
+                <div
+                    class="w-14 h-14 bg-gray-900 dark:bg-primary rounded-full shadow-lg shadow-gray-400/50 dark:shadow-primary/40 flex items-center justify-center transform transition-transform active:scale-95 hover:-translate-y-1">
+                    <span class="material-icons-round text-white text-3xl">add</span>
+                </div>
+            </button>
+            <button class="flex flex-col items-center gap-1 group">
+                <div class="relative p-1">
+                    <span
+                        class="material-icons-round text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 text-2xl transition-colors">tune</span>
+                </div>
+                <span
+                    class="text-[10px] font-medium text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors">Mixer</span>
+            </button>
+            <button class="flex flex-col items-center gap-1 group">
+                <div class="relative p-1">
+                    <span
+                        class="material-icons-round text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 text-2xl transition-colors">palette</span>
+                </div>
+                <span
+                    class="text-[10px] font-medium text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors">Customize</span>
+            </button>
         </div>
-        <div class="control-group">
-            <label>Números da Tab:</label>
-            <input type="color" id="color-tab" value="#008000">
-        </div>
-        <div class="control-group">
-            <label>Claves e Símbolos:</label>
-            <input type="color" id="color-glyphs" value="#000000">
-        </div>
-        <div class="control-group">
-            <label>Fundo da Página:</label>
-            <input type="color" id="color-bg" value="#FFFFFF">
-        </div>
-    </div>
-
-    <div id="output"></div>
-
-    <script>
-        const { Renderer, Stave, StaveNote, TabStave, TabNote, Formatter, Accidental } = Vex.Flow;
-
-        function draw() {
-            const div = document.getElementById("output");
-            div.innerHTML = "";
-
-            const renderer = new Renderer(div, Renderer.Backends.SVG);
-            renderer.resize(700, 500);
-            const context = renderer.getContext();
-
-            // Cores do Menu
-            const cStave = document.getElementById("color-stave").value;
-            const cNotes = document.getElementById("color-notes").value;
-            const cTab = document.getElementById("color-tab").value;
-            const cGlyphs = document.getElementById("color-glyphs").value;
-            const cBg = document.getElementById("color-bg").value;
-
-            // Aplicar cor de fundo ao container
-            div.style.backgroundColor = cBg;
-
-            // 1. Renderizar Pauta Superior (Pentagrama)
-            const stave = new Stave(50, 60, 600);
-
-            context.save();
-            context.setStrokeStyle(cStave);
-            context.setFillStyle(cStave);
-
-            stave.setContext(context);
-
-            // Adicionar clave e compasso
-            stave.addClef("treble");
-            stave.addKeySignature("C");
-            stave.addTimeSignature("4/4");
-
-            // Desenhar pauta
-            stave.draw();
-
-            // Aplicar cor aos glifos
-            applyColorToGlyphs(context, cGlyphs);
-            context.restore();
-
-            // 2. Renderizar Pauta Inferior (Tablatura)
-            const tabStave = new TabStave(50, 220, 600);
-
-            context.save();
-            context.setStrokeStyle(cStave);
-            context.setFillStyle(cStave);
-
-            tabStave.setContext(context);
-            tabStave.addTabGlyph();
-            tabStave.draw();
-
-            // Aplicar cor ao glifo da tablatura
-            applyColorToGlyphs(context, cGlyphs);
-            context.restore();
-
-            // 3. Notas da Partitura
-            const notes1 = [
-                new StaveNote({ keys: ["e/4", "b/4", "e/5"], duration: "h" })
-                    .addAccidental(0, new Accidental("n"))
-                    .addModifier(new Vex.Flow.Annotation("Em").setFont("Arial", 12), 0),
-                new StaveNote({ keys: ["f#/4", "a/4", "d/5"], duration: "h" })
-                    .addAccidental(0, new Accidental("#"))
-                    .addModifier(new Vex.Flow.Annotation("D").setFont("Arial", 12), 0)
-            ].map(n => n.setStyle({ fillStyle: cNotes, strokeStyle: cNotes }));
-
-            // 4. Notas da Tablatura - SEM RETÂNGULO DE FUNDO BRANCO
-            const tabNotes = [
-                new TabNote({
-                    positions: [{ str: 6, fret: 0 }, { str: 5, fret: 2 }, { str: 4, fret: 2 }],
-                    duration: "h"
-                }),
-                new TabNote({
-                    positions: [{ str: 6, fret: 2 }, { str: 5, fret: 3 }, { str: 4, fret: 2 }],
-                    duration: "h"
-                })
-            ].map(tn => {
-                // Aplicar estilo SEM fundo branco
-                tn.setStyle({
-                    fillStyle: cTab,
-                    strokeStyle: cTab,
-                    // Remover fundo branco configurando o fundo como transparente
-                    backgroundFillStyle: 'transparent'
-                });
-                return tn;
-            });
-
-            // 5. Alinhamento e Desenho Final
-            Formatter.FormatAndDraw(context, stave, notes1, { auto_beam: false });
-
-            // Adicionar segunda linha de notas
-            const stave2 = new Stave(50, 140, 600);
-            context.save();
-            context.setStrokeStyle(cStave);
-            context.setFillStyle(cStave);
-            stave2.setContext(context).draw();
-            context.restore();
-
-            const notes2 = [
-                new StaveNote({ keys: ["c/4", "e/4", "g/4"], duration: "h" })
-                    .addModifier(new Vex.Flow.Annotation("C").setFont("Arial", 12), 0),
-                new StaveNote({ keys: ["d/4", "f#/4", "a/4"], duration: "h" })
-                    .addAccidental(1, new Accidental("#"))
-                    .addModifier(new Vex.Flow.Annotation("D").setFont("Arial", 12), 0)
-            ].map(n => n.setStyle({ fillStyle: cNotes, strokeStyle: cNotes }));
-
-            Formatter.FormatAndDraw(context, stave2, notes2, { auto_beam: false });
-
-            // Desenhar notas da tablatura
-            Formatter.FormatAndDraw(context, tabStave, tabNotes, { auto_beam: false });
-
-            // 6. PÓS-PROCESSAMENTO: Remover retângulos brancos da tablatura
-            removeTabBackgrounds(context, cBg);
-        }
-
-        // Função auxiliar para aplicar cor aos glifos
-        function applyColorToGlyphs(context, color) {
-            const svg = context.svg;
-            const textElements = svg.getElementsByTagName('text');
-            const pathElements = svg.getElementsByTagName('path');
-
-            // Aplicar cor a textos
-            for (let i = 0; i < textElements.length; i++) {
-                if (textElements[i].getAttribute('data-type') !== 'note') {
-                    textElements[i].setAttribute('fill', color);
-                }
-            }
-
-            // Aplicar cor a paths (símbolos como clave, etc.)
-            for (let i = 0; i < pathElements.length; i++) {
-                const className = pathElements[i].getAttribute('class') || '';
-                if (className.includes('vf-clef') ||
-                    className.includes('vf-timesig') ||
-                    className.includes('vf-keysignature')) {
-                    pathElements[i].setAttribute('fill', color);
-                    pathElements[i].setAttribute('stroke', color);
-                }
-            }
-        }
-
-        // Função para remover os retângulos de fundo branco da tablatura
-        function removeTabBackgrounds(context, bgColor) {
-            const svg = context.svg;
-            const rectElements = svg.getElementsByTagName('rect');
-
-            // Encontrar e remover/modificar retângulos de fundo da tablatura
-            for (let i = 0; i < rectElements.length; i++) {
-                const rect = rectElements[i];
-
-                // Verificar se é um retângulo de fundo (geralmente tem fill="white")
-                if (rect.getAttribute('fill') === 'white' ||
-                    rect.getAttribute('fill') === '#ffffff' ||
-                    rect.style.fill === 'white') {
-
-                    // Opção 1: Remover completamente o retângulo
-                    // rect.remove();
-
-                    // Opção 2: Fazer o retângulo ter a mesma cor do fundo
-                    rect.setAttribute('fill', bgColor);
-                    rect.setAttribute('stroke', 'none');
-                }
-            }
-
-            // Também procurar por elementos de fundo em grupos
-            const gElements = svg.getElementsByTagName('g');
-            for (let i = 0; i < gElements.length; i++) {
-                const g = gElements[i];
-                const rectsInG = g.getElementsByTagName('rect');
-
-                for (let j = 0; j < rectsInG.length; j++) {
-                    const rect = rectsInG[j];
-                    if (rect.getAttribute('fill') === 'white' ||
-                        rect.getAttribute('fill') === '#ffffff') {
-                        rect.setAttribute('fill', bgColor);
-                        rect.setAttribute('stroke', 'none');
-                    }
-                }
-            }
-        }
-
-        // Inicializar cor de fundo
-        document.addEventListener('DOMContentLoaded', function () {
-            document.getElementById('color-bg').value = '#FFFFFF';
-            document.getElementById('output').style.backgroundColor = '#FFFFFF';
-
-            document.querySelectorAll('input[type="color"]').forEach(i => {
-                i.addEventListener('input', draw);
-            });
-
-            draw();
-        });
-    </script>
+    </nav>
 </body>
 
 </html>

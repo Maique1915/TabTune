@@ -4,16 +4,21 @@ import { useRef, useState, useEffect } from "react";
 import { LibraryPanel } from "./library-panel";
 import { MainStage } from "./main-stage";
 import { TimelinePanel } from "./timeline-panel";
-import { SettingsPanel } from "./settings-panel";
+import { SettingsPanel } from "./SettingsPanel";
 import { AppHeader } from "./app-header";
 import { MobileNav } from "./mobile-nav";
+import { MobileHeader } from "@/components/shared/MobileHeader";
+import { MobileBottomNav } from "@/components/shared/MobileBottomNav";
 import { RenderingProgressCard } from "./rendering-progress-card";
 import { useAppContext } from "@/app/context/app--context";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { VideoCanvasStageRef } from "./video-canvas-stage";
+import { VideoCanvasStage } from "./video-canvas-stage";
 import { cn } from "@/shared/lib/utils";
 import { TimelineControls } from "./timeline/TimelineControls";
 import { generateClipId } from "@/lib/timeline/utils";
+import { WorkspaceLayout } from "@/components/shared/WorkspaceLayout";
+import { EditorGrid } from "@/components/shared/EditorGrid";
 
 export function HomePage() {
   const {
@@ -25,6 +30,9 @@ export function HomePage() {
     timelineState,
     setTimelineState,
     playbackTotalDurationMs,
+    selectedChords,
+    playbackTransitionsEnabled,
+    playbackBuildEnabled,
   } = useAppContext();
 
   const videoCanvasRef = useRef<VideoCanvasStageRef>(null);
@@ -32,7 +40,7 @@ export function HomePage() {
   const [isPaused, setIsPaused] = useState(false);
 
   const isMobile = useIsMobile();
-  const [mobilePanel, setMobilePanel] = useState<'studio' | 'library' | 'settings'>('studio');
+  const [mobilePanel, setMobilePanel] = useState<'studio' | 'library' | 'mixer' | 'customize'>('studio');
   const [hasMounted, setHasMounted] = useState(false);
   const [audioUploaded, setAudioUploaded] = useState(false);
 
@@ -173,55 +181,29 @@ export function HomePage() {
     }
   };
 
-  const handlePanelChange = (panel: 'studio' | 'library' | 'settings') => {
-    if (panel === 'studio') {
-      setMobilePanel('studio');
-    } else {
-      setMobilePanel(panel);
-    }
+  const handlePanelChange = (panel: 'studio' | 'library' | 'mixer' | 'customize') => {
+    setMobilePanel(panel);
   };
 
-  const mainContent = (
-    <main className="flex flex-1 flex-col overflow-hidden min-w-0 bg-black/20" style={{ display: 'grid', gridTemplateRows: '65% 35%' }}>
-      <div className="flex flex-col h-full overflow-hidden relative">
-        {/* Floating Controls Bar */}
-        <div className="absolute bottom-6 left-6 right-6 z-30 flex items-center justify-between p-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/5 shadow-2xl">
-          <TimelineControls
-            isAnimating={isAnimating}
-            isPaused={isPaused}
-            ffmpegLoaded={true}
-            handleAnimate={handleAnimate}
-            handlePause={handlePause}
-            handleResume={handleResume}
-            handleRenderVideo={handleRenderVideo}
-            isTimelineEmpty={timelineState.tracks.every(t => t.clips.length === 0)}
-            onAudioUpload={handleAudioUpload}
-            audioUploaded={audioUploaded}
-            onResetPlayback={handleResetPlayback}
-          />
-        </div>
+  const handleAddClick = () => {
+    // TODO: Implement add functionality
+    console.log('Add clicked');
+  };
 
-        <MainStage
-          ref={videoCanvasRef}
-          onAnimationStateChange={(animating, paused) => {
-            setIsAnimating(animating);
-            setIsPaused(paused);
-          }}
-        />
-      </div>
-      <div className="w-full h-full min-w-0 overflow-hidden relative border-t border-white/5 bg-black/20 backdrop-blur-sm">
-        <TimelinePanel
-          isAnimating={isAnimating}
-          isPaused={isPaused}
-          ffmpegLoaded={true}
-          handleAnimate={handleAnimate}
-          handlePause={handlePause}
-          handleResume={handleResume}
-          handleRenderVideo={handleRenderVideo}
-          isTimelineEmpty={false}
-        />
-      </div>
-    </main>
+  const floatingControls = (
+    <TimelineControls
+      isAnimating={isAnimating}
+      isPaused={isPaused}
+      ffmpegLoaded={true}
+      handleAnimate={handleAnimate}
+      handlePause={handlePause}
+      handleResume={handleResume}
+      handleRenderVideo={handleRenderVideo}
+      isTimelineEmpty={timelineState.tracks.every(t => t.clips.length === 0)}
+      onAudioUpload={handleAudioUpload}
+      audioUploaded={audioUploaded}
+      onResetPlayback={handleResetPlayback}
+    />
   );
 
   if (!hasMounted) {
@@ -235,42 +217,88 @@ export function HomePage() {
     );
   }
 
-  if (isMobile) {
-    return (
-      <div className="flex h-screen w-full flex-col bg-background text-foreground">
-        <AppHeader onSettingsClick={() => handlePanelChange('settings')} />
-        <RenderingProgressCard />        <div className="flex-1 overflow-hidden">
-          <div className={cn("h-full", { "hidden": mobilePanel !== 'studio' })}>
-            {mainContent}
+  return (
+    <WorkspaceLayout
+      isMobile={isMobile}
+      header={<AppHeader />}
+      mobileHeader={<MobileHeader title="TabTune" showBack={true} />}
+      mobileBottomNav={
+        <MobileBottomNav
+          activePanel={mobilePanel}
+          onPanelChange={handlePanelChange}
+          onAddClick={handleAddClick}
+        />
+      }
+      leftSidebar={<LibraryPanel isMobile={isMobile} isOpen={mobilePanel === 'library'} onClose={() => setMobilePanel('studio')} />}
+      rightSidebar={<SettingsPanel isMobile={isMobile} isOpen={mobilePanel === 'customize'} onClose={() => setMobilePanel('studio')} />}
+    >
+      {isMobile ? (
+        <div className="flex-1 px-4 py-2 flex flex-col min-h-[250px] relative overflow-hidden">
+          <div className="absolute w-full h-full max-w-sm bg-primary-mobile/10 blur-[60px] rounded-full pointer-events-none" />
+
+          <div className={cn("h-full w-full flex flex-col", { "hidden": mobilePanel !== 'studio' })}>
+            <div className="flex-1 relative flex items-center justify-center mb-4">
+              <div className="w-full h-full bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-800 rounded-3xl shadow-xl flex flex-col items-center justify-center relative overflow-hidden group">
+                <div className="w-full h-full flex items-center justify-center bg-gray-50 dark:bg-[#0F1218] p-4">
+                  <div className="w-full h-full flex items-center justify-center">
+                    <VideoCanvasStage
+                      ref={videoCanvasRef}
+                      chords={selectedChords}
+                      timelineState={timelineState}
+                      transitionsEnabled={playbackTransitionsEnabled}
+                      buildEnabled={playbackBuildEnabled}
+                      onAnimationStateChange={(animating: boolean, paused: boolean) => {
+                        setIsAnimating(animating);
+                        setIsPaused(paused);
+                      }}
+                      onRenderProgress={setRenderProgress}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="h-64 overflow-hidden">
+              <TimelinePanel
+                isAnimating={isAnimating}
+                isPaused={isPaused}
+                ffmpegLoaded={true}
+                handleAnimate={handleAnimate}
+                handlePause={handlePause}
+                handleResume={handleResume}
+                handleRenderVideo={handleRenderVideo}
+                isTimelineEmpty={false}
+              />
+            </div>
           </div>
         </div>
-        <MobileNav activePanel={mobilePanel} onPanelChange={handlePanelChange} />
-
-        <LibraryPanel
-          isMobile={true}
-          isOpen={mobilePanel === 'library'}
-          onClose={() => setMobilePanel('studio')}
+      ) : (
+        <EditorGrid
+          topSection={
+            <MainStage
+              ref={videoCanvasRef}
+              onAnimationStateChange={(animating, paused) => {
+                setIsAnimating(animating);
+                setIsPaused(paused);
+              }}
+            />
+          }
+          bottomSection={
+            <TimelinePanel
+              isAnimating={isAnimating}
+              isPaused={isPaused}
+              ffmpegLoaded={true}
+              handleAnimate={handleAnimate}
+              handlePause={handlePause}
+              handleResume={handleResume}
+              handleRenderVideo={handleRenderVideo}
+              isTimelineEmpty={false}
+            />
+          }
+          floatingControls={floatingControls}
         />
-        <SettingsPanel
-          isMobile={true}
-          isOpen={mobilePanel === 'settings'}
-          onClose={() => setMobilePanel('studio')}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex h-screen w-full flex-col bg-gradient-to-br from-[#1a0b2e] via-[#0f0518] to-black text-foreground relative overflow-hidden">
-      {/* Retro Grid Background Overlay (Optional subtle effect) */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(18,18,18,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(255,0,0,0.02))] bg-[length:100%_4px,6px_100%] pointer-events-none z-0" />
-
-      <div className="relative z-10 flex flex-1 overflow-hidden">
-        <RenderingProgressCard />
-        <LibraryPanel isMobile={false} />
-        {mainContent}
-        <SettingsPanel isMobile={false} />
-      </div>
-    </div>
+      )}
+      <RenderingProgressCard />
+    </WorkspaceLayout>
   );
 }

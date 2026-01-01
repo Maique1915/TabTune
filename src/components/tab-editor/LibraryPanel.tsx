@@ -1,4 +1,5 @@
-'use client';
+
+    'use client';
 
 import React from 'react';
 import { Duration, NoteData, MeasureData } from '@/lib/tab-editor/types';
@@ -33,10 +34,6 @@ interface SidebarProps {
     onActivePositionIndexChange?: (index: number) => void;
     onAddChordNote?: () => void;
     onRemoveChordNote?: (index: number) => void;
-    // Mobile props
-    isMobile?: boolean;
-    isOpen?: boolean;
-    onClose?: () => void;
 }
 
 interface ArticulationBtnProps {
@@ -56,7 +53,7 @@ const ArticulationButton: React.FC<ArticulationBtnProps> = ({ label, symbol, isA
     </button>
 );
 
-const Sidebar: React.FC<SidebarProps> = ({
+const LibraryPanel: React.FC<SidebarProps> = ({
     onInsert,
     activeDuration,
     onSelectDuration,
@@ -77,36 +74,23 @@ const Sidebar: React.FC<SidebarProps> = ({
     onActivePositionIndexChange,
     onAddChordNote,
     onRemoveChordNote,
-    isMobile = false,
-    isOpen = true,
-    onClose
 }) => {
-    const [activeTab, setActiveTab] = React.useState<'main' | 'articulations' | 'effects' | 'text'>('main');
 
-    const durationItems = [
-        { label: 'Whole', code: 'w' as Duration },
-        { label: 'Half', code: 'h' as Duration },
-        { label: 'Quarter', code: 'q' as Duration },
-        { label: '8th', code: '8' as Duration },
-        { label: '16th', code: '16' as Duration },
-        { label: '32nd', code: '32' as Duration },
-    ];
-
-
+    // Determina se está no modo Inspector ou Propriedades de Compasso
     const isInspector = !!editingNote;
-    const isMeasureProperties = !!activeMeasure && !isInspector;
+    const isMeasureProperties = !!activeMeasure && !editingNote;
 
-    const handleDurationClick = (code: Duration) => {
-        if (isInspector && onNoteRhythmChange) {
-            onNoteRhythmChange(code);
-        } else {
-            onSelectDuration(code);
-            // If strictly in measure context (no note editing), clicking adds a note
-            if (isMeasureProperties && activeMeasure && onAddNote) {
-                onAddNote(activeMeasure.id, code);
-            }
-        }
-    };
+    // Estado para abas do inspector
+    const [activeTab, setActiveTab] = React.useState('main');
+
+    // Durações padrão para botões de ritmo
+    const durationItems = [
+        { label: 'Whole', code: 'w' },
+        { label: 'Half', code: 'h' },
+        { label: 'Quarter', code: 'q' },
+        { label: 'Eighth', code: '8' },
+        { label: 'Sixteenth', code: '16' },
+    ];
 
     const getDurationActive = (code: Duration) => {
         if (isInspector && editingNote) {
@@ -137,7 +121,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             ]
         }
     ];
-
     const tabs = [
         { id: 'main', label: 'Main' },
         { id: 'articulations', label: 'Articulations' },
@@ -156,10 +139,8 @@ const Sidebar: React.FC<SidebarProps> = ({
             tabs={isInspector && editingNote ? tabs : undefined}
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            onClose={onClose || onCloseInspector}
+            onClose={onCloseInspector}
             side="left"
-            isMobile={isMobile}
-            isOpen={isOpen}
             headerAction={!isInspector && (
                 <Link href="/">
                     <button className="group relative p-2.5 bg-zinc-950/40 hover:bg-cyan-500/10 rounded-xl border border-zinc-800/60 hover:border-cyan-500/40 text-zinc-500 hover:text-cyan-400 transition-all duration-300 shadow-inner group overflow-hidden">
@@ -169,38 +150,37 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </Link>
             )}
             footer={!isInspector ? (
-                <div className="text-[10px] text-slate-600 text-center font-medium">
+                <div className="text-[10px] text-zinc-600 text-center font-medium tracking-wide">
                     Select a duration, then click (+) in the editor.
                 </div>
             ) : undefined}
         >
-            <div className="space-y-8">
-                {/* Unified Duration Selector */}
+            <div className="space-y-6 pt-4">
+                {/* Unified Duration Selector - STUDIO STYLE */}
                 <div className="space-y-3">
-                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center space-x-2">
-                        <span>Duration</span>
-                        {isInspector && <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[9px]">ACTIVE</span>}
+                    <h3 className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
+                        Duration
                     </h3>
 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-3">
                         {durationItems.map((item) => {
                             const active = getDurationActive(item.code);
                             return (
                                 <button
                                     key={item.label}
                                     onClick={() => handleDurationClick(item.code)}
-                                    className={`py-2 rounded-xl border border-white/5 font-black transition-all text-[10px] flex flex-col items-center justify-center space-y-1 ${active
-                                        ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)]'
-                                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200'
+                                    className={`aspect-square rounded-2xl border-2 transition-all flex flex-col items-center justify-center space-y-1 ${active
+                                        ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.3)]'
+                                        : 'bg-zinc-950/50 border-zinc-800/50 text-zinc-400 hover:bg-zinc-900 hover:border-zinc-700'
                                         }`}
                                 >
-                                    <div className={`transition-all ${active ? 'opacity-100' : 'opacity-40 grayscale'}`}>
+                                    <div className={`transition-all ${active ? 'opacity-100 scale-110' : 'opacity-60'}`}>
                                         <VexFlowRhythmIcon
                                             duration={item.code}
-                                            fillColor={active ? '#67e8f9' : '#94a3b8'} // cyan-300 vs slate-400
+                                            fillColor={active ? '#67e8f9' : '#94a3b8'}
                                         />
                                     </div>
-                                    <span>{item.label}</span>
+                                    <span className="text-[10px] font-bold">{item.label}</span>
                                 </button>
                             );
                         })}
@@ -230,8 +210,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 </div>
 
                                 {editingNote.type === 'note' && (
-                                    <div className="space-y-3 pt-2 border-t border-white/5">
-                                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Note Heads</h3>
+                                    <div className="space-y-3 pt-2 border-t border-zinc-800/50">
+                                        <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Note Heads</h3>
                                         <div className="grid grid-cols-5 gap-1.5">
                                             {[
                                                 { id: undefined, label: 'Std', symbol: '●' },
@@ -252,9 +232,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     </div>
                                 )}
 
-                                <div className="space-y-3 pt-2 border-t border-white/5">
+                                <div className="space-y-3 pt-2 border-t border-zinc-800/50">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Chord Notes</h3>
+                                        <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Chord Notes</h3>
                                         <button
                                             onClick={onAddChordNote}
                                             className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[9px] font-bold hover:bg-cyan-500/30 transition-colors"
@@ -284,9 +264,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     </div>
                                 </div>
 
-                                <div className="space-y-3 pt-2 border-t border-white/5">
+                                <div className="space-y-3 pt-2 border-t border-zinc-800/50">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase">Pitch (Active)</span>
+                                        <span className="text-[10px] font-black text-zinc-500 uppercase">Pitch (Active)</span>
                                         <span className="text-[9px] text-white bg-white/10 px-1.5 rounded">{currentPitch?.name}{currentPitch?.accidental}{currentPitch?.octave}</span>
                                     </div>
                                     <div className="space-y-2">
@@ -347,10 +327,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                         {/* TAB CONTENT: EFFECTS */}
                         {activeTab === 'effects' && (
                             <div className="space-y-4">
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
+                                <h3 className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
                                     Techniques
                                 </h3>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-3">
                                     {[
                                         { l: 'Hammer-on', c: 'h' },
                                         { l: 'Pull-off', c: 'p' },
@@ -363,9 +343,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         <button
                                             key={item.c}
                                             onClick={() => onInsert(item.c)}
-                                            className={`py-3 px-2 rounded-xl border font-black transition-all text-[10px] flex flex-col items-center justify-center ${editingNote.technique === item.c
-                                                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-                                                : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'
+                                            className={`py-4 px-3 rounded-2xl border-2 font-bold transition-all text-sm flex items-center justify-center ${editingNote.technique === item.c
+                                                ? 'bg-amber-500/20 border-amber-500 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.3)]'
+                                                : 'bg-zinc-950/50 border-zinc-800/50 text-zinc-400 hover:bg-zinc-900 hover:border-zinc-700'
                                                 }`}
                                         >
                                             {item.l}
@@ -408,7 +388,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     // Measure Properties
                     <div className="space-y-8">
                         <div className="space-y-4">
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
+                            <h3 className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
                                 Clef
                             </h3>
                             <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
@@ -425,7 +405,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </div>
 
                         <div className="space-y-4">
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
+                            <h3 className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
                                 Visibility
                             </h3>
                             <div className="grid grid-cols-2 gap-2">
@@ -447,19 +427,19 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </div>
                     </div>
                 ) : (
-                    // Toolkit Palettes
-                    <div className="space-y-8">
+                    // Toolkit Palettes - STUDIO STYLE
+                    <div className="space-y-6">
                         {palettes.map((section) => (
                             <div key={section.title} className="space-y-3">
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
+                                <h3 className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
                                     {section.title}
                                 </h3>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-3">
                                     {section.items.map((item) => (
                                         <button
                                             key={item.label}
                                             onClick={() => onInsert(item.code)}
-                                            className="px-3 py-3 text-xs bg-white/5 hover:bg-white/10 hover:scale-[1.02] text-slate-300 rounded-xl transition-all text-center border border-white/5 font-bold active:scale-95 shadow-sm"
+                                            className="py-4 px-3 text-sm bg-zinc-950/50 hover:bg-zinc-900 hover:scale-[1.02] text-zinc-300 rounded-2xl transition-all text-center border-2 border-zinc-800/50 hover:border-zinc-700 font-bold active:scale-95"
                                         >
                                             {item.label}
                                         </button>
@@ -474,4 +454,4 @@ const Sidebar: React.FC<SidebarProps> = ({
     );
 };
 
-export default Sidebar;
+export default LibraryPanel;

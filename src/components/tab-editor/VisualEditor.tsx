@@ -25,6 +25,7 @@ interface VisualEditorProps {
     onReorderMeasures: (from: number, to: number) => void;
     onRemoveNote: (id: string) => void;
     onSelectMeasure: (id: string) => void;
+    onDeselectAll: () => void;
     selectedMeasureId: string | null;
 }
 
@@ -46,6 +47,7 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
     onReorderMeasures,
     onRemoveNote,
     onSelectMeasure,
+    onDeselectAll,
     selectedMeasureId
 }) => {
     const capacity = getMeasureCapacity(timeSignature);
@@ -100,7 +102,10 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
 
     // Timeline / Horizontal Layout
     return (
-        <div className="flex flex-col w-full h-full bg-black/20 backdrop-blur-xl border-t border-white/5 relative">
+        <div
+            className="flex flex-col w-full h-full bg-black/20 backdrop-blur-xl border-t border-white/5 relative"
+            onClick={onDeselectAll}
+        >
             {/* Horizontal Timeline Container */}
             <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 custom-scrollbar bg-black/40">
                 <div className="flex flex-row gap-4 min-w-max h-full items-start">
@@ -156,12 +161,12 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
                                         <div className="flex items-center space-x-1">
                                             {!isCollapsed && (
                                                 <div className="flex items-center space-x-1 mr-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={() => onUpdateMeasure(measure.id, { showClef: !measure.showClef })} className={`p-1 rounded transition-all ${measure.showClef ? 'text-cyan-400 bg-cyan-500/10' : 'text-slate-700 hover:text-slate-400'}`} title="Show Clef"><span className="text-[10px] font-serif">𝄞</span></button>
-                                                    <button onClick={() => onUpdateMeasure(measure.id, { showTimeSig: !measure.showTimeSig })} className={`p-1 rounded transition-all ${measure.showTimeSig ? 'text-purple-400 bg-purple-500/10' : 'text-slate-700 hover:text-slate-400'}`} title="Show Time Sig"><span className="text-[8px] font-serif font-bold">4/4</span></button>
+                                                    <button onClick={(e) => { e.stopPropagation(); onUpdateMeasure(measure.id, { showClef: !measure.showClef }); }} className={`p-1 rounded transition-all ${measure.showClef ? 'text-cyan-400 bg-cyan-500/10' : 'text-slate-700 hover:text-slate-400'}`} title="Show Clef"><span className="text-[10px] font-serif">𝄞</span></button>
+                                                    <button onClick={(e) => { e.stopPropagation(); onUpdateMeasure(measure.id, { showTimeSig: !measure.showTimeSig }); }} className={`p-1 rounded transition-all ${measure.showTimeSig ? 'text-purple-400 bg-purple-500/10' : 'text-slate-700 hover:text-slate-400'}`} title="Show Time Sig"><span className="text-[8px] font-serif font-bold">4/4</span></button>
                                                 </div>
                                             )}
 
-                                            <button onClick={() => onToggleCollapse(measure.id)} className="p-1 hover:bg-[#222] rounded text-slate-600 hover:text-white transition-colors">
+                                            <button onClick={(e) => { e.stopPropagation(); onToggleCollapse(measure.id); }} className="p-1 hover:bg-[#222] rounded text-slate-600 hover:text-white transition-colors">
                                                 {isCollapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
                                             </button>
                                         </div>
@@ -176,8 +181,8 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={() => onCopyMeasure(measure.id)} className="p-1 text-slate-600 hover:text-cyan-400 transition-colors"><Icons.Copy /></button>
-                                                <button onClick={() => onRemoveMeasure(measure.id)} className="p-1 text-slate-600 hover:text-red-400 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></button>
+                                                <button onClick={(e) => { e.stopPropagation(); onCopyMeasure(measure.id); }} className="p-1 text-slate-600 hover:text-cyan-400 transition-colors"><Icons.Copy /></button>
+                                                <button onClick={(e) => { e.stopPropagation(); onRemoveMeasure(measure.id); }} className="p-1 text-slate-600 hover:text-red-400 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></button>
                                             </div>
                                         </div>
                                     )}
@@ -205,7 +210,7 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
                                                     <div
                                                         key={note.id}
                                                         onClick={(e) => { e.stopPropagation(); onSelectNote(note.id, e.shiftKey || e.ctrlKey); }}
-                                                        onDoubleClick={() => onDoubleClickNote(note.id)}
+                                                        onDoubleClick={(e) => { e.stopPropagation(); onDoubleClickNote(note.id); }}
                                                         className={`
                                                             relative cursor-pointer transition-all duration-200 group/note
                                                             w-10 h-14 rounded-lg border flex flex-col items-center justify-center select-none
@@ -249,7 +254,7 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
                                             {/* Add Button */}
                                             {!isFull && (
                                                 <button
-                                                    onClick={() => onAddNote(measure.id)}
+                                                    onClick={(e) => { e.stopPropagation(); onAddNote(measure.id); }}
                                                     className="w-10 h-14 border border-dashed border-[#222] rounded-lg flex flex-col items-center justify-center text-[#333] hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all active:scale-95 group/add"
                                                     title="Add Note"
                                                 >
@@ -267,7 +272,7 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
 
                     {/* Add Section Button (End of Timeline) */}
                     <button
-                        onClick={onAddMeasure}
+                        onClick={(e) => { e.stopPropagation(); onAddMeasure(); }}
                         className="w-14 h-[90%] border-2 border-dashed border-white/5 rounded-2xl flex flex-col items-center justify-center text-slate-600 hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all shrink-0 group/add-m"
                         title="Add New Measure"
                     >

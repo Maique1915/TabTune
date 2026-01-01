@@ -252,8 +252,10 @@ export class ChordDrawerBase {
     const scaledHorizontalPadding = this._baseHorizontalPadding * this._scaleFactor;
 
     this._diagramHeight = scaledDiagramWidth + (scaledDiagramWidth * 2 / 5);
-    this._diagramX = 0; // Desenhar a partir de (0,0) - translate já posiciona
-    this._diagramY = 0;
+
+    // Center the diagram horizontally and vertically
+    this._diagramX = (this._dimensions.width / 2) - (scaledDiagramWidth / 2);
+    this._diagramY = (this._dimensions.height / 2) - (this._diagramHeight / 2);
 
     const stringAreaWidth = scaledDiagramWidth - (scaledHorizontalPadding * 2);
     this._stringSpacing = stringAreaWidth / (this._numStrings - 1);
@@ -307,12 +309,11 @@ export class ChordDrawerBase {
   /**
    * Aplica centralização no canvas
    * Retorna para onde o contexto foi centralizado
+   * NOTA: Agora que _diagramX e _diagramY já estão centralizados, não precisamos translate adicional
    */
   applyCentering(): { x: number; y: number } {
-    const centerX = this._dimensions.width / 2 - this.diagramWidth / 2;
-    const centerY = this._dimensions.height / 2 - this._diagramHeight / 2;
-    this._ctx.translate(centerX, centerY);
-    return { x: centerX, y: centerY };
+    // Não aplica translate pois as coordenadas já estão centralizadas
+    return { x: 0, y: 0 };
   }
 
   /**
