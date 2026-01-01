@@ -63,7 +63,7 @@ export const VexFlowPaletteIcon: React.FC<VexFlowPaletteIconProps> = ({
 
         // Only render lines if NOT hidden. VexFlow 3/4 doesn't support num_lines: 0 cleanly in all versions but we try config.
         // Alternatively, we rely on transparency.
-        const stave = new Stave(0, staveY, staveWidth, { num_lines: hideStaveLines ? 0 : 5 });
+        const stave = new Stave(0, staveY, staveWidth, { numLines: hideStaveLines ? 0 : 5 });
 
         // Hide start/end barlines for a cleaner icon look
         if (hideStaveLines) {
