@@ -907,6 +907,7 @@ const ScorePreview = React.forwardRef<ScorePreviewRef, ScorePreviewProps>(({
                                 selectedNoteIds={selectedNoteIds}
                                 dpr={currentDPR}
                                 clef={clef}
+                                keySignature={keySignature}
                             />
                         </div>
                     )
