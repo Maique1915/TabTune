@@ -33,6 +33,16 @@ interface SidebarProps {
     onActivePositionIndexChange?: (index: number) => void;
     onAddChordNote?: () => void;
     onRemoveChordNote?: (index: number) => void;
+    // Global Settings Props
+    globalSettings?: {
+        bpm: number;
+        time: string;
+        clef: 'treble' | 'bass' | 'alto' | 'tenor' | 'tab';
+        showNotation: boolean;
+        showTablature: boolean;
+    };
+    onGlobalSettingsChange?: (settings: { bpm?: number; time?: string; clef?: 'treble' | 'bass' | 'alto' | 'tenor' | 'tab'; showNotation?: boolean; showTablature?: boolean }) => void;
+    onImportScore?: () => void;
     // Mobile props
     isMobile?: boolean;
     isOpen?: boolean;
@@ -49,10 +59,10 @@ interface ArticulationBtnProps {
 const ArticulationButton: React.FC<ArticulationBtnProps> = ({ label, symbol, isActive, onClick }) => (
     <button
         onClick={onClick}
-        className={`p-2 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${isActive ? 'bg-pink-500/20 border-pink-500/50 text-pink-300 shadow-[0_0_10px_rgba(236,72,153,0.2)]' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}
+        className={`p-2 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${isActive ? 'bg-pink-500/20 border-pink-500/30 text-pink-400 shadow-[0_0_10px_rgba(236,72,153,0.15)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
     >
         <span className="text-sm font-bold">{symbol}</span>
-        <span className="text-[7px] uppercase font-black">{label}</span>
+        <span className="text-[7px] uppercase font-black tracking-wider">{label}</span>
     </button>
 );
 
@@ -77,6 +87,9 @@ const Sidebar: React.FC<SidebarProps> = ({
     onActivePositionIndexChange,
     onAddChordNote,
     onRemoveChordNote,
+    globalSettings,
+    onGlobalSettingsChange,
+    onImportScore,
     isMobile = false,
     isOpen = true,
     onClose
@@ -145,8 +158,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         { id: 'text', label: 'Text' }
     ];
 
-    const title = isInspector ? 'PROPERTIES' : isMeasureProperties ? 'PROPERTIES' : 'LIBRARY';
-    const Icon = isInspector ? Settings2 : isMeasureProperties ? Info : Music;
+    const title = isInspector ? 'PROPERTIES' : isMeasureProperties ? 'PROPERTIES' : 'GLOBAL SETTINGS';
+    const Icon = isInspector ? Settings2 : isMeasureProperties ? Info : Settings2;
 
     return (
         <GenericSidebar
@@ -169,7 +182,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </Link>
             )}
             footer={!isInspector ? (
-                <div className="text-[10px] text-slate-600 text-center font-medium">
+                <div className="text-[10px] text-zinc-600 text-center font-medium tracking-wide">
                     Select a duration, then click (+) in the editor.
                 </div>
             ) : undefined}
@@ -177,9 +190,9 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="space-y-8">
                 {/* Unified Duration Selector */}
                 <div className="space-y-3">
-                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center space-x-2">
+                    <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center space-x-2">
                         <span>Duration</span>
-                        {isInspector && <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[9px]">ACTIVE</span>}
+                        {isInspector && <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[9px] border border-purple-500/20">ACTIVE</span>}
                     </h3>
 
                     <div className="grid grid-cols-3 gap-2">
@@ -189,9 +202,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 <button
                                     key={item.label}
                                     onClick={() => handleDurationClick(item.code)}
-                                    className={`py-2 rounded-xl border border-white/5 font-black transition-all text-[10px] flex flex-col items-center justify-center space-y-1 ${active
-                                        ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)]'
-                                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200'
+                                    className={`py-2 rounded-xl border font-black transition-all text-[10px] flex flex-col items-center justify-center space-y-1 ${active
+                                        ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.1)]'
+                                        : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
                                         }`}
                                 >
                                     <div className={`transition-all ${active ? 'opacity-100' : 'opacity-40 grayscale'}`}>
@@ -217,15 +230,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 <div className="grid grid-cols-2 gap-2">
                                     <button
                                         onClick={() => onNoteRhythmChange?.(undefined, !editingNote.decorators.dot)}
-                                        className={`py-3 rounded-xl border transition-all text-xs font-bold flex items-center justify-center space-x-2 ${editingNote.decorators.dot ? 'bg-amber-500/20 border-amber-500/50 text-amber-300' : 'bg-white/5 border-white/5 text-slate-400'}`}
+                                        className={`py-3 rounded-xl border transition-all text-xs font-bold flex items-center justify-center space-x-2 ${editingNote.decorators.dot ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
                                     >
-                                        <div className={`w-1.5 h-1.5 rounded-full ${editingNote.decorators.dot ? 'bg-amber-400' : 'bg-slate-600'}`} />
-                                        <span className="text-[9px] uppercase">Dotted</span>
+                                        <div className={`w-1.5 h-1.5 rounded-full ${editingNote.decorators.dot ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.4)]' : 'bg-zinc-700'}`} />
+                                        <span className="text-[9px] uppercase tracking-wider">Dotted</span>
                                     </button>
 
-                                    <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
-                                        <button onClick={() => onNoteTypeChange?.('note')} className={`flex-1 text-[9px] font-black rounded-lg transition-all ${editingNote.type === 'note' ? 'bg-teal-500/20 text-teal-300' : 'text-slate-600'}`}>NOTE</button>
-                                        <button onClick={() => onNoteTypeChange?.('rest')} className={`flex-1 text-[9px] font-black rounded-lg transition-all ${editingNote.type === 'rest' ? 'bg-white/10 text-white' : 'text-slate-600'}`}>REST</button>
+                                    <div className="flex bg-zinc-950/40 p-1 rounded-xl border border-zinc-800/50">
+                                        <button onClick={() => onNoteTypeChange?.('note')} className={`flex-1 text-[9px] font-black rounded-lg transition-all py-1 ${editingNote.type === 'note' ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20' : 'text-zinc-600 hover:text-zinc-400'}`}>NOTE</button>
+                                        <button onClick={() => onNoteTypeChange?.('rest')} className={`flex-1 text-[9px] font-black rounded-lg transition-all py-1 ${editingNote.type === 'rest' ? 'bg-zinc-100/10 text-zinc-100 border border-zinc-100/20' : 'text-zinc-600 hover:text-zinc-400'}`}>REST</button>
                                     </div>
                                 </div>
 
@@ -252,22 +265,22 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     </div>
                                 )}
 
-                                <div className="space-y-3 pt-2 border-t border-white/5">
+                                <div className="space-y-3 pt-2 border-t border-zinc-800/50">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Chord Notes</h3>
+                                        <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Chord Notes</h3>
                                         <button
                                             onClick={onAddChordNote}
-                                            className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[9px] font-bold hover:bg-cyan-500/30 transition-colors"
+                                            className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 text-[9px] font-bold hover:bg-cyan-500/20 transition-colors border border-cyan-500/20"
                                         >
                                             + ADD NOTE
                                         </button>
                                     </div>
-                                    <div className="flex flex-wrap gap-1.5 bg-black/40 p-1.5 rounded-xl border border-white/5">
+                                    <div className="flex flex-wrap gap-1.5 bg-zinc-950/40 p-1.5 rounded-xl border border-zinc-800/50">
                                         {editingNote.positions.map((pos, idx) => (
                                             <div key={idx} className="relative group">
                                                 <button
                                                     onClick={() => onActivePositionIndexChange?.(idx)}
-                                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border ${activePositionIndex === idx ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}
+                                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border ${activePositionIndex === idx ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
                                                 >
                                                     {pos.fret}/{pos.string}
                                                 </button>
@@ -284,31 +297,31 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     </div>
                                 </div>
 
-                                <div className="space-y-3 pt-2 border-t border-white/5">
+                                <div className="space-y-3 pt-2 border-t border-zinc-800/50">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-black text-slate-500 uppercase">Pitch (Active)</span>
-                                        <span className="text-[9px] text-white bg-white/10 px-1.5 rounded">{currentPitch?.name}{currentPitch?.accidental}{currentPitch?.octave}</span>
+                                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Pitch (Active)</span>
+                                        <span className="text-[10px] text-zinc-300 bg-zinc-800/50 px-2 py-0.5 rounded-lg border border-zinc-700/50 font-bold">{currentPitch?.name}{currentPitch?.accidental}{currentPitch?.octave}</span>
                                     </div>
                                     <div className="space-y-2">
                                         <div className="grid grid-cols-7 gap-1">
                                             {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map(n => (
-                                                <button key={n} onClick={() => onPitchChange?.(n)} className={`h-8 rounded-lg border font-black text-xs transition-all ${currentPitch?.name === n ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'bg-white/5 border-white/5 text-slate-500'}`}>{n}</button>
+                                                <button key={n} onClick={() => onPitchChange?.(n)} className={`h-8 rounded-lg border font-black text-xs transition-all ${currentPitch?.name === n ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}>{n}</button>
                                             ))}
                                         </div>
-                                        <div className="flex bg-black/40 rounded-xl border border-white/5 p-0.5">
+                                        <div className="flex bg-zinc-950/40 rounded-xl border border-zinc-800/50 p-1 mt-2">
                                             {[2, 3, 4, 5, 6].map(o => (
-                                                <button key={o} onClick={() => onPitchChange?.(undefined, undefined, o)} className={`flex-1 py-1 text-[9px] font-bold rounded-lg transition-all ${currentPitch?.octave === o ? 'bg-white/10 text-white' : 'text-slate-600'}`}>{o}</button>
+                                                <button key={o} onClick={() => onPitchChange?.(undefined, undefined, o)} className={`flex-1 py-1 text-[9px] font-bold rounded-lg transition-all ${currentPitch?.octave === o ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}>{o}</button>
                                             ))}
                                         </div>
                                         {/* Accidentals */}
-                                        <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
+                                        <div className="flex bg-zinc-950/40 p-1 rounded-xl border border-zinc-800/50 my-2">
                                             {[{ l: '♭', v: 'b' }, { l: '♮', v: 'n' }, { l: '♯', v: '#' }].map(acc => (
-                                                <button key={acc.v} onClick={() => onAccidentalChange?.(acc.v)} className={`flex-1 py-1 text-sm font-serif rounded-lg transition-all ${editingNote.accidental === acc.v || (editingNote.accidental === 'none' && acc.v === 'n') ? 'bg-white/10 text-white' : 'text-slate-600'}`}>{acc.l}</button>
+                                                <button key={acc.v} onClick={() => onAccidentalChange?.(acc.v)} className={`flex-1 py-1 text-sm font-serif rounded-lg transition-all ${editingNote.accidental === acc.v || (editingNote.accidental === 'none' && acc.v === 'n') ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}>{acc.l}</button>
                                             ))}
                                         </div>
                                         <div className="grid grid-cols-3 gap-1.5 pt-1">
                                             {[1, 2, 3, 4, 5, 6].map(s => (
-                                                <button key={s} onClick={() => onStringChange?.(s.toString())} className={`py-1.5 rounded-lg border font-bold text-[9px] transition-all ${editingNote.positions[activePositionIndex]?.string === s.toString() ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300' : 'bg-white/5 border-white/5 text-slate-500'}`}>STR {s}</button>
+                                                <button key={s} onClick={() => onStringChange?.(s.toString())} className={`py-1.5 rounded-lg border font-bold text-[9px] transition-all ${editingNote.positions[activePositionIndex]?.string === s.toString() ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}>STR {s}</button>
                                             ))}
                                         </div>
                                     </div>
@@ -347,7 +360,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         {/* TAB CONTENT: EFFECTS */}
                         {activeTab === 'effects' && (
                             <div className="space-y-4">
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
+                                <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2">
                                     Techniques
                                 </h3>
                                 <div className="grid grid-cols-2 gap-2">
@@ -364,8 +377,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                                             key={item.c}
                                             onClick={() => onInsert(item.c)}
                                             className={`py-3 px-2 rounded-xl border font-black transition-all text-[10px] flex flex-col items-center justify-center ${editingNote.technique === item.c
-                                                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-                                                : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'
+                                                ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.1)]'
+                                                : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
                                                 }`}
                                         >
                                             {item.l}
@@ -382,23 +395,23 @@ const Sidebar: React.FC<SidebarProps> = ({
                         {activeTab === 'text' && (
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Chord Symbol</label>
+                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Chord Symbol</label>
                                     <input
                                         type="text"
                                         value={editingNote.chord || ''}
                                         onChange={(e) => onUpdateNote?.({ chord: e.target.value })}
                                         placeholder="e.g. Amaj7"
-                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-cyan-300 focus:border-cyan-500 outline-none placeholder:text-slate-700"
+                                        className="w-full bg-zinc-950/40 border border-zinc-800/60 rounded-xl px-3 py-2.5 text-xs font-bold text-cyan-400 focus:border-cyan-500/50 outline-none placeholder:text-zinc-700 transition-all shadow-inner"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Annotation</label>
+                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Annotation</label>
                                     <input
                                         type="text"
                                         value={editingNote.annotation || ''}
                                         onChange={(e) => onUpdateNote?.({ annotation: e.target.value })}
                                         placeholder="e.g. Text"
-                                        className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-slate-300 focus:border-slate-500 outline-none placeholder:text-slate-700"
+                                        className="w-full bg-zinc-950/40 border border-zinc-800/60 rounded-xl px-3 py-2.5 text-xs font-bold text-zinc-300 focus:border-zinc-500/50 outline-none placeholder:text-zinc-700 transition-all shadow-inner"
                                     />
                                 </div>
                             </div>
@@ -408,15 +421,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                     // Measure Properties
                     <div className="space-y-8">
                         <div className="space-y-4">
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
+                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2">
                                 Clef
                             </h3>
-                            <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
+                            <div className="flex bg-zinc-950/40 p-1 rounded-xl border border-zinc-800/50">
                                 {['treble', 'bass', 'tab'].map(c => (
                                     <button
                                         key={c}
                                         onClick={() => onMeasureUpdate?.(activeMeasure.id, { clef: c as any, showClef: true })}
-                                        className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all uppercase ${activeMeasure.clef === c || (!activeMeasure.clef && c === 'treble') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.2)]' : 'text-slate-600 hover:text-slate-400'}`}
+                                        className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all uppercase ${activeMeasure.clef === c || (!activeMeasure.clef && c === 'treble') ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'text-zinc-600 hover:text-zinc-400'}`}
                                     >
                                         {c}
                                     </button>
@@ -425,52 +438,138 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </div>
 
                         <div className="space-y-4">
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
+                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2">
                                 Visibility
                             </h3>
                             <div className="grid grid-cols-2 gap-2">
                                 <button
                                     onClick={() => onMeasureUpdate?.(activeMeasure.id, { showClef: !activeMeasure.showClef })}
-                                    className={`py-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${activeMeasure.showClef ? 'bg-purple-500/20 border-purple-500/50 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.2)]' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}
+                                    className={`py-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${activeMeasure.showClef ? 'bg-purple-500/10 border-purple-500/30 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
                                 >
                                     <span className="text-lg font-serif">𝄞</span>
-                                    <span className="text-[9px] font-black uppercase">Show Clef</span>
+                                    <span className="text-[9px] font-black uppercase tracking-wider">Show Clef</span>
                                 </button>
                                 <button
                                     onClick={() => onMeasureUpdate?.(activeMeasure.id, { showTimeSig: !activeMeasure.showTimeSig })}
-                                    className={`py-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${activeMeasure.showTimeSig ? 'bg-purple-500/20 border-purple-500/50 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.2)]' : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'}`}
+                                    className={`py-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${activeMeasure.showTimeSig ? 'bg-purple-500/10 border-purple-500/30 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
                                 >
                                     <span className="text-xs font-serif font-bold pt-1">4/4</span>
-                                    <span className="text-[9px] font-black uppercase">Show Time</span>
+                                    <span className="text-[9px] font-black uppercase tracking-wider">Show Time</span>
                                 </button>
                             </div>
                         </div>
                     </div>
                 ) : (
-                    // Toolkit Palettes
+                    // Global Settings
                     <div className="space-y-8">
-                        {palettes.map((section) => (
-                            <div key={section.title} className="space-y-3">
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-2">
-                                    {section.title}
-                                </h3>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {section.items.map((item) => (
-                                        <button
-                                            key={item.label}
-                                            onClick={() => onInsert(item.code)}
-                                            className="px-3 py-3 text-xs bg-white/5 hover:bg-white/10 hover:scale-[1.02] text-slate-300 rounded-xl transition-all text-center border border-white/5 font-bold active:scale-95 shadow-sm"
-                                        >
-                                            {item.label}
-                                        </button>
-                                    ))}
+                        {/* Playback Settings */}
+                        <div className="space-y-4">
+                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2">
+                                Playback
+                            </h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-bold text-zinc-500 uppercase">Tempo (BPM)</label>
+                                    <input
+                                        type="number"
+                                        value={globalSettings?.bpm || 120}
+                                        onChange={(e) => onGlobalSettingsChange?.({ bpm: parseInt(e.target.value) || 120 })}
+                                        className="w-full bg-zinc-950/40 border border-zinc-800/60 rounded-xl px-3 py-2 text-xs font-bold text-cyan-400 focus:border-cyan-500/50 outline-none transition-all shadow-inner text-center"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-bold text-zinc-500 uppercase">Time Sig</label>
+                                    <select
+                                        value={globalSettings?.time || '4/4'}
+                                        onChange={(e) => onGlobalSettingsChange?.({ time: e.target.value })}
+                                        className="w-full bg-zinc-950/40 border border-zinc-800/60 rounded-xl px-3 py-2 text-xs font-bold text-zinc-300 focus:border-zinc-500/50 outline-none transition-all shadow-inner appearance-none text-center cursor-pointer hover:bg-zinc-900/50"
+                                    >
+                                        <option value="4/4">4/4</option>
+                                        <option value="3/4">3/4</option>
+                                        <option value="2/4">2/4</option>
+                                        <option value="6/8">6/8</option>
+                                    </select>
                                 </div>
                             </div>
-                        ))}
+                        </div>
+
+                        {/* Visibility Settings */}
+                        <div className="space-y-4">
+                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2">
+                                View
+                            </h3>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    onClick={() => onGlobalSettingsChange?.({ showNotation: !globalSettings?.showNotation })}
+                                    className={`py-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${globalSettings?.showNotation ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
+                                >
+                                    <span className="text-lg font-serif">𝄞</span>
+                                    <span className="text-[9px] font-black uppercase tracking-wider">Notation</span>
+                                </button>
+                                <button
+                                    onClick={() => onGlobalSettingsChange?.({ showTablature: !globalSettings?.showTablature })}
+                                    className={`py-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${globalSettings?.showTablature ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
+                                >
+                                    <span className="text-lg font-mono font-bold">TAB</span>
+                                    <span className="text-[9px] font-black uppercase tracking-wider">Tablature</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Global Clef */}
+                        <div className="space-y-4">
+                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2">
+                                Default Clef
+                            </h3>
+                            <div className="flex bg-zinc-950/40 p-1 rounded-xl border border-zinc-800/50">
+                                {(['treble', 'bass', 'tab'] as const).map((c) => (
+                                    <button
+                                        key={c}
+                                        onClick={() => onGlobalSettingsChange?.({ clef: c })}
+                                        className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all uppercase ${globalSettings?.clef === c ? 'bg-purple-500/10 text-purple-400 border border-purple-500/30 shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}
+                                    >
+                                        {c}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Import/Action */}
+                        <div className="space-y-4 pt-4 border-t border-zinc-800/50">
+                            <button
+                                onClick={onImportScore}
+                                className="w-full py-3 rounded-xl border border-zinc-700/50 bg-zinc-800/30 hover:bg-zinc-800 hover:border-zinc-600 text-zinc-300 hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-2 group"
+                            >
+                                <span className="group-hover:scale-110 transition-transform">📂</span>
+                                Import MusicXML / MSCZ
+                            </button>
+                        </div>
+
+                        {/* Library Palettes (Adding back mostly used for insertion) */}
+                        <div className="space-y-8 pt-4 border-t border-zinc-800/50">
+                            {palettes.map((section) => (
+                                <div key={section.title} className="space-y-3">
+                                    <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2">
+                                        {section.title}
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {section.items.map((item) => (
+                                            <button
+                                                key={item.label}
+                                                onClick={() => onInsert(item.code)}
+                                                className="px-3 py-3 text-xs bg-zinc-900/50 hover:bg-zinc-800/80 hover:scale-[1.02] text-zinc-400 rounded-xl transition-all text-center border border-zinc-800/50 font-bold active:scale-95 shadow-sm hover:text-zinc-200"
+                                            >
+                                                {item.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
-        </GenericSidebar>
+        </GenericSidebar >
     );
 };
 

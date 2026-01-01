@@ -31,6 +31,8 @@ export function WorkspaceLayout({
                 <main className="flex-1 relative overflow-hidden flex flex-col">
                     {children}
                 </main>
+                {leftSidebar}
+                {rightSidebar}
                 {mobileBottomNav}
             </div>
         );

@@ -27,8 +27,8 @@ export const VisualEditor = forwardRef<VideoCanvasStageRef, MainStageProps>(({ o
       }`}>
       {/* CRT Monitor Frame */}
       <div className={`relative w-full aspect-video bg-[#0a0a0a] overflow-hidden group ${isMobile
-          ? 'rounded-2xl border-2 border-[#333] shadow-[0_0_0_1px_#111,0_0_20px_rgba(0,0,0,0.5)]'
-          : 'max-w-[800px] rounded-3xl border-4 border-[#333] shadow-[0_0_0_2px_#111,0_0_40px_rgba(0,0,0,0.5),0_0_100px_rgba(6,182,212,0.1)]'
+        ? 'rounded-2xl border-2 border-[#333] shadow-[0_0_0_1px_#111,0_0_20px_rgba(0,0,0,0.5)]'
+        : 'max-w-[800px] rounded-3xl border-4 border-[#333] shadow-[0_0_0_2px_#111,0_0_40px_rgba(0,0,0,0.5),0_0_100px_rgba(6,182,212,0.1)]'
         }`}>
 
         {/* Screen Bezel/Inner Shadow */}
@@ -69,4 +69,4 @@ export const VisualEditor = forwardRef<VideoCanvasStageRef, MainStageProps>(({ o
   );
 });
 
-MainStage.displayName = "MainStage";
+VisualEditor.displayName = "VisualEditor";

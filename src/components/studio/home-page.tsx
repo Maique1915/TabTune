@@ -6,9 +6,9 @@ import { MainStage } from "./main-stage";
 import { TimelinePanel } from "./timeline-panel";
 import { SettingsPanel } from "./SettingsPanel";
 import { AppHeader } from "./app-header";
-import { MobileNav } from "./mobile-nav";
+import { MobileNav, NavItem } from "@/components/shared/MobileNav";
 import { MobileHeader } from "@/components/shared/MobileHeader";
-import { MobileBottomNav } from "@/components/shared/MobileBottomNav";
+import { Music2, Library, Settings } from "lucide-react";
 import { RenderingProgressCard } from "./rendering-progress-card";
 import { useAppContext } from "@/app/context/app--context";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -19,6 +19,7 @@ import { TimelineControls } from "./timeline/TimelineControls";
 import { generateClipId } from "@/lib/timeline/utils";
 import { WorkspaceLayout } from "@/components/shared/WorkspaceLayout";
 import { EditorGrid } from "@/components/shared/EditorGrid";
+import { StageContainer } from "@/components/shared/StageContainer";
 
 export function HomePage() {
   const {
@@ -40,9 +41,15 @@ export function HomePage() {
   const [isPaused, setIsPaused] = useState(false);
 
   const isMobile = useIsMobile();
-  const [mobilePanel, setMobilePanel] = useState<'studio' | 'library' | 'mixer' | 'customize'>('studio');
+  const [activePanel, setActivePanel] = useState<'studio' | 'library' | 'mixer' | 'customize'>('studio');
   const [hasMounted, setHasMounted] = useState(false);
   const [audioUploaded, setAudioUploaded] = useState(false);
+
+  const studioNavItems: NavItem[] = [
+    { id: "studio", icon: Music2, label: "Studio" },
+    { id: "library", icon: Library, label: "Library" },
+    { id: "customize", icon: Settings, label: "Settings" }
+  ];
 
   useEffect(() => {
     setHasMounted(true);
@@ -182,7 +189,7 @@ export function HomePage() {
   };
 
   const handlePanelChange = (panel: 'studio' | 'library' | 'mixer' | 'customize') => {
-    setMobilePanel(panel);
+    setActivePanel(panel);
   };
 
   const handleAddClick = () => {
@@ -223,39 +230,40 @@ export function HomePage() {
       header={<AppHeader />}
       mobileHeader={<MobileHeader title="TabTune" showBack={true} />}
       mobileBottomNav={
-        <MobileBottomNav
-          activePanel={mobilePanel}
+        <MobileNav
+          items={studioNavItems}
+          activePanel={activePanel}
           onPanelChange={handlePanelChange}
-          onAddClick={handleAddClick}
         />
       }
-      leftSidebar={<LibraryPanel isMobile={isMobile} isOpen={mobilePanel === 'library'} onClose={() => setMobilePanel('studio')} />}
-      rightSidebar={<SettingsPanel isMobile={isMobile} isOpen={mobilePanel === 'customize'} onClose={() => setMobilePanel('studio')} />}
+      leftSidebar={<LibraryPanel isMobile={isMobile} isOpen={activePanel === 'library'} onClose={() => setActivePanel('studio')} />}
+      rightSidebar={<SettingsPanel isMobile={isMobile} isOpen={activePanel === 'customize'} onClose={() => setActivePanel('studio')} />}
     >
       {isMobile ? (
         <div className="flex-1 px-4 py-2 flex flex-col min-h-[250px] relative overflow-hidden">
           <div className="absolute w-full h-full max-w-sm bg-primary-mobile/10 blur-[60px] rounded-full pointer-events-none" />
 
-          <div className={cn("h-full w-full flex flex-col", { "hidden": mobilePanel !== 'studio' })}>
+          <div className={cn("h-full w-full flex flex-col", { "hidden": activePanel !== 'studio' })}>
             <div className="flex-1 relative flex items-center justify-center mb-4">
-              <div className="w-full h-full bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-800 rounded-3xl shadow-xl flex flex-col items-center justify-center relative overflow-hidden group">
-                <div className="w-full h-full flex items-center justify-center bg-gray-50 dark:bg-[#0F1218] p-4">
-                  <div className="w-full h-full flex items-center justify-center">
-                    <VideoCanvasStage
-                      ref={videoCanvasRef}
-                      chords={selectedChords}
-                      timelineState={timelineState}
-                      transitionsEnabled={playbackTransitionsEnabled}
-                      buildEnabled={playbackBuildEnabled}
-                      onAnimationStateChange={(animating: boolean, paused: boolean) => {
-                        setIsAnimating(animating);
-                        setIsPaused(paused);
-                      }}
-                      onRenderProgress={setRenderProgress}
-                    />
-                  </div>
-                </div>
-              </div>
+              <StageContainer title="Studio Canvas">
+                <VideoCanvasStage
+                  ref={videoCanvasRef}
+                  chords={selectedChords}
+                  timelineState={timelineState}
+                  transitionsEnabled={playbackTransitionsEnabled}
+                  buildEnabled={playbackBuildEnabled}
+                  onAnimationStateChange={(animating: boolean, paused: boolean) => {
+                    setIsAnimating(animating);
+                    setIsPaused(paused);
+                  }}
+                  onRenderProgress={setRenderProgress}
+                />
+              </StageContainer>
+            </div>
+
+            {/* Mobile Controls */}
+            <div className="mb-4 px-2">
+              {floatingControls}
             </div>
 
             <div className="h-64 overflow-hidden">
@@ -275,13 +283,15 @@ export function HomePage() {
       ) : (
         <EditorGrid
           topSection={
-            <MainStage
-              ref={videoCanvasRef}
-              onAnimationStateChange={(animating, paused) => {
-                setIsAnimating(animating);
-                setIsPaused(paused);
-              }}
-            />
+            <StageContainer title="Studio Canvas" statusLabel="Live Feed">
+              <MainStage
+                ref={videoCanvasRef}
+                onAnimationStateChange={(animating, paused) => {
+                  setIsAnimating(animating);
+                  setIsPaused(paused);
+                }}
+              />
+            </StageContainer>
           }
           bottomSection={
             <TimelinePanel

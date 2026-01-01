@@ -1,5 +1,5 @@
 
-    'use client';
+'use client';
 
 import React from 'react';
 import { Duration, NoteData, MeasureData } from '@/lib/tab-editor/types';
@@ -164,11 +164,11 @@ const LibraryPanel: React.FC<SidebarProps> = ({
 
                     <div className="grid grid-cols-3 gap-3">
                         {durationItems.map((item) => {
-                            const active = getDurationActive(item.code);
+                            const active = getDurationActive(item.code as Duration);
                             return (
                                 <button
                                     key={item.label}
-                                    onClick={() => handleDurationClick(item.code)}
+                                    onClick={() => onSelectDuration(item.code as Duration)}
                                     className={`aspect-square rounded-2xl border-2 transition-all flex flex-col items-center justify-center space-y-1 ${active
                                         ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.3)]'
                                         : 'bg-zinc-950/50 border-zinc-800/50 text-zinc-400 hover:bg-zinc-900 hover:border-zinc-700'

@@ -17,31 +17,31 @@ export function MobileBottomNav({
     ];
 
     return (
-        <nav className="flex-none bg-white dark:bg-surface-dark border-t border-gray-200 dark:border-gray-800 pb-8 pt-2 px-6">
+        <nav className="flex-none bg-zinc-950/60 backdrop-blur-xl border-t border-zinc-900/80 pb-8 pt-2 px-6 shadow-[0_-10px_40px_rgba(0,0,0,0.4)]">
             <div className="flex items-center justify-center gap-12 max-w-sm mx-auto">
                 {navItems.map((item) => (
                     <button
                         key={item.id}
                         onClick={() => onPanelChange(item.id)}
-                        className="flex flex-col items-center gap-1 group"
+                        className="flex flex-col items-center gap-1 group transition-all duration-300 relative"
                     >
-                        <div className="relative p-1">
+                        <div className="relative p-1.5 rounded-xl transition-all duration-300">
                             {activePanel === item.id && (
-                                <div className="absolute inset-0 bg-primary-mobile/10 dark:bg-white/10 rounded-xl scale-100 transition-transform" />
+                                <div className="absolute inset-0 bg-pink-500/10 rounded-xl animate-in fade-in zoom-in-95 duration-300 border border-pink-500/20 shadow-[0_0_15px_rgba(236,72,153,0.1)]" />
                             )}
                             <span
-                                className={`material-icons-round text-2xl relative z-10 transition-colors ${activePanel === item.id
-                                        ? 'text-primary-mobile dark:text-white'
-                                        : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
+                                className={`material-icons-round text-2xl relative z-10 transition-all duration-300 ${activePanel === item.id
+                                    ? 'text-pink-400 scale-110'
+                                    : 'text-zinc-500 group-hover:text-zinc-300'
                                     }`}
                             >
                                 {item.icon}
                             </span>
                         </div>
                         <span
-                            className={`text-[10px] font-medium transition-colors ${activePanel === item.id
-                                    ? 'text-primary-mobile dark:text-white'
-                                    : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
+                            className={`text-[10px] font-black uppercase tracking-widest transition-colors duration-300 ${activePanel === item.id
+                                ? 'text-pink-400'
+                                : 'text-zinc-500 group-hover:text-zinc-300'
                                 }`}
                         >
                             {item.label}

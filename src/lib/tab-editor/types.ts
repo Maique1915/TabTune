@@ -49,7 +49,7 @@ export interface MeasureData {
 }
 
 export interface GlobalSettings {
-    clef: 'treble' | 'bass' | 'alto' | 'tenor';
+    clef: 'treble' | 'bass' | 'alto' | 'tenor' | 'tab';
     key: string;
     time: string;
     bpm: number;

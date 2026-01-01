@@ -100,17 +100,17 @@ const StyleSidebar: React.FC<StyleSidebarProps> = ({ style, onChange, onReset, i
                     <div
                         key={key}
                         onClick={() => onChange(theme.style as any)}
-                        className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 hover:border-pink-500/50 cursor-pointer transition-all group"
+                        className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 hover:border-pink-500/50 cursor-pointer transition-all group active:scale-[0.98]"
                     >
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full border-2 border-white/10 shadow-lg relative overflow-hidden" style={{ backgroundColor: theme.style.background }}>
+                            <div className="w-10 h-10 rounded-full border border-zinc-700/50 shadow-lg relative overflow-hidden" style={{ backgroundColor: theme.style.background }}>
                                 <div className="absolute inset-0 flex items-center justify-center">
                                     <div className="w-4 h-4 rounded-full" style={{ backgroundColor: (theme.style.notes as any).color, boxShadow: (theme.style.notes as any).shadow ? `0 0 10px ${(theme.style.notes as any).color}` : 'none' }}></div>
                                 </div>
                             </div>
                             <div>
-                                <h3 className="text-xs font-bold text-zinc-200 group-hover:text-pink-400 transition-colors uppercase tracking-wider">{theme.label}</h3>
-                                <p className="text-[9px] text-zinc-500">Click to apply preset</p>
+                                <h3 className="text-[10px] font-black text-zinc-300 group-hover:text-pink-400 transition-colors uppercase tracking-widest">{theme.label}</h3>
+                                <p className="text-[9px] text-zinc-500 font-medium">Click to apply preset</p>
                             </div>
                         </div>
                     </div>
@@ -261,9 +261,9 @@ const StyleSidebar: React.FC<StyleSidebarProps> = ({ style, onChange, onReset, i
                         <button
                             key={type}
                             onClick={() => onChange({ transitionType: type as any })}
-                            className={`p-3 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition-all ${style.transitionType === type
-                                ? 'bg-pink-500/10 border-pink-500/50 text-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.15)]'
-                                : 'bg-zinc-900/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                            className={`p-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${style.transitionType === type
+                                ? 'bg-pink-500/10 border-pink-500/40 text-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.1)]'
+                                : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-600 hover:bg-zinc-800/80 hover:text-zinc-400'
                                 }`}
                         >
                             {type}

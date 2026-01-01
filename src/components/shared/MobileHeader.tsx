@@ -17,37 +17,41 @@ export function MobileHeader({
     onBackClick
 }: MobileHeaderProps) {
     return (
-        <header className="flex-none px-6 pt-12 pb-4 flex items-center justify-between z-20">
-            <div className="flex items-center gap-2">
-                <span className="material-icons-round text-primary-mobile dark:text-white text-3xl">
-                    music_note
-                </span>
-                <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white font-display">
+        <header className="flex-none px-6 pt-12 pb-6 flex items-center justify-between z-20 bg-zinc-950/40 backdrop-blur-lg border-b border-zinc-900/50">
+            <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-pink-500/10 rounded-2xl border border-pink-500/20 flex items-center justify-center shadow-[0_0_20px_rgba(236,72,153,0.15)]">
+                    <span className="material-icons-round text-pink-400 text-2xl">
+                        music_note
+                    </span>
+                </div>
+                <h1 className="text-lg font-black tracking-[0.15em] text-zinc-100 uppercase">
                     {title}
                 </h1>
             </div>
-            {showSettings && (
-                <button
-                    onClick={onSettingsClick}
-                    className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-                >
-                    <span className="material-icons-round text-gray-600 dark:text-gray-400">
-                        settings
-                    </span>
-                </button>
-            )}
-            {showBack && (
-                <Link href="/">
+            <div className="flex items-center gap-2">
+                {showSettings && (
                     <button
-                        onClick={onBackClick}
-                        className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                        onClick={onSettingsClick}
+                        className="w-10 h-10 flex items-center justify-center rounded-2xl bg-zinc-900/50 border border-zinc-800/50 text-zinc-400 hover:text-zinc-100 transition-all active:scale-90"
                     >
-                        <span className="material-icons-round text-gray-600 dark:text-gray-400">
-                            arrow_back
+                        <span className="material-icons-round text-xl">
+                            settings
                         </span>
                     </button>
-                </Link>
-            )}
+                )}
+                {showBack && (
+                    <Link href="/">
+                        <button
+                            onClick={onBackClick}
+                            className="w-10 h-10 flex items-center justify-center rounded-2xl bg-zinc-900/50 border border-zinc-800/50 text-zinc-400 hover:text-zinc-100 transition-all active:scale-90"
+                        >
+                            <span className="material-icons-round text-xl">
+                                arrow_back
+                            </span>
+                        </button>
+                    </Link>
+                )}
+            </div>
         </header>
     );
 }

@@ -16,7 +16,7 @@ interface StageContainerProps {
 export const StageContainer = ({
     children,
     title = "Studio Canvas",
-    statusLabel = "Signal: Active",
+    statusLabel,
     aspectRatio = "aspect-video",
     background = "#050505",
     className
