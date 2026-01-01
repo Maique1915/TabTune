@@ -101,7 +101,7 @@ export const DEFAULT_SCORE_STYLE: ScoreStyle = {
     tabNumbers: { color: '#ffffffff', opacity: 1, shadow: false },
     symbols: { color: '#ffffffff', opacity: 1, shadow: false },
     staffLines: { color: '#ffffffff', opacity: 0.4, shadow: false },
-    background: '#020617',
+    background: '#000000',
     playheadColor: '#ffffffff',
     activeNoteColor: '#ffffffff',
     shadowIntensity: 10,

@@ -273,7 +273,7 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
                     {/* Add Section Button (End of Timeline) */}
                     <button
                         onClick={(e) => { e.stopPropagation(); onAddMeasure(); }}
-                        className="w-14 h-[90%] border-2 border-dashed border-white/5 rounded-2xl flex flex-col items-center justify-center text-slate-600 hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all shrink-0 group/add-m"
+                        className="w-16 h-[90%] border-2 border-dashed border-zinc-700/50 bg-zinc-900/50 hover:bg-cyan-500/10 hover:border-cyan-500/50 rounded-2xl flex flex-col items-center justify-center text-zinc-500 hover:text-cyan-400 transition-all shrink-0 group/add-m"
                         title="Add New Measure"
                     >
                         <Icons.Plus />

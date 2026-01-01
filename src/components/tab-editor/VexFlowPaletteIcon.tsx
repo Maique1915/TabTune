@@ -156,14 +156,40 @@ export const VexFlowPaletteIcon: React.FC<VexFlowPaletteIconProps> = ({
 
                 // Calculate Scaled ViewBox (Zoom into the center)
                 // Content Center based on user feedback (roughly x=20, y=88)
+                // Calculate Scaled ViewBox (Zoom into the center)
+                // Content Center based on user feedback (roughly x=20, y=88)
                 const CONTENT_CENTER_X = 20;
                 const CONTENT_CENTER_Y = 88;
 
                 const vw = VIEWBOX_WIDTH / scale;
                 const vh = VIEWBOX_HEIGHT / scale;
 
-                const vx = CONTENT_CENTER_X - (vw / 2);
+                let vx = CONTENT_CENTER_X - (vw / 2);
                 const vy = CONTENT_CENTER_Y - (vh / 2);
+
+                if (type === 'key') {
+                    // Dynamic viewBox shift for Key Signatures
+                    // User request: Start "as is" for simple keys, end at x = -5 for complex keys (7 accidentals).
+                    // Complex keys grow to the right, so we shift the viewport right (increase x) to keep them centered/visible.
+                    const keySpecs: { [key: string]: number } = {
+                        'C': 0, 'Am': 0,
+                        'G': 1, 'Em': 1, 'F': 1, 'Dm': 1,
+                        'D': 2, 'Bm': 2, 'Bb': 2, 'Gm': 2,
+                        'A': 3, 'F#m': 3, 'Eb': 3, 'Cm': 3,
+                        'E': 4, 'C#m': 4, 'Ab': 4, 'Fm': 4,
+                        'B': 5, 'G#m': 5, 'Db': 5, 'Bbm': 5,
+                        'F#': 6, 'D#m': 6, 'Gb': 6, 'Ebm': 6,
+                        'C#': 7, 'A#m': 7, 'Cb': 7, 'Abm': 7
+                    };
+                    const complexity = keySpecs[value] || 0;
+                    const targetX = -5;
+                    const startX = vx; // The default calculated above
+
+                    // Linear interpolation: vx = startX + (complexity / 7) * (targetX - startX)
+                    if (complexity > 0) {
+                        vx = startX + (complexity / 7) * (targetX - startX);
+                    }
+                }
 
                 svg.setAttribute('viewBox', `${vx} ${vy} ${vw} ${vh}`);
                 svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');

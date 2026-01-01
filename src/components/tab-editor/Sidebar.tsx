@@ -62,7 +62,7 @@ const ArticulationButton: React.FC<ArticulationBtnProps> = ({ label, symbol, isA
 );
 
 const CollapsibleSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
-    const [isOpen, setIsOpen] = React.useState(true);
+    const [isOpen, setIsOpen] = React.useState(false);
     return (
         <div className="space-y-2">
             <button
@@ -492,6 +492,28 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         title={t}
                                     >
                                         <VexFlowPaletteIcon type="time" value={t} width={50} height={50} scale={1.45} isSelected={globalSettings?.time === t} hideStaveLines={true} />
+                                    </button>
+                                ))}
+                            </div>
+                        </CollapsibleSection>
+
+                        <CollapsibleSection title="Techniques">
+                            <div className="grid grid-cols-2 gap-3 bg-zinc-950/40 p-2 rounded-xl border border-zinc-800/50">
+                                {[
+                                    { label: 'Hammer-on', code: 'h' },
+                                    { label: 'Pull-off', code: 'p' },
+                                    { label: 'Tap', code: 't' },
+                                    { label: 'Slide', code: 's' },
+                                    { label: 'Bend', code: 'b' },
+                                    { label: 'Vibrato', code: 'v' },
+                                    { label: 'Slur/Tie', code: 'l' },
+                                ].map((item) => (
+                                    <button
+                                        key={item.label}
+                                        onClick={() => onInsert(item.code)}
+                                        className="py-4 px-3 text-sm bg-zinc-950/50 hover:bg-zinc-900 hover:scale-[1.02] text-zinc-300 rounded-2xl transition-all text-center border-2 border-zinc-800/50 hover:border-zinc-700 font-bold active:scale-95"
+                                    >
+                                        {item.label}
                                     </button>
                                 ))}
                             </div>
