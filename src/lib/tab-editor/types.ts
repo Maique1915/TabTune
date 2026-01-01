@@ -30,7 +30,7 @@ export interface NoteData {
     accidental?: Accidental;
     type: 'note' | 'rest';
     decorators: NoteDecorator;
-    noteHead?: 'standard' | 'x' | 'diamond' | 'square' | 'triangle';
+    noteHead?: 'standard' | 'x' | 'diamond' | 'square' | 'triangle' | 'slash' | 'cross' | 'circle' | 'triangle_inv' | 'arrow_down' | 'arrow_up' | 'slashed';
     technique?: string; // h, p, s, b, v, t, l (l = pure slur/tie without label)
     slideTargetId?: string; // Explicitly link to another note for techniques
     tuplet?: string;

@@ -247,13 +247,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 {editingNote.type === 'note' && (
                                     <div className="space-y-3 pt-2 border-t border-white/5">
                                         <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Note Heads</h3>
-                                        <div className="grid grid-cols-5 gap-1.5">
+                                        <div className="grid grid-cols-4 gap-1.5 max-h-[140px] overflow-y-auto pr-1">
                                             {[
-                                                { id: undefined, label: 'Std', symbol: '●' },
-                                                { id: 'x', label: 'Ghost', symbol: 'X' },
+                                                { id: 'so', label: 'Std', symbol: '●' },
+                                                { id: 'x', label: 'Ghost', symbol: 'x' },
                                                 { id: 'diamond', label: 'Diam.', symbol: '◇' },
                                                 { id: 'square', label: 'Square', symbol: '□' },
-                                                { id: 'triangle', label: 'Tri.', symbol: '△' }
+                                                { id: 'triangle', label: 'Tri.', symbol: '△' },
+                                                { id: 'do', label: 'R.', symbol: '▲' },
+                                                { id: 'mi', label: 'Mi.', symbol: '◆' },
+                                                { id: 'fa', label: 'Fa.', symbol: '◤' },
+                                                { id: 'la', label: 'La.', symbol: '■' },
+                                                { id: 'slashed', label: 'Slashed', symbol: 'ø' }
                                             ].map((head) => (
                                                 <ArticulationButton
                                                     key={head.id || 'std'}
@@ -477,7 +482,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         className={`h-12 flex items-center justify-center rounded-lg border transition-all ${globalSettings?.key === k ? 'bg-cyan-500/10 border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-transparent border-transparent hover:bg-zinc-800/50 hover:border-zinc-700/50'}`}
                                         title={k}
                                     >
-                                        <VexFlowPaletteIcon type="key" value={k} width={40} height={50} scale={1.45} isSelected={globalSettings?.key === k} hideStaveLines={true} clef={globalSettings?.clef} />
+                                        <VexFlowPaletteIcon type="key" value={k} width={40} height={50} scale={1.45} isSelected={globalSettings?.key === k} hideStaveLines={true} clef="tab" />
                                     </button>
                                 ))}
                             </div>

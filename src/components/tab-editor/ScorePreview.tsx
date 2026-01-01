@@ -209,7 +209,43 @@ const MeasureThumbnail = memo(({
                         applyStyles(sn, isSelected ? noteStyle : style.rests, style.background || 'transparent');
                         return sn;
                     } else {
-                        const keys = note.positions.map(p => getNoteKeyFromFret(parseInt(p.fret), parseInt(p.string)));
+                        // Map internal note head id to VexFlow key-suffix code
+                        // Common VexFlow codes (Bravura/Standard):
+                        // d0: Diamond (Open), d1: Diamond (Black) -> D0/D1? VexFlow often uses 'D0', 'd0', 'X', 'x'.
+                        // Let's use lower case as it is safer in many versions, or check docs matching.
+                        // x: Cross (Ghost) -> 'x2' (standard cross)
+                        // diamond: 'd0' (hollow) or 'd1' (solid)? Let's assume solid for now or user choice?
+                        // square: 's1' (solid), 's0' (hollow)
+                        // triangle: 't1' (solid)
+                        // slash: 's3' ? No. 'slash' often is separate.
+                        // Let's rely on standard keys:
+                        // 'x' -> 'x' (or 'x2')
+                        // 'diamond' -> 'd1'
+                        // 'square' -> 's1'
+                        // 'triangle' -> 't1'
+                        // 'triangle_inv' -> 'ti1' (if exists)
+                        // 'slash' -> 'sl' ?
+                        // Note: If these codes are wrong, it defaults to normal head.
+
+                        const mapHead: Record<string, string> = {
+                            'x': 'x2',
+                            'diamond': 'd1',
+                            'square': 's1',
+                            'triangle': 't1',
+                            'triangle_inv': 'ti1',
+                            'cross': 'x1', // Or 'x0'
+                            'slash': 's3', // Often 's3' is used for slash notation or 'sl'
+                            'circle': 'c1', // ?
+                            'arrow_up': 'au', // arrow up?
+                            'arrow_down': 'ad',
+                            'slashed': 'sb',
+                        };
+
+                        const suffix = (note.noteHead && note.noteHead !== 'standard')
+                            ? `/${mapHead[note.noteHead] || note.noteHead}`
+                            : '';
+
+                        const keys = note.positions.map(p => getNoteKeyFromFret(parseInt(p.fret), parseInt(p.string)) + suffix);
 
                         // Validate keys
                         if (keys.length === 0) {
@@ -249,6 +285,7 @@ const MeasureThumbnail = memo(({
                             applyStyles(ann, noteStyle, style.background || 'transparent');
                             sn.addModifier(ann);
                         }
+
                         if (note.technique === 'b') {
                             const bend = new Bend([{ type: 1, text: "Full" }]); // 1 = UP
                             applyStyles(bend, noteStyle, style.background || 'transparent');
