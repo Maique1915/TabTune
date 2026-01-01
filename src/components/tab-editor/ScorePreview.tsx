@@ -20,6 +20,8 @@ interface ScorePreviewProps {
     code: string;
     measures: MeasureData[];
     timeSignature: string;
+    clef?: string;
+    keySignature?: string;
     playbackPosition: number;
     isPlaying: boolean;
     style: ScoreStyle;
@@ -59,7 +61,9 @@ const MeasureThumbnail = memo(({
     onNoteClick,
     onNoteDoubleClick,
     selectedNoteIds,
-    dpr = 1
+    dpr,
+    clef,
+    keySignature
 }: {
     measureData: MeasureData;
     measureIndex: number;
@@ -73,7 +77,9 @@ const MeasureThumbnail = memo(({
     onNoteClick?: (measureIndex: number, noteIndex: number, isMulti: boolean) => void;
     onNoteDoubleClick?: (noteId: string) => void;
     selectedNoteIds?: string[];
-    dpr?: number;
+    dpr: number;
+    clef?: string;
+    keySignature?: string
 }) => {
     const notationCanvasRef = useRef<HTMLCanvasElement>(null);
     const playheadCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -157,10 +163,22 @@ const MeasureThumbnail = memo(({
                 let staveY = 120; // Default single center
                 if (showTablature) staveY = 70; // Top position if dual
                 stave = new Stave(x, staveY, staveWidth);
+                // Priority: Global clef prop -> Measure-specific clef -> Style default -> Treble
+                // We prioritizing the Global Settings 'clef' prop because the Sidebar Global Settings
+                // are intended to control the overall view.
+                const effectiveClef = clef || measureData.clef || (style.clefs && typeof style.clefs === 'string' ? style.clefs : 'treble');
+
                 if (measureData.showClef) {
-                    const clef = measureData.clef || 'treble';
-                    if (clef !== 'tab') stave.addClef(clef);
+                    if (effectiveClef && effectiveClef !== 'tab') {
+                        stave.addClef(effectiveClef);
+                    }
                 }
+
+                // Add Key Signature if provided
+                if (keySignature) {
+                    stave.addKeySignature(keySignature);
+                }
+
                 if (measureData.showTimeSig) stave.addTimeSignature(timeSignatureStr || '4/4');
 
                 stave.getModifiers().forEach((mod: any) => {
@@ -187,7 +205,7 @@ const MeasureThumbnail = memo(({
                     let noteStyle = isSelected ? PRESET_THEMES.default.style.notes : style.notes;
 
                     if (note.type === 'rest') {
-                        const sn = new StaveNote({ keys: ["b/4"], duration: note.duration + "r" });
+                        const sn = new StaveNote({ keys: ["b/4"], duration: note.duration + "r", clef: effectiveClef });
                         applyStyles(sn, isSelected ? noteStyle : style.rests, style.background || 'transparent');
                         return sn;
                     } else {
@@ -197,10 +215,11 @@ const MeasureThumbnail = memo(({
                         if (keys.length === 0) {
                             console.error(`[ScorePreview] Note ${note.id} has no valid keys for notation! Positions:`, note.positions);
                             // Return a placeholder rest to avoid breaking VexFlow
-                            return new StaveNote({ keys: ["b/4"], duration: note.duration + "r" });
+                            return new StaveNote({ keys: ["b/4"], duration: note.duration + "r", clef: effectiveClef });
                         }
 
-                        const sn = new StaveNote({ keys: keys, duration: note.duration });
+                        // Explicitly pass the clef to StaveNote so it knows how to position the notes!
+                        const sn = new StaveNote({ keys: keys, duration: note.duration, clef: effectiveClef });
                         const d = note.decorators || {};
                         if (d.dot) Dot.buildAndAttach([sn], { all: true });
                         if (note.accidental && note.accidental !== 'none') sn.addModifier(new Accidental(note.accidental));
@@ -569,7 +588,7 @@ const MeasureThumbnail = memo(({
             drawPlayhead(); // Initial draw
         };
         updateNotation();
-    }, [measureData, style, timeSignatureStr, showNotation, showTablature, selectedNoteIds, dpr]);
+    }, [measureData, style, timeSignatureStr, showNotation, showTablature, selectedNoteIds, dpr, clef]);
 
     // Playback Loop (Synchronous and ultra-fast)
     useEffect(() => {
@@ -606,6 +625,8 @@ const ScorePreview = React.forwardRef<ScorePreviewRef, ScorePreviewProps>(({
     measures,
     showControls = true,
     timeSignature,
+    clef = 'treble',
+    keySignature,
     showNotation = true,
     showTablature = true,
     onMeasuresChange,
@@ -868,7 +889,7 @@ const ScorePreview = React.forwardRef<ScorePreviewRef, ScorePreviewProps>(({
                 {safeMeasures.map((measure, idx) => (
                     idx === currentMeasureIndex && (
                         <div
-                            key={`${measure.id || idx}-${style.transitionType}-${timeSignature}-${showNotation}-${showTablature}`}
+                            key={`${measure.id || idx}-${style.transitionType}-${timeSignature}-${showNotation}-${showTablature}-${clef}-${keySignature}`}
                             className={`absolute inset-0 w-full ${shouldAnimate ? `score-animation-${style.transitionType}` : ''}`}
                         >
                             <MeasureThumbnail
@@ -885,6 +906,7 @@ const ScorePreview = React.forwardRef<ScorePreviewRef, ScorePreviewProps>(({
                                 onNoteDoubleClick={onDoubleClickNote}
                                 selectedNoteIds={selectedNoteIds}
                                 dpr={currentDPR}
+                                clef={clef}
                             />
                         </div>
                     )

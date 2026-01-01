@@ -4,9 +4,10 @@ import React from 'react';
 import { Duration, NoteData, MeasureData } from '@/lib/tab-editor/types';
 import { Icons } from '@/lib/tab-editor/constants';
 import { VexFlowRhythmIcon } from './VexFlowRhythmIcon';
+import { VexFlowPaletteIcon } from './VexFlowPaletteIcon';
 import { GenericSidebar } from '@/components/shared/GenericSidebar';
 import Link from 'next/link';
-import { Music, Settings2, Info, Home } from 'lucide-react';
+import { Music, Settings2, Info, Home, ChevronRight, ChevronDown } from 'lucide-react';
 
 interface SidebarProps {
     onInsert: (text: string) => void;
@@ -41,7 +42,7 @@ interface SidebarProps {
         showNotation: boolean;
         showTablature: boolean;
     };
-    onGlobalSettingsChange?: (settings: { bpm?: number; time?: string; clef?: 'treble' | 'bass' | 'alto' | 'tenor' | 'tab'; showNotation?: boolean; showTablature?: boolean }) => void;
+    onGlobalSettingsChange?: (settings: { bpm?: number; time?: string; clef?: 'treble' | 'bass' | 'alto' | 'tenor' | 'tab'; showNotation?: boolean; showTablature?: boolean; key?: string }) => void;
     onImportScore?: () => void;
     // Mobile props
     isMobile?: boolean;
@@ -65,6 +66,26 @@ const ArticulationButton: React.FC<ArticulationBtnProps> = ({ label, symbol, isA
         <span className="text-[7px] uppercase font-black tracking-wider">{label}</span>
     </button>
 );
+
+const CollapsibleSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
+    const [isOpen, setIsOpen] = React.useState(true);
+    return (
+        <div className="space-y-2">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full flex items-center justify-between text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2 hover:text-zinc-300 transition-colors"
+            >
+                <span>{title}</span>
+                {isOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+            </button>
+            {isOpen && (
+                <div className="animate-in slide-in-from-top-2 duration-200">
+                    {children}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const Sidebar: React.FC<SidebarProps> = ({
     onInsert,
@@ -128,28 +149,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         return activeDuration === code;
     };
 
-    const palettes = [
-        {
-            title: 'Claves',
-            items: [
-                { label: 'Treble', code: 'clef=treble' },
-                { label: 'Bass', code: 'clef=bass' },
-                { label: 'Tab', code: 'clef=tab' },
-            ]
-        },
-        {
-            title: 'Techniques',
-            items: [
-                { label: 'Hammer-on', code: 'h' },
-                { label: 'Pull-off', code: 'p' },
-                { label: 'Tap', code: 't' },
-                { label: 'Slide', code: 's' },
-                { label: 'Bend', code: 'b' },
-                { label: 'Vibrato', code: 'v' },
-                { label: 'Slur/Tie', code: 'l' },
-            ]
-        }
-    ];
+
 
     const tabs = [
         { id: 'main', label: 'Main' },
@@ -188,37 +188,39 @@ const Sidebar: React.FC<SidebarProps> = ({
             ) : undefined}
         >
             <div className="space-y-8">
-                {/* Unified Duration Selector */}
-                <div className="space-y-3">
-                    <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center space-x-2">
-                        <span>Duration</span>
-                        {isInspector && <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[9px] border border-purple-500/20">ACTIVE</span>}
-                    </h3>
+                {/* Unified Duration Selector - Only show when editing/inspecting */}
+                {(isInspector || isMeasureProperties) && (
+                    <div className="space-y-3">
+                        <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center space-x-2">
+                            <span>Duration</span>
+                            {isInspector && <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[9px] border border-purple-500/20">ACTIVE</span>}
+                        </h3>
 
-                    <div className="grid grid-cols-3 gap-2">
-                        {durationItems.map((item) => {
-                            const active = getDurationActive(item.code);
-                            return (
-                                <button
-                                    key={item.label}
-                                    onClick={() => handleDurationClick(item.code)}
-                                    className={`py-2 rounded-xl border font-black transition-all text-[10px] flex flex-col items-center justify-center space-y-1 ${active
-                                        ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.1)]'
-                                        : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
-                                        }`}
-                                >
-                                    <div className={`transition-all ${active ? 'opacity-100' : 'opacity-40 grayscale'}`}>
-                                        <VexFlowRhythmIcon
-                                            duration={item.code}
-                                            fillColor={active ? '#67e8f9' : '#94a3b8'} // cyan-300 vs slate-400
-                                        />
-                                    </div>
-                                    <span>{item.label}</span>
-                                </button>
-                            );
-                        })}
+                        <div className="grid grid-cols-3 gap-2">
+                            {durationItems.map((item) => {
+                                const active = getDurationActive(item.code);
+                                return (
+                                    <button
+                                        key={item.label}
+                                        onClick={() => handleDurationClick(item.code)}
+                                        className={`py-2 rounded-xl border font-black transition-all text-[10px] flex flex-col items-center justify-center space-y-1 ${active
+                                            ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.1)]'
+                                            : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
+                                            }`}
+                                    >
+                                        <div className={`transition-all ${active ? 'opacity-100' : 'opacity-40 grayscale'}`}>
+                                            <VexFlowRhythmIcon
+                                                duration={item.code}
+                                                fillColor={active ? '#67e8f9' : '#94a3b8'} // cyan-300 vs slate-400
+                                            />
+                                        </div>
+                                        <span>{item.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Conditional Content */}
                 {isInspector && editingNote ? (
@@ -420,35 +422,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                 ) : isMeasureProperties && activeMeasure ? (
                     // Measure Properties
                     <div className="space-y-8">
-                        <div className="space-y-4">
-                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2">
-                                Clef
-                            </h3>
-                            <div className="flex bg-zinc-950/40 p-1 rounded-xl border border-zinc-800/50">
-                                {['treble', 'bass', 'tab'].map(c => (
-                                    <button
-                                        key={c}
-                                        onClick={() => onMeasureUpdate?.(activeMeasure.id, { clef: c as any, showClef: true })}
-                                        className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all uppercase ${activeMeasure.clef === c || (!activeMeasure.clef && c === 'treble') ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'text-zinc-600 hover:text-zinc-400'}`}
-                                    >
-                                        {c}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+
 
                         <div className="space-y-4">
                             <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2">
                                 Visibility
                             </h3>
                             <div className="grid grid-cols-2 gap-2">
-                                <button
-                                    onClick={() => onMeasureUpdate?.(activeMeasure.id, { showClef: !activeMeasure.showClef })}
-                                    className={`py-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${activeMeasure.showClef ? 'bg-purple-500/10 border-purple-500/30 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
-                                >
-                                    <span className="text-lg font-serif">𝄞</span>
-                                    <span className="text-[9px] font-black uppercase tracking-wider">Show Clef</span>
-                                </button>
+
                                 <button
                                     onClick={() => onMeasureUpdate?.(activeMeasure.id, { showTimeSig: !activeMeasure.showTimeSig })}
                                     className={`py-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${activeMeasure.showTimeSig ? 'bg-purple-500/10 border-purple-500/30 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
@@ -456,81 +437,94 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     <span className="text-xs font-serif font-bold pt-1">4/4</span>
                                     <span className="text-[9px] font-black uppercase tracking-wider">Show Time</span>
                                 </button>
+                                <button
+                                    onClick={() => onMeasureUpdate?.(activeMeasure.id, { showClef: !activeMeasure.showClef })}
+                                    className={`py-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${activeMeasure.showClef ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
+                                >
+                                    <span className="text-xs font-serif font-bold pt-1">𝄞</span>
+                                    <span className="text-[9px] font-black uppercase tracking-wider">Show Clef</span>
+                                </button>
                             </div>
                         </div>
                     </div>
                 ) : (
-                    // Global Settings
                     <div className="space-y-8">
-                        {/* Playback Settings */}
-                        <div className="space-y-4">
-                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2">
-                                Playback
-                            </h3>
+                        {/* Collapsible Sections for Palettes */}
+                        <CollapsibleSection title="Claves">
+                            <div className="grid grid-cols-4 gap-2 bg-zinc-950/40 p-2 rounded-xl border border-zinc-800/50">
+                                {(['treble', 'bass', 'alto', 'tenor', 'percussion', 'tab'] as const).map(c => (
+                                    <button
+                                        key={c}
+                                        onClick={() => onGlobalSettingsChange?.({ clef: c === 'percussion' ? 'treble' : c })}
+                                        className={`h-14 flex items-center justify-center rounded-lg border transition-all ${globalSettings?.clef === c ? 'bg-cyan-500/10 border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-transparent border-transparent hover:bg-zinc-800/50 hover:border-zinc-700/50'}`}
+                                        title={c}
+                                    >
+                                        <VexFlowPaletteIcon type="clef" value={c} width={50} height={50} scale={1.5} isSelected={globalSettings?.clef === c} hideStaveLines={true} />
+                                    </button>
+                                ))}
+                            </div>
+                        </CollapsibleSection>
+
+                        <CollapsibleSection title="Armaduras de clave">
+                            <div className="grid grid-cols-5 gap-1 bg-zinc-950/40 p-2 rounded-xl border border-zinc-800/50">
+                                {[
+                                    'C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#',
+                                    'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb'
+                                ].map(k => (
+                                    <button
+                                        key={k}
+                                        onClick={() => onGlobalSettingsChange?.({ key: k })}
+                                        className={`h-12 flex items-center justify-center rounded-lg border transition-all ${globalSettings?.key === k ? 'bg-cyan-500/10 border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-transparent border-transparent hover:bg-zinc-800/50 hover:border-zinc-700/50'}`}
+                                        title={k}
+                                    >
+                                        <VexFlowPaletteIcon type="key" value={k} width={40} height={50} scale={1.45} isSelected={globalSettings?.key === k} hideStaveLines={true} clef={globalSettings?.clef} />
+                                    </button>
+                                ))}
+                            </div>
+                        </CollapsibleSection>
+
+                        <CollapsibleSection title="Fórmulas de compasso">
+                            <div className="grid grid-cols-4 gap-2 bg-zinc-950/40 p-2 rounded-xl border border-zinc-800/50">
+                                {['4/4', '3/4', '2/4', '6/8', '12/8', 'C', 'C|'].map(t => (
+                                    <button
+                                        key={t}
+                                        onClick={() => onGlobalSettingsChange?.({ time: t })}
+                                        className={`h-14 flex items-center justify-center rounded-lg border transition-all ${globalSettings?.time === t ? 'bg-cyan-500/10 border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-transparent border-transparent hover:bg-zinc-800/50 hover:border-zinc-700/50'}`}
+                                        title={t}
+                                    >
+                                        <VexFlowPaletteIcon type="time" value={t} width={50} height={50} scale={1.45} isSelected={globalSettings?.time === t} hideStaveLines={true} />
+                                    </button>
+                                ))}
+                            </div>
+                        </CollapsibleSection>
+
+                        {/* Playback & View Settings (Compact) */}
+                        <div className="space-y-4 pt-4 border-t border-zinc-800/50">
+                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pb-1">Settings</h3>
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-bold text-zinc-500 uppercase">Tempo (BPM)</label>
+                                    <label className="text-[9px] font-bold text-zinc-500 uppercase">Tempo</label>
                                     <input
                                         type="number"
                                         value={globalSettings?.bpm || 120}
                                         onChange={(e) => onGlobalSettingsChange?.({ bpm: parseInt(e.target.value) || 120 })}
-                                        className="w-full bg-zinc-950/40 border border-zinc-800/60 rounded-xl px-3 py-2 text-xs font-bold text-cyan-400 focus:border-cyan-500/50 outline-none transition-all shadow-inner text-center"
+                                        className="w-full bg-zinc-950/40 border border-zinc-800/60 rounded-xl px-3 py-2 text-xs font-bold text-cyan-400 focus:border-cyan-500/50 outline-none text-center"
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-bold text-zinc-500 uppercase">Time Sig</label>
-                                    <select
-                                        value={globalSettings?.time || '4/4'}
-                                        onChange={(e) => onGlobalSettingsChange?.({ time: e.target.value })}
-                                        className="w-full bg-zinc-950/40 border border-zinc-800/60 rounded-xl px-3 py-2 text-xs font-bold text-zinc-300 focus:border-zinc-500/50 outline-none transition-all shadow-inner appearance-none text-center cursor-pointer hover:bg-zinc-900/50"
-                                    >
-                                        <option value="4/4">4/4</option>
-                                        <option value="3/4">3/4</option>
-                                        <option value="2/4">2/4</option>
-                                        <option value="6/8">6/8</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Visibility Settings */}
-                        <div className="space-y-4">
-                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2">
-                                View
-                            </h3>
-                            <div className="grid grid-cols-2 gap-2">
-                                <button
-                                    onClick={() => onGlobalSettingsChange?.({ showNotation: !globalSettings?.showNotation })}
-                                    className={`py-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${globalSettings?.showNotation ? 'bg-blue-500/10 border-blue-500/30 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
-                                >
-                                    <span className="text-lg font-serif">𝄞</span>
-                                    <span className="text-[9px] font-black uppercase tracking-wider">Notation</span>
-                                </button>
-                                <button
-                                    onClick={() => onGlobalSettingsChange?.({ showTablature: !globalSettings?.showTablature })}
-                                    className={`py-3 rounded-xl border flex flex-col items-center justify-center space-y-1 transition-all ${globalSettings?.showTablature ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
-                                >
-                                    <span className="text-lg font-mono font-bold">TAB</span>
-                                    <span className="text-[9px] font-black uppercase tracking-wider">Tablature</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Global Clef */}
-                        <div className="space-y-4">
-                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2">
-                                Default Clef
-                            </h3>
-                            <div className="flex bg-zinc-950/40 p-1 rounded-xl border border-zinc-800/50">
-                                {(['treble', 'bass', 'tab'] as const).map((c) => (
+                                <div className="flex items-end gap-1">
                                     <button
-                                        key={c}
-                                        onClick={() => onGlobalSettingsChange?.({ clef: c })}
-                                        className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all uppercase ${globalSettings?.clef === c ? 'bg-purple-500/10 text-purple-400 border border-purple-500/30 shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}
+                                        onClick={() => onGlobalSettingsChange?.({ showNotation: !globalSettings?.showNotation })}
+                                        className={`flex-1 py-2 rounded-lg border text-[10px] font-black uppercase ${globalSettings?.showNotation ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500'}`}
                                     >
-                                        {c}
+                                        Notation
                                     </button>
-                                ))}
+                                    <button
+                                        onClick={() => onGlobalSettingsChange?.({ showTablature: !globalSettings?.showTablature })}
+                                        className={`flex-1 py-2 rounded-lg border text-[10px] font-black uppercase ${globalSettings?.showTablature ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500'}`}
+                                    >
+                                        Tab
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -541,35 +535,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 className="w-full py-3 rounded-xl border border-zinc-700/50 bg-zinc-800/30 hover:bg-zinc-800 hover:border-zinc-600 text-zinc-300 hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-2 group"
                             >
                                 <span className="group-hover:scale-110 transition-transform">📂</span>
-                                Import MusicXML / MSCZ
+                                Import Score
                             </button>
-                        </div>
-
-                        {/* Library Palettes (Adding back mostly used for insertion) */}
-                        <div className="space-y-8 pt-4 border-t border-zinc-800/50">
-                            {palettes.map((section) => (
-                                <div key={section.title} className="space-y-3">
-                                    <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2">
-                                        {section.title}
-                                    </h3>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {section.items.map((item) => (
-                                            <button
-                                                key={item.label}
-                                                onClick={() => onInsert(item.code)}
-                                                className="px-3 py-3 text-xs bg-zinc-900/50 hover:bg-zinc-800/80 hover:scale-[1.02] text-zinc-400 rounded-xl transition-all text-center border border-zinc-800/50 font-bold active:scale-95 shadow-sm hover:text-zinc-200"
-                                            >
-                                                {item.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
                         </div>
                     </div>
                 )}
             </div>
-        </GenericSidebar >
+        </GenericSidebar>
     );
 };
 

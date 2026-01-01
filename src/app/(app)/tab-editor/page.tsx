@@ -738,6 +738,8 @@ export default function TabEditorPage() {
                                     playbackPosition={playbackPosition}
                                     isPlaying={isPlaying}
                                     style={scoreStyle}
+                                    clef={settings.clef}
+                                    keySignature={settings.key}
                                     showNotation={settings.showNotation}
                                     showTablature={settings.showTablature}
                                     onMeasuresChange={setMeasures}
