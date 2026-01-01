@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Duration, NoteData, MeasureData } from '@/lib/tab-editor/types';
+import { Duration, NoteData, MeasureData, GlobalSettings } from '@/lib/tab-editor/types';
 import { Icons } from '@/lib/tab-editor/constants';
 import { VexFlowRhythmIcon } from './VexFlowRhythmIcon';
 import { VexFlowPaletteIcon } from './VexFlowPaletteIcon';
@@ -35,14 +35,8 @@ interface SidebarProps {
     onAddChordNote?: () => void;
     onRemoveChordNote?: (index: number) => void;
     // Global Settings Props
-    globalSettings?: {
-        bpm: number;
-        time: string;
-        clef: 'treble' | 'bass' | 'alto' | 'tenor' | 'tab';
-        showNotation: boolean;
-        showTablature: boolean;
-    };
-    onGlobalSettingsChange?: (settings: { bpm?: number; time?: string; clef?: 'treble' | 'bass' | 'alto' | 'tenor' | 'tab'; showNotation?: boolean; showTablature?: boolean; key?: string }) => void;
+    globalSettings?: GlobalSettings;
+    onGlobalSettingsChange?: (settings: Partial<GlobalSettings>) => void;
     onImportScore?: () => void;
     // Mobile props
     isMobile?: boolean;
