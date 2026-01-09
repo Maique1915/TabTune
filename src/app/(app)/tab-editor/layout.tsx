@@ -12,7 +12,7 @@ export default function TabEditorLayout({
         <>
             <Script
                 type="text/javascript"
-                src="https://unpkg.com/vexflow@4.2.2/build/cjs/vexflow.js"
+                src="https://cdnjs.cloudflare.com/ajax/libs/vexflow/4.2.2/vexflow-min.js"
                 strategy="beforeInteractive"
             />
 

@@ -97,6 +97,7 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     setPlaybackIsPaused,
     setPlaybackProgress,
     setPlaybackTotalDurationMs,
+    playbackTotalDurationMs,
     playbackSeekNonce,
     playbackSeekProgress,
   } = useAppContext();
@@ -456,6 +457,11 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     const originalChordDrawerCtx = chordDrawerRef.current.ctx;
     chordDrawerRef.current.setCtx(offCtx);
 
+    // Switch ScoreDrawer to offscreen canvas
+    if (scoreDrawerRef.current) {
+      scoreDrawerRef.current.setCanvas(off);
+    }
+
     const cache: { startFrameIndex: number; bitmaps: Array<ImageBitmap | null>; frameMs: number } = {
       startFrameIndex,
       bitmaps: new Array(framesToRender).fill(null),
@@ -489,6 +495,11 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
 
     // Restore original context
     chordDrawerRef.current.setCtx(originalChordDrawerCtx);
+
+    // Restore ScoreDrawer to main canvas
+    if (scoreDrawerRef.current && canvasRef.current) {
+      scoreDrawerRef.current.setCanvas(canvasRef.current);
+    }
   }, [computeStateAtTimeMs, drawFrame, height, prebufferMs, width]);
 
   // Mantém duração total disponível mesmo fora do play (necessário para scrub)
@@ -498,8 +509,12 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     // Então: travar a duração enquanto está tocando (exceto quando pausado).
     if (playheadAnimationRef.current && !isPaused) return;
     const totalMs = computeTotalPlaybackDurationMs();
-    setPlaybackTotalDurationMs(totalMs);
-  }, [computeTotalPlaybackDurationMs, isPaused, setPlaybackTotalDurationMs]);
+
+    // Only update if duration has actually changed to avoid infinite loops
+    if (totalMs !== playbackTotalDurationMs) {
+      setPlaybackTotalDurationMs(totalMs);
+    }
+  }, [computeTotalPlaybackDurationMs, isPaused, setPlaybackTotalDurationMs, playbackTotalDurationMs]);
 
   // Seek/Scrub: renderiza o frame correspondente ao progresso solicitado
   useEffect(() => {

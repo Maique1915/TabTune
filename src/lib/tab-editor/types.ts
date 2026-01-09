@@ -91,6 +91,10 @@ export interface ScoreStyle {
     // Legacy mapping (optional, or removed later)
     width?: number;
     staveSpace?: number;
+
+    // View Transforms
+    rotation?: 0 | 90 | 270;
+    mirror?: boolean;
 }
 
 export const DEFAULT_SCORE_STYLE: ScoreStyle = {
@@ -107,7 +111,9 @@ export const DEFAULT_SCORE_STYLE: ScoreStyle = {
     shadowIntensity: 10,
     glowEffect: true,
     scale: 1,
-    transitionType: 'snap'
+    transitionType: 'snap',
+    rotation: 0,
+    mirror: false
 };
 
 export interface ScoreState {

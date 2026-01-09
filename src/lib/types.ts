@@ -5,11 +5,21 @@ export interface BarreInfo {
   finger?: number;
 }
 
+export interface TabEffect {
+  type: 'slide' | 'bend' | 'hammer' | 'pull' | 'vibrato' | 'tap';
+  fromFret?: number;
+  toFret?: number; // Target fret for slide/bend
+  string: number;
+  duration?: number; // relative duration within the chord 0-1
+}
+
 export interface ChordWithTiming {
   chord: ChordDiagramProps; // Original chord data
   duration: number; // in ms
   finalChord: ChordDiagramProps; // Pre-calculated transposed chord for display
   transportDisplay: number;    // Pre-calculated transpose display value
+  strumming?: 'down' | 'up' | 'pluck' | 'mute';
+  effects?: TabEffect[];
 }
 
 export interface Achord {
@@ -48,4 +58,5 @@ export interface ChordDiagramProps {
   transport?: number; // Transposição
   unique?: boolean; // se o acord pode ser tranposto ou só funciona na posição original
   list?: boolean;
+  stringNames: string[]; // Custom names for strings (e.g., ["B", "E", "A", "D", "G", "C"])
 }

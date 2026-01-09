@@ -19,6 +19,8 @@ export class ChordDrawerBase {
   private _fretboardCache: HTMLCanvasElement | null = null;
   // Flag to avoid drawing the fretboard on every frame after a transition ends
   private _skipFretboard: boolean = false;
+  private _rotation: number = 0;
+  private _mirror: boolean = false;
 
   // Configurações do diagrama (valores base não escalados)
 
@@ -89,48 +91,30 @@ export class ChordDrawerBase {
     this._colors = colors;
 
     this._dimensions = dimensions;
-
     this._scaleFactor = scaleFactor;
-
-
+    this._rotation = colors.rotation || 0;
+    this._mirror = colors.mirror || false;
 
     this._calculateDimensions();
 
-
-
     this.fretboardDrawer = new FretboardDrawer(ctx, colors, dimensions, {
-
       diagramWidth: this.diagramWidth,
-
       diagramHeight: this._diagramHeight,
-
       diagramX: this._diagramX,
-
       diagramY: this._diagramY,
-
       numStrings: this._numStrings,
-
       numFrets: this._numFrets,
-
       horizontalPadding: this.horizontalPadding,
-
       stringSpacing: this._stringSpacing,
-
       fretboardX: this._fretboardX,
-
       fretboardY: this._fretboardY,
-
       fretboardWidth: this._fretboardWidth,
-
       fretboardHeight: this._fretboardHeight,
-
       realFretSpacing: this._realFretSpacing,
-
       neckRadius: this.neckRadius,
-
       stringNamesY: this._stringNamesY,
-
     }, this._scaleFactor); // Pass scaleFactor here
+    this.fretboardDrawer.setTransforms(this._rotation as any, this._mirror);
 
   }
 
@@ -223,7 +207,10 @@ export class ChordDrawerBase {
 
   public setColors(value: ChordDiagramColors) {
     this._colors = value;
+    this._rotation = value.rotation || 0;
+    this._mirror = value.mirror || false;
     this.fretboardDrawer.setColors(value);
+    this.fretboardDrawer.setTransforms(this._rotation as any, this._mirror);
     this._fretboardCache = null; // Invalidate cache
   }
 
@@ -258,7 +245,8 @@ export class ChordDrawerBase {
     this._diagramY = (this._dimensions.height / 2) - (this._diagramHeight / 2);
 
     const stringAreaWidth = scaledDiagramWidth - (scaledHorizontalPadding * 2);
-    this._stringSpacing = stringAreaWidth / (this._numStrings - 1);
+    // Use the current _numStrings for spacing calculation
+    this._stringSpacing = stringAreaWidth / (Math.max(1, this._numStrings - 1));
 
     this._fretboardX = this._diagramX;
     this._fretboardY = this._diagramY + (75 * this._scaleFactor);
@@ -307,6 +295,23 @@ export class ChordDrawerBase {
   }
 
   /**
+   * Applies rotation and mirror transforms around the center of the diagram.
+   */
+  public applyTransforms(): void {
+    const centerX = this._dimensions.width / 2;
+    const centerY = this._dimensions.height / 2;
+
+    this._ctx.translate(centerX, centerY);
+    if (this._rotation) {
+      this._ctx.rotate((this._rotation * Math.PI) / 180);
+    }
+    if (this._mirror) {
+      this._ctx.scale(-1, 1);
+    }
+    this._ctx.translate(-centerX, -centerY);
+  }
+
+  /**
    * Aplica centralização no canvas
    * Retorna para onde o contexto foi centralizado
    * NOTA: Agora que _diagramX e _diagramY já estão centralizados, não precisamos translate adicional
@@ -335,30 +340,9 @@ export class ChordDrawerBase {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
+
   // Wrappers de transform centralizados em `src/lib/animacao.ts`.
 
-  /**
-   * Helper para desenhar texto com transformações de animação
-   */
-  private _drawTextWithTransform(
-    text: string,
-    offsetX: number,
-    alpha: number,
-    scale: number,
-    translateY: number, // This is the offset that needs to be applied after scaling
-    centerX: number,
-    centerY: number
-  ): void {
-    this._ctx.save();
-    this._ctx.globalAlpha = alpha;
-    this._ctx.translate(centerX, centerY); // Move origin to centerX, centerY
-    this._ctx.scale(scale, scale); // Scale around this new origin
-    this._ctx.translate(-centerX, -centerY); // Move origin back
-    // Now apply the translateY as a final translation offset
-    this._ctx.translate(0, translateY);
-    this.drawChordName(text, offsetX);
-    this._ctx.restore();
-  }
 
 
 
@@ -406,7 +390,14 @@ export class ChordDrawerBase {
       this._ctx.font = `bold ${fontSize}px sans-serif`;
       this._ctx.textAlign = "center";
       this._ctx.textBaseline = "middle";
-      this._ctx.fillText(String(finger), centerX, centerY);
+
+      // Counter-rotate and counter-scale for text
+      this._ctx.save();
+      this._ctx.translate(centerX, centerY);
+      if (this._mirror) this._ctx.scale(-1, 1);
+      if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
+      this._ctx.fillText(String(finger), 0, 0);
+      this._ctx.restore();
     }
   }
 
@@ -447,7 +438,13 @@ export class ChordDrawerBase {
       this._ctx.font = `bold ${fontSize}px sans-serif`;
       this._ctx.textAlign = "center";
       this._ctx.textBaseline = "middle";
+
+      // Counter-rotate and counter-scale for text
+      this._ctx.save();
+      if (this._mirror) this._ctx.scale(-1, 1);
+      if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
       this._ctx.fillText(String(finger), 0, 0);
+      this._ctx.restore();
     }
   }
 
@@ -525,17 +522,96 @@ export class ChordDrawerBase {
   }
 
   /**
+   * Applies translation that maps to a "Top" visual movement in screen space.
+   */
+  private _applyVisualTopTranslation(translateValue: number): void {
+    this._ctx.translate(0, -translateValue);
+  }
+
+  /**
+   * Applies chord-specific settings (numStrings, stringNames) to the drawer.
+   */
+  private _applyChordSettings(chord: ChordDiagramProps): void {
+    const chordNumStrings = chord.stringNames.length;
+    if (chordNumStrings !== this._numStrings) {
+      this._numStrings = chordNumStrings;
+      this._calculateDimensions();
+      this.fretboardDrawer.setNumStrings(this._numStrings);
+      this.fretboardDrawer.setStringSpacing(this._stringSpacing);
+      this.fretboardDrawer.setFretboardWidth(this._fretboardWidth);
+      this.fretboardDrawer.setHorizontalPadding(this.horizontalPadding);
+      // Fretboard cache must be invalidated when numStrings changes
+      this._fretboardCache = null;
+    }
+    // Note: stringNames are passed directly to drawing methods that need them
+  }
+
+  /**
+   * Returns the visual "height" (distance from center to vertical edge) on screen
+   * based on current rotation.
+   */
+  private _getVisualFretboardHalfHeight(): number {
+    return (this._rotation % 180 === 0)
+      ? (this.fretboardHeight / 2)
+      : (this.fretboardWidth / 2);
+  }
+
+  /**
+   * Helper to get label positions (name or transpose) based on logical coordinates.
+   * Returns coordinates in absolute canvas space, assuming unrotated/unmirrored state.
+   */
+  private _getLabelPosition(type: 'name' | 'transpose'): { x: number; y: number } {
+    const scale = this._scaleFactor;
+    const CW = this._dimensions.width;
+    const CH = this._dimensions.height;
+    const rad = (this._rotation * Math.PI) / 180;
+
+    // Derive carousel offsetX from current _diagramX position
+    const baseCenterX = (CW / 2) - (this.diagramWidth / 2);
+    const carouselOffsetX = this._diagramX - baseCenterX;
+
+    // IMPORTANT: Mirroring flips the logical X axis of the diagram.
+    // In transformations where rotation maps logical X to screen Y (like 90 or 270),
+    // mirroring must also flip the screen Y movement.
+    // By using an effectiveOffset that accounts for the mirror flip before projection,
+    // we ensure labels and diagrams move in unison.
+    const effectiveOffset = this._mirror ? -carouselOffsetX : carouselOffsetX;
+
+    const cosR = Math.cos(rad);
+    const sinR = Math.sin(rad);
+
+    const visualCenterX = (CW / 2) + (effectiveOffset * cosR);
+    const visualCenterY = (CH / 2) + (effectiveOffset * sinR);
+
+    // Distances from the visual top edge in screen space
+    const offsetT = 40 * scale;
+    const offsetN = 140 * scale;
+    const vHalfHeight = this._getVisualFretboardHalfHeight();
+
+    // Labels are always pinned to the visual screen-top of the chord
+    const baseY = visualCenterY - vHalfHeight;
+    const posY = (type === 'name' ? baseY - offsetN : baseY - offsetT);
+
+    return { x: visualCenterX, y: posY };
+  }
+
+  /**
    * Desenha o nome do acorde
    */
-  drawChordName(chordName: string, offsetX: number = 0): void {
+  drawChordName(chordName: string): void {
     this._ctx.fillStyle = this._colors.chordNameColor;
     const fontSize = 75 * this._scaleFactor;
     this._ctx.font = `bold ${fontSize}px sans-serif`;
     this._ctx.textAlign = "center";
     this._ctx.textBaseline = "middle";
-    const nameX = this.diagramX + this.diagramWidth / 2;
-    const nameY = this.diagramY - (75 * this._scaleFactor);
-    this._ctx.fillText(chordName, nameX, nameY);
+
+    const pos = this._getLabelPosition('name');
+
+    // Drawing in absolute screen space
+    this._ctx.save();
+    this._ctx.translate(pos.x, pos.y);
+    this._ctx.fillText(chordName, 0, 0);
+    this._ctx.restore();
   }
 
   /**
@@ -705,7 +781,13 @@ export class ChordDrawerBase {
         const y = this.diagramY + this.diagramHeight + (this.realFretSpacing * 0.4 * this._scaleFactor);
         const x = this.fretboardX + this.horizontalPadding + i * this.stringSpacing;
         this._ctx.fillStyle = this._colors.textColor;
-        this._ctx.fillText("x", x, y);
+
+        this._ctx.save();
+        this._ctx.translate(x, y);
+        if (this._mirror) this._ctx.scale(-1, 1);
+        if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
+        this._ctx.fillText("x", 0, 0);
+        this._ctx.restore();
       }
     }
   }
@@ -716,18 +798,17 @@ export class ChordDrawerBase {
   drawTransposeIndicator(transportDisplay: number): void {
     if (transportDisplay <= 1) return;
 
-    const x = this.fretboardX - this.realFretSpacing;
-    const y = this.fretboardY + (this.realFretSpacing / 2);
+    const pos = this._getLabelPosition('transpose');
 
     this._ctx.save();
-    this._ctx.translate(x, y);
+    this._ctx.translate(pos.x, pos.y);
     this._drawTransposeIndicatorTextAtOrigin(transportDisplay);
     this._ctx.restore();
   }
 
   private _drawTransposeIndicatorTextAtOrigin(transportDisplay: number): void {
     this._ctx.fillStyle = this._colors.textColor;
-    const fontSize = 60 * this._scaleFactor;
+    const fontSize = 45 * this._scaleFactor; // Same as finger numbers
     this._ctx.font = `bold ${fontSize}px sans-serif`;
     this._ctx.textAlign = "center";
     this._ctx.textBaseline = "middle";
@@ -856,18 +937,23 @@ export class ChordDrawerBase {
   drawChord(inputChord: ChordDiagramProps, inputTransportDisplay: number, offsetX: number = 0, options: { skipFretboard?: boolean } = {}): void {
     const { finalChord, transportDisplay } = this._transposeForDisplay(inputChord, inputTransportDisplay);
 
-    if (offsetX !== 0) {
-      this.calculateWithOffset(offsetX);
-    }
+    this._applyChordSettings(finalChord);
 
     const chordName = getNome(finalChord.chord).replace(/#/g, "♯").replace(/b/g, "♭");
     const barreInfo = this._detectBarre(finalChord);
 
-    this.drawChordName(chordName, offsetX);
+    // Draw labels in screen space
+    this.drawChordName(chordName);
+    this.drawTransposeIndicator(transportDisplay);
+
+    this._ctx.save();
+    this.applyTransforms();
+
 
     if (!options.skipFretboard) {
       // Reset flag for static draw
       this._skipFretboard = false;
+      this.fretboardDrawer.drawStringNames(1, finalChord.stringNames);
       this.drawFretboard();
     }
 
@@ -886,7 +972,8 @@ export class ChordDrawerBase {
 
     this.drawFingers(finalChord.positions, barreInfo);
     this.drawAvoidedStrings(finalChord.avoid);
-    this.drawTransposeIndicator(transportDisplay);
+
+    this._ctx.restore();
   }
 
   /**
@@ -902,23 +989,37 @@ export class ChordDrawerBase {
     if (offsetX !== 0) {
       this.calculateWithOffset(offsetX);
     }
-    // Reset flag for build animation
-    this._skipFretboard = false;
+
+    this._applyChordSettings(finalChord);
 
     const chordName = getNome(finalChord.chord).replace(/#/g, "♯").replace(/b/g, "♭");
     const phases = this.calculateAnimationPhases(progress);
     const barreInfo = this._detectBarre(finalChord);
 
-
+    // Draw labels in screen space
     // Fase 1: Nome do acorde
     if (phases.chordName > 0) {
       this._ctx.save();
       this._ctx.globalAlpha = phases.chordName;
-      const translateY = (1 - phases.chordName) * -20; // Slide in from top
-      this._ctx.translate(0, translateY);
-      this.drawChordName(chordName, offsetX);
+      const translateVal = (1 - phases.chordName) * 30; // Slide in from top
+      this._applyVisualTopTranslation(translateVal);
+      this.drawChordName(chordName);
       this._ctx.restore();
     }
+
+    // Fase 9: Indicador de transposição com fade e slide
+    if (phases.transpose > 0) {
+      this._ctx.save();
+      this._ctx.globalAlpha = phases.transpose;
+      const translateVal = (1 - phases.transpose) * 30;
+      this._applyVisualTopTranslation(translateVal);
+      this.drawTransposeIndicator(transportDisplay);
+      this._ctx.restore();
+    }
+
+    this._ctx.save();
+    this.applyTransforms();
+
 
     // Fase 2-6: Fretboard (neck, stringNames, strings, frets, nut)
     // Only draw if NOT skipping fretboard
@@ -937,38 +1038,29 @@ export class ChordDrawerBase {
       this._ctx.save();
       this._ctx.globalAlpha = phases.nut;
 
-      const fretY = this.fretboardY + (barreInfo.fret - 0.5) * this.realFretSpacing;
-      let fromX = this.fretboardX + this.horizontalPadding + (barreInfo.fromString - 1) * this.stringSpacing;
-      let toX = this.fretboardX + this.horizontalPadding + (barreInfo.toString - 1) * this.stringSpacing;
-      fromX -= this.fingerRadius;
-      toX += this.fingerRadius;
-      const barreActualWidth = toX - fromX;
-      const centerX = fromX + barreActualWidth / 2;
+      const x = this._fretboardX + this.horizontalPadding;
+      const y = this._fretboardY + (barreInfo.fret - 1) * this._realFretSpacing;
+      const fromStringX = (barreInfo.fromString - 1) * this._stringSpacing;
+      const toStringX = (barreInfo.toString - 1) * this._stringSpacing;
+      const width = toStringX - fromStringX;
+      const centerX = fromStringX + width / 2;
 
-      this._ctx.translate(centerX, fretY); // Move origin to barre center
-      this._drawBarreShapeAtPosition(barreInfo.finger ?? 1, barreActualWidth);
+      this._ctx.translate(x + centerX, y + (this._realFretSpacing / 2));
+      const scaleVal = 0.5 + (phases.nut * 0.5);
+      this._ctx.scale(scaleVal, scaleVal);
+
+      this._drawAnimatedShapeAndFingerNumber(barreInfo.finger ?? 1, true, width);
       this._ctx.restore();
     }
 
     // Fase 7: Dedos com zoom in
     if (phases.fingers > 0) {
-      this._ctx.save();
-      this._ctx.globalAlpha = phases.fingers;
-      const scale = 0.5 + (phases.fingers * 0.5); // Start at 0.5, grow to 1
-
-      (Object.entries(finalChord.positions) as Array<[string, [number, number, number]]>).forEach(([key, [fret, fingerNumber]]) => {
-        const stringIndex = Number(key); // 1-based string index
-        if (fret > 0 && fingerNumber > 0) {
-          // Check if this finger is part of the barre, don't draw individually if it is
-          if (
-            barreInfo &&
-            fret === barreInfo.fret &&
-            fingerNumber === barreInfo.finger &&
-            stringIndex >= barreInfo.fromString &&
-            stringIndex <= barreInfo.toString
-          ) {
-            return;
-          }
+      const scale = 0.5 + (phases.fingers * 0.5);
+      Object.entries(finalChord.positions).forEach(([key, val]) => {
+        const [fret, fingerNumber] = val as unknown as [number, number];
+        const stringIndex = parseInt(key); // 1-based string index
+        // Don't draw if part of barre
+        if (fret > 0 && (!barreInfo || (fret !== barreInfo.fret || (stringIndex < barreInfo.fromString || stringIndex > barreInfo.toString)))) {
 
           const x = this._fretboardX + this.horizontalPadding + (stringIndex - 1) * this._stringSpacing;
           const y = this._fretboardY + (fret - 0.5) * this._realFretSpacing;
@@ -980,7 +1072,7 @@ export class ChordDrawerBase {
           this._ctx.restore();
         }
       });
-      this._ctx.restore();
+      // Removed extra restore as now handled correctly
     }
 
     // Fase 8: Cordas evitadas com zoom in
@@ -1003,32 +1095,25 @@ export class ChordDrawerBase {
           this._ctx.font = `bold ${fontSize}px sans-serif`;
           this._ctx.textAlign = "center";
           this._ctx.textBaseline = "middle";
+
+          // Counter-rotate text here because it's at origin
+          this._ctx.save();
+          if (this._mirror) this._ctx.scale(-1, 1);
+          if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
           this._ctx.fillText("x", 0, 0);
+          this._ctx.restore();
+
           this._ctx.restore();
         }
       }
       this._ctx.restore();
     }
 
-    // Fase 9: Indicador de transposição com fade e slide
-    if (phases.transpose > 0) {
-      this._ctx.save();
-      this._ctx.globalAlpha = phases.transpose;
-      const translateX = (1 - phases.transpose) * -30; // Slide in from left
-      this._ctx.translate(translateX, 0);
-      this.drawTransposeIndicator(transportDisplay);
-      this._ctx.restore();
-    }
-
+    this._ctx.restore(); // Final global restore
   }
-
 
   /**
    * Desenha um acorde completo com animação de transição de outro acorde
-   * @param currentChord - Acorde atual
-   * @param nextChord - Próximo acorde
-   * @param progress - Progresso da transição (0-1)
-   * @param offsetX - Deslocamento horizontal
    */
   drawChordWithTransition(
     currentFinalChord: ChordDiagramProps,
@@ -1039,18 +1124,16 @@ export class ChordDrawerBase {
     offsetX: number = 0,
     options: { skipFretboard?: boolean } = {}
   ): void {
-    console.log("Chord animation started (transition - current):", currentFinalChord);
-    console.log("Chord animation started (transition - next):", nextFinalChord);
     if (offsetX !== 0) {
       this.calculateWithOffset(offsetX);
     }
 
-    // Ensure fretboard will be drawn for this transition
-    this._skipFretboard = false;
-    const current = currentFinalChord; // Use directly
-    const next = nextFinalChord;       // Use directly
-    const currentTransport = currentTransportDisplay; // Use directly
-    const nextTransport = nextTransportDisplay;       // Use directly
+    this._applyChordSettings(nextFinalChord);
+
+    const current = currentFinalChord;
+    const next = nextFinalChord;
+    const currentTransport = currentTransportDisplay;
+    const nextTransport = nextTransportDisplay;
 
     const currentBarreInfo = this._detectBarre(current);
     const nextBarreInfo = this._detectBarre(next);
@@ -1059,74 +1142,59 @@ export class ChordDrawerBase {
     const nextName = getNome(next.chord).replace(/#/g, "♯").replace(/b/g, "♭");
 
     const easedProgress = easeInOutQuad(originalProgress);
+    const namePos = this._getLabelPosition('name');
+    const centerX = namePos.x;
+    const centerY = namePos.y;
 
-    const centerX = this.diagramX + this.diagramWidth / 2;
-    const centerY = this.diagramY / 2; // Roughly center Y for chord name
+    // Nome: transição (OUTSIDE applyTransforms)
+    const scaleOut = 1 - (easedProgress * 0.2);
+    const currentNameTranslateY = -easedProgress * (20 * this._scaleFactor);
+    this._drawTextWithTransform(currentName, 1 - easedProgress, scaleOut, currentNameTranslateY, centerX, centerY);
 
-    // Nome do acorde: zoom out do antigo e zoom in do novo
-    const scaleOut = 1 - (easedProgress * 0.2); // 1 -> 0.8
-    const currentNameTranslateY = -easedProgress * (20 * this._scaleFactor); // Move up, scaled
-    this._drawTextWithTransform(
-      currentName,
-      offsetX,
-      1 - easedProgress,
-      scaleOut,
-      currentNameTranslateY,
-      centerX,
-      centerY
-    );
+    const scaleIn = 0.8 + (easedProgress * 0.2);
+    const nextNameTranslateY = (1 - easedProgress) * (20 * this._scaleFactor);
+    this._drawTextWithTransform(nextName, easedProgress, scaleIn, nextNameTranslateY, centerX, centerY);
 
-    const scaleIn = 0.8 + (easedProgress * 0.2); // 0.8 -> 1 (start smaller and grow)
-    const nextNameTranslateY = (1 - easedProgress) * (20 * this._scaleFactor); // Move down, scaled
-    this._drawTextWithTransform(
-      nextName,
-      offsetX,
-      easedProgress,
-      scaleIn,
-      nextNameTranslateY,
-      centerX,
-      centerY
-    );
+    // Transpose Indicator: transição (OUTSIDE applyTransforms)
+    this.drawTransposeIndicatorWithTransition(currentTransport, nextTransport, originalProgress);
 
-    // Fretboard drawing – skip if flag is set OR options.skipFretboard is true
+    this._ctx.save();
+    this.applyTransforms();
+
+    // Fretboard cache
+    if (!this._fretboardCache) {
+      this._updateFretboardCache();
+    }
+
     if (!this._skipFretboard && !options.skipFretboard) {
+      // Interpolate string names based on progress
+      const stringNamesProgress = easedProgress; // Use eased progress for string names fade/transition
+      this.fretboardDrawer.drawStringNames(stringNamesProgress, next.stringNames); // Pass target chord names
       this.drawFretboard();
     }
-    // When transition finishes, set flag to skip further fretboard draws for this chord
+
     if (originalProgress >= 1) {
       this._skipFretboard = true;
+    } else {
+      this._skipFretboard = false;
     }
 
-    // Pestana: zoom in/out ou interpolação
+    // Helpers
     this.drawBarreWithTransition(currentBarreInfo, nextBarreInfo, originalProgress);
-
-    // Dedos: transição de posição com zoom in/out
     this.drawFingersWithTransition(current.positions, next.positions, currentBarreInfo, nextBarreInfo, originalProgress);
-
-    // Cordas evitadas: zoom in/out
     this.drawAvoidedStringsWithTransition(current.avoid, next.avoid, originalProgress);
 
-    // Indicador de transposição: zoom in/out
-    this.drawTransposeIndicatorWithTransition(currentTransport, nextTransport, originalProgress);
+    this._ctx.restore();
   }
 
-  /**
-   * Desenha pestana com transição
-   */
-  private drawBarreWithTransition(
-    currentBarre: BarreInfo | null,
-    nextBarre: BarreInfo | null,
-    originalProgress: number
-  ): void {
+  private drawBarreWithTransition(currentBarre: BarreInfo | null, nextBarre: BarreInfo | null, originalProgress: number): void {
     const progress = easeInOutQuad(originalProgress);
-
     if (!currentBarre && !nextBarre) return;
 
     if (currentBarre && nextBarre) {
       const fret = currentBarre.fret + (nextBarre.fret - currentBarre.fret) * progress;
       const fromString = currentBarre.fromString + (nextBarre.fromString - currentBarre.fromString) * progress;
       const toString = currentBarre.toString + (nextBarre.toString - currentBarre.toString) * progress;
-      // Interpolate finger
       const finger = Math.round((currentBarre.finger ?? 1) + ((nextBarre.finger ?? 1) - (currentBarre.finger ?? 1)) * progress);
 
       const fretY = this.fretboardY + (fret - 0.5) * this.realFretSpacing;
@@ -1142,57 +1210,36 @@ export class ChordDrawerBase {
       this._drawBarreShapeAtPosition(finger, barreActualWidth);
       this._ctx.restore();
     } else if (currentBarre && !nextBarre) {
-      // Pestana desaparece - zoom out
-      const scale = 1 + (progress * 0.5); // 1 -> 1.5
-      const y = this._fretboardY + (currentBarre.fret - 0.5) * this._realFretSpacing;
-
-      const fromStringIndex = currentBarre.fromString - 1;
-      const toStringIndex = currentBarre.toString - 1;
-      const fromX = this._fretboardX + this.horizontalPadding + fromStringIndex * this._stringSpacing;
-      const toX = this._fretboardX + this.horizontalPadding + toStringIndex * this._stringSpacing;
+      const scale = 1 + (progress * 0.5);
+      const y = this.fretboardY + (currentBarre.fret - 0.5) * this.realFretSpacing;
+      const fromX = this.fretboardX + this.horizontalPadding + (currentBarre.fromString - 1) * this.stringSpacing;
+      const toX = this.fretboardX + this.horizontalPadding + (currentBarre.toString - 1) * this.stringSpacing;
       const centerX = fromX + (toX - fromX) / 2;
 
-      withCanvasTransformAround(
-        this._ctx,
-        { centerX, centerY: y, opacity: 1 - progress, scale },
-        () => {
-          let fromX = this.fretboardX + this.horizontalPadding + (currentBarre.fromString - 1) * this.stringSpacing;
-          let toX = this.fretboardX + this.horizontalPadding + (currentBarre.toString - 1) * this.stringSpacing;
-          fromX -= this.fingerRadius;
-          toX += this.fingerRadius;
-          const barreActualWidth = toX - fromX;
-          this._drawBarreShapeAtPosition(currentBarre.finger ?? 1, barreActualWidth);
-        }
-      );
+      withCanvasTransformAround(this._ctx, { centerX, centerY: y, opacity: 1 - progress, scale }, () => {
+        let fX = this.fretboardX + this.horizontalPadding + (currentBarre.fromString - 1) * this.stringSpacing;
+        let tX = this.fretboardX + this.horizontalPadding + (currentBarre.toString - 1) * this.stringSpacing;
+        fX -= this.fingerRadius;
+        tX += this.fingerRadius;
+        this._drawBarreShapeAtPosition(currentBarre.finger ?? 1, tX - fX);
+      });
     } else if (!currentBarre && nextBarre) {
-      // Pestana aparece - zoom in
-      const scale = 1.5 - (progress * 0.5); // 1.5 -> 1
-      const y = this._fretboardY + (nextBarre.fret - 0.5) * this._realFretSpacing;
-
-      const fromStringIndex = nextBarre.fromString - 1;
-      const toStringIndex = nextBarre.toString - 1;
-      const fromX = this._fretboardX + this.horizontalPadding + fromStringIndex * this._stringSpacing;
-      const toX = this._fretboardX + this.horizontalPadding + toStringIndex * this._stringSpacing;
+      const scale = 1.5 - (progress * 0.5);
+      const y = this.fretboardY + (nextBarre.fret - 0.5) * this.realFretSpacing;
+      const fromX = this.fretboardX + this.horizontalPadding + (nextBarre.fromString - 1) * this.stringSpacing;
+      const toX = this.fretboardX + this.horizontalPadding + (nextBarre.toString - 1) * this.stringSpacing;
       const centerX = fromX + (toX - fromX) / 2;
 
-      withCanvasTransformAround(
-        this._ctx,
-        { centerX, centerY: y, opacity: progress, scale },
-        () => {
-          let fromX = this.fretboardX + this.horizontalPadding + (nextBarre.fromString - 1) * this.stringSpacing;
-          let toX = this.fretboardX + this.horizontalPadding + (nextBarre.toString - 1) * this.stringSpacing;
-          fromX -= this.fingerRadius;
-          toX += this.fingerRadius;
-          const barreActualWidth = toX - fromX;
-          this._drawBarreShapeAtPosition(nextBarre.finger ?? 1, barreActualWidth);
-        }
-      );
+      withCanvasTransformAround(this._ctx, { centerX, centerY: y, opacity: progress, scale }, () => {
+        let fX = this.fretboardX + this.horizontalPadding + (nextBarre.fromString - 1) * this.stringSpacing;
+        let tX = this.fretboardX + this.horizontalPadding + (nextBarre.toString - 1) * this.stringSpacing;
+        fX -= this.fingerRadius;
+        tX += this.fingerRadius;
+        this._drawBarreShapeAtPosition(nextBarre.finger ?? 1, tX - fX);
+      });
     }
   }
 
-  /**
-   * Desenha dedos com transição de posição
-   */
   private drawFingersWithTransition(
     currentPositions: Position,
     nextPositions: Position,
@@ -1201,176 +1248,118 @@ export class ChordDrawerBase {
     originalProgress: number
   ): void {
     const progress = easeInOutQuad(originalProgress);
-
-    // Mapear dedos por número
     const currentFingers = new Map<number, { string: number; fret: number }>();
     const nextFingers = new Map<number, { string: number; fret: number }>();
 
     (Object.entries(currentPositions) as Array<[string, [number, number, number]]>).forEach(([key, [fret, finger]]) => {
       const stringIndex = Number(key);
-      if (
-        currentBarreInfo &&
-        fret === currentBarreInfo.fret &&
-        finger === currentBarreInfo.finger &&
-        stringIndex >= currentBarreInfo.fromString &&
-        stringIndex <= currentBarreInfo.toString
-      ) {
-        return;
-      }
-
-      if (fret > 0 && finger) {
-        currentFingers.set(finger, { string: stringIndex, fret });
-      }
+      if (currentBarreInfo && fret === currentBarreInfo.fret && finger === currentBarreInfo.finger && stringIndex >= currentBarreInfo.fromString && stringIndex <= currentBarreInfo.toString) return;
+      if (fret > 0 && finger) currentFingers.set(finger, { string: stringIndex, fret });
     });
 
     (Object.entries(nextPositions) as Array<[string, [number, number, number]]>).forEach(([key, [fret, finger]]) => {
       const stringIndex = Number(key);
-      if (
-        nextBarreInfo &&
-        fret === nextBarreInfo.fret &&
-        finger === nextBarreInfo.finger &&
-        stringIndex >= nextBarreInfo.fromString &&
-        stringIndex <= nextBarreInfo.toString
-      ) {
-        return;
-      }
-
-      if (fret > 0 && finger) {
-        nextFingers.set(finger, { string: stringIndex, fret });
-      }
+      if (nextBarreInfo && fret === nextBarreInfo.fret && finger === nextBarreInfo.finger && stringIndex >= nextBarreInfo.fromString && stringIndex <= nextBarreInfo.toString) return;
+      if (fret > 0 && finger) nextFingers.set(finger, { string: stringIndex, fret });
     });
 
     const allFingers = new Set([...currentFingers.keys(), ...nextFingers.keys()]);
 
     allFingers.forEach((fingerNum) => {
-      const current = currentFingers.get(fingerNum);
-      const next = nextFingers.get(fingerNum);
-
+      const curr = currentFingers.get(fingerNum);
+      const nxt = nextFingers.get(fingerNum);
       let x: number, y: number, opacity: number, scale: number;
-      let drawFingerNumber: number;
 
-      if (current && next) {
-        // Dedo existe em ambos - interpolar posição
-        const currentX = this._fretboardX + this.horizontalPadding + (current.string - 1) * this._stringSpacing;
-        const currentY = this._fretboardY + (current.fret - 0.5) * this._realFretSpacing;
-        const nextX = this._fretboardX + this.horizontalPadding + (next.string - 1) * this._stringSpacing;
-        const nextY = this._fretboardY + (next.fret - 0.5) * this._realFretSpacing;
+      if (curr && nxt) {
+        const cX = this.fretboardX + this.horizontalPadding + (curr.string - 1) * this.stringSpacing;
+        const cY = this.fretboardY + (curr.fret - 0.5) * this.realFretSpacing;
+        const nX = this.fretboardX + this.horizontalPadding + (nxt.string - 1) * this.stringSpacing;
+        const nY = this.fretboardY + (nxt.fret - 0.5) * this.realFretSpacing;
+        x = cX + (nX - cX) * progress;
+        y = cY + (nY - cY) * progress;
+        opacity = 1; scale = 1;
+      } else if (curr && !nxt) {
+        x = this.fretboardX + this.horizontalPadding + (curr.string - 1) * this.stringSpacing;
+        y = this.fretboardY + (curr.fret - 0.5) * this.realFretSpacing;
+        opacity = 1 - progress; scale = 1 - (progress * 0.5);
+      } else if (!curr && nxt) {
+        x = this.fretboardX + this.horizontalPadding + (nxt.string - 1) * this.stringSpacing;
+        y = this.fretboardY + (nxt.fret - 0.5) * this.realFretSpacing;
+        opacity = progress; scale = 0.5 + (progress * 0.5);
+      } else return;
 
-        x = currentX + (nextX - currentX) * progress;
-        y = currentY + (nextY - currentY) * progress;
-        opacity = 1;
-        scale = 1;
-        drawFingerNumber = fingerNum;
-      } else if (current && !next) {
-        // Dedo existe no anterior, não existe no novo: some com zoom out
-        x = this._fretboardX + this.horizontalPadding + (current.string - 1) * this._stringSpacing;
-        y = this._fretboardY + (current.fret - 0.5) * this._realFretSpacing;
-        opacity = 1 - progress;
-        scale = 1 - (progress * 0.5); // 1.5 -> 1 (zoom out)
-        drawFingerNumber = fingerNum;
-      } else if (!current && next) {
-        // Dedo não existe no anterior, existe no novo: aparece com zoom in
-        x = this._fretboardX + this.horizontalPadding + (next.string - 1) * this._stringSpacing;
-        y = this._fretboardY + (next.fret - 0.5) * this._realFretSpacing;
-        opacity = progress;
-        scale = 0.5 + (progress * 0.5); // 0.5 -> 1.0 (zoom in)
-        drawFingerNumber = fingerNum;
-      } else {
-        return;
-      }
-
-      withCanvasTransformAtPoint(
-        this._ctx,
-        { x, y, opacity, scale },
-        () => this.drawFingerAtPosition(drawFingerNumber)
-      );
+      withCanvasTransformAtPoint(this._ctx, { x, y, opacity, scale }, () => this.drawFingerAtPosition(fingerNum));
     });
   }
 
-  /**
-   * Desenha cordas evitadas com transição
-   */
-  private drawAvoidedStringsWithTransition(
-    currentAvoid: number[] | undefined,
-    nextAvoid: number[] | undefined,
-    originalProgress: number
-  ): void {
+  private drawAvoidedStringsWithTransition(currentAvoid: number[] | undefined, nextAvoid: number[] | undefined, originalProgress: number): void {
     const progress = easeInOutQuad(originalProgress);
+    const curr = currentAvoid || [];
+    const nxt = nextAvoid || [];
+    const all = new Set([...curr, ...nxt]);
 
-    const current = currentAvoid || [];
-    const next = nextAvoid || [];
-    const allStrings = new Set([...current, ...next]);
-
-    allStrings.forEach((stringNum) => {
-      const inCurrent = current.includes(stringNum);
-      const inNext = next.includes(stringNum);
-
-      const y = this._diagramY + this._diagramHeight + this._realFretSpacing * 0.4;
-      const x = this._fretboardX + this.horizontalPadding + (stringNum - 1) * this._stringSpacing;
-
+    all.forEach((stringNum) => {
+      const inCurr = curr.includes(stringNum);
+      const inNxt = nxt.includes(stringNum);
+      const y = this.diagramY + this.diagramHeight + this.realFretSpacing * 0.4;
+      const x = this.fretboardX + this.horizontalPadding + (stringNum - 1) * this.stringSpacing;
       let opacity: number, scale: number;
 
-      if (inCurrent && inNext) {
-        // X existe em ambos
-        opacity = 1;
-        scale = 1;
-      } else if (inCurrent && !inNext) {
-        // X desaparece - zoom out
-        opacity = 1 - progress;
-        scale = 1 + (progress * 0.5); // 1 -> 1.5
-      } else if (!inCurrent && inNext) {
-        // X aparece - zoom in
-        opacity = progress;
-        scale = 1.5 - (progress * 0.5); // 1.5 -> 1
-      } else {
-        return;
-      }
+      if (inCurr && inNxt) { opacity = 1; scale = 1; }
+      else if (inCurr && !inNxt) { opacity = 1 - progress; scale = 1 + (progress * 0.5); }
+      else if (!inCurr && inNxt) { opacity = progress; scale = 1.5 - (progress * 0.5); }
+      else return;
 
-      // Draw function for the "x"
-      const drawX = () => {
+      withCanvasTransformAtPoint(this._ctx, { x, y, opacity, scale }, () => {
         this._ctx.fillStyle = this._colors.textColor;
-        const fontSize = 45 * this._scaleFactor; // Scaled font size
+        const fontSize = 45 * this._scaleFactor;
         this._ctx.font = `bold ${fontSize}px sans-serif`;
         this._ctx.textAlign = "center";
         this._ctx.textBaseline = "middle";
+        // Counter-rotate text
+        this._ctx.save();
+        if (this._mirror) this._ctx.scale(-1, 1);
+        if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
         this._ctx.fillText("x", 0, 0);
-      }
-
-      withCanvasTransformAtPoint(this._ctx, { x, y, opacity, scale }, drawX);
+        this._ctx.restore();
+      });
     });
   }
 
-  /**
-   * Desenha indicador de transposição com transição
-   */
-  private drawTransposeIndicatorWithTransition(
-    currentTransport: number,
-    nextTransport: number,
-    originalProgress: number
-  ): void {
+  private drawTransposeIndicatorWithTransition(currentTransport: number, nextTransport: number, originalProgress: number): void {
     const progress = easeInOutQuad(originalProgress);
-
-    const x = this._fretboardX - this._realFretSpacing;
-    const y = this._fretboardY + (this._realFretSpacing / 2);
-
-    const drawAtOrigin = (transport: number) => this._drawTransposeIndicatorTextAtOrigin(transport);
+    const pos = this._getLabelPosition('transpose');
+    const { x, y } = pos;
+    const drawAtOrigin = (transport: number) => {
+      this._ctx.save();
+      // Drawing in absolute space
+      this._drawTransposeIndicatorTextAtOrigin(transport);
+      this._ctx.restore();
+    };
 
     if (currentTransport > 1 && nextTransport > 1) {
       withCanvasTransformAtPoint(this._ctx, { x, y, opacity: 1, scale: 1 }, () => drawAtOrigin(currentTransport));
-      return;
-    }
-
-    if (currentTransport > 1 && nextTransport <= 1) {
-      // desaparece: escala 1 -> 0.5, opacidade 1 -> 0
+    } else if (currentTransport > 1 && nextTransport <= 1) {
       const scale = 1 - (progress * 0.5);
       withCanvasTransformAtPoint(this._ctx, { x, y, opacity: 1 - progress, scale }, () => drawAtOrigin(currentTransport));
-      return;
-    }
-
-    if (currentTransport <= 1 && nextTransport > 1) {
-      // aparece: escala 0.5 -> 1, opacidade 0 -> 1
+    } else if (currentTransport <= 1 && nextTransport > 1) {
       const scale = 0.5 + (progress * 0.5);
       withCanvasTransformAtPoint(this._ctx, { x, y, opacity: progress, scale }, () => drawAtOrigin(nextTransport));
     }
+  }
+
+  private _drawTextWithTransform(text: string, opacity: number, scale: number, translateY: number, centerX: number, centerY: number): void {
+    this._ctx.save();
+    this._ctx.globalAlpha = opacity;
+    this._ctx.translate(centerX, centerY + translateY);
+    this._ctx.scale(scale, scale);
+
+    this._ctx.fillStyle = this._colors.chordNameColor;
+    const fontSize = 75 * this._scaleFactor;
+    this._ctx.font = `bold ${fontSize}px sans-serif`;
+    this._ctx.textAlign = "center";
+    this._ctx.textBaseline = "middle";
+    this._ctx.fillText(text, 0, 0);
+    this._ctx.restore();
   }
 }

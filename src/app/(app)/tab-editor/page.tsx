@@ -42,6 +42,20 @@ import {
     getMeasureCapacity,
     decomposeValue
 } from '@/lib/tab-editor/utils/musicMath';
+import { useUndoRedo } from '@/hooks/use-undo-redo';
+
+interface TabEditorState {
+    measures: MeasureData[];
+    settings: GlobalSettings;
+    scoreStyle: ScoreStyle;
+    selectedNoteIds: string[];
+    editingNoteId: string | null;
+    activePanel: 'studio' | 'library' | 'mixer' | 'customize';
+    activeDuration: Duration;
+    activePositionIndex: number;
+    currentMeasureIndex: number;
+    selectedMeasureId: string | null;
+}
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -51,7 +65,6 @@ export default function TabEditorPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
     const isMobile = useIsMobile();
-    const [activePanel, setActivePanel] = useState<'studio' | 'library' | 'mixer' | 'customize'>('studio');
 
     const editorNavItems: NavItem[] = [
         { id: "studio", icon: Music2, label: "Editor" },
@@ -63,10 +76,11 @@ export default function TabEditorPage() {
         setIsClient(true);
     }, []);
 
-    const [selectedMeasureId, setSelectedMeasureId] = useState<string | null>(null);
+    const [clipboard, setClipboard] = useState<MeasureData | null>(null);
 
-    const [measures, setMeasures] = useState<MeasureData[]>([
-        {
+    // Unified Undo/Redo State
+    const { state, setState, undo, redo, canUndo, canRedo } = useUndoRedo<TabEditorState>({
+        measures: [{
             id: generateId(),
             isCollapsed: false,
             showClef: true,
@@ -76,29 +90,94 @@ export default function TabEditorPage() {
                 { id: generateId(), positions: [{ fret: '7', string: '3' }], duration: 'q', type: 'note', decorators: {}, accidental: 'none' },
                 { id: generateId(), positions: [{ fret: '9', string: '3' }], duration: 'q', type: 'note', decorators: {}, accidental: 'none' },
             ]
-        }
-    ]);
-
-    const [clipboard, setClipboard] = useState<MeasureData | null>(null);
-    const [activeDuration, setActiveDuration] = useState<Duration>('q');
-
-    const [settings, setSettings] = useState<GlobalSettings>({
-        clef: 'treble',
-        key: 'C',
-        time: '4/4',
-        bpm: 120,
-        showNotation: true,
-        showTablature: true
+        }],
+        settings: {
+            clef: 'treble',
+            key: 'C',
+            time: '4/4',
+            bpm: 120,
+            showNotation: true,
+            showTablature: true
+        },
+        scoreStyle: DEFAULT_SCORE_STYLE,
+        selectedNoteIds: [],
+        editingNoteId: null,
+        activePanel: 'studio',
+        activeDuration: 'q',
+        activePositionIndex: 0,
+        currentMeasureIndex: 0,
+        selectedMeasureId: null
     });
 
-    const [scoreStyle, setScoreStyle] = useState<ScoreStyle>(DEFAULT_SCORE_STYLE);
-    const [selectedNoteIds, setSelectedNoteIds] = useState<string[]>([]);
-    const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-    const [currentMeasureIndex, setCurrentMeasureIndex] = useState(0);
+    const {
+        measures,
+        settings,
+        scoreStyle,
+        selectedNoteIds,
+        editingNoteId,
+        activePanel,
+        activeDuration,
+        activePositionIndex,
+        currentMeasureIndex,
+        selectedMeasureId
+    } = state;
+
+    // Helper setters to maintain compatibility without rewriting everything
+    const setMeasures = (newMeasures: MeasureData[] | ((prev: MeasureData[]) => MeasureData[])) => {
+        setState(prev => ({
+            ...prev,
+            measures: typeof newMeasures === 'function' ? newMeasures(prev.measures) : newMeasures
+        }));
+    };
+
+    const setSettings = (newSettings: GlobalSettings | ((prev: GlobalSettings) => GlobalSettings)) => {
+        setState(prev => ({
+            ...prev,
+            settings: typeof newSettings === 'function' ? newSettings(prev.settings) : newSettings
+        }));
+    };
+
+    const setScoreStyle = (newStyle: ScoreStyle | ((prev: ScoreStyle) => ScoreStyle)) => {
+        setState(prev => ({
+            ...prev,
+            scoreStyle: typeof newStyle === 'function' ? newStyle(prev.scoreStyle) : newStyle
+        }));
+    };
+
+    const setSelectedNoteIds = (newIds: string[] | ((prev: string[]) => string[])) => {
+        setState(prev => ({
+            ...prev,
+            selectedNoteIds: typeof newIds === 'function' ? newIds(prev.selectedNoteIds) : newIds
+        }));
+    };
+
+    const setEditingNoteId = (newId: string | null) => {
+        setState(prev => ({ ...prev, editingNoteId: newId }));
+    };
+
+    const setActivePanel = (panel: 'studio' | 'library' | 'mixer' | 'customize') => {
+        setState(prev => ({ ...prev, activePanel: panel }));
+    };
+
+    const setActiveDuration = (duration: Duration) => {
+        setState(prev => ({ ...prev, activeDuration: duration }));
+    };
+
+    const setActivePositionIndex = (index: number) => {
+        setState(prev => ({ ...prev, activePositionIndex: index }));
+    };
+
+    const setCurrentMeasureIndex = (indexOrFn: number | ((prev: number) => number)) => {
+        setState(prev => ({
+            ...prev,
+            currentMeasureIndex: typeof indexOrFn === 'function' ? indexOrFn(prev.currentMeasureIndex) : indexOrFn
+        }));
+    };
+
+    // const [currentMeasureIndex, setCurrentMeasureIndex] = useState(0); // Removed local state
     const [isPlaying, setIsPlaying] = useState(false);
     const [playbackPosition, setPlaybackPosition] = useState(0);
     const [isLooping, setIsLooping] = useState(false);
-    const [activePositionIndex, setActivePositionIndex] = useState(0);
 
     // Rendering State
     const scorePreviewRef = useRef<ScorePreviewRef>(null);
@@ -177,13 +256,22 @@ export default function TabEditorPage() {
     }, [isPlaying, playbackPosition, isLooping]);
 
     const handleAddMeasure = () => {
-        setMeasures([...measures, {
-            id: generateId(),
-            isCollapsed: false,
-            showClef: false,
-            showTimeSig: false,
-            notes: []
-        }]);
+        setState(prev => {
+            const newMeasure: MeasureData = {
+                id: generateId(),
+                isCollapsed: false,
+                showClef: false,
+                showTimeSig: false,
+                notes: []
+            };
+            const newMeasures = [...prev.measures, newMeasure];
+            return {
+                ...prev,
+                measures: newMeasures,
+                currentMeasureIndex: newMeasures.length - 1,
+                selectedMeasureId: newMeasure.id
+            };
+        });
     };
 
     const handleUpdateMeasure = (id: string, updates: Partial<MeasureData>) => {
@@ -191,7 +279,10 @@ export default function TabEditorPage() {
     };
 
     const handleToggleCollapse = (measureId: string) => {
-        setMeasures(measures.map(m => m.id === measureId ? { ...m, isCollapsed: !m.isCollapsed } : m));
+        setState(prev => ({
+            ...prev,
+            measures: prev.measures.map(m => m.id === measureId ? { ...m, isCollapsed: !m.isCollapsed } : m)
+        }), { overwrite: true });
     };
 
     const handleCopyMeasure = (measureId: string) => {
@@ -201,47 +292,116 @@ export default function TabEditorPage() {
 
     const handlePasteMeasure = () => {
         if (!clipboard) return;
-        const newMeasure: MeasureData = {
-            ...clipboard,
-            id: generateId(),
-            isCollapsed: false,
-            notes: clipboard.notes.map(n => ({ ...n, id: generateId() }))
-        };
-        setMeasures([...measures, newMeasure]);
+        setState(prev => {
+            const newMeasure: MeasureData = {
+                ...clipboard,
+                id: generateId(),
+                isCollapsed: false,
+                notes: clipboard.notes.map(n => ({ ...n, id: generateId() }))
+            };
+            const newMeasures = [...prev.measures, newMeasure];
+            return {
+                ...prev,
+                measures: newMeasures,
+                currentMeasureIndex: newMeasures.length - 1, // Focus on pasted measure
+                selectedMeasureId: newMeasure.id
+            };
+        });
     };
 
     const handleReorderMeasures = (fromIndex: number, toIndex: number) => {
         if (fromIndex === toIndex) return;
-        const newMeasures = [...measures];
-        const [moved] = newMeasures.splice(fromIndex, 1);
-        newMeasures.splice(toIndex, 0, moved);
-        setMeasures(newMeasures);
+        setState(prev => {
+            const newMeasures = [...prev.measures];
+            const [moved] = newMeasures.splice(fromIndex, 1);
+            newMeasures.splice(toIndex, 0, moved);
+
+            // If the currently viewed measure moved, update the index to follow it
+            let newCurrentIndex = prev.currentMeasureIndex;
+            if (prev.currentMeasureIndex === fromIndex) {
+                newCurrentIndex = toIndex;
+            } else if (fromIndex < prev.currentMeasureIndex && toIndex >= prev.currentMeasureIndex) {
+                newCurrentIndex--;
+            } else if (fromIndex > prev.currentMeasureIndex && toIndex <= prev.currentMeasureIndex) {
+                newCurrentIndex++;
+            }
+
+            return {
+                ...prev,
+                measures: newMeasures,
+                currentMeasureIndex: newCurrentIndex
+            };
+        });
     };
 
     const handleSelectMeasure = (id: string) => {
-        setSelectedMeasureId(prev => prev === id ? null : id);
-        setSelectedNoteIds([]);
-        setEditingNoteId(null);
+        setState(prev => {
+            const isSame = prev.selectedMeasureId === id;
+            const newSelectedId = isSame ? null : id;
+
+            // Find index of the measure being selected (if any)
+            const targetIndex = prev.measures.findIndex(m => m.id === id);
+
+            // If selecting a new measure, update currentMeasureIndex
+            // If deselecting, keep current index
+            const newIndex = (targetIndex !== -1 && !isSame)
+                ? targetIndex
+                : prev.currentMeasureIndex;
+
+            return {
+                ...prev,
+                selectedNoteIds: [],
+                editingNoteId: null,
+                selectedMeasureId: newSelectedId,
+                currentMeasureIndex: newIndex
+            };
+        }, { overwrite: true });
     };
 
     const handleDeselectAll = () => {
-        setSelectedNoteIds([]);
-        setEditingNoteId(null);
-        setSelectedMeasureId(null);
+        setState(prev => ({
+            ...prev,
+            selectedNoteIds: [],
+            editingNoteId: null,
+            selectedMeasureId: null
+        }), { overwrite: true });
     };
 
     const handleRemoveNote = (noteId: string) => {
-        setMeasures(prev => prev.map(m => ({
-            ...m,
-            notes: m.notes.filter(n => n.id !== noteId)
-        })));
-        setSelectedNoteIds(prev => prev.filter(id => id !== noteId));
-        if (editingNoteId === noteId) setEditingNoteId(null);
+        setState(prev => {
+            let targetMeasureIndex = prev.currentMeasureIndex;
+            let targetMeasureId = prev.selectedMeasureId;
+
+            const newMeasures = prev.measures.map((m, idx) => {
+                const found = m.notes.some(n => n.id === noteId);
+                if (found) {
+                    targetMeasureIndex = idx;
+                    targetMeasureId = m.id;
+                    return {
+                        ...m,
+                        notes: m.notes.filter(n => n.id !== noteId)
+                    };
+                }
+                return m;
+            });
+
+            return {
+                ...prev,
+                measures: newMeasures,
+                selectedNoteIds: prev.selectedNoteIds.filter(id => id !== noteId),
+                editingNoteId: prev.editingNoteId === noteId ? null : prev.editingNoteId,
+                currentMeasureIndex: targetMeasureIndex,
+                selectedMeasureId: targetMeasureId
+            };
+        });
     };
 
     const handleNoteRhythmChange = (noteId: string, newDuration?: Duration, newDot?: boolean) => {
-        setMeasures(prevMeasures => {
-            return prevMeasures.map(m => {
+        setState(prev => {
+            const measureIndex = prev.measures.findIndex(m => m.notes.some(n => n.id === noteId));
+            const targetMeasureId = measureIndex !== -1 ? prev.measures[measureIndex].id : prev.selectedMeasureId;
+
+            const newMeasures = prev.measures.map(m => {
                 const noteIndex = m.notes.findIndex(n => n.id === noteId);
                 if (noteIndex === -1) return m;
 
@@ -307,7 +467,7 @@ export default function TabEditorPage() {
                     newNotes.splice(noteIndex + 1, 0, ...restsToAdd);
                 }
 
-                const capacity = getMeasureCapacity(settings.time);
+                const capacity = getMeasureCapacity(prev.settings.time);
                 let total = 0;
                 const finalNotes: NoteData[] = [];
                 for (const n of newNotes) {
@@ -333,68 +493,108 @@ export default function TabEditorPage() {
 
                 return { ...m, notes: finalNotes };
             });
+
+            return {
+                ...prev,
+                measures: newMeasures,
+                currentMeasureIndex: measureIndex !== -1 ? measureIndex : prev.currentMeasureIndex,
+                selectedMeasureId: targetMeasureId || prev.selectedMeasureId
+            };
         });
     };
 
     const handleAddNote = (measureId: string, durationOverride?: Duration) => {
-        const measure = measures.find(m => m.id === measureId);
-        if (!measure) return;
+        setState(prev => {
+            const measureIndex = prev.measures.findIndex(m => m.id === measureId);
+            if (measureIndex === -1) return prev; // Should not happen
 
-        const durationToAdd = durationOverride || activeDuration;
+            const measure = prev.measures[measureIndex];
+            const durationToAdd = durationOverride || prev.activeDuration;
 
-        const currentTotal = measure.notes.reduce((sum, n) => sum + getNoteDurationValue(n.duration, !!n.decorators.dot), 0);
-        const capacity = getMeasureCapacity(settings.time);
-        const newNoteValue = getNoteDurationValue(durationToAdd, false);
+            const currentTotal = measure.notes.reduce((sum, n) => sum + getNoteDurationValue(n.duration, !!n.decorators.dot), 0);
+            const capacity = getMeasureCapacity(prev.settings.time);
+            const newNoteValue = getNoteDurationValue(durationToAdd, false);
 
-        if (currentTotal + newNoteValue > capacity + 0.001) {
-            const newMeasureId = generateId();
-            const newNote = {
-                id: generateId(),
-                positions: [{ fret: '0', string: '3' }],
-                duration: durationToAdd,
-                type: 'note' as const,
-                decorators: {},
-                accidental: 'none' as const
+            let newMeasures = [...prev.measures];
+            let newMeasureFullIndex = measureIndex;
+            let targetMeasureId = measureId;
+
+            if (currentTotal + newNoteValue > capacity + 0.001) {
+                // Overflow logic
+                const newMeasureId = generateId();
+                const newNote = {
+                    id: generateId(),
+                    positions: [{ fret: '0', string: '3' }],
+                    duration: durationToAdd,
+                    type: 'note' as const,
+                    decorators: {},
+                    accidental: 'none' as const
+                };
+                newMeasures.splice(measureIndex + 1, 0, {
+                    id: newMeasureId,
+                    isCollapsed: false,
+                    showClef: false,
+                    showTimeSig: false,
+                    notes: [newNote]
+                });
+                newMeasureFullIndex = measureIndex + 1;
+                targetMeasureId = newMeasureId;
+            } else {
+                newMeasures = prev.measures.map((m, idx) => {
+                    if (idx === measureIndex) {
+                        return {
+                            ...m,
+                            notes: [...m.notes, { id: generateId(), positions: [{ fret: '0', string: '3' }], duration: durationToAdd, type: 'note', decorators: {}, accidental: 'none' }]
+                        };
+                    }
+                    return m;
+                });
+            }
+
+            return {
+                ...prev,
+                measures: newMeasures,
+                currentMeasureIndex: newMeasureFullIndex,
+                selectedMeasureId: targetMeasureId // Sync selection
             };
-            const newMeasures = [...measures];
-            const currentIndex = measures.findIndex(m => m.id === measureId);
-            newMeasures.splice(currentIndex + 1, 0, {
-                id: newMeasureId,
-                isCollapsed: false,
-                showClef: false,
-                showTimeSig: false,
-                notes: [newNote]
-            });
-            setMeasures(newMeasures);
-        } else {
-            setMeasures(measures.map(m => {
-                if (m.id === measureId) {
-                    return {
-                        ...m,
-                        notes: [...m.notes, { id: generateId(), positions: [{ fret: '0', string: '3' }], duration: durationToAdd, type: 'note', decorators: {}, accidental: 'none' }]
-                    };
-                }
-                return m;
-            }));
-        }
+        });
     };
 
     const handleSelectNote = (id: string, multi: boolean) => {
-        if (multi) setSelectedNoteIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-        else {
-            setSelectedNoteIds([id]);
-            setEditingNoteId(id);
-            setActivePositionIndex(0); // Reset to first note of chord
+        if (multi) {
+            setState(prev => ({
+                ...prev,
+                selectedNoteIds: prev.selectedNoteIds.includes(id)
+                    ? prev.selectedNoteIds.filter(i => i !== id)
+                    : [...prev.selectedNoteIds, id]
+            }), { overwrite: true });
+        } else {
+            // Updated to perform atomic update on state AND focus the measure
+            setState(prev => {
+                // Auto-focus the measure containing this note
+                const measureIndex = prev.measures.findIndex(m => m.notes.some(n => n.id === id));
+                const measureId = measureIndex !== -1 ? prev.measures[measureIndex].id : prev.selectedMeasureId;
 
-            // Auto-focus the measure containing this note
-            const measureIndex = measures.findIndex(m => m.notes.some(n => n.id === id));
-            if (measureIndex !== -1) {
-                setCurrentMeasureIndex(measureIndex);
-            }
+                return {
+                    ...prev,
+                    selectedNoteIds: [id],
+                    editingNoteId: id,
+                    activePositionIndex: 0,
+                    currentMeasureIndex: measureIndex !== -1 ? measureIndex : prev.currentMeasureIndex,
+                    selectedMeasureId: measureId
+                };
+            }, { overwrite: true });
         }
     };
 
     const updateSelectedNotes = (updates: Partial<NoteData> | ((n: NoteData) => Partial<NoteData>)) => {
+        // Warning: This simplistic updater uses 'setMeasures' which might bypass 'setState' for other fields
+        // But since we need to update state atomically, let's rewrite it to use setState if possible, 
+        // OR rely on it if it's just updating notes content.
+        // However, updating note content usually doesn't change focus/selection unless we want it to.
+        // The user specifically asked about "alterar uma nota" (altering a note).
+        // If `updateSelectedNotes` is used for things like string/fret change, we should probably ensure proper state flow.
+        // But for now, let's stick to strict replacement of the block requested.
         setMeasures(measures.map(m => ({
             ...m,
             notes: m.notes.map(n => {
@@ -466,12 +666,35 @@ export default function TabEditorPage() {
             return;
         }
 
-        if (['s', 'h', 'p', 'b', 't', 'l'].includes(code) && selectedNoteIds.length === 2) {
+        const transitions = ['s', 'h', 'p', 't', 'l'];
+
+        // Robust Toggle Helper (Checkbox behavior)
+        const updateTechniqueString = (current: string | undefined, newCode: string): string | undefined => {
+            const currentStr = current || '';
+            const charSet = new Set(currentStr.split(''));
+
+            if (charSet.has(newCode)) {
+                charSet.delete(newCode);
+            } else {
+                charSet.add(newCode);
+            }
+
+            const res = Array.from(charSet).join('');
+            return res.length > 0 ? res : undefined;
+        };
+
+        // Combine selections to make sure Sidebar note is ALWAYS updated
+        const targetIds = Array.from(new Set([...selectedNoteIds, ...(editingNoteId ? [editingNoteId] : [])]));
+        if (targetIds.length === 0) return;
+
+        // Case 1: Connect Two Notes (Transitions only)
+        // If we have 2 notes selected AND we are inserting a transition code
+        if (transitions.includes(code) && targetIds.length === 2) {
             let firstNote: NoteData | null = null;
             let secondNote: NoteData | null = null;
 
             for (const m of measures) {
-                const found = m.notes.filter(n => selectedNoteIds.includes(n.id));
+                const found = m.notes.filter(n => targetIds.includes(n.id));
                 if (found.length === 2) {
                     const idx0 = m.notes.findIndex(n => n.id === found[0].id);
                     const idx1 = m.notes.findIndex(n => n.id === found[1].id);
@@ -488,14 +711,21 @@ export default function TabEditorPage() {
 
             if (firstNote && secondNote && firstNote.positions[0] && secondNote.positions[0] && firstNote.positions[0].string === secondNote.positions[0].string) {
                 const targetId = secondNote.id;
+
+                // Force UI to show Source Note
+                setEditingNoteId(firstNote.id);
+
                 setMeasures(prev => prev.map(m => ({
                     ...m,
                     notes: m.notes.map(n => {
                         if (n.id === firstNote!.id) {
+                            const newTechnique = updateTechniqueString(n.technique, code);
+                            const hasTransition = newTechnique && transitions.some(t => newTechnique.includes(t));
+
                             return {
                                 ...n,
-                                technique: n.technique === code && n.slideTargetId === targetId ? undefined : code,
-                                slideTargetId: n.technique === code && n.slideTargetId === targetId ? undefined : targetId
+                                technique: newTechnique,
+                                slideTargetId: hasTransition ? targetId : undefined
                             };
                         }
                         return n;
@@ -505,38 +735,91 @@ export default function TabEditorPage() {
             }
         }
 
-        if (selectedNoteIds.length > 0) {
-            setMeasures(prev => prev.map(m => ({
+        // Case 2: General Multi/Single Selection Update
+        setMeasures(prev => prev.map(m => ({
+            ...m,
+            notes: m.notes.map(n => {
+                if (targetIds.includes(n.id)) {
+                    const newTechnique = updateTechniqueString(n.technique, code);
+
+                    let nextSlideTargetId = n.slideTargetId;
+                    if (transitions.includes(code)) {
+                        const hasAnyTransition = newTechnique && transitions.some(t => newTechnique.includes(t));
+                        if (!hasAnyTransition) {
+                            nextSlideTargetId = undefined;
+                        }
+                    }
+
+                    return {
+                        ...n,
+                        technique: newTechnique,
+                        slideTargetId: nextSlideTargetId
+                    };
+                }
+                return n;
+            })
+        })));
+    };
+
+    const handleAddChordNote = () => {
+        setState(prev => {
+            // Logic duplicated from updateSelectedNotes but integrated
+            const newMeasures = prev.measures.map(m => ({
                 ...m,
                 notes: m.notes.map(n => {
-                    if (selectedNoteIds.includes(n.id)) {
+                    if (prev.selectedNoteIds.includes(n.id) || n.id === prev.editingNoteId) {
+                        // Add chord note logic
                         return {
                             ...n,
-                            technique: n.technique === code ? undefined : code,
-                            slideTargetId: n.technique === code ? undefined : n.slideTargetId
+                            positions: [...n.positions, { fret: '0', string: (n.positions.length + 1).toString() }]
                         };
                     }
                     return n;
                 })
-            })));
-        }
-    };
+            }));
 
-    const handleAddChordNote = () => {
-        updateSelectedNotes(n => ({
-            positions: [...n.positions, { fret: '0', string: (n.positions.length + 1).toString() }]
-        }));
-        setActivePositionIndex(editingNote ? editingNote.positions.length : 0);
+            // Logic for index update
+            const editingNote = prev.editingNoteId
+                ? newMeasures.flatMap(m => m.notes).find(n => n.id === prev.editingNoteId)
+                : null;
+
+            const newIndex = editingNote ? editingNote.positions.length - 1 : 0; // The last one added
+
+            return {
+                ...prev,
+                measures: newMeasures,
+                activePositionIndex: newIndex // Set to the newly added position
+            };
+        });
     };
 
     const handleRemoveChordNote = (idx: number) => {
-        updateSelectedNotes(n => {
-            if (n.positions.length <= 1) return {};
-            const newPositions = n.positions.filter((_, i) => i !== idx);
-            if (activePositionIndex >= newPositions.length) {
-                setActivePositionIndex(Math.max(0, newPositions.length - 1));
-            }
-            return { positions: newPositions };
+        setState(prev => {
+            let newIndex = prev.activePositionIndex;
+
+            const newMeasures = prev.measures.map(m => ({
+                ...m,
+                notes: m.notes.map(n => {
+                    if (prev.selectedNoteIds.includes(n.id) || n.id === prev.editingNoteId) {
+                        if (n.positions.length <= 1) return n;
+                        const newPositions = n.positions.filter((_, i) => i !== idx);
+
+                        // Update index if needed logic (from original code)
+                        if (newIndex >= newPositions.length) {
+                            newIndex = Math.max(0, newPositions.length - 1);
+                        }
+
+                        return { ...n, positions: newPositions };
+                    }
+                    return n;
+                })
+            }));
+
+            return {
+                ...prev,
+                measures: newMeasures,
+                activePositionIndex: newIndex
+            };
         });
     };
 
@@ -620,14 +903,19 @@ export default function TabEditorPage() {
         try {
             const { measures: newMeasures, settings: newSettings } = await importScoreFile(file);
 
-            setMeasures(newMeasures);
-            setSettings(prev => ({
+            // Atomic update for import
+            setState(prev => ({
                 ...prev,
-                bpm: newSettings.bpm,
-                time: newSettings.time
+                measures: newMeasures,
+                settings: {
+                    ...prev.settings,
+                    bpm: newSettings.bpm,
+                    time: newSettings.time
+                },
+                editingNoteId: null,
+                selectedNoteIds: [],
+                activePositionIndex: 0 // Reset focus
             }));
-            setEditingNoteId(null);
-            setSelectedNoteIds([]);
 
             toast({
                 title: "Score Imported",
@@ -710,6 +998,10 @@ export default function TabEditorPage() {
                     isMobile={isMobile}
                     isOpen={activePanel === 'library'}
                     onClose={() => setActivePanel('studio')}
+                    onUndo={undo}
+                    onRedo={redo}
+                    canUndo={canUndo}
+                    canRedo={canRedo}
                 />
             }
             rightSidebar={

@@ -26,6 +26,8 @@ export class FretboardDrawer {
   private _neckRadius: number;
   private _stringNamesY: number;
   private _scaleFactor: number; // Adicionar scaleFactor aqui
+  private _rotation: number = 0;
+  private _mirror: boolean = false;
 
   constructor(
     ctx: CanvasRenderingContext2D,
@@ -82,6 +84,32 @@ export class FretboardDrawer {
     this._stringNamesY = this._diagramY + (40 * this._scaleFactor); // Also depends on _diagramY
   }
 
+  public setTransforms(rotation: 0 | 90 | 270, mirror: boolean) {
+    this._rotation = rotation;
+    this._mirror = mirror;
+  }
+
+  public setNumStrings(num: number): void {
+    this._numStrings = num;
+  }
+
+  public setStringNames(names: string[] | undefined): void {
+    // We'll use this in drawStringNames
+  }
+
+  public setStringSpacing(spacing: number): void {
+    this._stringSpacing = spacing;
+  }
+
+  public setFretboardWidth(width: number): void {
+    this._fretboardWidth = width;
+    this._diagramWidth = width; // Usually same
+  }
+
+  public setHorizontalPadding(padding: number): void {
+    this._horizontalPadding = padding;
+  }
+
   public setColors(colors: ChordDiagramColors): void {
     this._colors = colors;
   }
@@ -105,6 +133,7 @@ export class FretboardDrawer {
    * Desenha o braço do violão
    */
   drawNeck(): void {
+    this._ctx.save();
     const neckX = this._diagramX;
     const neckY = this._diagramY;
     const neckWidth = this._diagramWidth;
@@ -123,17 +152,17 @@ export class FretboardDrawer {
     this._ctx.quadraticCurveTo(neckX, neckY, neckX + this._neckRadius, neckY);
     this._ctx.closePath();
     this._ctx.fill();
+    this._ctx.restore();
   }
 
   /**
    * Desenha os nomes das cordas
    */
-  drawStringNames(progress: number = 1): void {
+  drawStringNames(progress: number = 1, customNames?: string[]): void {
     const easedProgress = this.easeInOutQuad(progress);
-    const stringNames = ["E", "A", "D", "G", "B", "e"];
+    const namesToDraw = customNames || ["E", "A", "D", "G", "B", "e"];
 
     this._ctx.save();
-    this._ctx.globalAlpha = easedProgress;
     const translateY = (1 - easedProgress) * (-10 * this._scaleFactor); // Scaled slide in from top
 
     this._ctx.fillStyle = this._colors.textColor;
@@ -142,9 +171,20 @@ export class FretboardDrawer {
     this._ctx.textAlign = "center";
     this._ctx.textBaseline = "middle";
 
-    stringNames.forEach((name, i) => {
+    namesToDraw.forEach((name, i) => {
+      // Map index i to string position. 
+      // Usually strings are drawn from left to right.
+      if (i >= this._numStrings) return;
+
       const x = this._fretboardX + this._horizontalPadding + i * this._stringSpacing;
-      this._ctx.fillText(name, x, this._stringNamesY + translateY);
+
+      // Counter-rotate text
+      this._ctx.save();
+      this._ctx.translate(x, this._stringNamesY + translateY);
+      if (this._mirror) this._ctx.scale(-1, 1);
+      if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
+      this._ctx.fillText(name, 0, 0);
+      this._ctx.restore();
     });
     this._ctx.restore();
   }
@@ -155,6 +195,7 @@ export class FretboardDrawer {
   drawStrings(): void {
     if (this._colors.borderWidth <= 0) return;
 
+    this._ctx.save();
     this._ctx.strokeStyle = this._colors.borderColor;
     this._ctx.lineWidth = this._colors.stringThickness;
 
@@ -165,12 +206,14 @@ export class FretboardDrawer {
       this._ctx.lineTo(x, this._fretboardY + this._fretboardHeight);
       this._ctx.stroke();
     }
+    this._ctx.restore();
   }
 
   /**
    * Desenha os trastes
    */
   drawFrets(): void {
+    this._ctx.save();
     this._ctx.strokeStyle = this._colors.fretColor;
 
     for (let i = 0; i <= this._numFrets; i++) {
@@ -181,6 +224,7 @@ export class FretboardDrawer {
       this._ctx.lineTo(this._fretboardX + this._fretboardWidth, y);
       this._ctx.stroke();
     }
+    this._ctx.restore();
   }
 
   /**
@@ -255,14 +299,14 @@ export class FretboardDrawer {
     for (let i = 0; i <= fretsToDraw && i <= this._numFrets; i++) {
       const y = this._fretboardY + i * this._realFretSpacing;
       this._ctx.lineWidth = i === 0 ? (this._colors.borderWidth * 8) : this._colors.borderWidth;
-      
+
       // Se for o último traste sendo desenhado, pode estar parcial
       const isLastFret = i === fretsToDraw;
       const currentFretProgress = isLastFret ? (easedProgress * numFrets - fretsToDraw) : 1;
-      
+
       this._ctx.globalAlpha = currentFretProgress;
       const translateY = (1 - currentFretProgress) * (-5 * this._scaleFactor); // Scaled Subtle slide in from top
-      
+
       this._ctx.beginPath();
       this._ctx.moveTo(this._fretboardX, y + translateY);
       this._ctx.lineTo(this._fretboardX + this._fretboardWidth, y + translateY);

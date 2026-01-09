@@ -19,7 +19,7 @@ interface LibraryPanelProps {
 }
 
 export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
-  const { setSelectedChords, selectedChords } = useAppContext();
+  const { addChordToTimeline, selectedChords } = useAppContext();
   const { toast } = useToast();
 
   const [selectedScale, setSelectedScale] = useState<string>("C");
@@ -31,13 +31,7 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
   const activeChord = selectedChords.length > 0 ? selectedChords[selectedChords.length - 1] : null;
 
   const handleChordSelect = (chord: ChordDiagramProps, e?: React.MouseEvent) => {
-    const newChord = {
-      chord: chord,
-      duration: 2000,
-      finalChord: chord,
-      transportDisplay: 0
-    };
-    setSelectedChords((prev) => [...prev, newChord]);
+    addChordToTimeline(chord);
     toast({
       title: `${getFormattedNome(chord.chord)} added`,
     });

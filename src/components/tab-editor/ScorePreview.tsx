@@ -86,6 +86,23 @@ const MeasureThumbnail = memo(({
     const offscreenSvgRef = useRef<SVGElement | null>(null);
     const cachedNotationImgRef = useRef<HTMLImageElement | null>(null);
     const [renderError, setRenderError] = useState<string | null>(null);
+    const [vexLoaded, setVexLoaded] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            if (window.Vex) {
+                setVexLoaded(true);
+            } else {
+                const checkVex = setInterval(() => {
+                    if (window.Vex) {
+                        setVexLoaded(true);
+                        clearInterval(checkVex);
+                    }
+                }, 200);
+                return () => clearInterval(checkVex);
+            }
+        }
+    }, []);
 
     // Resolution Constants
     const width = 800;
@@ -172,14 +189,16 @@ const MeasureThumbnail = memo(({
                     if (effectiveClef && effectiveClef !== 'tab') {
                         stave.addClef(effectiveClef);
                     }
-                }
-
-                // Add Key Signature if provided
-                if (keySignature) {
-                    stave.addKeySignature(keySignature);
+                    // Only add Key Signature if Clef is shown (standard convention)
+                    if (keySignature) {
+                        stave.addKeySignature(keySignature);
+                    }
                 }
 
                 if (measureData.showTimeSig) stave.addTimeSignature(timeSignatureStr || '4/4');
+
+                // Add Measure Number
+                stave.setMeasure(measureIndex + 1);
 
                 stave.getModifiers().forEach((mod: any) => {
                     const category = (mod.getCategory ? mod.getCategory() : "").toLowerCase();
@@ -206,6 +225,19 @@ const MeasureThumbnail = memo(({
 
                     if (note.type === 'rest') {
                         const sn = new StaveNote({ keys: ["b/4"], duration: note.duration + "r", clef: effectiveClef });
+                        if (note.decorators?.dot) {
+                            try {
+                                if (typeof (sn as any).addDot === 'function') {
+                                    (sn as any).addDot(0);
+                                } else if (typeof Dot.buildAndAttach === 'function') {
+                                    Dot.buildAndAttach([sn], { all: true });
+                                } else {
+                                    sn.addModifier(new Dot(), 0);
+                                }
+                            } catch (e) {
+                                console.warn("Failed to add dot to rest:", e);
+                            }
+                        }
                         applyStyles(sn, isSelected ? noteStyle : style.rests, style.background || 'transparent');
                         return sn;
                     } else {
@@ -257,7 +289,44 @@ const MeasureThumbnail = memo(({
                         // Explicitly pass the clef to StaveNote so it knows how to position the notes!
                         const sn = new StaveNote({ keys: keys, duration: note.duration, clef: effectiveClef });
                         const d = note.decorators || {};
-                        if (d.dot) Dot.buildAndAttach([sn], { all: true });
+                        if (d.dot) {
+                            keys.forEach((_: any, index: number) => {
+                                try {
+                                    // Strategy 1: VexFlow 1.x / Standard API on StaveNote
+                                    if (typeof (sn as any).addDot === 'function') {
+                                        (sn as any).addDot(index);
+                                        return;
+                                    }
+
+                                    // Strategy 2: VexFlow 3/4 Static Helper
+                                    if (typeof Dot.buildAndAttach === 'function') {
+                                        if (index === 0) { // buildAndAttach handles all usually, or we call it per key?
+                                            // Actually buildAndAttach typically takes the note and constructs for all keys if requested
+                                            // But here we are iterating keys. 
+                                            // Let's rely on standard VexFlow behavior if we use this method.
+                                            // However, iterating might duplicate if we use {all: true} inside loop.
+                                            // So only call once if iterating.
+                                        }
+                                        return;
+                                    }
+
+                                    // Strategy 3: Manual Modifier
+                                    const dot = new Dot();
+                                    if (typeof dot.setNote === 'function') {
+                                        sn.addModifier(dot, index);
+                                    }
+                                } catch (err) {
+                                    console.warn("Failed to add dot to note:", err);
+                                }
+                            });
+
+                            // Adjust Strategy 2 to be outside loop if needed, but let's just stick to the granular check above 
+                            // or better: move Strategy 2 OUTSIDE the loop.
+
+                            if (typeof (sn as any).addDot !== 'function' && typeof Dot.buildAndAttach === 'function') {
+                                Dot.buildAndAttach([sn], { all: true });
+                            }
+                        }
                         if (note.accidental && note.accidental !== 'none') sn.addModifier(new Accidental(note.accidental));
 
                         // Articulations
@@ -322,6 +391,26 @@ const MeasureThumbnail = memo(({
 
                     if (note.type === 'rest') {
                         const tn = new TabNote({ positions: [{ str: 3, fret: 'X' }], duration: note.duration + "r" });
+                        if (note.decorators?.dot) {
+                            try {
+                                if (typeof (tn as any).addDot === 'function') {
+                                    (tn as any).addDot(0); // TabNote might not support addDot same way? Usually modifiers.
+                                    // Actually TabNote usually relies on modifiers.
+                                } else {
+                                    // For check, just try standard
+                                    // VexFlow TabNote might just need explicit Modifier
+                                    // But let's verify if Dot works on TabNote. 
+                                    // Usually tabs don't show dots on rests? 
+                                    // Standard convention: Tab rests might just be letters.
+                                    // Assuming user wants it since they asked.
+                                    // Note: VexFlow TabNote might NOT render dot.
+                                    // Let's try adding it.
+                                    tn.addModifier(new Dot());
+                                }
+                            } catch (e) {
+                                // Ignore tab dot error if not supported
+                            }
+                        }
                         applyStyles(tn, tabNoteStyle, style.background || 'transparent');
                         return tn;
                     } else {
@@ -624,8 +713,11 @@ const MeasureThumbnail = memo(({
             drawNotation();
             drawPlayhead(); // Initial draw
         };
-        updateNotation();
-    }, [measureData, style, timeSignatureStr, showNotation, showTablature, selectedNoteIds, dpr, clef]);
+
+        if (vexLoaded) {
+            updateNotation();
+        }
+    }, [measureData, style, timeSignatureStr, showNotation, showTablature, selectedNoteIds, dpr, clef, vexLoaded]);
 
     // Playback Loop (Synchronous and ultra-fast)
     useEffect(() => {
@@ -634,7 +726,18 @@ const MeasureThumbnail = memo(({
 
     return (
         <div className="overflow-hidden relative flex items-center justify-center aspect-[800/340] w-full bg-transparent">
-            <div className="score-canvas-viewport w-full h-full relative" style={{ opacity: renderError ? 0.2 : 1 }}>
+            <div
+                className="score-canvas-viewport w-full h-full relative transition-all duration-500 ease-in-out"
+                style={{
+                    opacity: renderError ? 0.2 : 1,
+                    transform: `
+                        ${style.rotation ? `rotate(${style.rotation}deg)` : ''} 
+                        ${style.mirror ? 'scaleX(-1)' : ''}
+                        ${(style.rotation === 90 || style.rotation === 270) ? `scale(${height / width})` : ''}
+                    `.trim() || undefined,
+                    transformOrigin: 'center center'
+                }}
+            >
                 <canvas
                     ref={notationCanvasRef}
                     width={width * dpr}

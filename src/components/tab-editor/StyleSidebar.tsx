@@ -249,6 +249,54 @@ const StyleSidebar: React.FC<StyleSidebarProps> = ({ style, onChange, onReset, i
                     </div>
                 );
             })}
+
+            <div className="h-px w-full bg-zinc-800/50 my-4" />
+
+            <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-3">View Transform</p>
+
+            {/* Rotation Controls */}
+            <div className="space-y-3 p-3 bg-zinc-950/30 rounded-lg border border-zinc-800/50 mb-3">
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                        <RotateCcw className="w-3 h-3 text-zinc-500" />
+                        <span className="text-[10px] font-semibold text-zinc-400">ROTATION</span>
+                    </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                    {[0, 90, 270].map((deg) => (
+                        <button
+                            key={deg}
+                            onClick={() => onChange({ rotation: deg as 0 | 90 | 270 })}
+                            className={`py-2 rounded-lg border text-[10px] font-black transition-all ${style.rotation === deg
+                                ? 'bg-pink-500/10 border-pink-500/40 text-pink-400'
+                                : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
+                                }`}
+                        >
+                            {deg}°
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Mirror Control */}
+            <div className="space-y-3 p-3 bg-zinc-950/30 rounded-lg border border-zinc-800/50">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Activity className="w-3 h-3 text-zinc-500" />
+                        <span className="text-[10px] font-semibold text-zinc-400">MIRROR VIEW</span>
+                    </div>
+                    <button
+                        onClick={() => onChange({ mirror: !style.mirror })}
+                        className={`w-8 h-4 rounded-full transition-colors relative ${style.mirror ? 'bg-pink-500/20' : 'bg-zinc-800'
+                            }`}
+                    >
+                        <div className={`absolute top-0.5 bottom-0.5 w-3 h-3 rounded-full transition-all duration-300 ${style.mirror
+                            ? 'left-[18px] bg-pink-400 shadow-[0_0_8px_rgba(244,114,182,0.6)]'
+                            : 'left-0.5 bg-zinc-600'
+                            }`} />
+                    </button>
+                </div>
+            </div>
         </div>
     );
 

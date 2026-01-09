@@ -19,6 +19,12 @@ export class ScoreDrawer {
         }
     }
 
+    setCanvas(element: HTMLCanvasElement) {
+        this.element = element;
+        this.renderer = new Renderer(this.element, Renderer.Backends.CANVAS);
+        this.ctx = this.renderer.getContext();
+    }
+
     draw(width: number, height: number, clip: SymbolClip) {
         if (!clip || !clip.vexFlowProps) return;
 

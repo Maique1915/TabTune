@@ -123,41 +123,15 @@ export function TimelinePanel({
     reader.readAsArrayBuffer(file);
   };
 
-  // Atualiza os acordes na timeline se o usuário selecionar mais
+  // Removed automatic sync of selectedChords to timelineState to prevent Undo/Redo conflicts.
+  // Adding chords is now handled atomically by addChordToTimeline in AppContext.
+  /*
   useEffect(() => {
-    const chordTrack = timelineState.tracks.find(t => t.type === 'chord');
-    if (!chordTrack) return;
-    const currentClipCount = chordTrack.clips.length || 0;
-    if (selectedChords.length > currentClipCount) {
-      const newClips = [...chordTrack.clips];
-      for (let i = currentClipCount; i < selectedChords.length; i++) {
-        const chordWithTiming = selectedChords[i];
-        if (chordWithTiming && chordWithTiming.chord) {
-          const lastClip = newClips[newClips.length - 1];
-          const newStart = lastClip ? lastClip.start + lastClip.duration : 0;
-          const duration = Math.max(chordWithTiming.duration || 2000, minClipDurationMs);
-          const { finalChord, transportDisplay } = getChordDisplayData(chordWithTiming.chord);
-          newClips.push({
-            id: generateClipId(),
-            type: 'chord',
-            chord: chordWithTiming.chord,
-            finalChord,
-            transportDisplay,
-            start: newStart,
-            duration
-          });
-        }
-      }
-      const totalNeeded = newClips.reduce((max, clip) => Math.max(max, clip.start + clip.duration), 0);
-      const totalDuration = Math.max(1000, playbackTotalDurationMs, totalNeeded);
-      setTimelineState(prev => ({
-        ...prev,
-        tracks: prev.tracks.map(t => t.id === chordTrack.id ? { ...t, clips: newClips } : t),
-        totalDuration
-      }));
-    }
-  }, [selectedChords.length, timelineState.tracks, playbackTotalDurationMs, minClipDurationMs, setTimelineState]);
+    // ... removed ...
+  }, [selectedChords.length, ...]); 
+  */
 
+  /*
   useEffect(() => {
     if (!playbackTotalDurationMs) return;
     setTimelineState(prev => ({
@@ -165,8 +139,10 @@ export function TimelinePanel({
       totalDuration: Math.max(1000, playbackTotalDurationMs)
     }));
   }, [animationType, playbackTotalDurationMs, setTimelineState]);
+  */
 
   const handleTimelineChange = (newTimeline: TimelineState) => {
+    console.log('[TimelinePanel] handleTimelineChange triggered', newTimeline);
     setTimelineState(newTimeline);
     const chordTrack = newTimeline.tracks.find(t => t.type === 'chord');
     if (!chordTrack) return;

@@ -38,10 +38,16 @@ interface SidebarProps {
     globalSettings?: GlobalSettings;
     onGlobalSettingsChange?: (settings: Partial<GlobalSettings>) => void;
     onImportScore?: () => void;
+    // Undo/Redo props
+    onUndo?: () => void;
+    onRedo?: () => void;
+    canUndo?: boolean;
+    canRedo?: boolean;
     // Mobile props
     isMobile?: boolean;
     isOpen?: boolean;
     onClose?: () => void;
+    simpleMode?: boolean;
 }
 
 interface ArticulationBtnProps {
@@ -107,7 +113,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     onImportScore,
     isMobile = false,
     isOpen = true,
-    onClose
+    onClose,
+    simpleMode = false
 }) => {
     const [activeTab, setActiveTab] = React.useState<'main' | 'articulations' | 'effects' | 'text'>('main');
 
@@ -120,7 +127,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         { label: '32nd', code: '32' as Duration },
     ];
 
-
     const isInspector = !!editingNote;
     const isMeasureProperties = !!activeMeasure && !isInspector;
 
@@ -129,7 +135,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             onNoteRhythmChange(code);
         } else {
             onSelectDuration(code);
-            // If strictly in measure context (no note editing), clicking adds a note
             if (isMeasureProperties && activeMeasure && onAddNote) {
                 onAddNote(activeMeasure.id, code);
             }
@@ -143,8 +148,29 @@ const Sidebar: React.FC<SidebarProps> = ({
         return activeDuration === code;
     };
 
+    const handleFretChange = (fret: number) => {
+        if (!editingNote || activePositionIndex === undefined || activePositionIndex < 0) return;
+        const currentPos = editingNote.positions[activePositionIndex];
+        if (!currentPos) return;
 
+        const newPositions = [...editingNote.positions];
+        newPositions[activePositionIndex] = { ...currentPos, fret: fret.toString() };
 
+        onUpdateNote?.({ positions: newPositions });
+    };
+
+    const handleStringChangeLocal = (newString: string) => {
+        if (!editingNote || activePositionIndex === undefined || activePositionIndex < 0) return;
+        const currentPos = editingNote.positions[activePositionIndex];
+        if (!currentPos) return;
+
+        const newPositions = [...editingNote.positions];
+        newPositions[activePositionIndex] = { ...currentPos, string: newString };
+
+        onUpdateNote?.({ positions: newPositions });
+    };
+
+    // ... tabs definition ...
     const tabs = [
         { id: 'main', label: 'Main' },
         { id: 'articulations', label: 'Articulations' },
@@ -159,10 +185,11 @@ const Sidebar: React.FC<SidebarProps> = ({
         <GenericSidebar
             title={title}
             icon={Icon}
-            onReset={undefined} // No reset for library
+            onReset={undefined}
             tabs={isInspector && editingNote ? tabs : undefined}
             activeTab={activeTab}
             onTabChange={setActiveTab}
+            // ... rest of props ...
             onClose={onClose || onCloseInspector}
             side="left"
             isMobile={isMobile}
@@ -238,7 +265,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     </div>
                                 </div>
 
-                                {editingNote.type === 'note' && (
+                                {(!simpleMode && editingNote.type === 'note') && (
                                     <div className="space-y-3 pt-2 border-t border-white/5">
                                         <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Note Heads</h3>
                                         <div className="grid grid-cols-4 gap-1.5 max-h-[140px] overflow-y-auto pr-1">
@@ -299,33 +326,65 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 </div>
 
                                 <div className="space-y-3 pt-2 border-t border-zinc-800/50">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Pitch (Active)</span>
-                                        <span className="text-[10px] text-zinc-300 bg-zinc-800/50 px-2 py-0.5 rounded-lg border border-zinc-700/50 font-bold">{currentPitch?.name}{currentPitch?.accidental}{currentPitch?.octave}</span>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="grid grid-cols-7 gap-1">
-                                            {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map(n => (
-                                                <button key={n} onClick={() => onPitchChange?.(n)} className={`h-8 rounded-lg border font-black text-xs transition-all ${currentPitch?.name === n ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}>{n}</button>
-                                            ))}
-                                        </div>
-                                        <div className="flex bg-zinc-950/40 rounded-xl border border-zinc-800/50 p-1 mt-2">
-                                            {[2, 3, 4, 5, 6].map(o => (
-                                                <button key={o} onClick={() => onPitchChange?.(undefined, undefined, o)} className={`flex-1 py-1 text-[9px] font-bold rounded-lg transition-all ${currentPitch?.octave === o ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}>{o}</button>
-                                            ))}
-                                        </div>
-                                        {/* Accidentals */}
-                                        <div className="flex bg-zinc-950/40 p-1 rounded-xl border border-zinc-800/50 my-2">
-                                            {[{ l: '♭', v: 'b' }, { l: '♮', v: 'n' }, { l: '♯', v: '#' }].map(acc => (
-                                                <button key={acc.v} onClick={() => onAccidentalChange?.(acc.v)} className={`flex-1 py-1 text-sm font-serif rounded-lg transition-all ${editingNote.accidental === acc.v || (editingNote.accidental === 'none' && acc.v === 'n') ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}>{acc.l}</button>
-                                            ))}
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-1.5 pt-1">
-                                            {[1, 2, 3, 4, 5, 6].map(s => (
-                                                <button key={s} onClick={() => onStringChange?.(s.toString())} className={`py-1.5 rounded-lg border font-bold text-[9px] transition-all ${editingNote.positions[activePositionIndex]?.string === s.toString() ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}>STR {s}</button>
-                                            ))}
-                                        </div>
-                                    </div>
+                                    {simpleMode ? (
+                                        <>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Fret Selection</span>
+                                                <span className="text-[10px] text-zinc-300 bg-zinc-800/50 px-2 py-0.5 rounded-lg border border-zinc-700/50 font-bold">
+                                                    FR: {editingNote.positions[activePositionIndex]?.fret}
+                                                </span>
+                                            </div>
+                                            <div className="grid grid-cols-5 gap-1.5">
+                                                {Array.from({ length: 25 }).map((_, i) => {
+                                                    const currentFret = parseInt(editingNote.positions[activePositionIndex]?.fret || '0');
+                                                    return (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => handleFretChange(i)}
+                                                            className={`h-8 rounded-lg border font-black text-xs transition-all ${currentFret === i ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
+                                                        >
+                                                            {i}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                            <div className="grid grid-cols-6 gap-1.5 pt-2">
+                                                {[6, 5, 4, 3, 2, 1].map(s => (
+                                                    <button key={s} onClick={() => handleStringChangeLocal(s.toString())} className={`py-1.5 rounded-lg border font-bold text-[9px] transition-all ${editingNote.positions[activePositionIndex]?.string === s.toString() ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}>{s}</button>
+                                                ))}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Pitch (Active)</span>
+                                                <span className="text-[10px] text-zinc-300 bg-zinc-800/50 px-2 py-0.5 rounded-lg border border-zinc-700/50 font-bold">{currentPitch?.name}{currentPitch?.accidental}{currentPitch?.octave}</span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="grid grid-cols-7 gap-1">
+                                                    {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map(n => (
+                                                        <button key={n} onClick={() => onPitchChange?.(n)} className={`h-8 rounded-lg border font-black text-xs transition-all ${currentPitch?.name === n ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}>{n}</button>
+                                                    ))}
+                                                </div>
+                                                <div className="flex bg-zinc-950/40 rounded-xl border border-zinc-800/50 p-1 mt-2">
+                                                    {[2, 3, 4, 5, 6].map(o => (
+                                                        <button key={o} onClick={() => onPitchChange?.(undefined, undefined, o)} className={`flex-1 py-1 text-[9px] font-bold rounded-lg transition-all ${currentPitch?.octave === o ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}>{o}</button>
+                                                    ))}
+                                                </div>
+                                                {/* Accidentals */}
+                                                <div className="flex bg-zinc-950/40 p-1 rounded-xl border border-zinc-800/50 my-2">
+                                                    {[{ l: '♭', v: 'b' }, { l: '♮', v: 'n' }, { l: '♯', v: '#' }].map(acc => (
+                                                        <button key={acc.v} onClick={() => onAccidentalChange?.(acc.v)} className={`flex-1 py-1 text-sm font-serif rounded-lg transition-all ${editingNote.accidental === acc.v || (editingNote.accidental === 'none' && acc.v === 'n') ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}>{acc.l}</button>
+                                                    ))}
+                                                </div>
+                                                <div className="grid grid-cols-3 gap-1.5 pt-1">
+                                                    {[1, 2, 3, 4, 5, 6].map(s => (
+                                                        <button key={s} onClick={() => onStringChange?.(s.toString())} className={`py-1.5 rounded-lg border font-bold text-[9px] transition-all ${editingNote.positions[activePositionIndex]?.string === s.toString() ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}>STR {s}</button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -377,7 +436,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         <button
                                             key={item.c}
                                             onClick={() => onInsert(item.c)}
-                                            className={`py-3 px-2 rounded-xl border font-black transition-all text-[10px] flex flex-col items-center justify-center ${editingNote.technique === item.c
+                                            className={`py-3 px-2 rounded-xl border font-black transition-all text-[10px] flex flex-col items-center justify-center ${editingNote.technique?.includes(item.c)
                                                 ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.1)]'
                                                 : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
                                                 }`}
