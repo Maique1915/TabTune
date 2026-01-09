@@ -35,61 +35,36 @@ const findMinNonZeroNote = (positions: Position, avoid: number[], nut?: nutForm)
 };
 
 export const transpose = (chord: ChordDiagramProps, newAchord: Achord): ChordDiagramProps => {
-    let minNoteArr = findMinNonZeroNote(chord.positions, chord.avoid, chord.nut);
-    let minNote = minNoteArr[0]
-    let entries: [string, [number, number, number]][];
-    let aux = 0;
-    let nut: nutForm = JSON.parse(JSON.stringify(chord.nut)); // Deep copy
+  let nut: nutForm = JSON.parse(JSON.stringify(chord.nut));
 
-    let newPos = 0;
+  // Calculate semitone shift from shape origin to target note
+  let shift = newAchord.note - chord.origin;
+  while (shift < 0) shift += 12;
+  shift = shift % 12;
 
-    if (chord.origin === newAchord.note) {
-        if(chord.origin === chord.chord.note) return chord;
-        nut.vis = chord.origin !== chord.chord.note && nut.add
-        if (chord.origin !== chord.chord.note) aux = -1
-    } else {
-        newPos = minNote + newAchord.note - chord.origin;
-        newPos += (newPos < 0) ?  12: 0
-        if (chord.origin === chord.chord.note) {
-            const openStrings = findOpenStrings(chord.positions, chord.avoid);
-            const newStr1 = openStrings[0] || 1;
-            const newStr2 = (chord.avoid.length >= 2) ? newStr1 : 6;
-            nut.str = [newStr1, newStr2];
-            nut.vis = true;
-            aux = 1
-        } else {
-            aux = 1;
-            nut.vis = newAchord.note !== chord.chord.note || nut.add
-        }
-    }
-    
-    nut.pos += newPos;
+  if (shift === 0) {
+    nut.vis = chord.nut?.vis || false;
+    nut.pos = chord.nut?.pos || 0;
+  } else {
+    nut.vis = true;
+    nut.pos = (chord.nut?.pos || 0) + shift;
+  }
 
-    entries = Object.entries(chord.positions).map(([str, [fret, finger, add]]) => {
-        if (fret > 0) {
-           fret += newPos - minNote;
-        }
-        return [str, [fret, finger + aux*add, add]] as [string, [number, number, number]];
-    });
-    
-    let position = Object.fromEntries(entries) as Position;
+  const entries = Object.entries(chord.positions).map(([str, [fret, finger, add]]) => {
+    const stringNum = parseInt(str);
+    let newFret = fret;
 
-    const finalMinNote = findMinNonZeroNote(position, chord.avoid, nut)[0]
-    let transport = 0
-    if (finalMinNote > 5) {
-        transport = nut.vis ? nut.pos : finalMinNote
-        const offset = transport - 1;
-        if(nut.vis) nut.pos = 1;
-
-        entries = Object.entries(position).map(([str, [fret, finger, add]]) => {
-            if(fret > 0) fret -= offset;
-            return [str, [fret, finger, add]] as [string, [number, number, number]];
-        });
-        position = Object.fromEntries(entries) as Position;
+    // If it's a fretted note or an open string that's not avoided, shift it
+    if (fret > 0 || (!chord.avoid.includes(stringNum))) {
+      newFret = fret + shift;
     }
 
+    return [str, [newFret, finger, add]] as [string, [number, number, number]];
+  });
 
-    return { ...chord, chord: newAchord, positions: position, nut: nut, transport };
+  const position = Object.fromEntries(entries) as Position;
+
+  return { ...chord, chord: newAchord, positions: position, nut: nut, transport: 0 };
 };
 
 /**
@@ -117,25 +92,14 @@ export const getChordDisplayData = (originalChord: ChordDiagramProps): { finalCh
   for (const string in positions) {
     const [fret, finger, add] = positions[string];
     let newFret = fret > 0 ? fret - transposition : 0;
-    let newFinger = finger;
-
-    // Apply trn to finger number if transposition occurred and trn is set
-    if (transposition > 0 && nut && nut.vis && nut.trn > 0 && newFinger > 0) {
-      newFinger = finger + nut.trn;
-    }
-    newPositions[string] = [newFret, newFinger, add];
+    newPositions[string] = [newFret, finger, add];
   }
-  
+
   // Transpose nut.pos if visible
   let newNut = nut;
   if (nut && nut.vis) {
     const transposedPos = nut.pos > 0 ? nut.pos - transposition : 0;
-    let transposedFin = nut.fin;
-    // Apply trn to barre finger if transposition occurred and trn is set
-    if (transposition > 0 && nut.trn > 0) { // Removed transposedFin > 0 check
-      transposedFin = nut.fin + nut.trn;
-    }
-    newNut = { ...nut, pos: transposedPos, fin: transposedFin };
+    newNut = { ...nut, pos: transposedPos };
   }
 
   finalChord = { ...originalChord, positions: newPositions, nut: newNut };
