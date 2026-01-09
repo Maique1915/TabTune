@@ -1,4 +1,5 @@
 import type { ChordDiagramProps, Achord } from './types';
+import { transpose as transposeChord } from "@/lib/chord-logic";
 
 export const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 export const complements = ['Major', 'm', '°'];
@@ -25,7 +26,6 @@ export const getFormattedNome = (chord: Achord): string => {
     return getNome(chord).replace(/#/g, '♯').replace(/b/g, '♭');
 };
 
-
 export const getScaleNotes = (selectedScale: string): string[] => {
     const scaleIndex = notes.indexOf(selectedScale);
     const majorScaleIntervals = [0, 2, 4, 5, 7, 9, 11];
@@ -37,16 +37,19 @@ export const getBassNotes = (selectedScale: string): string[] => {
     return ["Root", ...Array.from({ length: 11 }, (_, i) => `/${formatNoteName(notes[(scaleIndex + i + 1) % 12])}`)];
 };
 
-import { transpose as transposeChord } from "@/lib/chord-logic";
-
 export const getFilteredChords = (
     chordData: ChordDiagramProps[],
     selectedNote: string,
     selectedQuality: string,
     selectedExtensions: string[],
-    selectedBass: string
+    selectedBass: string,
+    stringCount?: number
 ): ChordDiagramProps[] => {
-    let transposableChords: ChordDiagramProps[] = chordData;
+    let transposableChords: ChordDiagramProps[] = chordData.filter(chord => {
+        if (!stringCount) return true;
+        const chordStrings = chord.stringNames?.length || 6;
+        return chordStrings === stringCount;
+    });
 
     if (selectedNote !== "all") {
         transposableChords = [];
@@ -89,180 +92,178 @@ export const getFilteredChords = (
     return filtered;
 }
 
-
-
 export const chordData: ChordDiagramProps[] = [
     {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('E'), complement: getComplement('Major'), extension: [], bass: 0 },
-        positions: { 2: [2, 2, 1], 3: [2, 3, 1], 4: [1, 1, 1] },
+        positions: { 2: [2, 2], 3: [2, 3], 4: [1, 1] },
         avoid: [],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('E'),
     }, {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('E'), complement: getComplement('Major'), extension: [], bass: 0 },
-        positions: { 2: [2, 2, 1], 3: [2, 3, 1], 4: [1, 1, 1], 5: [3, 4, 1] },
+        positions: { 2: [2, 2], 3: [2, 3], 4: [1, 1], 5: [3, 4] },
         avoid: [],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('E'),
         unique: true,
     }, {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('E'), complement: getComplement('Major'), extension: [], bass: 0 },
-        positions: { 2: [2, 2, 1], 4: [1, 1, 1], 5: [3, 4, 1] },
+        positions: { 2: [2, 2], 4: [1, 1], 5: [3, 4] },
         avoid: [],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('E'),
     }, {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('B'), complement: getComplement('m'), extension: [getExtension('7'), getExtension('9')], bass: 0 },
-        positions: { 2: [2, 2, 1], 4: [2, 3, 1], 5: [2, 4, 1] },
+        positions: { 2: [2, 2], 4: [2, 3], 5: [2, 4] },
         avoid: [1, 6],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('B'),
     }, {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('E'), complement: getComplement('m'), extension: [getExtension('7')], bass: 0 },
-        positions: { 2: [2, 2, 0] },
+        positions: { 2: [2, 2] },
         avoid: [],
-        nut: { vis: true, str: [1, 6], pos: 0, fin: 1, add: true, trn: 0 },
+        nut: { vis: true, str: [1, 6], pos: 0, fin: 1, trn: 0 },
         origin: getNote('E'),
     }, {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('E'), complement: getComplement('m'), extension: [getExtension('7')], bass: 0 },
-        positions: { 2: [2, 2, 0], 3: [2, 3, 0], 5: [3, 4, 0] },
+        positions: { 2: [2, 2], 3: [2, 3], 5: [3, 4] },
         avoid: [],
-        nut: { vis: true, str: [1, 6], pos: 0, fin: 1, add: true, trn: 0 },
+        nut: { vis: true, str: [1, 6], pos: 0, fin: 1, trn: 0 },
         origin: getNote('E'),
     }, {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('A'), complement: getComplement('m'), extension: [getExtension('7'), getExtension('b5')], bass: 0 },
-        positions: { 3: [1, 2, 1], 4: [0, 1, 0], 5: [1, 3, 1] },
+        positions: { 3: [1, 2], 4: [0, 1], 5: [1, 3] },
         avoid: [1, 6],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('A'),
     }, {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('A'), complement: getComplement('m'), extension: [getExtension('7')], bass: 0 },
-        positions: { 4: [6, 1, 1], 5: [8, 3, 1], 6: [9, 4, 1] },
+        positions: { 4: [6, 1], 5: [8, 3], 6: [9, 4] },
         avoid: [1, 3],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('A'),
     }, {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('F'), complement: getComplement('m'), extension: [getExtension('6')], bass: 0 },
-        positions: { 1: [1, 2, 1], 4: [1, 3, 1], 5: [1, 4, 1] },
+        positions: { 1: [1, 2], 4: [1, 3], 5: [1, 4] },
         avoid: [2, 6],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('F'),
     }, {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('F'), complement: getComplement('m'), extension: [getExtension('7')], bass: 0 },
-        positions: { 1: [1, 1, 0], 3: [1, 2, 0], 4: [1, 3, 0], 5: [1, 4, 0] },
+        positions: { 1: [1, 1], 3: [1, 2], 4: [1, 3], 5: [1, 4] },
         avoid: [2, 6],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('F'),
     }, {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('A#'), complement: getComplement('m'), extension: [getExtension('7'), getExtension('b5')], bass: 0 },
-        positions: { 2: [1, 2, 1], 4: [1, 3, 1], 5: [2, 4, 1], 6: [0, 1, 0] },
+        positions: { 2: [1, 2], 4: [1, 3], 5: [2, 4], 6: [0, 1] },
         avoid: [1, 3],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('A#'),
     }, {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('E'), complement: getComplement('m'), extension: [getExtension('7')], bass: 0 },
-        positions: { 1: [0, -2, 0], 3: [0, -1, 0], 4: [1, 1, 1], 5: [0, 0, 0] },
+        positions: { 4: [1, 1] },
         avoid: [2, 6],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('E'),
     },
     {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('A'), complement: getComplement('Major'), extension: [], bass: 0 },
-        positions: { 3: [2, 2, 1], 4: [2, 3, 1], 5: [2, 1, 1] },
+        positions: { 3: [2, 2], 4: [2, 3], 5: [2, 1] },
         avoid: [1],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('A'),
     },
     {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('D'), complement: getComplement('Major'), extension: [], bass: 0 },
-        positions: { 4: [2, 1, 1], 5: [3, 3, 1], 6: [2, 2, 1] },
+        positions: { 4: [2, 1], 5: [3, 3], 6: [2, 2] },
         avoid: [1, 2],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('D'),
     },
     {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('G'), complement: getComplement('Major'), extension: [], bass: 0 },
-        positions: { 1: [3, 3, 1], 2: [2, 2, 1], 6: [3, 4, 1] },
+        positions: { 1: [3, 3], 2: [2, 2], 6: [3, 4] },
         avoid: [],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('G'),
     },
     {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('F'), complement: getComplement('°'), extension: [], bass: 0 },
-        positions: { 1: [1, 1, 1], 3: [1, 2, 1], 5: [1, 3, 1] },
+        positions: { 1: [1, 1], 3: [1, 2], 5: [1, 3] },
         avoid: [2, 4, 6],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('F'),
     },
     {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('A'), complement: getComplement('°'), extension: [], bass: 0 },
-        positions: { 2: [1, 1, 1], 4: [2, 2, 1], 6: [1, 3, 1] },
+        positions: { 2: [1, 1], 4: [2, 2], 6: [1, 3] },
         avoid: [1, 3, 5],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('A'),
     },
     {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('D'), complement: getComplement('°'), extension: [], bass: 0 },
-        positions: { 1: [1, 1, 1], 3: [2, 2, 1], 5: [1, 3, 1] },
+        positions: { 1: [1, 1], 3: [2, 2], 5: [1, 3] },
         avoid: [2, 4, 6],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('D'),
     },
     {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('A'), complement: getComplement('m'), extension: [], bass: 0 },
-        positions: { 2: [1, 1, 1], 3: [2, 2, 1], 4: [2, 3, 1] },
+        positions: { 2: [1, 1], 3: [2, 2], 4: [2, 3] },
         avoid: [6],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('A'),
     },
     {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('A'), complement: getComplement('Major'), extension: [getExtension('sus2')], bass: 0 },
-        positions: { 3: [2, 2, 1], 4: [2, 1, 1] },
+        positions: { 3: [2, 2], 4: [2, 1] },
         avoid: [6],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('A'),
     },
     {
         stringNames: ["E", "A", "D", "G", "B", "e"],
         chord: { note: getNote('A'), complement: getComplement('Major'), extension: [getExtension('sus4')], bass: 0 },
-        positions: { 2: [3, 3, 1], 3: [2, 2, 1], 4: [2, 1, 1] },
+        positions: { 2: [3, 3], 3: [2, 2], 4: [2, 1] },
         avoid: [6],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('A'),
     },
     {
         chord: { note: getNote('E'), complement: getComplement('Major'), extension: [], bass: 0 },
-        positions: { 1: [0, 1, 0], 2: [2, 2, 1], 3: [2, 3, 1], 4: [0, 4, 0] }, // Bass E Major
+        positions: { 1: [0, 0], 2: [2, 1], 3: [2, 2] }, // Bass E Major
         avoid: [],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('E'),
         stringNames: ["E", "A", "D", "G"]
     },
     {
         chord: { note: getNote('D'), complement: getComplement('Major'), extension: [], bass: 0 },
-        positions: { 4: [0, 4, 0], 5: [3, 5, 1], 6: [2, 6, 1] }, // Drop D tuning test
+        positions: { 4: [0, 0], 5: [3, 2], 6: [2, 1] }, // Drop D tuning test
         avoid: [],
-        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, add: false, trn: 1 },
+        nut: { vis: false, str: [0, 0], pos: 0, fin: 0, trn: 1 },
         origin: getNote('D'),
         stringNames: ["D", "A", "D", "G", "B", "e"]
     }

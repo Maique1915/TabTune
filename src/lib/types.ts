@@ -30,12 +30,9 @@ export interface Achord {
 }
 
 export type Position = {
-  [
-  key: number // Chave da posição
-  ]: [
-    number, // Dedo
-    number, // Corda
-    number // Traste
+  [key: number]: [
+    number, // Fret
+    number  // Finger
   ]
 };
 
@@ -44,8 +41,7 @@ export interface nutForm {
   str: [number, number]; // Cordas que a pestana abrange (ex: [1, 5] para cordas 1 a 5)
   pos: number; // Posição do traste (casa) onde a pestana está
   fin: number; // Dedo usado para a pestana
-  add: boolean; // se a pestana é feita relmente ou só representa onde o dedo deve ficar
-  trn: number; // Transposição no dedo, se o valor de todos os dedos mudam ao aparecer a pestana e pra qual numero a mais vai. 0 significa que o numero dos dedos não muda
+  trn: number; // Transposição no dedo
 }
 
 export interface ChordDiagramProps {
@@ -58,5 +54,5 @@ export interface ChordDiagramProps {
   transport?: number; // Transposição
   unique?: boolean; // se o acord pode ser tranposto ou só funciona na posição original
   list?: boolean;
-  stringNames: string[]; // Custom names for strings (e.g., ["B", "E", "A", "D", "G", "C"])
+  stringNames?: string[]; // Custom names for strings (e.g., ["B", "E", "A", "D", "G", "C"])
 }

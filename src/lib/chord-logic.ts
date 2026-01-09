@@ -50,7 +50,7 @@ export const transpose = (chord: ChordDiagramProps, newAchord: Achord): ChordDia
     nut.pos = (chord.nut?.pos || 0) + shift;
   }
 
-  const entries = Object.entries(chord.positions).map(([str, [fret, finger, add]]) => {
+  const entries = Object.entries(chord.positions).map(([str, [fret, finger]]) => {
     const stringNum = parseInt(str);
     let newFret = fret;
 
@@ -59,12 +59,12 @@ export const transpose = (chord: ChordDiagramProps, newAchord: Achord): ChordDia
       newFret = fret + shift;
     }
 
-    return [str, [newFret, finger, add]] as [string, [number, number, number]];
+    return [str, [newFret, finger]] as [string, [number, number]];
   });
 
   const position = Object.fromEntries(entries) as Position;
 
-  return { ...chord, chord: newAchord, positions: position, nut: nut, transport: 0 };
+  return { ...chord, chord: newAchord, positions: position, nut: nut, transport: 0, stringNames: chord.stringNames };
 };
 
 /**
@@ -90,9 +90,9 @@ export const getChordDisplayData = (originalChord: ChordDiagramProps): { finalCh
 
   const newPositions: Position = {};
   for (const string in positions) {
-    const [fret, finger, add] = positions[string];
+    const [fret, finger] = positions[string];
     let newFret = fret > 0 ? fret - transposition : 0;
-    newPositions[string] = [newFret, finger, add];
+    newPositions[string] = [newFret, finger];
   }
 
   // Transpose nut.pos if visible

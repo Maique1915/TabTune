@@ -7,6 +7,7 @@ import type { TimelineState } from "@/lib/timeline/types";
 import { useUndoRedo } from "@/hooks/use-undo-redo";
 import { generateClipId } from "@/lib/timeline/utils";
 import { getChordDisplayData } from "@/lib/chord-logic";
+import { INSTRUMENTS } from "@/lib/instruments";
 
 export interface StudioState {
   selectedChords: ChordWithTiming[];
@@ -15,6 +16,8 @@ export interface StudioState {
   animationType: AnimationType;
   playbackTransitionsEnabled: boolean;
   playbackBuildEnabled: boolean;
+  instrumentId: string;
+  tuningIndex: number;
 }
 
 export interface ChordDiagramColors {
@@ -89,6 +92,11 @@ interface AppContextType {
   redo: () => void;
   canUndo: boolean;
   addChordToTimeline: (chordData: ChordDiagramProps) => void;
+
+  instrumentId: string;
+  setInstrumentId: (id: string) => void;
+  tuningIndex: number;
+  setTuningIndex: (index: number) => void;
 }
 
 // ... imports ...
@@ -142,7 +150,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     colors: DEFAULT_COLORS,
     animationType: "carousel",
     playbackTransitionsEnabled: true,
-    playbackBuildEnabled: true,
+    playbackBuildEnabled: false,
+    instrumentId: "violao",
+    tuningIndex: 0
   }), []);
 
   const { state, setState, undo, redo, canUndo, canRedo } = useUndoRedo<StudioState>(initialStudioState);
@@ -153,7 +163,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     colors,
     animationType,
     playbackTransitionsEnabled,
-    playbackBuildEnabled
+    playbackBuildEnabled,
+    instrumentId,
+    tuningIndex
   } = state;
 
   // 2. Compatibility Setters
@@ -199,13 +211,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  const setInstrumentId = (id: string) => {
+    setState(prev => ({ ...prev, instrumentId: id, tuningIndex: 0 }));
+  };
+
+  const setTuningIndex = (index: number) => {
+    setState(prev => ({ ...prev, tuningIndex: index }));
+  };
+
   const addChordToTimeline = (chordData: ChordDiagramProps) => {
     console.log('[AppProvider] addChordToTimeline called', chordData);
     setState((prev) => {
+      const selectedInst = INSTRUMENTS.find(i => i.id === prev.instrumentId) || INSTRUMENTS[0];
+      const stringNames = selectedInst.tunings[prev.tuningIndex];
+
+      const optimizedChordData = {
+        ...chordData,
+        stringNames
+      };
+
       const newChordWithTiming: ChordWithTiming = {
-        chord: chordData,
+        chord: optimizedChordData,
         duration: 2000,
-        finalChord: chordData,
+        finalChord: optimizedChordData,
         transportDisplay: 0
       };
 
@@ -225,7 +253,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const newClip = {
         id: generateClipId(),
         type: 'chord' as const,
-        chord: chordData,
+        chord: optimizedChordData,
         finalChord,
         transportDisplay,
         start: newStart,
@@ -317,8 +345,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     undo,
     redo,
     canUndo,
-    canRedo,
-    addChordToTimeline
+    addChordToTimeline,
+    instrumentId: state.instrumentId,
+    setInstrumentId,
+    tuningIndex: state.tuningIndex,
+    setTuningIndex,
   }), [
     selectedChords,
     timelineState,
