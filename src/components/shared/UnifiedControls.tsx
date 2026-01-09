@@ -26,6 +26,9 @@ interface UnifiedControlsProps {
     rightExtra?: React.ReactNode;
     centerExtra?: React.ReactNode;
 
+    // Timeline state
+    isTimelineEmpty?: boolean;
+
     className?: string;
 }
 
@@ -42,6 +45,7 @@ export const UnifiedControls = ({
     leftExtra,
     rightExtra,
     centerExtra,
+    isTimelineEmpty,
     className
 }: UnifiedControlsProps) => {
     return (
@@ -54,10 +58,12 @@ export const UnifiedControls = ({
                             "relative overflow-hidden transition-all duration-300 rounded-xl h-10 w-11 flex items-center justify-center p-0 border",
                             isPlaying && !isPaused
                                 ? 'bg-red-500/10 border-red-500/30 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:bg-red-500/20'
-                                : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:bg-cyan-500/20'
+                                : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:bg-cyan-500/20',
+                            isTimelineEmpty && 'opacity-50 cursor-not-allowed'
                         )}
                         onClick={onPlayPause}
-                        title={isPlaying && !isPaused ? "Stop" : "Play"}
+                        disabled={isTimelineEmpty}
+                        title={isTimelineEmpty ? "Add chords to timeline first" : (isPlaying && !isPaused ? "Stop" : "Play")}
                     >
                         {isPlaying && !isPaused ? (
                             <Pause className="w-5 h-5 fill-current" />

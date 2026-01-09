@@ -43,19 +43,26 @@ export const getFilteredChords = (
     selectedQuality: string,
     selectedExtensions: string[],
     selectedBass: string,
-    stringCount?: number
+    tuning?: string[]
 ): ChordDiagramProps[] => {
-    let transposableChords: ChordDiagramProps[] = chordData.filter(chord => {
-        if (!stringCount) return true;
-        const chordStrings = chord.stringNames?.length || 6;
-        return chordStrings === stringCount;
-    });
+    // First, filter by exact tuning match
+    let baseChords = chordData;
+    if (tuning && tuning.length > 0) {
+        baseChords = chordData.filter(chord => {
+            const chordTuning = chord.stringNames || [];
+            // Check if tunings match exactly
+            if (chordTuning.length !== tuning.length) return false;
+            return chordTuning.every((note, index) => note === tuning[index]);
+        });
+    }
+
+    let transposableChords: ChordDiagramProps[] = baseChords;
 
     if (selectedNote !== "all") {
         transposableChords = [];
         const targetNoteIndex = notes.indexOf(selectedNote);
 
-        chordData.forEach((chordItem) => {
+        baseChords.forEach((chordItem) => {
             if (chordItem.unique) {
                 if (notes[chordItem.chord.note] === selectedNote) {
                     transposableChords.push(chordItem);

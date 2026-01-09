@@ -80,6 +80,7 @@ export function TimelineControls({
       isRendering={isRendering}
       onRender={handleRenderVideo}
       leftExtra={leftExtra}
+      isTimelineEmpty={isTimelineEmpty}
     />
   );
 }

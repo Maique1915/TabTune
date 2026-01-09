@@ -275,7 +275,7 @@ export function HomePage() {
                 handlePause={handlePause}
                 handleResume={handleResume}
                 handleRenderVideo={handleRenderVideo}
-                isTimelineEmpty={false}
+                isTimelineEmpty={timelineState.tracks.every(t => t.clips.length === 0)}
               />
             </div>
           </div>
@@ -302,7 +302,7 @@ export function HomePage() {
               handlePause={handlePause}
               handleResume={handleResume}
               handleRenderVideo={handleRenderVideo}
-              isTimelineEmpty={false}
+              isTimelineEmpty={timelineState.tracks.every(t => t.clips.length === 0)}
             />
           }
           floatingControls={floatingControls}

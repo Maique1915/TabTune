@@ -478,7 +478,7 @@ export class ChordDrawerBase {
 
     // 2. If no explicit `nut` barre, detect implicitly from `positions`
     const fingerCounts: { [key: string]: number[] } = {}; // key: "fret-finger", value: [stringIndices]
-    (Object.entries(positions) as Array<[string, [number, number, any]]>).forEach(([str, [fret, finger]]) => {
+    (Object.entries(positions) as Array<[string, [number, number, any?]]>).forEach(([str, [fret, finger]]) => {
       if (fret > 0 && finger > 0) {
         const key = `${fret}-${finger}`;
         if (!fingerCounts[key]) {
@@ -532,7 +532,7 @@ export class ChordDrawerBase {
    * Applies chord-specific settings (numStrings, stringNames) to the drawer.
    */
   private _applyChordSettings(chord: ChordDiagramProps): void {
-    const chordNumStrings = chord.stringNames.length;
+    const chordNumStrings = chord.stringNames?.length ?? 6;
     if (chordNumStrings !== this._numStrings) {
       this._numStrings = chordNumStrings;
       this._calculateDimensions();
@@ -743,7 +743,7 @@ export class ChordDrawerBase {
    * Desenha todos os dedos de um acorde
    */
   drawFingers(positions: Position, barreInfo: BarreInfo | null = null): void {
-    (Object.entries(positions) as Array<[string, [number, number, number]]>).forEach(([key, [fret, finger]]) => {
+    (Object.entries(positions) as Array<[string, [number, number, any?]]>).forEach(([key, [fret, finger]]) => {
       const stringIndex = Number(key); // stringIndex is 1-based here
 
       // Don't draw if finger is 0 (open string, not pressed) or -1 (muted)
@@ -1251,13 +1251,13 @@ export class ChordDrawerBase {
     const currentFingers = new Map<number, { string: number; fret: number }>();
     const nextFingers = new Map<number, { string: number; fret: number }>();
 
-    (Object.entries(currentPositions) as Array<[string, [number, number, number]]>).forEach(([key, [fret, finger]]) => {
+    (Object.entries(currentPositions) as Array<[string, [number, number, any?]]>).forEach(([key, [fret, finger]]) => {
       const stringIndex = Number(key);
       if (currentBarreInfo && fret === currentBarreInfo.fret && finger === currentBarreInfo.finger && stringIndex >= currentBarreInfo.fromString && stringIndex <= currentBarreInfo.toString) return;
       if (fret > 0 && finger) currentFingers.set(finger, { string: stringIndex, fret });
     });
 
-    (Object.entries(nextPositions) as Array<[string, [number, number, number]]>).forEach(([key, [fret, finger]]) => {
+    (Object.entries(nextPositions) as Array<[string, [number, number, any?]]>).forEach(([key, [fret, finger]]) => {
       const stringIndex = Number(key);
       if (nextBarreInfo && fret === nextBarreInfo.fret && finger === nextBarreInfo.finger && stringIndex >= nextBarreInfo.fromString && stringIndex <= nextBarreInfo.toString) return;
       if (fret > 0 && finger) nextFingers.set(finger, { string: stringIndex, fret });

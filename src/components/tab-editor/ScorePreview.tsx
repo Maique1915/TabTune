@@ -717,12 +717,12 @@ const MeasureThumbnail = memo(({
         if (vexLoaded) {
             updateNotation();
         }
-    }, [measureData, style, timeSignatureStr, showNotation, showTablature, selectedNoteIds, dpr, clef, vexLoaded]);
+    }, [measureData, style, timeSignatureStr, showNotation, showTablature, selectedNoteIds, dpr, clef, vexLoaded, keySignature]);
 
     // Playback Loop (Synchronous and ultra-fast)
     useEffect(() => {
         drawPlayhead();
-    }, [isActive, progress]);
+    }, [isActive, progress, shouldAnimate, style, dpr]);
 
     return (
         <div className="overflow-hidden relative flex items-center justify-center aspect-[800/340] w-full bg-transparent">
@@ -998,7 +998,8 @@ const ScorePreview = React.forwardRef<ScorePreviewRef, ScorePreviewProps>(({
         return ((effectivePosition % measureWeight) / measureWeight) * 100;
     }, [effectivePosition, safeMeasures.length]);
 
-    const shouldAnimate = currentMeasureIndex === 0 || currentMeasureIndex === safeMeasures.length - 1;
+    // Enable animation when playing or rendering
+    const shouldAnimate = isPlaying || isOfflineRendering;
     const activeMeasureData = safeMeasures[currentMeasureIndex];
 
     const currentDPR = useMemo(() => {

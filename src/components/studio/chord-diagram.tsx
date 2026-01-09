@@ -95,7 +95,7 @@ const ChordDiagram: React.FC<ChordDiagramProps> = (props) => {
               <div key={i} className="fret" style={{ top: `${40 + 50 * (i)}px`, backgroundColor: colors.borderColor, height: `${2}px` }}></div>
             ))}
             {stringNames.map((name, i) => (
-              <div key={i} className="string" style={{ left: `${40 * i + 10}px`, backgroundColor: colors.borderColor, width: `${colors.stringThickness}px` }}>
+              <div key={i} className="string" style={{ left: `${stringSpacing * i + neckPadding}px`, backgroundColor: colors.borderColor, width: `${colors.stringThickness}px` }}>
                 <div className="string-name" style={{ color: colors.textColor }}>{name}</div>
                 {finalNut && finalNut.vis && finalNut.pos > 0 && finalNut.str && Math.min(finalNut.str[0], finalNut.str[1]) === i + 1 && (
                   <div

@@ -105,6 +105,7 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
   const [isPaused, setIsPaused] = useState(false);
 
   const isRenderCancelledRef = useRef(false);
+  const prevChordsLengthRef = useRef(0);
 
   // Recorder Integration
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -414,6 +415,35 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
     return { chordIndex: chords.length - 1, transitionProgress: 0, buildProgress: 1 };
   }, [animationType, buildDurationSec, buildEnabled, chords, getSegmentDurationSec, halfTransitionSec]);
 
+  // Detect when chords are added after being empty
+  useEffect(() => {
+    const currentLength = chords?.length || 0;
+    const prevLength = prevChordsLengthRef.current;
+
+    // If chords were just added (went from 0 to > 0)
+    if (prevLength === 0 && currentLength > 0) {
+      // Draw the first frame to show the first chord
+      if (chordDrawerRef.current && canvasRef.current) {
+        const state0 = computeStateAtTimeMs(0);
+        if (state0) {
+          animationStateRef.current = {
+            ...animationStateRef.current,
+            chordIndex: state0.chordIndex,
+            transitionProgress: 0,
+            buildProgress: 1,
+            fingerOpacity: 1,
+            fingerScale: 1,
+            cardY: 0,
+            nameOpacity: 1,
+          };
+          drawAnimatedChord();
+        }
+      }
+    }
+
+    prevChordsLengthRef.current = currentLength;
+  }, [chords?.length, computeStateAtTimeMs, drawAnimatedChord]);
+
   const prebufferFrames = useCallback(async (totalDurationMs: number, startTimeMs: number) => {
     const bufferMs = Math.max(0, prebufferMs);
     if (bufferMs <= 0) {
@@ -638,7 +668,7 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
   }, [computeStateAtTimeMs, drawAnimatedChord, onAnimationStateChange, setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress, stopPlayhead]);
 
   const startAnimation = () => {
-    // Playback linear: usa o mesmo mapeamento de tempo do scrub.
+    // Reset any previous animation state first
     if (animationRef.current) animationRef.current.pause();
     if (playheadAnimationRef.current) {
       playheadAnimationRef.current.pause();
@@ -649,7 +679,16 @@ export const VideoCanvasStage = React.forwardRef<VideoCanvasStageRef, VideoCanva
       playbackRafIdRef.current = null;
     }
 
-    if (!chords || chords.length === 0) return;
+    // Early return if no chords - but ensure state is clean
+    if (!chords || chords.length === 0) {
+      setIsAnimating(false);
+      setIsPaused(false);
+      setPlaybackIsPlaying(false);
+      setPlaybackIsPaused(false);
+      setPlaybackProgress(0);
+      if (onAnimationStateChange) onAnimationStateChange(false, false);
+      return;
+    }
 
     setIsAnimating(true);
     setIsPaused(false);

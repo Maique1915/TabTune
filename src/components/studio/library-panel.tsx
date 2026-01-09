@@ -11,6 +11,7 @@ import { ChordDiagram } from "./chord-diagram";
 import Link from 'next/link';
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/components/ui/button";
+import { INSTRUMENTS } from "@/lib/instruments";
 
 interface LibraryPanelProps {
   isMobile: boolean;
@@ -27,6 +28,11 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
   const [selectedQuality, setSelectedQuality] = useState<string>("all");
   const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
   const [selectedBass, setSelectedBass] = useState<string>("all");
+  const [selectedInstrumentId, setSelectedInstrumentId] = useState('violao');
+  const [selectedTuningIndex, setSelectedTuningIndex] = useState(0);
+
+  const selectedInstrument = INSTRUMENTS.find(i => i.id === selectedInstrumentId) || INSTRUMENTS[0];
+  const currentTuning = selectedInstrument.tunings[selectedTuningIndex];
 
   const activeChord = selectedChords.length > 0 ? selectedChords[selectedChords.length - 1] : null;
 
@@ -41,13 +47,27 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
   };
 
   const filteredChords = useMemo(() => {
-    return getFilteredChords(chordData, selectedNote, selectedQuality, selectedExtensions, selectedBass);
-  }, [selectedNote, selectedQuality, selectedExtensions, selectedBass]);
+    const filtered = getFilteredChords(chordData, selectedNote, selectedQuality, selectedExtensions, selectedBass, currentTuning);
+    // Update stringNames for all chords to match the selected instrument
+    return filtered.map(chord => ({
+      ...chord,
+      stringNames: currentTuning
+    }));
+  }, [selectedNote, selectedQuality, selectedExtensions, selectedBass, currentTuning]);
 
   const handleExtensionToggle = (extension: string) => {
     setSelectedExtensions((prev) =>
       prev.includes(extension) ? prev.filter((e) => e !== extension) : [...prev, extension]
     );
+  };
+
+  const handleInstrumentChange = (instrumentId: string) => {
+    setSelectedInstrumentId(instrumentId);
+    setSelectedTuningIndex(0);
+  };
+
+  const handleTuningChange = (index: number) => {
+    setSelectedTuningIndex(index);
   };
 
   return (
@@ -82,6 +102,43 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
 
         {/* Filters Section */}
         <div className="space-y-6">
+          {/* Instrument & Tuning Section */}
+          <div className="space-y-3">
+            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-white/5 pb-2">Instrument & Tuning</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Instrument</label>
+                <div className="relative group">
+                  <select
+                    value={selectedInstrumentId}
+                    onChange={(e) => handleInstrumentChange(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-900/50 border border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none focus:bg-zinc-800 focus:border-pink-500/30 appearance-none transition-all cursor-pointer hover:bg-zinc-800/50 pr-8"
+                  >
+                    {INSTRUMENTS.map(inst => (
+                      <option key={inst.id} value={inst.id} className="bg-zinc-950">{inst.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 pointer-events-none group-hover:text-pink-500 transition-colors" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Tuning</label>
+                <div className="relative group">
+                  <select
+                    value={selectedTuningIndex}
+                    onChange={(e) => handleTuningChange(parseInt(e.target.value))}
+                    className="w-full px-3 py-2 bg-zinc-900/50 border border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none focus:bg-zinc-800 focus:border-pink-500/30 appearance-none transition-all cursor-pointer hover:bg-zinc-800/50 pr-8"
+                  >
+                    {selectedInstrument.tunings.map((tuning: string[], i: number) => (
+                      <option key={i} value={i} className="bg-zinc-950">{tuning.join(' ')}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 pointer-events-none group-hover:text-pink-500 transition-colors" />
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Main Filters Grid */}
           <div className="space-y-3">
             <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2">
