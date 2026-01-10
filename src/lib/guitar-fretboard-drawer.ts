@@ -54,10 +54,10 @@ export class GuitarFretboardDrawer {
 
         // Height calculation:
         // The user wants a "thick neck" look similar to a chord diagram.
-        // User reported "no change" with 220px. Going extremely thin: 160px max.
+        // Increased from 160px to 240px for better visibility
         const availableHeight = this.height - (this.paddingY * 2);
-        const targetHeight = Math.min(availableHeight, 160);
-        this.fretboardHeight = Math.max(targetHeight, 120);
+        const targetHeight = Math.min(availableHeight, 400);
+        this.fretboardHeight = Math.max(targetHeight, 180);
 
         this.boardY = (this.height - this.fretboardHeight) / 2;
 
@@ -211,7 +211,7 @@ export class GuitarFretboardDrawer {
 
             this.ctx.lineWidth = 2;
 
-            const radius = this.stringSpacing * 0.35 * radiusScale;
+            const radius = this.stringSpacing * 0.45 * radiusScale;
             this.ctx.arc(drawX, y, radius, 0, Math.PI * 2);
             this.ctx.fill();
             this.ctx.stroke();
@@ -219,8 +219,12 @@ export class GuitarFretboardDrawer {
         };
 
         Object.entries(positions).forEach(([strKey, [finger, _str, fret]]) => {
+            console.log(strKey, [finger, _str, fret]);
             const stringIndex = parseInt(strKey) - 1; // 0-based index
             if (stringIndex < 0 || stringIndex > 5) return;
+
+            // Skip if fret is undefined
+            if (fret === undefined) return;
 
             // --- ANIMATION LOGIC ---
             const stringEffects = options?.effects?.filter(e => e.string === stringIndex + 1);

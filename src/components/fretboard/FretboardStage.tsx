@@ -5,7 +5,6 @@ import { type JSAnimation } from "animejs";
 import type { ChordWithTiming } from "@/lib/types";
 import { useAppContext } from "@/app/context/app--context";
 import { GuitarFretboardDrawer } from "@/lib/guitar-fretboard-drawer";
-import { ChordDrawerBase } from "@/lib/chord-drawer-base";
 import { ScoreDrawer } from "@/lib/score-drawer";
 import { TimelineState } from "@/lib/timeline/types";
 import { useCanvasRecorder, CanvasRecorderOptions } from "@/lib/shared/hooks/useCanvasRecorder";

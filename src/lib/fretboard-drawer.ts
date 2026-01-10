@@ -220,8 +220,8 @@ export class FretboardDrawer {
       const y = this._fretboardY + i * this._realFretSpacing;
       this._ctx.lineWidth = i === 0 ? (this._colors.borderWidth * 8) : this._colors.borderWidth;
       this._ctx.beginPath();
-      this._ctx.moveTo(this._fretboardX + this._horizontalPadding, y);
-      this._ctx.lineTo(this._fretboardX + this._fretboardWidth - this._horizontalPadding, y);
+      this._ctx.moveTo(this._fretboardX, y);
+      this._ctx.lineTo(this._fretboardX + this._fretboardWidth, y);
       this._ctx.stroke();
     }
     this._ctx.restore();
@@ -308,8 +308,8 @@ export class FretboardDrawer {
       const translateY = (1 - currentFretProgress) * (-5 * this._scaleFactor); // Scaled Subtle slide in from top
 
       this._ctx.beginPath();
-      this._ctx.moveTo(this._fretboardX + this._horizontalPadding, y + translateY);
-      this._ctx.lineTo(this._fretboardX + this._fretboardWidth - this._horizontalPadding, y + translateY);
+      this._ctx.moveTo(this._fretboardX, y + translateY);
+      this._ctx.lineTo(this._fretboardX + this._fretboardWidth, y + translateY);
       this._ctx.stroke();
     }
     this._ctx.restore();

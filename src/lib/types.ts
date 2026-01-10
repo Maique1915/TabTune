@@ -31,9 +31,9 @@ export interface Achord {
 
 export type Position = {
   [key: number]: [
-    number, // Fret
-    number, // Finger
-    any?    // Additional data (optional, used for transposition calculations)
+    number, // finger
+    number, // string
+    number? // fret
   ]
 };
 

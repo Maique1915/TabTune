@@ -915,8 +915,8 @@ export class ChordDrawerBase {
     const newPositions: Position = {};
     for (const string in positions) {
       const val = positions[string];
-      const [fret, finger, add] = val as [number, number, any];
-      newPositions[string] = [fret > 0 ? fret - transposition : 0, finger, add];
+      const [fret, finger] = val as [number, number];
+      newPositions[string] = [fret > 0 ? fret - transposition : 0, finger];
     }
 
     const newNut = nut && nut.vis ? { ...nut, pos: nut.pos - transposition } : nut;
