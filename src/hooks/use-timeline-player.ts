@@ -1,8 +1,8 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import type { TimelineState } from "@/lib/timeline/types";
 import { TimelineAudio, TimelineChord, LoopContext, TimelineClipInstance } from "@/lib/timeline/clips";
-import type { ChordDiagramColors, AnimationType } from "@/app/context/app--context";
-import type { ChordWithTiming } from "@/lib/types";
+import type { AnimationType } from "@/app/context/app--context";
+import type { ChordWithTiming, FretboardTheme } from "@/lib/types";
 
 interface UseTimelinePlayerProps {
   audioContext: AudioContext | null;
@@ -12,7 +12,7 @@ interface UseTimelinePlayerProps {
   isGlobalAudioPlaying: boolean;
   playbackTotalDurationMs: number;
   timelineState: TimelineState;
-  colors: ChordDiagramColors; // Nova prop
+  colors: FretboardTheme; // Nova prop
   animationType: AnimationType; // Nova prop
   transitionsEnabled: boolean; // Nova prop
   buildEnabled: boolean; // Nova prop

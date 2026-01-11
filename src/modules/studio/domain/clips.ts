@@ -1,16 +1,16 @@
 // src/lib/timeline/clips.ts
-import type { ChordDiagramProps, ChordWithTiming } from "@/modules/core/domain/types";
+import type { ChordDiagramProps, ChordWithTiming, FretboardTheme } from "@/modules/core/domain/types";
 import type { TimelineClip as TimelineClipType, AudioClip, ChordClip } from "./types";
 import { drawStaticFingersAnimation } from "@/modules/engine/infrastructure/drawers/static-fingers-drawer";
 import { drawCarouselAnimation } from "@/modules/engine/infrastructure/drawers/carousel-drawer";
-import type { ChordDiagramColors, AnimationType } from "@/app/context/app--context";
+import type { AnimationType } from "@/app/context/app--context";
 
 // Interfaces para os contextos que as classes de clipe podem precisar
 export interface LoopContext {
   // Adicione outras propriedades que o loop principal pode passar para os clipes
   // Ex: globalAudioDurationMs, playGlobalAudio, etc.
   // Por enquanto, vamos manter simples e passar explicitamente o que VideoCanvasStage precisa.
-  colors: ChordDiagramColors;
+  colors: FretboardTheme;
   animationType: AnimationType;
   transitionsEnabled: boolean;
   buildEnabled: boolean;

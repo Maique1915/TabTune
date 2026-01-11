@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Duration, NoteData, MeasureData, GlobalSettings, ManualChordData } from '@/modules/editor/domain/types';
-import { notes, getScaleNotes, getBassNotes, extensions, formatNoteName, basses } from '@/lib/chords';
+import { notes, getScaleNotes, getBassNotes, extensions, formatNoteName, basses } from '@/modules/core/domain/chord-logic';
 import { INSTRUMENTS } from '@/lib/instruments';
 import { VexFlowRhythmIcon } from './VexFlowRhythmIcon';
 import { VexFlowPaletteIcon } from './VexFlowPaletteIcon';
@@ -134,7 +134,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         if (e.shiftKey || e.ctrlKey || e.metaKey) {
             e.preventDefault();
             // Current active string
-            const currentStr = parseInt(editingNote?.positions[activePositionIndex || 0]?.string || '0');
+            const currentStr = editingNote?.positions[activePositionIndex || 0]?.string || 0;
 
             // If starting selection, include current active string
             const currentSelection = selectedStrings.length > 0
@@ -153,8 +153,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                 // Active Fret
                 const currentPos = editingNote?.positions[activePositionIndex || 0];
                 const fret = currentPos?.fret;
-                if (fret && onUpdateNote) {
-                    onUpdateNote({ barre: { fret, startString: max.toString(), endString: min.toString() } });
+                if (fret !== undefined && onUpdateNote) {
+                    onUpdateNote({ barre: { fret: fret.toString(), startString: max.toString(), endString: min.toString() } });
                 }
             }
         } else {
@@ -230,7 +230,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         if (!currentPos) return;
 
         const newPositions = [...editingNote.positions];
-        newPositions[activePositionIndex] = { ...currentPos, fret: fret.toString() };
+        newPositions[activePositionIndex] = { ...currentPos, fret: fret };
 
         onUpdateNote?.({ positions: newPositions });
     };
@@ -241,7 +241,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         if (!currentPos) return;
 
         const newPositions = [...editingNote.positions];
-        newPositions[activePositionIndex] = { ...currentPos, string: newString };
+        newPositions[activePositionIndex] = { ...currentPos, string: parseInt(newString) };
 
         onUpdateNote?.({ positions: newPositions });
     };
@@ -250,8 +250,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     const tabs = [
         { id: 'main', label: 'Main' },
         { id: 'articulations', label: 'Articulations' },
-        { id: 'effects', label: 'Effects' },
-        { id: 'text', label: 'Text' }
+        { id: 'effects', label: 'Effects' }
     ];
 
     const title = isInspector ? 'PROPERTIES' : isMeasureProperties ? 'PROPERTIES' : 'GLOBAL SETTINGS';
@@ -418,22 +417,23 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                 </span>
                                             </div>
                                             <div className="grid grid-cols-5 gap-1.5">
-                                                {Array.from({ length: 25 }).map((_, i) => {
-                                                    const currentFret = parseInt(editingNote.positions[activePositionIndex]?.fret || '0');
+                                                {Array.from({ length: 24 }).map((_, i) => {
+                                                    const fret = i + 1; // Start from 1 instead of 0
+                                                    const currentFret = parseInt(editingNote.positions[activePositionIndex]?.fret?.toString() || '0');
                                                     return (
                                                         <button
-                                                            key={i}
-                                                            onClick={() => handleFretChange(i)}
-                                                            className={`h-8 rounded-lg border font-black text-xs transition-all ${currentFret === i ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
+                                                            key={fret}
+                                                            onClick={() => handleFretChange(fret)}
+                                                            className={`h-8 rounded-lg border font-black text-xs transition-all ${currentFret === fret ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
                                                         >
-                                                            {i}
+                                                            {fret}
                                                         </button>
                                                     );
                                                 })}
                                             </div>
                                             <div className="grid grid-cols-6 gap-1.5 pt-2">
                                                 {[6, 5, 4, 3, 2, 1].map(s => (
-                                                    <button key={s} onClick={(e) => handleStringClick(s.toString(), e)} className={`py-1.5 rounded-lg border font-bold text-[9px] transition-all ${editingNote.positions[activePositionIndex]?.string === s.toString() || selectedStrings.includes(s) ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}>{s}</button>
+                                                    <button key={s} onClick={(e) => handleStringClick(s.toString(), e)} className={`py-1.5 rounded-lg border font-bold text-[9px] transition-all ${editingNote.positions[activePositionIndex]?.string === s || selectedStrings.includes(s) ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}>{s}</button>
                                                 ))}
                                             </div>
                                         </>
@@ -533,150 +533,154 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 </p>
                             </div>
                         )}
-
-                        {/* TAB CONTENT: TEXT */}
-                        {activeTab === 'text' && (
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Chord Symbol</label>
-                                    <input
-                                        type="text"
-                                        value={editingNote.chord || ''}
-                                        onChange={(e) => onUpdateNote?.({ chord: e.target.value })}
-                                        placeholder="e.g. Amaj7"
-                                        className="w-full bg-zinc-950/40 border border-zinc-800/60 rounded-xl px-3 py-2.5 text-xs font-bold text-cyan-400 focus:border-cyan-500/50 outline-none placeholder:text-zinc-700 transition-all shadow-inner"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Annotation</label>
-                                    <input
-                                        type="text"
-                                        value={editingNote.annotation || ''}
-                                        onChange={(e) => onUpdateNote?.({ annotation: e.target.value })}
-                                        placeholder="e.g. Text"
-                                        className="w-full bg-zinc-950/40 border border-zinc-800/60 rounded-xl px-3 py-2.5 text-xs font-bold text-zinc-300 focus:border-zinc-500/50 outline-none placeholder:text-zinc-700 transition-all shadow-inner"
-                                    />
-                                </div>
-                            </div>
-                        )}
                     </div>
                 ) : isMeasureProperties && activeMeasure ? (
                     // Measure Properties
                     <div className="space-y-8">
-                        {/* MANUAL CHORD CONFIGURATION */}
+
+                        {/* NEW NOTE CHORD EDITOR */}
                         <div className="space-y-4">
                             <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2 flex items-center gap-2">
                                 <Music className="w-3 h-3" />
-                                <span>Manual Chord Name</span>
+                                <span>Note Chord</span>
                             </h3>
 
-                            {/* Scale & Root */}
-                            {/* Root & Bass - Consolidated */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Root</label>
-                                    <div className="relative group">
-                                        <select
-                                            className="w-full px-2 py-2 bg-zinc-900/50 border border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none focus:bg-zinc-800 focus:border-cyan-500/30 appearance-none transition-all cursor-pointer hover:bg-zinc-800/50 pr-6"
-                                            value={activeMeasure.manualChord?.root || 'C'}
-                                            onChange={(e) => onMeasureUpdate?.(activeMeasure.id, {
-                                                manualChord: { ...activeMeasure.manualChord, root: e.target.value } as ManualChordData
-                                            })}
-                                        >
-                                            <option value="none" className="bg-zinc-950">None</option>
-                                            {notes.map((note) => (
-                                                <option key={note} value={note} className="bg-zinc-950">{formatNoteName(note)}</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600 pointer-events-none" />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Bass</label>
-                                    <div className="relative group">
-                                        <select
-                                            className="w-full px-2 py-2 bg-zinc-900/50 border border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none focus:bg-zinc-800 focus:border-cyan-500/30 appearance-none transition-all cursor-pointer hover:bg-zinc-800/50 pr-6"
-                                            value={activeMeasure.manualChord?.bass || 'none'}
-                                            onChange={(e) => onMeasureUpdate?.(activeMeasure.id, {
-                                                manualChord: { ...activeMeasure.manualChord, bass: e.target.value } as ManualChordData
-                                            })}
-                                        >
-                                            <option value="none" className="bg-zinc-950">None</option>
-                                            {(() => {
-                                                const currentRoot = activeMeasure.manualChord?.root || 'C';
-                                                const rootIndex = notes.indexOf(currentRoot);
-                                                // Create a rotated list starting from root
-                                                const bassOptions = rootIndex >= 0
-                                                    ? [...notes.slice(rootIndex), ...notes.slice(0, rootIndex)]
-                                                    : notes;
-
-                                                return bassOptions
-                                                    .filter(bass => bass !== currentRoot) // Remove redundant root option
-                                                    .map((bass) => (
-                                                        <option key={bass} value={bass} className="bg-zinc-950">{formatNoteName(bass)}</option>
-                                                    ));
-                                            })()}
-                                        </select>
-                                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600 pointer-events-none" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Quality */}
-                            <div className="space-y-1.5">
-                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Quality</label>
-                                <div className="relative group">
-                                    <select
-                                        className="w-full px-2 py-2 bg-zinc-900/50 border border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none focus:bg-zinc-800 focus:border-cyan-500/30 appearance-none transition-all cursor-pointer hover:bg-zinc-800/50 pr-6"
-                                        value={activeMeasure.manualChord?.quality || 'Major'}
-                                        onChange={(e) => onMeasureUpdate?.(activeMeasure.id, {
-                                            manualChord: { ...activeMeasure.manualChord, quality: e.target.value } as ManualChordData
-                                        })}
-                                    >
-                                        <option value="Major" className="bg-zinc-950">Major</option>
-                                        <option value="Minor" className="bg-zinc-950">Minor</option>
-                                        <option value="Dim" className="bg-zinc-950">Diminished</option>
-                                        <option value="Aug" className="bg-zinc-950">Augmented</option>
-                                        <option value="Sus2" className="bg-zinc-950">Sus2</option>
-                                        <option value="Sus4" className="bg-zinc-950">Sus4</option>
-                                    </select>
-                                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600 pointer-events-none" />
-                                </div>
-                            </div>
-
-
-                            {/* Extensions */}
-                            <div className="space-y-2">
-                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Extensions</label>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {extensions.map((ext) => {
-                                        const isActive = activeMeasure.manualChord?.extensions?.includes(ext);
+                            <div className="space-y-4 bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/50">
+                                {/* Chord Parsing Logic */}
+                                {(() => {
+                                    if (!editingNote) {
                                         return (
-                                            <button
-                                                key={ext}
-                                                onClick={() => {
-                                                    const currentExts = activeMeasure.manualChord?.extensions || [];
-                                                    const newExts = isActive
-                                                        ? currentExts.filter(e => e !== ext)
-                                                        : [...currentExts, ext];
-                                                    onMeasureUpdate?.(activeMeasure.id, {
-                                                        manualChord: { ...activeMeasure.manualChord, extensions: newExts } as ManualChordData
-                                                    });
-                                                }}
-                                                className={`px-2 py-1.5 rounded-lg text-[9px] font-black border transition-all uppercase tracking-wider ${isActive
-                                                    ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.1)]'
-                                                    : 'bg-zinc-900/50 text-zinc-500 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-300'
-                                                    }`}
-                                            >
-                                                {ext}
-                                            </button>
+                                            <div className="text-zinc-500 text-xs italic text-center py-4 border border-dashed border-zinc-800 rounded-xl">
+                                                Select a note to edit its chord symbol
+                                            </div>
                                         );
-                                    })}
-                                </div>
+                                    }
+
+                                    const chordName = editingNote?.chordName || "";
+                                    const match = chordName.match(/^([A-G][#b]?)(.*?)(\/[A-G][#b]?)?$/);
+                                    const currentRoot = match ? match[1] : "C";
+                                    const currentQuality = match ? match[2] : "Major";
+                                    const currentBass = match && match[3] ? match[3] : "Root";
+
+                                    const ROOTS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+                                    const QUALITIES = [
+                                        { label: "Major", value: "Major" },
+                                        { label: "Minor", value: "m" },
+                                        { label: "Dim", value: "dim" }
+                                    ];
+                                    const BASES = ["Root", ...ROOTS.map(r => `/${r}`)];
+
+                                    const updateChord = (type: 'root' | 'quality' | 'bass', value: string) => {
+                                        let newRoot = currentRoot;
+                                        let newQuality = currentQuality;
+                                        let newBass = currentBass;
+
+                                        if (type === 'root') newRoot = value;
+                                        if (type === 'quality') newQuality = value;
+                                        if (type === 'bass') newBass = value;
+
+                                        let qualitySuffix = (newQuality === "Major") ? "" : newQuality;
+                                        let bassSuffix = newBass === "Root" ? "" : newBass;
+
+                                        const newName = `${newRoot}${qualitySuffix}${bassSuffix}`;
+                                        onUpdateNote?.({ chordName: newName });
+                                    };
+
+                                    return (
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-2 col-span-1">
+                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Root</label>
+                                                <div className="relative group">
+                                                    <select
+                                                        className="w-full px-3 py-2.5 bg-zinc-900/50 border border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none focus:bg-zinc-800 focus:border-cyan-500/30 appearance-none transition-all cursor-pointer hover:bg-zinc-800/50 pr-8"
+                                                        value={currentRoot}
+                                                        onChange={(e) => updateChord('root', e.target.value)}
+                                                    >
+                                                        {ROOTS.map(r => <option key={r} value={r} className="bg-zinc-950">{r}</option>)}
+                                                    </select>
+                                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 pointer-events-none" />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2 col-span-1">
+                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Quality</label>
+                                                <div className="relative group">
+                                                    <select
+                                                        className="w-full px-3 py-2.5 bg-zinc-900/50 border border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none focus:bg-zinc-800 focus:border-cyan-500/30 appearance-none transition-all cursor-pointer hover:bg-zinc-800/50 pr-8"
+                                                        value={currentQuality === "" ? "Major" : currentQuality}
+                                                        onChange={(e) => updateChord('quality', e.target.value)}
+                                                    >
+                                                        {QUALITIES.map(q => <option key={q.value} value={q.value} className="bg-zinc-950">{q.label}</option>)}
+                                                    </select>
+                                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 pointer-events-none" />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2 col-span-2">
+                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Bass</label>
+                                                <div className="relative group">
+                                                    <select
+                                                        className="w-full px-3 py-2.5 bg-zinc-900/50 border border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none focus:bg-zinc-800 focus:border-cyan-500/30 appearance-none transition-all cursor-pointer hover:bg-zinc-800/50 pr-8"
+                                                        value={currentBass === "" ? "Root" : currentBass}
+                                                        onChange={(e) => updateChord('bass', e.target.value)}
+                                                    >
+                                                        {BASES.map(b => <option key={b} value={b} className="bg-zinc-950">{b}</option>)}
+                                                    </select>
+                                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 pointer-events-none" />
+                                                </div>
+                                            </div>
+
+                                            {/* EXTENSIONS */}
+                                            <div className="col-span-2 pt-2 border-t border-zinc-800/50 mt-1">
+                                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-2">Extensions</label>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {[
+                                                        { label: "SUS2", value: "sus2" },
+                                                        { label: "SUS4", value: "sus4" },
+                                                        { label: "AUG", value: "aug" },
+                                                        { label: "5", value: "5" },
+                                                        { label: "6", value: "6" },
+                                                        { label: "7", value: "7" },
+                                                        { label: "7+", value: "maj7" },
+                                                        { label: "9", value: "9" },
+                                                        { label: "11", value: "11" },
+                                                        { label: "13", value: "13" },
+                                                        { label: "(#5)", value: "(#5)" },
+                                                        { label: "(B5)", value: "(b5)" }
+                                                    ].map(ext => {
+                                                        const middlePart = match ? match[2] : "";
+                                                        const matchRegex = new RegExp(`(${ext.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`);
+                                                        const isActive = matchRegex.test(middlePart);
+
+                                                        return (
+                                                            <button
+                                                                key={ext.value}
+                                                                onClick={() => {
+                                                                    let middle = match ? match[2] : "";
+                                                                    if (middle.includes(ext.value)) {
+                                                                        middle = middle.replace(ext.value, "");
+                                                                    } else {
+                                                                        middle += ext.value;
+                                                                    }
+                                                                    const newName = `${currentRoot}${middle}${match && match[3] ? match[3] : ""}`;
+                                                                    onUpdateNote?.({ chordName: newName });
+                                                                }}
+                                                                className={`px-2 py-1.5 rounded-lg text-[9px] font-bold border transition-all uppercase tracking-wider ${isActive
+                                                                    ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.1)]'
+                                                                    : 'bg-zinc-900/50 text-zinc-500 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-300'
+                                                                    }`}
+                                                            >
+                                                                {ext.label}
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </div>
-
 
                         <div className="space-y-4">
                             <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2">
@@ -768,27 +772,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </div>
                         </CollapsibleSection>
 
-                        <CollapsibleSection title="Techniques">
-                            <div className="grid grid-cols-2 gap-3 bg-zinc-950/40 p-2 rounded-xl border border-zinc-800/50">
-                                {[
-                                    { label: 'Hammer-on', code: 'h' },
-                                    { label: 'Pull-off', code: 'p' },
-                                    { label: 'Tap', code: 't' },
-                                    { label: 'Slide', code: 's' },
-                                    { label: 'Bend', code: 'b' },
-                                    { label: 'Vibrato', code: 'v' },
-                                    { label: 'Slur/Tie', code: 'l' },
-                                ].map((item) => (
-                                    <button
-                                        key={item.label}
-                                        onClick={() => onInsert(item.code)}
-                                        className="py-4 px-3 text-sm bg-zinc-950/50 hover:bg-zinc-900 hover:scale-[1.02] text-zinc-300 rounded-2xl transition-all text-center border-2 border-zinc-800/50 hover:border-zinc-700 font-bold active:scale-95"
-                                    >
-                                        {item.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </CollapsibleSection>
 
                         {/* Playback & View Settings (Compact) */}
                         <div className="space-y-4 pt-4 border-t border-zinc-800/50">

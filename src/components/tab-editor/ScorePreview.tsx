@@ -277,7 +277,7 @@ const MeasureThumbnail = memo(({
                             ? `/${mapHead[note.noteHead] || note.noteHead}`
                             : '';
 
-                        const keys = note.positions.map(p => getNoteKeyFromFret(parseInt(p.fret), parseInt(p.string)) + suffix);
+                        const keys = note.positions.map(p => getNoteKeyFromFret(p.fret, p.string) + suffix);
 
                         // Validate keys
                         if (keys.length === 0) {
@@ -361,12 +361,31 @@ const MeasureThumbnail = memo(({
                             sn.addModifier(bend);
                         }
 
+
+                        if (note.chordName) {
+                            try {
+                                const chordAnn = new Annotation(note.chordName)
+                                    .setFont("Arial", 13, "bold")
+                                    .setVerticalJustification(Annotation.VerticalJustify.TOP);
+
+                                if (style.chordName) {
+                                    applyStyles(chordAnn, style.chordName, style.background || 'transparent');
+                                }
+
+                                sn.addModifier(chordAnn, 0);
+                            } catch (e) {
+                                console.warn("Failed to add chord annotation:", e);
+                            }
+                        }
+
                         applyStyles(sn, noteStyle, style.background || 'transparent');
                         return sn;
                     }
                 });
 
                 if (notes.length > 0) {
+
+
                     const beams = window.Vex.Flow.Beam.generateBeams(notes);
                     beams.forEach((b: any) => applyStyles(b, style.notes, style.background || 'transparent'));
                     Formatter.FormatAndDraw(context, stave, notes);
@@ -418,7 +437,7 @@ const MeasureThumbnail = memo(({
                         const isBendTarget = measureData.notes.some(n => n.technique === 'b' && n.slideTargetId === note.id);
 
                         const positions = note.positions.map(p => ({
-                            str: parseInt(p.string),
+                            str: p.string,
                             fret: isBendTarget ? `(${p.fret})` : p.fret
                         })).filter(p => {
                             const isValid = !isNaN(p.str);
@@ -469,7 +488,7 @@ const MeasureThumbnail = memo(({
                             if (note.slideTargetId) {
                                 const target = measureData.notes.find(n => n.id === note.slideTargetId);
                                 if (target && target.positions.length > 0 && note.positions.length > 0) {
-                                    const diff = parseInt(target.positions[0].fret) - parseInt(note.positions[0].fret);
+                                    const diff = target.positions[0].fret - note.positions[0].fret;
                                     if (diff === 1) bendLabel = "1/2";
                                     else if (diff === 2) bendLabel = "Full";
                                     else if (diff > 0) bendLabel = diff.toString();

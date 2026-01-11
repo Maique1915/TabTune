@@ -1,26 +1,43 @@
-export interface BarreInfo {
+// Standardized Position for all contexts
+export interface StandardPosition {
+    string: number; // 1-based index
     fret: number;
-    fromString: number;
-    toString: number;
+    finger?: number; // 0 = unknown/open, 1-4 = fingers, T = thumb
+}
+
+export interface BarreData {
+    fret: number;
+    startString: number;
+    endString: number;
     finger?: number;
 }
 
-export interface TabEffect {
-    type: 'slide' | 'bend' | 'hammer' | 'pull' | 'vibrato' | 'tap';
-    fromFret?: number;
-    toFret?: number; // Target fret for slide/bend
-    string: number;
-    duration?: number; // relative duration within the chord 0-1
+export interface ManualChordData {
+    root: string;
+    quality: string;
+    bass?: string;
+    extensions?: string[];
 }
 
-export interface ChordWithTiming {
-    chord: ChordDiagramProps; // Original chord data
-    duration: number; // in ms
-    finalChord: ChordDiagramProps; // Pre-calculated transposed chord for display
-    transportDisplay: number;    // Pre-calculated transpose display value
-    strumming?: 'down' | 'up' | 'pluck' | 'mute';
-    effects?: TabEffect[];
+// Master Entity that represents a "Vertical Slice" of music on the fretboard
+export interface MusicalEvent {
+    id: string;
+    // Rhythmic context
+    duration?: string; // 'w', 'h', 'q', etc.
+    type: 'note' | 'rest';
+
+    // Harmonic identity
+    chordName?: string;
+
+    // Physical Execution
+    positions: StandardPosition[];
+    barre?: BarreData;
+
+    // Techniques
+    technique?: string;
 }
+
+// === LEGACY / THEORY TYPES ===
 
 export interface Achord {
     note: number; // Nota do acorde
@@ -45,18 +62,37 @@ export interface nutForm {
     trn: number; // Transposição no dedo
 }
 
+export interface BarreInfo extends BarreData { }
+
+export interface TabEffect {
+    type: 'slide' | 'bend' | 'hammer' | 'pull' | 'vibrato' | 'tap';
+    fromFret?: number;
+    toFret?: number;
+    string: number;
+    duration?: number;
+}
+
 export interface ChordDiagramProps {
-    chord: Achord; // Acorde original, sem transposição
-    origin: number; // Transposição original
-    positions: Position; // Posições dos dedos no acorde
-    avoid: number[]; // Cordas a evitar
-    scale?: number; // Escala
-    nut?: nutForm; // Define a pestana (barre) do acorde.
-    transport?: number; // Transposição
-    unique?: boolean; // se o acord pode ser tranposto ou só funciona na posição original
+    chord?: Achord;
+    origin: number;
+    positions: Position;
+    avoid: number[];
+    scale?: number;
+    nut?: nutForm;
+    transport?: number;
+    unique?: boolean;
     list?: boolean;
-    stringNames?: string[]; // Custom names for strings (e.g., ["B", "E", "A", "D", "G", "C"])
-    chordName?: string; // Manually or automatically named chord (e.g. "Cmaj7")
+    stringNames?: string[];
+    chordName?: string;
+}
+
+export interface ChordWithTiming {
+    chord: ChordDiagramProps; // Original chord data
+    duration: number; // in ms
+    finalChord: ChordDiagramProps; // Pre-calculated transposed chord for display
+    transportDisplay: number;    // Pre-calculated transpose display value
+    strumming?: 'down' | 'up' | 'pluck' | 'mute';
+    effects?: TabEffect[];
 }
 
 export interface TabData {
@@ -86,11 +122,43 @@ export interface MusicalMeasure {
         denominator: number;
     };
     totalTicks: number;
+    chordName?: string;
 }
+
 
 export interface ScoreData {
     title: string;
     composer: string;
     measures: MusicalMeasure[];
     tempo: number;
+}
+
+export interface FretboardTheme {
+    cardColor: string;
+    fingerColor: string;
+    fretboardColor: string;
+    borderColor: string;
+    fretColor: string;
+    textColor: string;
+    chordNameColor: string;
+    chordNameOpacity: number;
+    chordNameShadow: boolean;
+    chordNameShadowColor: string;
+    chordNameShadowBlur: number;
+    chordNameStrokeColor: string;
+    chordNameStrokeWidth: number;
+    borderWidth: number;
+    stringThickness: number;
+    fingerTextColor: string;
+    fingerBorderColor: string;
+    fingerBorderWidth: number;
+    fingerBoxShadowHOffset: number;
+    fingerBoxShadowVOffset: number;
+    fingerBoxShadowBlur: number;
+    fingerBoxShadowSpread: number;
+    fingerBoxShadowColor: string;
+    fingerBackgroundAlpha: number;
+    fretboardScale: number;
+    rotation: 0 | 90 | 270;
+    mirror: boolean;
 }

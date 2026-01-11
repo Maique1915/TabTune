@@ -137,7 +137,7 @@ export function detectChordFromMeasure(notes: NoteData[]): string | null {
     notes.forEach(n => {
         if (n.type === 'rest') return;
         n.positions.forEach(pos => {
-            const midi = getMidiFromPosition(parseInt(pos.fret), parseInt(pos.string));
+            const midi = getMidiFromPosition(pos.fret, pos.string);
             const { name, accidental } = getPitchFromMidi(midi);
             pitches.push(name + accidental);
         });

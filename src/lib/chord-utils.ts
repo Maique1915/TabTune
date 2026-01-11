@@ -1,4 +1,4 @@
-import type { ChordDiagramProps } from "@/lib/types";
+import type { ChordDiagramProps } from "@/modules/core/domain/types";
 
 export interface BarreInfo {
   fret: number;

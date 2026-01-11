@@ -1,8 +1,8 @@
-import type { ChordDiagramColors } from "@/app/context/app--context";
+import type { FretboardTheme } from "@/lib/types";
 
 export class FretboardDrawer {
   private _ctx: CanvasRenderingContext2D;
-  private _colors: ChordDiagramColors;
+  private _colors: FretboardTheme;
   private _dimensions: { width: number; height: number };
 
   // Diagram settings
@@ -31,7 +31,7 @@ export class FretboardDrawer {
 
   constructor(
     ctx: CanvasRenderingContext2D,
-    colors: ChordDiagramColors,
+    colors: FretboardTheme,
     dimensions: { width: number; height: number },
     diagramSettings: {
       diagramWidth: number;
@@ -110,7 +110,7 @@ export class FretboardDrawer {
     this._horizontalPadding = padding;
   }
 
-  public setColors(colors: ChordDiagramColors): void {
+  public setColors(colors: FretboardTheme): void {
     this._colors = colors;
   }
 

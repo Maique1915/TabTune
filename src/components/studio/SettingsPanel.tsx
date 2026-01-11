@@ -17,7 +17,7 @@ import {
 import { HexColorPicker } from "react-colorful";
 import * as Popover from "@radix-ui/react-popover";
 import { useAppContext, DEFAULT_COLORS, AnimationType } from "@/app/context/app--context";
-import type { ChordDiagramColors } from "@/app/context/app--context";
+import type { FretboardTheme } from "@/lib/types";
 import { cn } from "@/shared/lib/utils";
 import { GenericSidebar } from "@/components/shared/GenericSidebar";
 
@@ -164,9 +164,9 @@ const ColorPicker = ({ color, onChange }: { color: string; onChange: (c: string)
 // --- GROUPS DEFINITION ---
 
 type SettingControl =
-  | { type: 'color'; label: string; key: keyof ChordDiagramColors }
-  | { type: 'number'; label: string; key: keyof ChordDiagramColors; min?: number; max?: number; step?: number }
-  | { type: 'slider'; label: string; key: keyof ChordDiagramColors; min: number; max: number; step: number };
+  | { type: 'color'; label: string; key: keyof FretboardTheme }
+  | { type: 'number'; label: string; key: keyof FretboardTheme; min?: number; max?: number; step?: number }
+  | { type: 'slider'; label: string; key: keyof FretboardTheme; min: number; max: number; step: number };
 
 interface SettingGroup {
   id: string;
@@ -251,7 +251,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose }: SettingsPanelProps)
   const [activeTab, setActiveTab] = useState<'basic' | 'advanced' | 'motion'>('basic');
   const [expandedKey, setExpandedKey] = useState<string | null>('fretboard');
 
-  const handleColorChange = (key: keyof ChordDiagramColors, value: any) => {
+  const handleColorChange = (key: keyof FretboardTheme, value: any) => {
     setColors(prev => ({ ...prev, [key]: value }));
   };
 

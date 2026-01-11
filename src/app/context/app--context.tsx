@@ -2,7 +2,7 @@
 
 import type { Dispatch, SetStateAction } from "react";
 import { createContext, useContext, useState, useRef, useMemo } from "react";
-import type { Achord, ChordDiagramProps, ChordWithTiming } from "@/lib/types";
+import type { Achord, ChordDiagramProps, ChordWithTiming, FretboardTheme } from "@/lib/types";
 import type { TimelineState } from "@/lib/timeline/types";
 import { useUndoRedo } from "@/hooks/use-undo-redo";
 import { generateClipId } from "@/lib/timeline/utils";
@@ -12,7 +12,7 @@ import { INSTRUMENTS } from "@/lib/instruments";
 export interface StudioState {
   selectedChords: ChordWithTiming[];
   timelineState: TimelineState;
-  colors: ChordDiagramColors;
+  colors: FretboardTheme;
   animationType: AnimationType;
   playbackTransitionsEnabled: boolean;
   playbackBuildEnabled: boolean;
@@ -20,35 +20,8 @@ export interface StudioState {
   tuningIndex: number;
 }
 
-export interface ChordDiagramColors {
-  cardColor: string;
-  fingerColor: string;
-  fretboardColor: string;
-  borderColor: string;
-  fretColor: string; // Cor específica para os trastes
-  textColor: string;
-  chordNameColor: string; // Nova propriedade para a cor do nome do acorde
-  chordNameOpacity: number;
-  chordNameShadow: boolean;
-  chordNameShadowColor: string;
-  chordNameShadowBlur: number;
-  chordNameStrokeColor: string;
-  chordNameStrokeWidth: number;
-  borderWidth: number;
-  stringThickness: number;
-  fingerTextColor: string;
-  fingerBorderColor: string;
-  fingerBorderWidth: number;
-  fingerBoxShadowHOffset: number;
-  fingerBoxShadowVOffset: number;
-  fingerBoxShadowBlur: number;
-  fingerBoxShadowSpread: number;
-  fingerBoxShadowColor: string;
-  fingerBackgroundAlpha: number;
-  fretboardScale: number; // Nova propriedade para escala geral do braço
-  rotation: 0 | 90 | 270;
-  mirror: boolean;
-}
+// Type alias for backward compatibility
+export type ChordDiagramColors = FretboardTheme;
 
 export type AnimationType = "carousel" | "static-fingers" | "guitar-fretboard";
 

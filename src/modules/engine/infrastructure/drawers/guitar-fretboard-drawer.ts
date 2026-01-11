@@ -1,5 +1,5 @@
 import { ChordDrawerBase } from "./chord-drawer-base";
-import type { ChordDiagramColors } from "@/app/context/app--context";
+import type { FretboardTheme } from "@/lib/types";
 import { FretboardDrawer } from "./fretboard-drawer";
 import type { Position, ChordDiagramProps, TabEffect } from "@/modules/core/domain/types";
 
@@ -14,7 +14,7 @@ export interface GuitarFretboardDrawerOptions {
 
 export class GuitarFretboardDrawer {
     private ctx: CanvasRenderingContext2D;
-    private colors: ChordDiagramColors;
+    private colors: FretboardTheme;
     private width: number;
     private height: number;
     private numFrets: number;
@@ -34,7 +34,7 @@ export class GuitarFretboardDrawer {
 
     constructor(
         ctx: CanvasRenderingContext2D,
-        colors: ChordDiagramColors,
+        colors: FretboardTheme,
         options: GuitarFretboardDrawerOptions
     ) {
         this.ctx = ctx;
@@ -56,33 +56,46 @@ export class GuitarFretboardDrawer {
         // 15 frets + nut (pos 0)
         this.fretWidth = availableWidth / this.numFrets;
 
-        // Height calculation:
-        // The user wants a "thick neck" look similar to a chord diagram.
-        // Increased from 160px to 240px for better visibility
-        const availableHeight = this.height - (this.paddingY * 2);
-        const targetHeight = Math.min(availableHeight, 400);
-        this.fretboardHeight = Math.max(targetHeight, 180);
+        // Height calculation Strategy: Constant Finger Size
+        // We define a standard reference height for a standard 6-string guitar.
+        // From this, we derive the 'standard' string spacing (which determines finger radius).
+        // Then we calculate the actual fretboard height based on the current number of strings, keeping that spacing constant.
 
-        this.boardY = (this.height - this.fretboardHeight) / 2;
+        const referenceNumStrings = 6;
+        // Standard max height for 6 strings (matches previous logic's target)
+        // This ensures the "Guitar" looks as before, but other instruments scale relative to it.
+        const referenceMaxHeight = 400;
 
         // Reference Style: Strings are well inside the neck.
-        // Balanced Style:
         // 0.75 ratio means strings occupy 75% of height.
-        // Margins are 12.5% on top and 12.5% on bottom.
-        // For 300px height -> 225px spread, 37.5px top/bottom margin.
         const stringSpanRatio = 0.75;
-        const stringSpanHeight = this.fretboardHeight * stringSpanRatio;
+
+        // Calculate standard spacing for 6 strings
+        // e.g., 400px height -> 300px span -> 5 gaps -> 60px spacing.
+        const referenceStringSpan = referenceMaxHeight * stringSpanRatio;
+        const referenceGaps = referenceNumStrings - 1;
+        const constantStringSpacing = referenceStringSpan / referenceGaps;
+
+        // Now calculate ACTUAL dimensions for THIS instrument
+        const actualGaps = Math.max(1, this.numStrings - 1);
+        const actualStringSpan = constantStringSpacing * actualGaps;
+
+        // Reverse calculate board height needed to maintain ratio
+        // stringSpan = height * ratio => height = stringSpan / ratio
+        const requiredHeight = actualStringSpan / stringSpanRatio;
+
+        this.fretboardHeight = requiredHeight;
+        this.stringSpacing = constantStringSpacing;
 
         // Margins
-        const totalMargin = this.fretboardHeight - stringSpanHeight;
+        const totalMargin = this.fretboardHeight - actualStringSpan;
         this.stringMargin = totalMargin / 2;
 
-        // Exact Spacing
-        const gaps = this.numStrings > 1 ? this.numStrings - 1 : 1;
-        this.stringSpacing = stringSpanHeight / gaps;
+        // Center the board vertically in the available canvas space
+        this.boardY = (this.height - this.fretboardHeight) / 2;
     }
 
-    public setColors(colors: ChordDiagramColors) {
+    public setColors(colors: FretboardTheme) {
         this.colors = colors;
     }
 
@@ -150,8 +163,8 @@ export class GuitarFretboardDrawer {
             const stringNum = i + 1; // 1 to 6
             const y = this.boardY + this.stringMargin + (i * this.stringSpacing);
 
-            // Dynamic thickness
-            const thickness = 1 + (i * 0.5);
+            // Dynamic thickness - inverted so top string is thickest
+            const thickness = 1 + ((this.numStrings - 1 - i) * 0.5);
 
             ctx.beginPath();
             ctx.lineWidth = thickness;

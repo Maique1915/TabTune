@@ -1,6 +1,6 @@
 import { getNome } from "@/modules/core/domain/chord-logic";
 import { FretboardDrawer } from "./fretboard-drawer";
-import type { ChordDiagramColors } from "@/app/context/app--context";
+import type { FretboardTheme } from "@/lib/types";
 import type { ChordDiagramProps, Position, BarreInfo } from "@/modules/core/domain/types";
 import { easeInOutQuad, withCanvasTransformAround, withCanvasTransformAtPoint } from "../utils/animacao";
 
@@ -11,7 +11,7 @@ import { easeInOutQuad, withCanvasTransformAround, withCanvasTransformAtPoint } 
 export class ChordDrawerBase {
   // Atributos privados
   private _ctx: CanvasRenderingContext2D;
-  private _colors: ChordDiagramColors;
+  private _colors: FretboardTheme;
   private _dimensions: { width: number; height: number };
   public fretboardDrawer: FretboardDrawer;
 
@@ -78,7 +78,7 @@ export class ChordDrawerBase {
 
     ctx: CanvasRenderingContext2D,
 
-    colors: ChordDiagramColors,
+    colors: FretboardTheme,
 
     dimensions: { width: number; height: number },
 
@@ -124,7 +124,7 @@ export class ChordDrawerBase {
     return this._ctx;
   }
 
-  get colors(): ChordDiagramColors {
+  get colors(): FretboardTheme {
     return this._colors;
   }
 
@@ -205,7 +205,7 @@ export class ChordDrawerBase {
     // mas se for resize/cor sim.
   }
 
-  public setColors(value: ChordDiagramColors) {
+  public setColors(value: FretboardTheme) {
     this._colors = value;
     this._rotation = value.rotation || 0;
     this._mirror = value.mirror || false;

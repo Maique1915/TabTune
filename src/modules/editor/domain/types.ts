@@ -1,4 +1,7 @@
 
+export type { ManualChordData } from "@/modules/core/domain/types";
+import { MusicalEvent, StandardPosition, BarreData, ManualChordData } from "@/modules/core/domain/types";
+
 export type Duration = 'w' | 'h' | 'q' | '8' | '16' | '32';
 export type Accidental = 'none' | '#' | '##' | 'b' | 'bb' | 'n';
 
@@ -18,34 +21,41 @@ export interface NoteDecorator {
     dot?: boolean;
 }
 
-export interface NotePosition {
-    fret: string;
-    string: string;
-}
+// NoteData now aligns with MusicalEvent
+export interface NoteData extends Omit<MusicalEvent, 'type' | 'barre'> {
+    // ID inherited
 
-export interface NoteData {
-    id: string;
-    positions: NotePosition[];
+    // Editor specific duration (enum vs string)
     duration: Duration;
-    accidental?: Accidental;
+
+    // Type inherited but strictly typed here
     type: 'note' | 'rest';
+
+    // Positions inherited (StandardPosition[])
+
+    // Editor specifics
+    accidental?: Accidental;
     decorators: NoteDecorator;
     noteHead?: 'standard' | 'x' | 'diamond' | 'square' | 'triangle' | 'slash' | 'cross' | 'circle' | 'triangle_inv' | 'arrow_down' | 'arrow_up' | 'slashed';
-    technique?: string; // h, p, s, b, v, t, l (l = pure slur/tie without label)
+
     slideTargetId?: string; // Explicitly link to another note for techniques
     tuplet?: string;
     isSlurred?: boolean;
     annotation?: string; // Text above/below note
-    chord?: string;      // Simple chord name above note
-    barre?: { fret: string, startString: string, endString: string };
-}
 
-export interface ManualChordData {
-    root: string;
-    quality: string;
-    bass?: string;
-    extensions?: string[];
-    scale?: string;
+    // Chord Identity (inherited chordName)
+    manualChord?: ManualChordData; // The definition (root, quality, etc)
+
+    // Barre (mapped from MusicalEvent's BarreData)
+    // The editor uses a specific format for barre selection range, but we should try to align.
+    // MusicalEvent has 'barre?: BarreData'.
+    // If we want to keep specific editor fields:
+    barre?: { fret: string, startString: string, endString: string };
+    // We override `barre` to keep string-based for UI input ease? 
+    // OR we bite the bullet and convert everything to numbers. 
+    // Let's keep string-based for now in this interface if the UI heavily relies on it, 
+    // BUT `MusicalEvent` expects numbers. 
+    // `extends Omit<MusicalEvent, ... 'barre'>` allows us to redefine it.
 }
 
 export interface MeasureData {
@@ -55,7 +65,7 @@ export interface MeasureData {
     showClef?: boolean;
     clef?: 'treble' | 'bass' | 'alto' | 'tenor' | 'tab';
     showTimeSig?: boolean;
-    manualChord?: ManualChordData;
+    // chord data moved to specific notes for granularity
 }
 
 export interface GlobalSettings {

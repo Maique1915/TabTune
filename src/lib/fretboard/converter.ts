@@ -1,8 +1,7 @@
 
 import { MeasureData, GlobalSettings, Duration } from "@/modules/editor/domain/types";
-import { ChordWithTiming, ChordDiagramProps, Position, TabEffect } from "@/lib/types";
+import { ChordWithTiming, ChordDiagramProps, Position, TabEffect } from "@/modules/core/domain/types";
 import { getNoteDurationValue, findBestFretForPitch, getMidiFromPosition, detectChordFromMeasure } from "@/modules/editor/domain/music-math";
-import { basses, getBassNotes } from "@/modules/core/domain/chord-logic";
 
 /**
  * Converts a list of MeasureData (from Tab Editor) into a flat list of ChordWithTiming (for Fretboard Visualizer).
@@ -66,15 +65,15 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
 
             const positions: Position = {};
             note.positions.forEach((pos, idx) => {
-                const stringNum = parseInt(pos.string);
-                const fretNum = parseInt(pos.fret);
+                const stringNum = pos.string;
+                const fretNum = pos.fret;
                 // Position key is usually the fret or string?
                 // Checking `types.ts`: `key: number // Chave da posição` -> `[finger, string, fret]`.
                 // In `ChordDrawerBase`, it iterates keys? No, it often uses string as key idx or just mapped.
                 // Re-checking `Position` type: `{[key: number]: [finger, string, fret]}`.
                 // Usually `key` represents the STRING index (1-6) for easy lookup?
                 // Let's assume Key = String Number (1-6).
-                if (!isNaN(stringNum) && !isNaN(fretNum)) {
+                if (stringNum && fretNum) {
                     // Finger 0 for now (unknown)
                     positions[stringNum] = [0, stringNum, fretNum];
                 }
@@ -83,12 +82,12 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
             // Map Techniques to Effects
             const effects: TabEffect[] = [];
             if (note.technique) {
-                if (note.technique.includes('s')) effects.push({ type: 'slide', string: parseInt(note.positions[0]?.string || '1') });
-                if (note.technique.includes('b')) effects.push({ type: 'bend', string: parseInt(note.positions[0]?.string || '1') });
-                if (note.technique.includes('h')) effects.push({ type: 'hammer', string: parseInt(note.positions[0]?.string || '1') });
-                if (note.technique.includes('p')) effects.push({ type: 'pull', string: parseInt(note.positions[0]?.string || '1') });
-                if (note.technique.includes('v')) effects.push({ type: 'vibrato', string: parseInt(note.positions[0]?.string || '1') });
-                if (note.technique.includes('t')) effects.push({ type: 'tap', string: parseInt(note.positions[0]?.string || '1') });
+                if (note.technique.includes('s')) effects.push({ type: 'slide', string: note.positions[0]?.string || 1 });
+                if (note.technique.includes('b')) effects.push({ type: 'bend', string: note.positions[0]?.string || 1 });
+                if (note.technique.includes('h')) effects.push({ type: 'hammer', string: note.positions[0]?.string || 1 });
+                if (note.technique.includes('p')) effects.push({ type: 'pull', string: note.positions[0]?.string || 1 });
+                if (note.technique.includes('v')) effects.push({ type: 'vibrato', string: note.positions[0]?.string || 1 });
+                if (note.technique.includes('t')) effects.push({ type: 'tap', string: note.positions[0]?.string || 1 });
             }
 
             const chordData: ChordDiagramProps = {
@@ -108,8 +107,14 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
 
             // Determine Chord Name
             let chordName = '';
-            if (measure.manualChord && measure.manualChord.root && measure.manualChord.root !== 'none') {
-                const { root, quality, bass, extensions, scale } = measure.manualChord;
+
+            // 1. Priority: Explicit simple string name on the NOTE
+            if (note.chordName) {
+                chordName = note.chordName;
+            }
+            // 2. Fallback: ManualChord object on the NOTE
+            else if (note.manualChord && note.manualChord.root && note.manualChord.root !== 'none') {
+                const { root, quality, bass, extensions } = note.manualChord;
                 let suffix = '';
                 if (quality === 'Minor') suffix = 'm';
                 else if (quality === 'Dim') suffix = 'dim';
@@ -121,34 +126,18 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
 
                 let bassStr = '';
                 if (bass && bass !== 'none') {
-                    // Bass is now stored as Note Name (e.g. "C#") from Sidebar.
-                    // Old data might be intervals ("/2").
-                    // We simply prefix with '/' if needed.
                     bassStr = bass.startsWith('/') ? bass : `/${bass}`;
-
-                    // Check for redundancy: if bass note equals root note, hide bass
-                    // Extract note name from bassStr (remove '/')
                     const cleanBass = bassStr.replace('/', '');
-
-                    // If cleanBass is an interval number (e.g. "2"), don't hide it (old data).
-                    // If it matches root (Note Name), hide it.
                     if (cleanBass === root) {
                         bassStr = '';
                     }
                 }
 
-                // Reuse simple formatting logic or robust one
                 const fmtRoot = root.replace('s', '#');
                 chordName = `${fmtRoot}${suffix}${ext}${bassStr}`;
-            } else {
-                // Fallback to auto-detect from the current NOTE(s) or the whole MEASURE?
-                // measuresToChords iterates NOTE by NOTE (or column by column).
-                // Ideally, we want the name of what is currently playing.
-                // If the measure acts as a single harmonic unit, we can use the measure's chord.
-                // But `detectChordFromMeasure` uses specific notes.
-                // Let's use the whole measure's context for now as "Harmonic Context".
-                chordName = detectChordFromMeasure(measure.notes) || '';
             }
+            // 3. No auto-detection fallback desired by user.
+            // Previously: chordName = detectChordFromMeasure(measure.notes) || '';
 
             if (chordName) {
                 chordData.chordName = chordName;
