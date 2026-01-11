@@ -2,13 +2,13 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { type JSAnimation } from "animejs";
-import type { ChordWithTiming } from "@/lib/types";
+import type { ChordWithTiming, ChordDiagramProps } from "@/lib/types";
 import { useAppContext } from "@/app/context/app--context";
 import { GuitarFretboardDrawer } from "@/lib/guitar-fretboard-drawer";
 import { ScoreDrawer } from "@/lib/score-drawer";
 import { TimelineState } from "@/lib/timeline/types";
 import { useCanvasRecorder, CanvasRecorderOptions } from "@/lib/shared/hooks/useCanvasRecorder";
-import { VideoRenderSettingsModal, VideoRenderSettings } from "@/components/shared/VideoRenderSettingsModal";
+import { VideoRenderSettingsModal } from "@/components/shared/VideoRenderSettingsModal";
 import { RenderProgressModal } from "@/components/shared/RenderProgressModal";
 
 export interface FretboardStageRef {
@@ -24,6 +24,7 @@ export interface FretboardStageRef {
 
 interface FretboardStageProps {
     chords: ChordWithTiming[];
+    previewChord?: ChordDiagramProps | null;
     timelineState?: TimelineState;
     width?: number;
     height?: number;
@@ -34,6 +35,8 @@ interface FretboardStageProps {
     transitionsEnabled?: boolean;
     buildEnabled?: boolean;
     prebufferMs?: number;
+    activeChordIndex?: number;
+    numStrings?: number;
 }
 
 interface AnimationState {
@@ -49,16 +52,19 @@ interface AnimationState {
 
 export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStageProps>(({
     chords,
+    previewChord,
     timelineState,
     width = 1920,
     height = 1080,
     onFrameCapture,
     isRecording = false,
+    activeChordIndex,
     onAnimationStateChange,
     onRenderProgress,
     transitionsEnabled = true,
     buildEnabled = true,
     prebufferMs = 0,
+    numStrings = 6,
 }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -122,6 +128,14 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
             guitarFretboardDrawerRef.current.clear();
             guitarFretboardDrawerRef.current.drawBoard();
 
+            // Draw Preview Chord (Ghost)
+            if (previewChord) {
+                guitarFretboardDrawerRef.current.drawChord(previewChord, {
+                    opacity: 0.7,
+                    style: 'ghost'
+                });
+            }
+
             if (chords && chords.length > 0) {
                 const chordIndex = Math.max(0, Math.min(chords.length - 1, Math.floor(state.chordIndex)));
                 const currentChordData = chords[chordIndex];
@@ -132,6 +146,11 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                         effects: currentChordData.effects,
                         progress: state.chordProgress
                     });
+
+                    // Draw Chord Name
+                    if (currentChordData.finalChord.chordName) {
+                        guitarFretboardDrawerRef.current.drawChordName(currentChordData.finalChord.chordName);
+                    }
                 }
             }
         }
@@ -169,14 +188,18 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         const ctx = canvasRef.current.getContext("2d");
         if (!ctx) return;
 
-        if (!guitarFretboardDrawerRef.current) {
+        if (!guitarFretboardDrawerRef.current || (guitarFretboardDrawerRef.current as any).cachedNumStrings !== numStrings) {
             guitarFretboardDrawerRef.current = new GuitarFretboardDrawer(ctx, colors, {
                 width,
                 height,
                 numFrets: 24,
+                numStrings: numStrings || 6,
                 rotation: colors.rotation,
                 mirror: colors.mirror
             });
+            // Monkey-patch to track current numStrings
+            (guitarFretboardDrawerRef.current as any).cachedNumStrings = numStrings;
+
             scoreDrawerRef.current = new ScoreDrawer(canvasRef.current);
         } else {
             guitarFretboardDrawerRef.current.setColors(colors);
@@ -187,7 +210,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         if (!isAnimating) {
             drawAnimatedChord();
         }
-    }, [colors, width, height, isAnimating, drawAnimatedChord]);
+    }, [colors, width, height, isAnimating, drawAnimatedChord, previewChord, numStrings]);
 
     // Handle Static Background - simplified for Fretboard (maybe just background color)
     useEffect(() => {
@@ -383,6 +406,17 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
             drawAnimatedChord();
         }
     }, [chords, computeStateAtTimeMs, computeTotalPlaybackDurationMs, playbackSeekNonce, playbackSeekProgress, setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress]);
+
+
+    // Sync with activeChordIndex from props (for editing)
+    useEffect(() => {
+        if (!isAnimating && typeof activeChordIndex === 'number' && chords && chords.length > 0) {
+            const index = Math.max(0, Math.min(chords.length - 1, activeChordIndex));
+            animationStateRef.current.chordIndex = index;
+            animationStateRef.current.chordProgress = 0;
+            drawAnimatedChord();
+        }
+    }, [activeChordIndex, chords, isAnimating, drawAnimatedChord]);
 
 
     React.useImperativeHandle(ref, () => ({

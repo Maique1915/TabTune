@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Duration, NoteData, MeasureData, GlobalSettings } from '@/lib/tab-editor/types';
-import { Icons } from '@/lib/tab-editor/constants';
+import { Duration, NoteData, MeasureData, GlobalSettings, ManualChordData } from '@/modules/editor/domain/types';
+import { notes, getScaleNotes, getBassNotes, extensions, formatNoteName, basses } from '@/lib/chords';
+import { INSTRUMENTS } from '@/lib/instruments';
 import { VexFlowRhythmIcon } from './VexFlowRhythmIcon';
 import { VexFlowPaletteIcon } from './VexFlowPaletteIcon';
 import { GenericSidebar } from '@/components/shared/GenericSidebar';
@@ -34,6 +35,7 @@ interface SidebarProps {
     onActivePositionIndexChange?: (index: number) => void;
     onAddChordNote?: () => void;
     onRemoveChordNote?: (index: number) => void;
+    onToggleBarre?: (indices?: number[]) => void;
     // Global Settings Props
     globalSettings?: GlobalSettings;
     onGlobalSettingsChange?: (settings: Partial<GlobalSettings>) => void;
@@ -108,6 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     onActivePositionIndexChange,
     onAddChordNote,
     onRemoveChordNote,
+    onToggleBarre,
     globalSettings,
     onGlobalSettingsChange,
     onImportScore,
@@ -117,6 +120,79 @@ const Sidebar: React.FC<SidebarProps> = ({
     simpleMode = false
 }) => {
     const [activeTab, setActiveTab] = React.useState<'main' | 'articulations' | 'effects' | 'text'>('main');
+    const [selectedIndices, setSelectedIndices] = React.useState<number[]>([]);
+    const [selectedStrings, setSelectedStrings] = React.useState<number[]>([]);
+
+    // Reset selection when editing note changes
+    React.useEffect(() => {
+        setSelectedIndices([]);
+        setSelectedStrings([]);
+    }, [editingNote?.id]);
+
+    const handleStringClick = (strStr: string, e: React.MouseEvent) => {
+        const str = parseInt(strStr);
+        if (e.shiftKey || e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            // Current active string
+            const currentStr = parseInt(editingNote?.positions[activePositionIndex || 0]?.string || '0');
+
+            // If starting selection, include current active string
+            const currentSelection = selectedStrings.length > 0
+                ? selectedStrings
+                : (currentStr > 0 ? [currentStr] : []);
+
+            const newSelection = currentSelection.includes(str)
+                ? currentSelection.filter(s => s !== str)
+                : [...currentSelection, str];
+
+            setSelectedStrings(newSelection);
+
+            if (newSelection.length > 1) {
+                const max = Math.max(...newSelection);
+                const min = Math.min(...newSelection);
+                // Active Fret
+                const currentPos = editingNote?.positions[activePositionIndex || 0];
+                const fret = currentPos?.fret;
+                if (fret && onUpdateNote) {
+                    onUpdateNote({ barre: { fret, startString: max.toString(), endString: min.toString() } });
+                }
+            }
+        } else {
+            setSelectedStrings([]);
+            handleStringChangeLocal(strStr);
+        }
+    };
+
+    const handlePosClick = (idx: number, e: React.MouseEvent) => {
+        console.log('Pos Click:', idx, 'Modifiers:', { shift: e.shiftKey, ctrl: e.ctrlKey, meta: e.metaKey });
+        console.log('Current State:', { selectedIndices, activePositionIndex });
+
+        if (e.shiftKey || e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+
+            // If starting selection, include the currently active item
+            const currentSelection = selectedIndices.length > 0
+                ? selectedIndices
+                : (activePositionIndex !== undefined && activePositionIndex >= 0 ? [activePositionIndex] : []);
+
+            const newIndices = currentSelection.includes(idx)
+                ? currentSelection.filter(i => i !== idx)
+                : [...currentSelection, idx];
+
+            console.log('New Indices:', newIndices);
+            setSelectedIndices(newIndices);
+
+            // Auto-trigger barre if multiple active
+            if (newIndices.length > 1 && onToggleBarre) {
+                console.log('Triggering Toggle Barre');
+                onToggleBarre(newIndices);
+            }
+        } else {
+            console.log('Normal Click - Reset selection');
+            setSelectedIndices([]);
+            onActivePositionIndexChange?.(idx);
+        }
+    };
 
     const durationItems = [
         { label: 'Whole', code: 'w' as Duration },
@@ -302,13 +378,20 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         >
                                             + ADD NOTE
                                         </button>
+                                        <button
+                                            onClick={() => onToggleBarre?.()}
+                                            className={`ml-2 px-2 py-0.5 rounded text-[9px] font-bold transition-all border ${editingNote.barre ? 'bg-cyan-500 text-white border-cyan-400' : 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border-purple-500/20'}`}
+                                            title="Toggle Barre Chord"
+                                        >
+                                            {editingNote.barre ? 'REMOVE BARRE' : 'MAKE BARRE'}
+                                        </button>
                                     </div>
                                     <div className="flex flex-wrap gap-1.5 bg-zinc-950/40 p-1.5 rounded-xl border border-zinc-800/50">
                                         {editingNote.positions.map((pos, idx) => (
                                             <div key={idx} className="relative group">
                                                 <button
-                                                    onClick={() => onActivePositionIndexChange?.(idx)}
-                                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border ${activePositionIndex === idx ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
+                                                    onClick={(e) => handlePosClick(idx, e)}
+                                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border ${activePositionIndex === idx || selectedIndices.includes(idx) ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
                                                 >
                                                     {pos.fret}/{pos.string}
                                                 </button>
@@ -350,7 +433,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                             </div>
                                             <div className="grid grid-cols-6 gap-1.5 pt-2">
                                                 {[6, 5, 4, 3, 2, 1].map(s => (
-                                                    <button key={s} onClick={() => handleStringChangeLocal(s.toString())} className={`py-1.5 rounded-lg border font-bold text-[9px] transition-all ${editingNote.positions[activePositionIndex]?.string === s.toString() ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}>{s}</button>
+                                                    <button key={s} onClick={(e) => handleStringClick(s.toString(), e)} className={`py-1.5 rounded-lg border font-bold text-[9px] transition-all ${editingNote.positions[activePositionIndex]?.string === s.toString() || selectedStrings.includes(s) ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}>{s}</button>
                                                 ))}
                                             </div>
                                         </>
@@ -480,6 +563,119 @@ const Sidebar: React.FC<SidebarProps> = ({
                 ) : isMeasureProperties && activeMeasure ? (
                     // Measure Properties
                     <div className="space-y-8">
+                        {/* MANUAL CHORD CONFIGURATION */}
+                        <div className="space-y-4">
+                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-2 flex items-center gap-2">
+                                <Music className="w-3 h-3" />
+                                <span>Manual Chord Name</span>
+                            </h3>
+
+                            {/* Scale & Root */}
+                            {/* Root & Bass - Consolidated */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Root</label>
+                                    <div className="relative group">
+                                        <select
+                                            className="w-full px-2 py-2 bg-zinc-900/50 border border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none focus:bg-zinc-800 focus:border-cyan-500/30 appearance-none transition-all cursor-pointer hover:bg-zinc-800/50 pr-6"
+                                            value={activeMeasure.manualChord?.root || 'C'}
+                                            onChange={(e) => onMeasureUpdate?.(activeMeasure.id, {
+                                                manualChord: { ...activeMeasure.manualChord, root: e.target.value } as ManualChordData
+                                            })}
+                                        >
+                                            <option value="none" className="bg-zinc-950">None</option>
+                                            {notes.map((note) => (
+                                                <option key={note} value={note} className="bg-zinc-950">{formatNoteName(note)}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600 pointer-events-none" />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Bass</label>
+                                    <div className="relative group">
+                                        <select
+                                            className="w-full px-2 py-2 bg-zinc-900/50 border border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none focus:bg-zinc-800 focus:border-cyan-500/30 appearance-none transition-all cursor-pointer hover:bg-zinc-800/50 pr-6"
+                                            value={activeMeasure.manualChord?.bass || 'none'}
+                                            onChange={(e) => onMeasureUpdate?.(activeMeasure.id, {
+                                                manualChord: { ...activeMeasure.manualChord, bass: e.target.value } as ManualChordData
+                                            })}
+                                        >
+                                            <option value="none" className="bg-zinc-950">None</option>
+                                            {(() => {
+                                                const currentRoot = activeMeasure.manualChord?.root || 'C';
+                                                const rootIndex = notes.indexOf(currentRoot);
+                                                // Create a rotated list starting from root
+                                                const bassOptions = rootIndex >= 0
+                                                    ? [...notes.slice(rootIndex), ...notes.slice(0, rootIndex)]
+                                                    : notes;
+
+                                                return bassOptions
+                                                    .filter(bass => bass !== currentRoot) // Remove redundant root option
+                                                    .map((bass) => (
+                                                        <option key={bass} value={bass} className="bg-zinc-950">{formatNoteName(bass)}</option>
+                                                    ));
+                                            })()}
+                                        </select>
+                                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600 pointer-events-none" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Quality */}
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Quality</label>
+                                <div className="relative group">
+                                    <select
+                                        className="w-full px-2 py-2 bg-zinc-900/50 border border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none focus:bg-zinc-800 focus:border-cyan-500/30 appearance-none transition-all cursor-pointer hover:bg-zinc-800/50 pr-6"
+                                        value={activeMeasure.manualChord?.quality || 'Major'}
+                                        onChange={(e) => onMeasureUpdate?.(activeMeasure.id, {
+                                            manualChord: { ...activeMeasure.manualChord, quality: e.target.value } as ManualChordData
+                                        })}
+                                    >
+                                        <option value="Major" className="bg-zinc-950">Major</option>
+                                        <option value="Minor" className="bg-zinc-950">Minor</option>
+                                        <option value="Dim" className="bg-zinc-950">Diminished</option>
+                                        <option value="Aug" className="bg-zinc-950">Augmented</option>
+                                        <option value="Sus2" className="bg-zinc-950">Sus2</option>
+                                        <option value="Sus4" className="bg-zinc-950">Sus4</option>
+                                    </select>
+                                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600 pointer-events-none" />
+                                </div>
+                            </div>
+
+
+                            {/* Extensions */}
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Extensions</label>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {extensions.map((ext) => {
+                                        const isActive = activeMeasure.manualChord?.extensions?.includes(ext);
+                                        return (
+                                            <button
+                                                key={ext}
+                                                onClick={() => {
+                                                    const currentExts = activeMeasure.manualChord?.extensions || [];
+                                                    const newExts = isActive
+                                                        ? currentExts.filter(e => e !== ext)
+                                                        : [...currentExts, ext];
+                                                    onMeasureUpdate?.(activeMeasure.id, {
+                                                        manualChord: { ...activeMeasure.manualChord, extensions: newExts } as ManualChordData
+                                                    });
+                                                }}
+                                                className={`px-2 py-1.5 rounded-lg text-[9px] font-black border transition-all uppercase tracking-wider ${isActive
+                                                    ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.1)]'
+                                                    : 'bg-zinc-900/50 text-zinc-500 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-300'
+                                                    }`}
+                                            >
+                                                {ext}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
 
 
                         <div className="space-y-4">
@@ -504,55 +700,71 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </div >
                 ) : (
                     <div className="space-y-8">
                         {/* Collapsible Sections for Palettes */}
-                        <CollapsibleSection title="Claves">
-                            <div className="grid grid-cols-4 gap-2 bg-zinc-950/40 p-2 rounded-xl border border-zinc-800/50">
-                                {(['treble', 'bass', 'alto', 'tenor', 'percussion', 'tab'] as const).map(c => (
-                                    <button
-                                        key={c}
-                                        onClick={() => onGlobalSettingsChange?.({ clef: c === 'percussion' ? 'treble' : c })}
-                                        className={`h-14 flex items-center justify-center rounded-lg border transition-all ${globalSettings?.clef === c ? 'bg-cyan-500/10 border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-transparent border-transparent hover:bg-zinc-800/50 hover:border-zinc-700/50'}`}
-                                        title={c}
-                                    >
-                                        <VexFlowPaletteIcon type="clef" value={c} width={50} height={50} scale={1.5} isSelected={globalSettings?.clef === c} hideStaveLines={true} />
-                                    </button>
-                                ))}
-                            </div>
-                        </CollapsibleSection>
+                        <CollapsibleSection title="Instrument & Tuning">
+                            <div className="space-y-4 bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/50">
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Instrument</label>
+                                    <div className="relative group">
+                                        <select
+                                            className="w-full px-3 py-2.5 bg-zinc-900/50 border border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-300 focus:outline-none focus:bg-zinc-800 focus:border-cyan-500/30 appearance-none transition-all cursor-pointer hover:bg-zinc-800/50 pr-8"
+                                            value={globalSettings?.instrumentId || "violao"}
+                                            onChange={(e) => {
+                                                const instId = e.target.value;
+                                                const inst = INSTRUMENTS.find(i => i.id === instId) || INSTRUMENTS[0];
+                                                const defaultTuning = inst.tunings[0];
+                                                onGlobalSettingsChange?.({
+                                                    instrumentId: instId,
+                                                    tuningIndex: 0,
+                                                    tuning: defaultTuning,
+                                                    numStrings: defaultTuning.length
+                                                });
+                                            }}
+                                        >
+                                            {INSTRUMENTS.map((inst) => (
+                                                <option key={inst.id} value={inst.id} className="bg-zinc-950">{inst.name}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 pointer-events-none" />
+                                    </div>
+                                </div>
 
-                        <CollapsibleSection title="Armaduras de clave">
-                            <div className="grid grid-cols-5 gap-1 bg-zinc-950/40 p-2 rounded-xl border border-zinc-800/50">
-                                {[
-                                    'C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#',
-                                    'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb'
-                                ].map(k => (
-                                    <button
-                                        key={k}
-                                        onClick={() => onGlobalSettingsChange?.({ key: k })}
-                                        className={`h-12 flex items-center justify-center rounded-lg border transition-all ${globalSettings?.key === k ? 'bg-cyan-500/10 border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-transparent border-transparent hover:bg-zinc-800/50 hover:border-zinc-700/50'}`}
-                                        title={k}
-                                    >
-                                        <VexFlowPaletteIcon type="key" value={k} width={40} height={50} scale={1.45} isSelected={globalSettings?.key === k} hideStaveLines={true} clef="tab" />
-                                    </button>
-                                ))}
-                            </div>
-                        </CollapsibleSection>
 
-                        <CollapsibleSection title="Fórmulas de compasso">
-                            <div className="grid grid-cols-4 gap-2 bg-zinc-950/40 p-2 rounded-xl border border-zinc-800/50">
-                                {['4/4', '3/4', '2/4', '6/8', '12/8', 'C', 'C|'].map(t => (
-                                    <button
-                                        key={t}
-                                        onClick={() => onGlobalSettingsChange?.({ time: t })}
-                                        className={`h-14 flex items-center justify-center rounded-lg border transition-all ${globalSettings?.time === t ? 'bg-cyan-500/10 border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-transparent border-transparent hover:bg-zinc-800/50 hover:border-zinc-700/50'}`}
-                                        title={t}
-                                    >
-                                        <VexFlowPaletteIcon type="time" value={t} width={50} height={50} scale={1.45} isSelected={globalSettings?.time === t} hideStaveLines={true} />
-                                    </button>
-                                ))}
+
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Tuning</label>
+                                    <div className="relative group">
+                                        <select
+                                            className="w-full px-3 py-2.5 bg-zinc-900/50 border border-zinc-800/50 rounded-xl text-xs font-bold text-zinc-400 focus:outline-none focus:bg-zinc-800 focus:border-cyan-500/30 appearance-none transition-all cursor-pointer hover:bg-zinc-800/50 pr-8"
+                                            value={globalSettings?.tuningIndex || 0}
+                                            onChange={(e) => {
+                                                const idx = parseInt(e.target.value);
+                                                const instId = globalSettings?.instrumentId || "violao";
+                                                const inst = INSTRUMENTS.find(i => i.id === instId) || INSTRUMENTS[0];
+                                                const newTuning = inst.tunings[idx] || inst.tunings[0];
+                                                onGlobalSettingsChange?.({
+                                                    tuningIndex: idx,
+                                                    tuning: newTuning,
+                                                    numStrings: newTuning.length
+                                                });
+                                            }}
+                                        >
+                                            {(() => {
+                                                const instId = globalSettings?.instrumentId || "violao";
+                                                const inst = INSTRUMENTS.find(i => i.id === instId) || INSTRUMENTS[0];
+                                                return inst.tunings.map((t, idx) => (
+                                                    <option key={idx} value={idx} className="bg-zinc-950">
+                                                        {t.join(" ")}
+                                                    </option>
+                                                ));
+                                            })()}
+                                        </select>
+                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 pointer-events-none" />
+                                    </div>
+                                </div>
                             </div>
                         </CollapsibleSection>
 
@@ -620,8 +832,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </div>
                     </div>
                 )}
-            </div>
-        </GenericSidebar>
+            </div >
+        </GenericSidebar >
     );
 };
 

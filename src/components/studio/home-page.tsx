@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { LibraryPanel } from "./library-panel";
 import { MainStage } from "./main-stage";
-import { TimelinePanel } from "./timeline-panel";
+import { StudioTimeline } from "./StudioTimeline";
 import { SettingsPanel } from "./SettingsPanel";
 import { AppHeader } from "./app-header";
 import { MobileNav, NavItem } from "@/components/shared/MobileNav";
@@ -266,8 +266,8 @@ export function HomePage() {
               {floatingControls}
             </div>
 
-            <div className="h-64 overflow-hidden">
-              <TimelinePanel
+            <div className="h-64 overflow-hidden border-t border-white/10">
+              <StudioTimeline
                 isAnimating={isAnimating}
                 isPaused={isPaused}
                 ffmpegLoaded={true}
@@ -294,7 +294,7 @@ export function HomePage() {
             </StageContainer>
           }
           bottomSection={
-            <TimelinePanel
+            <StudioTimeline
               isAnimating={isAnimating}
               isPaused={isPaused}
               ffmpegLoaded={true}

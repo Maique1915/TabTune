@@ -37,6 +37,15 @@ export interface NoteData {
     isSlurred?: boolean;
     annotation?: string; // Text above/below note
     chord?: string;      // Simple chord name above note
+    barre?: { fret: string, startString: string, endString: string };
+}
+
+export interface ManualChordData {
+    root: string;
+    quality: string;
+    bass?: string;
+    extensions?: string[];
+    scale?: string;
 }
 
 export interface MeasureData {
@@ -46,6 +55,7 @@ export interface MeasureData {
     showClef?: boolean;
     clef?: 'treble' | 'bass' | 'alto' | 'tenor' | 'tab';
     showTimeSig?: boolean;
+    manualChord?: ManualChordData;
 }
 
 export interface GlobalSettings {
@@ -55,6 +65,11 @@ export interface GlobalSettings {
     clef: 'treble' | 'bass' | 'alto' | 'tenor' | 'tab';
     showNotation: boolean;
     showTablature: boolean;
+    displayMode?: 'tab' | 'score' | 'both';
+    numStrings?: number;
+    tuning?: string[]; // Optional tuning array
+    instrumentId?: string;
+    tuningIndex?: number;
 }
 
 export type TransitionType = 'snap' | 'slide' | 'fade' | 'assemble';
@@ -66,6 +81,8 @@ export interface ElementStyle {
     shadow: boolean;
     shadowColor?: string;
     shadowBlur?: number;
+    strokeColor?: string;
+    strokeWidth?: number;
 }
 
 export interface ScoreStyle {
@@ -87,6 +104,7 @@ export interface ScoreStyle {
     transitionType: TransitionType;
     playheadColor: string;
     activeNoteColor: string;
+    chordName: ElementStyle;
 
     // Legacy mapping (optional, or removed later)
     width?: number;
@@ -105,6 +123,15 @@ export const DEFAULT_SCORE_STYLE: ScoreStyle = {
     tabNumbers: { color: '#ffffffff', opacity: 1, shadow: false },
     symbols: { color: '#ffffffff', opacity: 1, shadow: false },
     staffLines: { color: '#ffffffff', opacity: 0.4, shadow: false },
+    chordName: {
+        color: '#22d3ee',
+        opacity: 1,
+        shadow: true,
+        shadowColor: '#22d3ee',
+        shadowBlur: 10,
+        strokeColor: '#000000',
+        strokeWidth: 3
+    },
     background: '#000000',
     playheadColor: '#ffffffff',
     activeNoteColor: '#ffffffff',

@@ -1,6 +1,6 @@
 
 import { useState, useMemo } from 'react';
-import { MeasureData, GlobalSettings, ScoreStyle, DEFAULT_SCORE_STYLE, Duration, NoteData } from '@/lib/tab-editor/types';
+import { MeasureData, GlobalSettings, ScoreStyle, DEFAULT_SCORE_STYLE, Duration, NoteData } from '@/modules/editor/domain/types';
 import { useUndoRedo } from '@/hooks/use-undo-redo';
 import {
     getNoteDurationValue,
@@ -11,7 +11,7 @@ import {
     findBestFretForPitch,
     getMidiFromPitch,
     NOTE_NAMES
-} from '@/lib/tab-editor/utils/musicMath';
+} from '@/modules/editor/domain/music-math';
 
 interface FretboardEditorState {
     measures: MeasureData[];
@@ -72,7 +72,31 @@ export function useFretboardEditor() {
         selectedMeasureId
     } = state;
 
+
+
     // --- Helpers ---
+
+    const recalculateBarre = (note: NoteData): NoteData['barre'] => {
+        if (!note.barre) return undefined;
+        // barre.fret is the anchor.
+        const relevantPositions = note.positions.filter(p => p.fret === note.barre!.fret);
+
+        // If no notes left on the barre fret, we can explicitly remove the barre 
+        // OR keep it (maybe user wants to move notes back). 
+        // For now, if no notes on that fret, the barre visual is confusing / invalid.
+        // Let's remove it if no notes match.
+        if (relevantPositions.length === 0) return undefined;
+
+        const strings = relevantPositions.map(p => parseInt(p.string));
+        const minStr = Math.min(...strings);
+        const maxStr = Math.max(...strings);
+
+        return {
+            ...note.barre,
+            startString: maxStr.toString(),
+            endString: minStr.toString()
+        };
+    };
 
     const setMeasures = (newMeasures: MeasureData[] | ((prev: MeasureData[]) => MeasureData[])) => {
         setState(prev => ({
@@ -182,7 +206,13 @@ export function useFretboardEditor() {
                 notes: m.notes.map(n => {
                     if (prev.selectedNoteIds.includes(n.id) || n.id === prev.editingNoteId) {
                         const resolvedUpdates = typeof updates === 'function' ? updates(n) : updates;
-                        return { ...n, ...resolvedUpdates };
+                        let updatedNote = { ...n, ...resolvedUpdates };
+
+                        // Auto-recalculate barre if present
+                        if (updatedNote.barre) {
+                            updatedNote.barre = recalculateBarre(updatedNote);
+                        }
+                        return updatedNote;
                     }
                     return n;
                 })
@@ -549,10 +579,14 @@ export function useFretboardEditor() {
                 ...m,
                 notes: m.notes.map(n => {
                     if (prev.selectedNoteIds.includes(n.id) || n.id === prev.editingNoteId) {
-                        return {
+                        const updatedNote = {
                             ...n,
                             positions: [...n.positions, { fret: '0', string: (n.positions.length + 1).toString() }]
                         };
+                        if (updatedNote.barre) {
+                            updatedNote.barre = recalculateBarre(updatedNote);
+                        }
+                        return updatedNote;
                     }
                     return n;
                 })
@@ -577,12 +611,78 @@ export function useFretboardEditor() {
                         if (n.positions.length <= 1) return n;
                         const newPositions = n.positions.filter((_, i) => i !== idx);
                         if (newIndex >= newPositions.length) newIndex = Math.max(0, newPositions.length - 1);
-                        return { ...n, positions: newPositions };
+
+                        let updatedNote = { ...n, positions: newPositions };
+                        if (updatedNote.barre) {
+                            updatedNote.barre = recalculateBarre(updatedNote);
+                        }
+                        return updatedNote;
                     }
                     return n;
                 })
             }));
             return { ...prev, measures: newMeasures, activePositionIndex: newIndex };
+        });
+    };
+
+    const handleToggleBarre = (indices?: number[]) => {
+        updateSelectedNotes(n => {
+            // If explicit indices provided, create barre for them
+            if (indices && indices.length > 0) {
+                const relevantPositions = n.positions.filter((_, i) => indices.includes(i));
+                if (relevantPositions.length < 1) return { barre: undefined };
+
+                const targetFret = relevantPositions[0].fret; // Assume all on same fret for now
+                // Verify same fret
+                if (relevantPositions.some(p => p.fret !== targetFret)) return { barre: undefined }; // Invalid selection
+
+                const strings = relevantPositions.map(p => parseInt(p.string));
+                const minStr = Math.min(...strings);
+                const maxStr = Math.max(...strings);
+
+                return {
+                    barre: {
+                        fret: targetFret,
+                        startString: maxStr.toString(),
+                        endString: minStr.toString()
+                    }
+                };
+            }
+
+            if (n.barre) {
+                // If barre exists, remove it
+                return { barre: undefined };
+            }
+
+            // Create barre logic
+            // Find most common fret in positions
+            const frets: Record<string, number> = {};
+            n.positions.forEach(p => {
+                if (p.fret === '0' || p.fret === 'x') return;
+                frets[p.fret] = (frets[p.fret] || 0) + 1;
+            });
+
+            // Get fret with most notes, or active position's fret
+            const sortedFrets = Object.entries(frets).sort((a, b) => b[1] - a[1]);
+            const targetFret = sortedFrets.length > 0 ? sortedFrets[0][0] : n.positions[activePositionIndex]?.fret;
+
+            if (!targetFret || targetFret === '0' || targetFret === 'x') return {};
+
+            // Find min/max string for this fret
+            const relevantPositions = n.positions.filter(p => p.fret === targetFret);
+            if (relevantPositions.length < 1) return {}; // Need at least 1 note to barre? Usually 2, but allow 1 if user wants.
+
+            const strings = relevantPositions.map(p => parseInt(p.string));
+            const minStr = Math.min(...strings); // e.g. 1
+            const maxStr = Math.max(...strings); // e.g. 6
+
+            return {
+                barre: {
+                    fret: targetFret,
+                    startString: maxStr.toString(), // Start from thickest (highest index)
+                    endString: minStr.toString()   // End at thinnest (lowest index)
+                }
+            };
         });
     };
 
@@ -629,6 +729,7 @@ export function useFretboardEditor() {
         handleInsert,
         handleAddChordNote,
         handleRemoveChordNote,
+        handleToggleBarre,
         updateSelectedNotes,
 
         // Utils

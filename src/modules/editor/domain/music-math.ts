@@ -1,4 +1,6 @@
 
+import { Chord } from "@tonaljs/tonal";
+import { NoteData } from "@/modules/editor/domain/types";
 export const STRING_BASES = [64, 59, 55, 50, 45, 40]; // E4, B3, G3, D3, A2, E2
 export const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
@@ -120,4 +122,37 @@ export function decomposeValue(value: number): { duration: string, dotted: boole
         if (!found) break; // Evita loop infinito se sobrar algo minúsculo
     }
     return result;
+}
+
+
+
+/**
+ * Detects the chord name from the notes in a measure.
+ * Aggregates all pitches found in the measure to infer the harmony.
+ */
+export function detectChordFromMeasure(notes: NoteData[]): string | null {
+    if (!notes || notes.length === 0) return null;
+
+    const pitches: string[] = [];
+    notes.forEach(n => {
+        if (n.type === 'rest') return;
+        n.positions.forEach(pos => {
+            const midi = getMidiFromPosition(parseInt(pos.fret), parseInt(pos.string));
+            const { name, accidental } = getPitchFromMidi(midi);
+            pitches.push(name + accidental);
+        });
+    });
+
+    // Remove duplicates
+    const uniquePitches = Array.from(new Set(pitches));
+
+    if (uniquePitches.length < 2) return null;
+
+    // Use Tonal to detect
+    const detected = Chord.detect(uniquePitches);
+    if (detected && detected.length > 0) {
+        // Return the first candidate (usually the most simple)
+        return detected[0];
+    }
+    return null;
 }

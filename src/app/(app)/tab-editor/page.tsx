@@ -10,16 +10,16 @@ import {
     ScoreStyle,
     DEFAULT_SCORE_STYLE,
     Duration
-} from '@/lib/tab-editor/types';
+} from '@/modules/editor/domain/types';
 import { MobileNav, NavItem } from "@/components/shared/MobileNav";
 import Sidebar from '@/components/tab-editor/Sidebar';
 import StyleSidebar from '@/components/tab-editor/StyleSidebar';
 import { AppHeader as StudioHeader } from '@/components/studio/app-header';
 import { SettingsPanel } from '@/components/studio/SettingsPanel';
 import ScorePreview, { ScorePreviewRef } from '@/components/tab-editor/ScorePreview';
-import VisualEditor from '@/components/tab-editor/VisualEditor';
-import { convertToVextab } from '@/lib/tab-editor/utils/vextabConverter';
-import { importScoreFile } from '@/lib/tab-editor/utils/musicXmlParser';
+import VisualTimeline from '@/components/tab-editor/timeline/VisualTimeline';
+import { convertToVextab } from '@/modules/editor/infrastructure/parsers/vextab-converter';
+import { importScoreFile } from '@/modules/editor/infrastructure/parsers/music-xml-parser';
 import { Upload } from 'lucide-react';
 import { VideoRenderSettingsModal, VideoRenderSettings } from '@/components/shared/VideoRenderSettingsModal';
 import { RenderProgressModal } from '@/components/shared/RenderProgressModal';
@@ -41,7 +41,7 @@ import {
     getNoteDurationValue,
     getMeasureCapacity,
     decomposeValue
-} from '@/lib/tab-editor/utils/musicMath';
+} from '@/modules/editor/domain/music-math';
 import { useUndoRedo } from '@/hooks/use-undo-redo';
 
 interface TabEditorState {
@@ -1071,9 +1071,9 @@ export default function TabEditorPage() {
                             />
                         </div>
 
-                        {/* Timeline (VisualEditor) */}
-                        <div className="mb-4">
-                            <VisualEditor
+                        {/* Top Section: VisualTimeline replaces TimelinePanel/VisualEditor */}
+                        <div className="flex-1 min-h-0 bg-black/40 backdrop-blur-sm border-b border-white/5 relative flex flex-col">
+                            <VisualTimeline
                                 measures={measures}
                                 selectedNoteIds={selectedNoteIds}
                                 timeSignature={settings.time}
@@ -1127,7 +1127,7 @@ export default function TabEditorPage() {
                         </StageContainer>
                     }
                     bottomSection={
-                        <VisualEditor
+                        <VisualTimeline
                             measures={measures}
                             selectedNoteIds={selectedNoteIds}
                             timeSignature={settings.time}

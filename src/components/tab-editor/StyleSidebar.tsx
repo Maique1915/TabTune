@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { Palette, RotateCcw, ChevronDown, ChevronRight, Sun, Layers, Zap, Brush, Component, Activity } from 'lucide-react';
 import { HexColorPicker } from 'react-colorful';
 import * as Popover from '@radix-ui/react-popover';
-import { ScoreStyle, ElementStyle } from '@/lib/tab-editor/types';
-import { PRESET_THEMES } from '@/lib/tab-editor/constants';
+import { ScoreStyle, ElementStyle } from '@/modules/editor/domain/types';
+import { PRESET_THEMES } from '@/modules/editor/presentation/constants';
 import { GenericSidebar } from '@/components/shared/GenericSidebar';
 
 interface StyleSidebarProps {

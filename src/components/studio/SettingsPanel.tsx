@@ -36,8 +36,11 @@ const STUDIO_PRESETS = {
       fretboardColor: "#f5f5f5",
       borderColor: "#cccccc",
       fretColor: "#dddddd",
-      textColor: "#333333",
-      chordNameColor: "#000000",
+      chordNameShadow: false,
+      chordNameShadowColor: "transparent",
+      chordNameShadowBlur: 0,
+      chordNameStrokeColor: "transparent",
+      chordNameStrokeWidth: 0,
       fingerColor: "#333333",
       fingerTextColor: "#ffffff",
       fingerBorderColor: "#000000",
@@ -54,6 +57,12 @@ const STUDIO_PRESETS = {
       fretColor: "#fb00ff50",
       textColor: "#00ff9d",
       chordNameColor: "#fb00ff",
+      chordNameOpacity: 1,
+      chordNameShadow: true,
+      chordNameShadowColor: "#fb00ff",
+      chordNameShadowBlur: 20,
+      chordNameStrokeColor: "#2d0036", // Dark background color as stroke for contrast
+      chordNameStrokeWidth: 4,
       fingerColor: "#00ff9d",
       fingerTextColor: "#fffdfdff",
       fingerBorderColor: "#fb00ff",
@@ -70,6 +79,12 @@ const STUDIO_PRESETS = {
       fretColor: "#334155",
       textColor: "#94a3b8",
       chordNameColor: "#60a5fa",
+      chordNameOpacity: 1,
+      chordNameShadow: true,
+      chordNameShadowColor: "#60a5fa",
+      chordNameShadowBlur: 15,
+      chordNameStrokeColor: "#0f172a", // Dark blue stroke
+      chordNameStrokeWidth: 4,
       fingerColor: "#3b82f6",
       fingerTextColor: "#ffffff",
       fingerBorderColor: "#60a5fa",
@@ -86,6 +101,12 @@ const STUDIO_PRESETS = {
       fretColor: "#a68b6c",
       textColor: "#5c4033",
       chordNameColor: "#3e2723",
+      chordNameOpacity: 0.9,
+      chordNameShadow: false,
+      chordNameShadowColor: "transparent",
+      chordNameShadowBlur: 0,
+      chordNameStrokeColor: "transparent",
+      chordNameStrokeWidth: 0,
       fingerColor: "#5c4033",
       fingerTextColor: "#efe6d5",
       fingerBorderColor: "#3e2723",
@@ -200,6 +221,23 @@ const SETTING_GROUPS: SettingGroup[] = [
     icon: Type,
     controls: [
       { type: 'color', label: 'Chord Name', key: 'chordNameColor' },
+      { type: 'slider', label: 'Opacity', key: 'chordNameOpacity', min: 0, max: 1, step: 0.1 },
+      // Shadow Toggles are not supported by the simple SettingControl type yet (needs boolean toggle).
+      // But I can implement Shadow Color, Shadow Blur.
+      // Or I can just add color and leave shadow logic to be "if shadow color is transparent"?
+      // My drawer logic: if (chordNameShadow) ...
+      // I don't see a boolean toggle in SettingControl types.
+      // I will check `handleColorChange` logic. It handles numbers and strings.
+      // I should add a Checkbox type?
+      // Or I can piggyback on ColorPicker alpha being 0?
+      // For now, let's just add Shadow Color and Blur, and assume shadow is always ON if user wants it (default true).
+      // Wait, `chordNameShadow` is boolean.
+      // I'll skip boolean for now or implement it if I see a pattern.
+      // I'll add Shadow Color and Blur.
+      { type: 'color', label: 'Shadow Color', key: 'chordNameShadowColor' },
+      { type: 'number', label: 'Shadow Blur', key: 'chordNameShadowBlur', min: 0, max: 50 },
+      { type: 'color', label: 'Stroke Color', key: 'chordNameStrokeColor' },
+      { type: 'number', label: 'Stroke Width', key: 'chordNameStrokeWidth', min: 0, max: 10 },
       { type: 'color', label: 'General Text', key: 'textColor' },
     ]
   }

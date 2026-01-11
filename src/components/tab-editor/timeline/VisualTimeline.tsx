@@ -1,10 +1,9 @@
-
 'use client';
 
 import React, { useState } from 'react';
-import { MeasureData, NoteData, Duration } from '@/lib/tab-editor/types';
-import { getNoteDurationValue, getMeasureCapacity } from '@/lib/tab-editor/utils/musicMath';
-import { Icons } from '@/lib/tab-editor/constants';
+import { MeasureData, NoteData, Duration } from '@/modules/editor/domain/types';
+import { getNoteDurationValue, getMeasureCapacity, detectChordFromMeasure } from '@/modules/editor/domain/music-math';
+import { Icons } from '@/modules/editor/presentation/constants';
 
 interface VisualEditorProps {
     measures: MeasureData[];
@@ -29,7 +28,7 @@ interface VisualEditorProps {
     selectedMeasureId: string | null;
 }
 
-const VisualEditor: React.FC<VisualEditorProps> = ({
+const VisualTimeline: React.FC<VisualEditorProps> = ({
     measures,
     selectedNoteIds,
     timeSignature,
@@ -156,6 +155,40 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
                                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Measure {mIdx + 1}</span>
                                                 </div>
                                             )}
+
+                                            {/* Chord Badge */}
+                                            {(() => {
+                                                // 1. Attempt Manual Chord
+                                                if (measure.manualChord && measure.manualChord.root && measure.manualChord.root !== 'none') {
+                                                    const { root, quality, bass, extensions } = measure.manualChord;
+                                                    let suffix = '';
+                                                    if (quality === 'Minor') suffix = 'm';
+                                                    else if (quality === 'Dim') suffix = 'dim';
+                                                    else if (quality === 'Aug') suffix = 'aug';
+                                                    else if (quality === 'Sus2') suffix = 'sus2';
+                                                    else if (quality === 'Sus4') suffix = 'sus4';
+
+                                                    const ext = extensions ? extensions.join('') : '';
+                                                    const bassStr = (bass && bass !== 'none') ? `/${bass}` : '';
+
+                                                    // Simple Note formatting (since formatNoteName import might be complex, simple regex or map is safer given import limits)
+                                                    const fmtRoot = root.replace('s', '#');
+
+                                                    return (
+                                                        <div className="ml-2 px-1.5 py-0.5 rounded bg-pink-500/10 border border-pink-500/20 text-[10px] font-bold text-pink-400">
+                                                            {fmtRoot}{suffix}{ext}{bassStr}
+                                                        </div>
+                                                    );
+                                                }
+
+                                                // 2. Fallback to Auto-detect
+                                                const chordName = detectChordFromMeasure(measure.notes);
+                                                return chordName ? (
+                                                    <div className="ml-2 px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-bold text-cyan-400">
+                                                        {chordName}
+                                                    </div>
+                                                ) : null;
+                                            })()}
                                         </div>
 
                                         <div className="flex items-center space-x-1">
@@ -285,4 +318,4 @@ const VisualEditor: React.FC<VisualEditorProps> = ({
     );
 };
 
-export default VisualEditor;
+export default VisualTimeline;

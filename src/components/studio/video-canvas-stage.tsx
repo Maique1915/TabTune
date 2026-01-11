@@ -7,7 +7,6 @@ import { useAppContext } from "@/app/context/app--context";
 import { drawStaticFingersAnimation } from "@/lib/static-fingers-drawer";
 import { drawCarouselAnimation } from "@/lib/carousel-drawer";
 import { ChordDrawerBase } from "@/lib/chord-drawer-base";
-import { FretboardDrawer } from "@/lib/fretboard-drawer";
 import { TimelineState } from "@/lib/timeline/types";
 import { ScoreDrawer } from "@/lib/score-drawer";
 import { useCanvasRecorder, CanvasRecorderOptions } from "@/lib/shared/hooks/useCanvasRecorder";

@@ -1,7 +1,8 @@
 
-import { MeasureData, GlobalSettings, Duration } from "@/lib/tab-editor/types";
+import { MeasureData, GlobalSettings, Duration } from "@/modules/editor/domain/types";
 import { ChordWithTiming, ChordDiagramProps, Position, TabEffect } from "@/lib/types";
-import { getNoteDurationValue, findBestFretForPitch, getMidiFromPosition } from "@/lib/tab-editor/utils/musicMath";
+import { getNoteDurationValue, findBestFretForPitch, getMidiFromPosition, detectChordFromMeasure } from "@/modules/editor/domain/music-math";
+import { basses, getBassNotes } from "@/modules/core/domain/chord-logic";
 
 /**
  * Converts a list of MeasureData (from Tab Editor) into a flat list of ChordWithTiming (for Fretboard Visualizer).
@@ -95,8 +96,63 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
                 origin: 0,
                 positions: positions,
                 avoid: [], // Calculate avoided strings? (Those not in positions)
-                nut: undefined
+                nut: note.barre ? {
+                    vis: true,
+                    str: [parseInt(note.barre.startString), parseInt(note.barre.endString)],
+                    pos: parseInt(note.barre.fret),
+                    fin: 1, // Index finger usually
+                    trn: 0
+                } : undefined,
+                stringNames: settings.tuning
             };
+
+            // Determine Chord Name
+            let chordName = '';
+            if (measure.manualChord && measure.manualChord.root && measure.manualChord.root !== 'none') {
+                const { root, quality, bass, extensions, scale } = measure.manualChord;
+                let suffix = '';
+                if (quality === 'Minor') suffix = 'm';
+                else if (quality === 'Dim') suffix = 'dim';
+                else if (quality === 'Aug') suffix = 'aug';
+                else if (quality === 'Sus2') suffix = 'sus2';
+                else if (quality === 'Sus4') suffix = 'sus4';
+
+                const ext = extensions ? extensions.join('') : '';
+
+                let bassStr = '';
+                if (bass && bass !== 'none') {
+                    // Bass is now stored as Note Name (e.g. "C#") from Sidebar.
+                    // Old data might be intervals ("/2").
+                    // We simply prefix with '/' if needed.
+                    bassStr = bass.startsWith('/') ? bass : `/${bass}`;
+
+                    // Check for redundancy: if bass note equals root note, hide bass
+                    // Extract note name from bassStr (remove '/')
+                    const cleanBass = bassStr.replace('/', '');
+
+                    // If cleanBass is an interval number (e.g. "2"), don't hide it (old data).
+                    // If it matches root (Note Name), hide it.
+                    if (cleanBass === root) {
+                        bassStr = '';
+                    }
+                }
+
+                // Reuse simple formatting logic or robust one
+                const fmtRoot = root.replace('s', '#');
+                chordName = `${fmtRoot}${suffix}${ext}${bassStr}`;
+            } else {
+                // Fallback to auto-detect from the current NOTE(s) or the whole MEASURE?
+                // measuresToChords iterates NOTE by NOTE (or column by column).
+                // Ideally, we want the name of what is currently playing.
+                // If the measure acts as a single harmonic unit, we can use the measure's chord.
+                // But `detectChordFromMeasure` uses specific notes.
+                // Let's use the whole measure's context for now as "Harmonic Context".
+                chordName = detectChordFromMeasure(measure.notes) || '';
+            }
+
+            if (chordName) {
+                chordData.chordName = chordName;
+            }
 
             result.push({
                 chord: chordData,

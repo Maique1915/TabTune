@@ -3,7 +3,8 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import Sidebar from "@/components/tab-editor/Sidebar";
 import { measuresToChords } from "@/lib/fretboard/converter";
-import VisualEditor from "@/components/tab-editor/VisualEditor";
+import { ChordDiagramProps } from "@/lib/types";
+import VisualTimeline from "@/components/fretboard/timeline/VisualTimeline";
 import { useAppContext } from "@/app/context/app--context";
 import { FretboardStage, FretboardStageRef } from "@/components/fretboard/FretboardStage";
 import { SettingsPanel } from "@/components/studio/SettingsPanel";
@@ -17,7 +18,7 @@ import { RenderingProgressCard } from "@/components/studio/rendering-progress-ca
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/shared/lib/utils";
 import { Music2, Library, Settings, Guitar } from "lucide-react";
-import { TimelineControls } from "@/components/studio/timeline/TimelineControls";
+import { TimelineControls } from "@/components/fretboard/timeline/TimelineControls";
 import { useFretboardEditor } from "@/hooks/use-fretboard-editor";
 
 export function FretboardPlayer() {
@@ -55,6 +56,7 @@ export function FretboardPlayer() {
         handleInsert,
         handleAddChordNote,
         handleRemoveChordNote,
+        handleToggleBarre,
         updateSelectedNotes,
         undo,
         redo,
@@ -86,9 +88,56 @@ export function FretboardPlayer() {
 
     // 3. Convert Measures to Chords for Visualization
     const chords = useMemo(() => {
-console.log("Debug Chords:", measuresToChords(measures, settings));
+        console.log("Debug Chords:", measuresToChords(measures, settings));
         return measuresToChords(measures, settings);
     }, [measures, settings]);
+
+    // 4. Calculate Preview Chord (Ghost Note)
+    const previewChord = useMemo<ChordDiagramProps | null>(() => {
+        // Priority 1: Note being edited
+        if (editingNote) {
+            // Fallback if activeMeasure is missing
+            const baseMeasure = activeMeasure || {
+                id: 'preview-measure',
+                notes: [],
+                isCollapsed: false,
+                showClef: false,
+                showTimeSig: false
+            };
+
+            const tempMeasure = { ...baseMeasure, notes: [editingNote] };
+            const converted = measuresToChords([tempMeasure], settings);
+
+            if (converted.length > 0) {
+                return converted[0].finalChord;
+            }
+        }
+
+        // Priority 2: Active Measure
+        if (activeMeasure) {
+            const converted = measuresToChords([activeMeasure], settings);
+            if (converted.length > 0) return converted[0].finalChord;
+        }
+        return null;
+    }, [activeMeasure, editingNote, settings]);
+
+    // 5. Calculate Active Chord Index (for syncing canvas with timeline selection)
+    const activeChordIndex = useMemo(() => {
+        if (!activeMeasure || chords.length === 0) return 0;
+
+        // Count how many chords are in the measures BEFORE the current measure
+        // Since chords are flattened, we need the sum of chord counts of previous measures.
+
+        const previousMeasures = measures.slice(0, currentMeasureIndex);
+        if (previousMeasures.length === 0) return 0;
+
+        // Efficiently Count: 
+        // Note: measuresToChords is somewhat expensive, but doing it on subset is safer than guessing.
+        // Optimization: We could just map measures to counts if performance is an issue.
+        // But for now, let's reuse correct logic.
+        const prevChords = measuresToChords(previousMeasures, settings);
+        return prevChords.length;
+    }, [activeMeasure, currentMeasureIndex, measures, settings, chords]);
 
     // Force Guitar Fretboard mode on mount
     useEffect(() => {
@@ -245,6 +294,7 @@ console.log("Debug Chords:", measuresToChords(measures, settings));
                     onActivePositionIndexChange={setActivePositionIndex}
                     onAddChordNote={handleAddChordNote}
                     onRemoveChordNote={handleRemoveChordNote}
+                    onToggleBarre={handleToggleBarre}
                     globalSettings={settings}
                     onGlobalSettingsChange={(newSettings: any) => setSettings(prev => ({ ...prev, ...newSettings }))}
                     onImportScore={() => { }}
@@ -271,6 +321,7 @@ console.log("Debug Chords:", measuresToChords(measures, settings));
                                         setIsPaused(paused);
                                     }}
                                     onRenderProgress={setRenderProgress}
+                                    numStrings={settings.numStrings}
                                 />
                             </StageContainer>
                         </div>
@@ -278,10 +329,9 @@ console.log("Debug Chords:", measuresToChords(measures, settings));
                         <div className="mb-4 px-2">
                             {floatingControls}
                         </div>
-
                         <div className="h-64 overflow-hidden border-t border-white/10">
-                            {/* VisualEditor replaces TimelinePanel */}
-                            <VisualEditor {...visualEditorProps} />
+                            {/* VisualTimeline replaces TimelinePanel */}
+                            <VisualTimeline {...visualEditorProps} />
                         </div>
                     </div>
                 </div>
@@ -292,6 +342,8 @@ console.log("Debug Chords:", measuresToChords(measures, settings));
                             <FretboardStage
                                 ref={videoCanvasRef}
                                 chords={chords}
+                                previewChord={previewChord}
+                                activeChordIndex={activeChordIndex}
                                 transitionsEnabled={playbackTransitionsEnabled}
                                 buildEnabled={playbackBuildEnabled}
                                 onAnimationStateChange={(animating: boolean, paused: boolean) => {
@@ -299,11 +351,12 @@ console.log("Debug Chords:", measuresToChords(measures, settings));
                                     setIsPaused(paused);
                                 }}
                                 onRenderProgress={setRenderProgress}
+                                numStrings={settings.numStrings}
                             />
                         </StageContainer>
                     }
                     bottomSection={
-                        <VisualEditor {...visualEditorProps} />
+                        <VisualTimeline {...visualEditorProps} />
                     }
                     floatingControls={floatingControls}
                 />

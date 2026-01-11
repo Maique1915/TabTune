@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useEffect, useRef } from 'react';
 
 export interface VexFlowIconProps {
@@ -81,6 +79,7 @@ export const VexFlowScoreIcon: React.FC<VexFlowIconProps> = ({
         }
 
     }, [width, height, staveWidth, clef, keys, duration, isRest]);
+
 
     return (
         <div ref={containerRef} className="vexflow-icon pointer-events-none" />

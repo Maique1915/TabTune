@@ -28,6 +28,12 @@ export interface ChordDiagramColors {
   fretColor: string; // Cor específica para os trastes
   textColor: string;
   chordNameColor: string; // Nova propriedade para a cor do nome do acorde
+  chordNameOpacity: number;
+  chordNameShadow: boolean;
+  chordNameShadowColor: string;
+  chordNameShadowBlur: number;
+  chordNameStrokeColor: string;
+  chordNameStrokeWidth: number;
   borderWidth: number;
   stringThickness: number;
   fingerTextColor: string;
@@ -109,7 +115,13 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
   borderColor: "#FFFFFF",            // Cordas brancas
   fretColor: "#000000",              // Trastes brancos
   textColor: "#FF8C42",              // Nomes das cordas laranja
-  chordNameColor: "#FFFFFF",         // Nome do acorde branco
+  chordNameColor: "#22d3ee",         // Nome do acorde cyan default
+  chordNameOpacity: 1,
+  chordNameShadow: true,
+  chordNameShadowColor: "#22d3ee",
+  chordNameShadowBlur: 10,
+  chordNameStrokeColor: "#000000",
+  chordNameStrokeWidth: 3,
   borderWidth: 3,
   stringThickness: 3,                // Cordas um pouco mais grossas
   fingerTextColor: "#ffffff",        // Texto dos dedos preto

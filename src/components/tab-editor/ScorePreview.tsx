@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useRef, useMemo, memo, useState } from 'react';
-import { ScoreStyle, MeasureData } from '@/lib/tab-editor/types';
-import { getNoteKeyFromFret } from '@/lib/tab-editor/utils/musicMath';
+import { ScoreStyle, MeasureData } from '@/modules/editor/domain/types';
+import { getNoteKeyFromFret } from '@/modules/editor/domain/music-math';
 import { Music, MousePointerClick, MoreHorizontal, MoveLeft, MoveRight, Film, Settings } from 'lucide-react';
 import { useCanvasRecorder } from '@/lib/shared/hooks/useCanvasRecorder';
 import { VideoRenderSettings } from '@/components/shared/VideoRenderSettingsModal';
-import { PRESET_THEMES } from '@/lib/tab-editor/constants';
+import { PRESET_THEMES } from '@/modules/editor/presentation/constants';
 
 export interface ScorePreviewRef {
     startRender: (settings: VideoRenderSettings) => void;

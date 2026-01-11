@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { useAppContext } from "@/app/context/app--context";
-import { Timeline } from "@/components/studio/timeline/Timeline";
-import { TimelineControls } from "@/components/studio/timeline/TimelineControls";
-import type { TimelineState, TimelineClip, ChordClip, TimelineTrack } from "@/lib/timeline/types";
+import { Timeline } from "@/components/fretboard/timeline/Timeline";
+import type { TimelineState, ChordClip, TimelineTrack } from "@/lib/timeline/types";
 import { generateClipId } from "@/lib/timeline/utils";
 import type { ChordWithTiming } from "@/lib/types";
 
