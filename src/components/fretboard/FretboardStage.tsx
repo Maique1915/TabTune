@@ -2,11 +2,11 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { type JSAnimation } from "animejs";
-import type { ChordWithTiming, ChordDiagramProps } from "@/lib/types";
+import type { ChordWithTiming, ChordDiagramProps } from "@/modules/core/domain/types";
 import { useAppContext } from "@/app/context/app--context";
-import { GuitarFretboardDrawer } from "@/lib/guitar-fretboard-drawer";
-import { ScoreDrawer } from "@/lib/score-drawer";
-import { TimelineState } from "@/lib/timeline/types";
+import { GuitarFretboardDrawer } from "@/modules/engine/infrastructure/drawers/guitar-fretboard-drawer";
+import { ScoreDrawer } from "@/modules/engine/infrastructure/drawers/score-drawer";
+import { TimelineState } from "@/modules/studio/domain/types";
 import { useCanvasRecorder, CanvasRecorderOptions } from "@/lib/shared/hooks/useCanvasRecorder";
 import { VideoRenderSettingsModal } from "@/components/shared/VideoRenderSettingsModal";
 import { RenderProgressModal } from "@/components/shared/RenderProgressModal";

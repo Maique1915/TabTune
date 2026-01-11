@@ -16,7 +16,7 @@ import type { VideoCanvasStageRef } from "./video-canvas-stage";
 import { VideoCanvasStage } from "./video-canvas-stage";
 import { cn } from "@/shared/lib/utils";
 import { TimelineControls } from "./timeline/TimelineControls";
-import { generateClipId } from "@/lib/timeline/utils";
+import { generateClipId } from "@/modules/studio/application/utils";
 import { WorkspaceLayout } from "@/components/shared/WorkspaceLayout";
 import { EditorGrid } from "@/components/shared/EditorGrid";
 import { StageContainer } from "@/components/shared/StageContainer";

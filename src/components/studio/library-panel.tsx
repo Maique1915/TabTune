@@ -3,10 +3,11 @@
 import { useState, useMemo } from "react";
 import { GenericSidebar } from "@/components/shared/GenericSidebar";
 import { Music, Home, Filter, X, ChevronDown } from "lucide-react";
-import { chordData, notes, getScaleNotes, getBassNotes, getFormattedNome, formatNoteName, extensions, getFilteredChords, basses } from "@/lib/chords";
+import { chordData } from "@/modules/core/infrastructure/chord-data";
+import { notes, getScaleNotes, getBassNotes, getFormattedNome, formatNoteName, extensions, getFilteredChords, basses } from "@/modules/core/domain/chord-logic";
 import { useAppContext } from "@/app/context/app--context";
 import { useToast } from "@/hooks/use-toast";
-import { ChordDiagramProps } from "@/lib/types";
+import { ChordDiagramProps } from "@/modules/core/domain/types";
 import { ChordDiagram } from "./chord-diagram";
 import Link from 'next/link';
 import { cn } from "@/shared/lib/utils";
@@ -39,7 +40,7 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
   const handleChordSelect = (chord: ChordDiagramProps, e?: React.MouseEvent) => {
     addChordToTimeline(chord);
     toast({
-      title: `${getFormattedNome(chord.chord)} added`,
+      title: `${chord.chord ? getFormattedNome(chord.chord) : "Chord"} added`,
     });
     if (isMobile) {
       onClose?.();
@@ -246,13 +247,13 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
 
               return (
                 <div
-                  key={`${chordData.chord.note}-${chordData.chord.complement}-${index}`}
+                  key={`${chordData.chord?.note}-${chordData.chord?.complement}-${index}`}
                   onClick={(e) => handleChordSelect(chordData, e)}
                   draggable
                   onDragStart={(e) => {
                     e.dataTransfer.setData("application/json", JSON.stringify({
                       type: 'chord',
-                      name: getFormattedNome(chordData.chord),
+                      name: chordData.chord ? getFormattedNome(chordData.chord) : 'Chord',
                       chord: chordData
                     }));
                   }}
@@ -277,7 +278,7 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
                   {/* Footer Name */}
                   <div className={cn("px-2 py-2 text-center border-t border-zinc-800/50 bg-zinc-950/40")}>
                     <span className={cn("text-[10px] font-black truncate block uppercase tracking-wider", isSelected ? "text-pink-400" : "text-zinc-500 group-hover:text-zinc-300")}>
-                      {getFormattedNome(chordData.chord)}
+                      {chordData.chord ? getFormattedNome(chordData.chord) : 'Chord'}
                     </span>
                   </div>
                 </div>

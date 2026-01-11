@@ -97,8 +97,8 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
                 avoid: [], // Calculate avoided strings? (Those not in positions)
                 nut: note.barre ? {
                     vis: true,
-                    str: [parseInt(note.barre.startString), parseInt(note.barre.endString)],
-                    pos: parseInt(note.barre.fret),
+                    str: [note.barre.startString, note.barre.endString],
+                    pos: note.barre.fret,
                     fin: 1, // Index finger usually
                     trn: 0
                 } : undefined,

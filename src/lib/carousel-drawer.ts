@@ -1,1 +1,0 @@
-export * from '@/modules/engine/infrastructure/drawers/carousel-drawer';

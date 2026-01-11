@@ -1,8 +1,8 @@
 "use client"
 
 import React from 'react';
-import type { ChordDiagramProps, Position, nutForm } from '@/lib/types';
-import { getNome } from '@/lib/chords';
+import type { ChordDiagramProps, Position, nutForm } from '@/modules/core/domain/types';
+import { getNome } from '@/modules/core/domain/chord-logic';
 import { useAppContext } from '@/app/context/app--context';
 import '@/app/chord-diagram.css';
 
@@ -112,12 +112,13 @@ const ChordDiagram: React.FC<ChordDiagramProps> = (props) => {
                       boxShadow: fingerBoxShadow
                     }}
                   >
-                    {finalNut.fin + (props.chord.note !== props.origin ? (finalNut.trn || 0) : 0)}
+                    {finalNut.fin + (props.chord && props.chord.note !== props.origin ? (finalNut.trn || 0) : 0)}
                   </div>
                 )}
+                {/* Position markers with offsets */}
                 {finalPositions[i + 1] && finalPositions[i + 1][0] > 0 && (!finalNut || !finalNut.vis || finalPositions[i + 1][1] !== finalNut.fin) && (
                   <div className="finger" style={{ top: `${50 * finalPositions[i + 1][0] - 32}px`, backgroundColor: fingerBackgroundColor, color: colors.fingerTextColor, borderColor: colors.fingerBorderColor, borderWidth: `${colors.fingerBorderWidth}px`, boxShadow: fingerBoxShadow }}>
-                    {finalPositions[i + 1][1] + (finalNut && finalNut.vis && props.chord.note !== props.origin ? (finalNut.trn || 0) : 0)}
+                    {finalPositions[i + 1][1] + (finalNut && finalNut.vis && props.chord && props.chord.note !== props.origin ? (finalNut.trn || 0) : 0)}
                   </div>
                 )}
                 {avoid && avoid.includes(i + 1) && <div className="avoid" style={{ color: colors.textColor }}>x</div>}

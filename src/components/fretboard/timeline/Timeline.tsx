@@ -5,9 +5,9 @@ import { TimelineRuler } from "./TimelineRuler";
 import { TimelineTrack } from "./TimelineTrack";
 import { Button } from "@/shared/components/ui/button"; // Re-adicionar Importar Button
 import { ZoomIn, ZoomOut } from "lucide-react"; // Re-adicionar Importar ícones de zoom
-import type { TimelineState, DragState, TimelineClip } from "@/lib/timeline/types";
-import { formatTimeMs } from "@/lib/timeline/utils";
-import { xDeltaToTime, clamp } from "@/lib/timeline/utils";
+import type { TimelineState, DragState, TimelineClip } from "@/modules/studio/domain/types";
+import { formatTimeMs } from "@/modules/studio/application/utils";
+import { xDeltaToTime, clamp } from "@/modules/studio/application/utils";
 
 interface TimelineProps {
   value: TimelineState;

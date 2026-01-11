@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { formatTimeMs } from "@/lib/timeline/utils";
+import { formatTimeMs } from "@/modules/studio/application/utils";
 
 interface TimelineRulerProps {
   totalDuration: number; // em ms

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScoreStyle } from './types';
+import { ScoreStyle } from '@/modules/editor/domain/types';
 
 export const PRESET_THEMES: Record<string, { label: string; style: ScoreStyle }> = {
     default: {
@@ -12,6 +12,15 @@ export const PRESET_THEMES: Record<string, { label: string; style: ScoreStyle }>
             tabNumbers: { color: '#ffffffff', opacity: 1, shadow: false },
             symbols: { color: '#ffffffff', opacity: 1, shadow: false },
             staffLines: { color: '#ffffffff', opacity: 0.4, shadow: false },
+            chordName: {
+                color: '#22d3ee',
+                opacity: 1,
+                shadow: true,
+                shadowColor: '#22d3ee',
+                shadowBlur: 10,
+                strokeColor: '#000000',
+                strokeWidth: 3
+            },
             background: '#000000ff',
             playheadColor: '#ffffffff',
             activeNoteColor: '#ffffffff',
@@ -31,6 +40,15 @@ export const PRESET_THEMES: Record<string, { label: string; style: ScoreStyle }>
             tabNumbers: { color: '#111111', opacity: 1, shadow: false },
             symbols: { color: '#111111', opacity: 1, shadow: false },
             staffLines: { color: '#000000', opacity: 0.1, shadow: false },
+            chordName: {
+                color: '#111111',
+                opacity: 1,
+                shadow: false,
+                shadowColor: '#000000',
+                shadowBlur: 0,
+                strokeColor: '#000000',
+                strokeWidth: 0
+            },
             background: '#fdfdfd',
             playheadColor: '#2563eb',
             activeNoteColor: '#ef4444',
@@ -50,6 +68,15 @@ export const PRESET_THEMES: Record<string, { label: string; style: ScoreStyle }>
             tabNumbers: { color: '#ffffff', opacity: 1, shadow: false },
             symbols: { color: '#ffffffff', opacity: 1, shadow: false },
             staffLines: { color: '#ffffffff', opacity: 0.4, shadow: false },
+            chordName: {
+                color: '#00ff9d',
+                opacity: 1,
+                shadow: true,
+                shadowColor: '#ffffff',
+                shadowBlur: 10,
+                strokeColor: '#000000',
+                strokeWidth: 3
+            },
             background: '#020617',
             playheadColor: '#3b82f6',
             activeNoteColor: '#60a5fa',
@@ -69,6 +96,15 @@ export const PRESET_THEMES: Record<string, { label: string; style: ScoreStyle }>
             tabNumbers: { color: '#ffffff', opacity: 1, shadow: false },
             symbols: { color: '#3b82f6', opacity: 1, shadow: false },
             staffLines: { color: '#3b82f6', opacity: 0.4, shadow: false },
+            chordName: {
+                color: '#60a5fa',
+                opacity: 1,
+                shadow: true,
+                shadowColor: '#3b82f6',
+                shadowBlur: 10,
+                strokeColor: '#000000',
+                strokeWidth: 3
+            },
             background: '#020617',
             playheadColor: '#3b82f6',
             activeNoteColor: '#60a5fa',
@@ -88,6 +124,15 @@ export const PRESET_THEMES: Record<string, { label: string; style: ScoreStyle }>
             tabNumbers: { color: '#451a03', opacity: 1, shadow: false },
             symbols: { color: '#78350f', opacity: 1, shadow: false },
             staffLines: { color: '#78350f', opacity: 0.2, shadow: false },
+            chordName: {
+                color: '#451a03',
+                opacity: 1,
+                shadow: false,
+                shadowColor: '#000000',
+                shadowBlur: 0,
+                strokeColor: '#000000',
+                strokeWidth: 0
+            },
             background: '#f5f1e6',
             playheadColor: '#b45309',
             activeNoteColor: '#78350f',

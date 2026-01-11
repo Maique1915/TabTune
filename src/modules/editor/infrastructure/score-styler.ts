@@ -1,4 +1,4 @@
-import { ScoreStyle } from './types';
+import { ScoreStyle } from '@/modules/editor/domain/types';
 
 /**
  * ScoreStyler

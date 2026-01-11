@@ -2,11 +2,11 @@
 
 import type { Dispatch, SetStateAction } from "react";
 import { createContext, useContext, useState, useRef, useMemo } from "react";
-import type { Achord, ChordDiagramProps, ChordWithTiming, FretboardTheme } from "@/lib/types";
-import type { TimelineState } from "@/lib/timeline/types";
+import type { Achord, ChordDiagramProps, ChordWithTiming, FretboardTheme } from "@/modules/core/domain/types";
+import type { TimelineState } from "@/modules/studio/domain/types";
 import { useUndoRedo } from "@/hooks/use-undo-redo";
-import { generateClipId } from "@/lib/timeline/utils";
-import { getChordDisplayData } from "@/lib/chord-logic";
+import { generateClipId } from "@/modules/studio/application/utils";
+import { getChordDisplayData } from "@/modules/core/domain/chord-logic";
 import { INSTRUMENTS } from "@/lib/instruments";
 
 export interface StudioState {

@@ -3,9 +3,9 @@
 import React, { useState } from "react";
 import { useAppContext } from "@/app/context/app--context";
 import { Timeline } from "@/components/fretboard/timeline/Timeline";
-import type { TimelineState, ChordClip, TimelineTrack } from "@/lib/timeline/types";
-import { generateClipId } from "@/lib/timeline/utils";
-import type { ChordWithTiming } from "@/lib/types";
+import type { TimelineState, ChordClip, TimelineTrack } from "@/modules/studio/domain/types";
+import { generateClipId } from "@/modules/studio/application/utils";
+import type { ChordWithTiming } from "@/modules/core/domain/types";
 
 interface FretboardTimelineProps {
     isAnimating: boolean;

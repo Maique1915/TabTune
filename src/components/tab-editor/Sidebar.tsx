@@ -21,7 +21,7 @@ interface SidebarProps {
     onNoteRhythmChange?: (newDuration?: Duration, newDot?: boolean) => void;
     onNoteTypeChange?: (type: 'note' | 'rest') => void;
     onPitchChange?: (name?: string, accidental?: string, octave?: number) => void;
-    onStringChange?: (stringFret: string) => void;
+    onStringChange?: (stringFret: number) => void;
     onAccidentalChange?: (accidental: string) => void;
     onDecoratorChange?: (decorator: string) => void;
     // Measure Props
@@ -154,7 +154,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 const currentPos = editingNote?.positions[activePositionIndex || 0];
                 const fret = currentPos?.fret;
                 if (fret !== undefined && onUpdateNote) {
-                    onUpdateNote({ barre: { fret: fret.toString(), startString: max.toString(), endString: min.toString() } });
+                    onUpdateNote({ barre: { fret: typeof fret === 'string' ? parseInt(fret) : fret, startString: max, endString: min } });
                 }
             }
         } else {
@@ -462,7 +462,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                 </div>
                                                 <div className="grid grid-cols-3 gap-1.5 pt-1">
                                                     {[1, 2, 3, 4, 5, 6].map(s => (
-                                                        <button key={s} onClick={() => onStringChange?.(s.toString())} className={`py-1.5 rounded-lg border font-bold text-[9px] transition-all ${editingNote.positions[activePositionIndex]?.string === s.toString() ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}>STR {s}</button>
+                                                        <button key={s} onClick={() => onStringChange?.(s)} className={`py-1.5 rounded-lg border font-bold text-[9px] transition-all ${editingNote.positions[activePositionIndex]?.string === s ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}>STR {s}</button>
                                                     ))}
                                                 </div>
                                             </div>
@@ -556,7 +556,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         );
                                     }
 
-                                    const chordName = editingNote?.chordName || "";
+                                    const chordName = (editingNote as NoteData)?.chordName || "";
                                     const match = chordName.match(/^([A-G][#b]?)(.*?)(\/[A-G][#b]?)?$/);
                                     const currentRoot = match ? match[1] : "C";
                                     const currentQuality = match ? match[2] : "Major";

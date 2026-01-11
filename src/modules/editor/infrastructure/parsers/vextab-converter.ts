@@ -1,5 +1,5 @@
 
-import { MeasureData, GlobalSettings, ScoreStyle, NoteData } from '../types';
+import { MeasureData, GlobalSettings, ScoreStyle, NoteData } from '@/modules/editor/domain/types';
 
 export function convertToVextab(measures: MeasureData[], settings: GlobalSettings, style?: ScoreStyle): string {
     const notation = settings.showNotation ? "true" : "false";
@@ -71,7 +71,19 @@ export function convertToVextab(measures: MeasureData[], settings: GlobalSetting
             // Note: We've moved most to native VexTab symbols above.
 
             // Annotations & Chords
-            if (n.chord) textSymbols.unshift(n.chord); // Chords first
+            if (n.manualChord && n.manualChord.root !== 'none') {
+                const { root, quality, bass, extensions } = n.manualChord;
+                let suffix = '';
+                if (quality === 'Minor') suffix = 'm';
+                else if (quality === 'Dim') suffix = 'dim';
+                else if (quality === 'Aug') suffix = 'aug';
+                else if (quality === 'Sus2') suffix = 'sus2';
+                else if (quality === 'Sus4') suffix = 'sus4';
+                const ext = extensions ? extensions.join('') : '';
+                const bassStr = (bass && bass !== 'none') ? `/${bass}` : '';
+                const chordStr = `${root.replace('s', '#')}${suffix}${ext}${bassStr}`;
+                textSymbols.unshift(chordStr);
+            }
             if (n.annotation) textSymbols.push(n.annotation);
 
             // Text Sync

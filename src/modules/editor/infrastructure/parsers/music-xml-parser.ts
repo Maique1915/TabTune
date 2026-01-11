@@ -1,4 +1,5 @@
-import { MeasureData, NoteData, Duration, Accidental, NotePosition } from '../types';
+import { MeasureData, NoteData, Duration, Accidental } from '@/modules/editor/domain/types';
+import { StandardPosition } from '@/modules/core/domain/types';
 import JSZip from 'jszip';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -123,7 +124,7 @@ const parseStandardMusicXML = (xmlDoc: Document): { measures: MeasureData[], set
             const durationType = mapDuration(durationVal, divisions);
             const isRest = xmlNote.getElementsByTagName("rest").length > 0;
 
-            const positions: NotePosition[] = [];
+            const positions: StandardPosition[] = [];
             let accidental: Accidental = 'none';
 
             if (!isRest) {
@@ -155,7 +156,9 @@ const parseStandardMusicXML = (xmlDoc: Document): { measures: MeasureData[], set
                     stringNum = tab.string;
                 }
 
-                positions.push({ fret, string: stringNum });
+                const fretNum = parseInt(fret || "0", 10);
+                const stringVal = parseInt(stringNum || "1", 10);
+                positions.push({ fret: fretNum, string: stringVal });
 
                 // Accidental
                 const xmlAccidental = xmlNote.getElementsByTagName("accidental")[0]?.textContent;
@@ -322,7 +325,7 @@ const parseMuseScoreXML = (doc: Document): { measures: MeasureData[], settings: 
             const duration = mapMuseScoreDuration(durationTypeStr);
             const dots = item.querySelector('dots') ? true : false;
 
-            const positions: NotePosition[] = [];
+            const positions: StandardPosition[] = [];
             const decorators: any = { dot: dots };
             let accidental: Accidental = 'none';
             let technique: string | undefined = undefined;
@@ -365,7 +368,9 @@ const parseMuseScoreXML = (doc: Document): { measures: MeasureData[], settings: 
                             console.warn(`[MuseScore Parser] WARNING: String ${stringNumInt} used multiple times in same chord! This may cause rendering issues.`);
                         }
                         usedStrings.add(stringNumInt);
-                        positions.push({ fret: fret || "0", string: stringNum || "1" });
+                        const fVal = parseInt(fret || "0", 10);
+                        const sVal = parseInt(stringNum || "1", 10);
+                        positions.push({ fret: fVal, string: sVal });
                     } else {
                         console.error(`[MuseScore Parser] Invalid string number: ${stringNum} (parsed as ${stringNumInt}). Skipping note.`);
                     }

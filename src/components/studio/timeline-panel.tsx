@@ -16,10 +16,10 @@ interface TimelinePanelProps {
 import { useAppContext } from "@/app/context/app--context";
 import { Timeline } from "@/components/studio/timeline/Timeline";
 import { TimelineControls } from "@/components/studio/timeline/TimelineControls";
-import type { TimelineState, TimelineClip, ChordClip, TimelineTrack } from "@/lib/timeline/types";
-import { generateClipId } from "@/lib/timeline/utils";
-import { getChordDisplayData } from "@/lib/chord-logic";
-import type { ChordWithTiming } from "@/lib/types";
+import type { TimelineState, TimelineClip, ChordClip, TimelineTrack } from "@/modules/studio/domain/types";
+import { generateClipId } from "@/modules/studio/application/utils";
+import { getChordDisplayData } from "@/modules/core/domain/chord-logic";
+import type { ChordWithTiming } from "@/modules/core/domain/types";
 
 
 // Utilitário para obter todos os clipes de áudio da timeline

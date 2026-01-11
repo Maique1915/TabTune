@@ -2,13 +2,13 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { animate, type JSAnimation } from "animejs";
-import type { ChordWithTiming } from "@/lib/types";
+import type { ChordWithTiming } from "@/modules/core/domain/types";
 import { useAppContext } from "@/app/context/app--context";
-import { drawStaticFingersAnimation } from "@/lib/static-fingers-drawer";
-import { drawCarouselAnimation } from "@/lib/carousel-drawer";
-import { ChordDrawerBase } from "@/lib/chord-drawer-base";
-import { TimelineState } from "@/lib/timeline/types";
-import { ScoreDrawer } from "@/lib/score-drawer";
+import { drawStaticFingersAnimation } from "@/modules/engine/infrastructure/drawers/static-fingers-drawer";
+import { drawCarouselAnimation } from "@/modules/engine/infrastructure/drawers/carousel-drawer";
+import { ChordDrawerBase } from "@/modules/engine/infrastructure/drawers/chord-drawer-base";
+import { TimelineState } from "@/modules/studio/domain/types";
+import { ScoreDrawer } from "@/modules/engine/infrastructure/drawers/score-drawer";
 import { useCanvasRecorder, CanvasRecorderOptions } from "@/lib/shared/hooks/useCanvasRecorder";
 import { VideoRenderSettingsModal, VideoRenderSettings } from "@/components/shared/VideoRenderSettingsModal";
 import { RenderProgressModal } from "@/components/shared/RenderProgressModal";

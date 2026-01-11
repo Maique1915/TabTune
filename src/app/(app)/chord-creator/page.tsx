@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { ChordDiagram } from '@/components/studio/chord-diagram';
-import { notes, complements, basses, extensions } from '@/lib/chords';
-import { transpose } from '@/lib/chord-logic';
-import type { ChordDiagramProps, Achord, nutForm } from '@/lib/types';
+import { notes, complements, basses, extensions } from '@/modules/core/domain/chord-logic';
+import { transpose } from '@/modules/core/domain/chord-logic';
+import type { ChordDiagramProps, Achord, nutForm } from '@/modules/core/domain/types';
 import { useAppContext, AppProvider } from '@/app/context/app--context';
 import { ArrowLeft, Menu, X, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
@@ -52,19 +52,21 @@ const ChordCreatorContent = () => {
         if (transposition === 0) {
             setPreviewChord(chordState);
         } else {
-            const targetNoteIndex = (chordState.chord.note + transposition + 12) % 12;
-            const transposed = transpose(chordState, {
-                ...chordState.chord,
-                note: targetNoteIndex
-            });
-            setPreviewChord(transposed);
+            if (chordState.chord) {
+                const targetNoteIndex = (chordState.chord.note + transposition + 12) % 12;
+                const transposed = transpose(chordState, {
+                    ...chordState.chord,
+                    note: targetNoteIndex
+                });
+                setPreviewChord(transposed);
+            }
         }
     }, [chordState, transposition, mounted]);
 
     const handleChordChange = (field: keyof Achord, value: any) => {
         setChordState(prev => ({
             ...prev,
-            chord: { ...prev.chord, [field]: value }
+            chord: { ...prev.chord!, [field]: value }
         }));
     };
 
@@ -197,7 +199,7 @@ const ChordCreatorContent = () => {
                                 <div className="space-y-1.5">
                                     <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Root</label>
                                     <select
-                                        value={chordState.chord.note}
+                                        value={chordState.chord?.note ?? 0}
                                         onChange={(e) => handleChordChange('note', parseInt(e.target.value))}
                                         className="w-full bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-2 text-xs font-bold text-zinc-300 focus:outline-none focus:border-pink-500/30"
                                     >
@@ -207,7 +209,7 @@ const ChordCreatorContent = () => {
                                 <div className="space-y-1.5">
                                     <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Quality</label>
                                     <select
-                                        value={chordState.chord.complement}
+                                        value={chordState.chord?.complement ?? 0}
                                         onChange={(e) => handleChordChange('complement', parseInt(e.target.value))}
                                         className="w-full bg-zinc-900/50 border border-zinc-800/50 rounded-xl p-2 text-xs font-bold text-zinc-300 focus:outline-none focus:border-pink-500/30"
                                     >

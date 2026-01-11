@@ -73,7 +73,7 @@ export interface TabEffect {
 }
 
 export interface ChordDiagramProps {
-    chord?: Achord;
+    chord: Achord;
     origin: number;
     positions: Position;
     avoid: number[];

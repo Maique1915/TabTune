@@ -1,5 +1,5 @@
 import { Renderer, Stave, StaveNote, TabNote, TabStave, Formatter, Accidental, Articulation, Dot } from "vexflow";
-import type { SymbolClip } from "@/lib/timeline/types";
+import type { SymbolClip } from "@/modules/studio/domain/types";
 
 export class ScoreDrawer {
     private element: HTMLCanvasElement;

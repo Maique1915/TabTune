@@ -17,7 +17,7 @@ import {
 import { HexColorPicker } from "react-colorful";
 import * as Popover from "@radix-ui/react-popover";
 import { useAppContext, DEFAULT_COLORS, AnimationType } from "@/app/context/app--context";
-import type { FretboardTheme } from "@/lib/types";
+import type { FretboardTheme } from "@/modules/core/domain/types";
 import { cn } from "@/shared/lib/utils";
 import { GenericSidebar } from "@/components/shared/GenericSidebar";
 

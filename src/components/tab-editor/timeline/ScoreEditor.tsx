@@ -19,7 +19,7 @@ import {
     SelectValue,
 } from "@/shared/components/ui/select";
 import { VexFlowScoreIcon } from "@/components/tab-editor/VexFlowScoreIcon";
-import type { SymbolClip } from "@/lib/timeline/types";
+import type { SymbolClip } from "@/modules/studio/domain/types";
 
 interface ScoreEditorProps {
     clip: SymbolClip | null;

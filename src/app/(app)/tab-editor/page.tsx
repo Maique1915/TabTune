@@ -86,9 +86,9 @@ export default function TabEditorPage() {
             showClef: true,
             showTimeSig: true,
             notes: [
-                { id: generateId(), positions: [{ fret: '5', string: '3' }], duration: 'q', type: 'note', decorators: {}, accidental: 'none' },
-                { id: generateId(), positions: [{ fret: '7', string: '3' }], duration: 'q', type: 'note', decorators: {}, accidental: 'none' },
-                { id: generateId(), positions: [{ fret: '9', string: '3' }], duration: 'q', type: 'note', decorators: {}, accidental: 'none' },
+                { id: generateId(), positions: [{ fret: 5, string: 3 }], duration: 'q', type: 'note', decorators: {}, accidental: 'none' },
+                { id: generateId(), positions: [{ fret: 7, string: 3 }], duration: 'q', type: 'note', decorators: {}, accidental: 'none' },
+                { id: generateId(), positions: [{ fret: 9, string: 3 }], duration: 'q', type: 'note', decorators: {}, accidental: 'none' },
             ]
         }],
         settings: {
@@ -207,7 +207,7 @@ export default function TabEditorPage() {
     const currentPitch = useMemo(() => {
         if (!editingNote || editingNote.type === 'rest' || !editingNote.positions[activePositionIndex]) return null;
         const pos = editingNote.positions[activePositionIndex];
-        const midi = getMidiFromPosition(parseInt(pos.fret), parseInt(pos.string));
+        const midi = getMidiFromPosition(pos.fret, pos.string);
         return getPitchFromMidi(midi);
     }, [editingNote, activePositionIndex]);
 
@@ -442,7 +442,7 @@ export default function TabEditorPage() {
                                 if (decomposed.length > 1) {
                                     const extraRests = decomposed.slice(1).map(d => ({
                                         id: generateId(),
-                                        positions: [{ fret: '0', string: '1' }],
+                                        positions: [{ fret: 0, string: 1 }],
                                         duration: d.duration as Duration,
                                         type: 'rest' as const,
                                         decorators: { dot: d.dotted },
@@ -458,7 +458,7 @@ export default function TabEditorPage() {
                     const absDelta = Math.abs(delta);
                     const restsToAdd = decomposeValue(absDelta).map(d => ({
                         id: generateId(),
-                        positions: [{ fret: '0', string: '1' }],
+                        positions: [{ fret: 0, string: 1 }],
                         duration: d.duration as Duration,
                         type: 'rest' as const,
                         decorators: { dot: d.dotted },
@@ -524,7 +524,7 @@ export default function TabEditorPage() {
                 const newMeasureId = generateId();
                 const newNote = {
                     id: generateId(),
-                    positions: [{ fret: '0', string: '3' }],
+                    positions: [{ fret: 0, string: 3 }],
                     duration: durationToAdd,
                     type: 'note' as const,
                     decorators: {},
@@ -544,7 +544,7 @@ export default function TabEditorPage() {
                     if (idx === measureIndex) {
                         return {
                             ...m,
-                            notes: [...m.notes, { id: generateId(), positions: [{ fret: '0', string: '3' }], duration: durationToAdd, type: 'note', decorators: {}, accidental: 'none' }]
+                            notes: [...m.notes, { id: generateId(), positions: [{ fret: 0, string: 3 }], duration: durationToAdd, type: 'note', decorators: {}, accidental: 'none' }]
                         };
                     }
                     return m;
@@ -614,24 +614,24 @@ export default function TabEditorPage() {
         const oct = newOctave ?? currentPitch.octave;
         const midi = getMidiFromPitch(pitch, acc, oct);
         const currentPos = editingNote.positions[activePositionIndex];
-        const { fret, string } = findBestFretForPitch(midi, parseInt(currentPos.string));
+        const { fret, string } = findBestFretForPitch(midi, currentPos.string);
 
         updateSelectedNotes(n => {
             const newPositions = [...n.positions];
-            newPositions[activePositionIndex] = { fret: fret.toString(), string: string.toString() };
+            newPositions[activePositionIndex] = { fret: fret, string: string };
             return { positions: newPositions };
         });
     };
 
-    const handleStringChange = (newString: string) => {
+    const handleStringChange = (newString: number) => {
         if (!editingNote || !editingNote.positions[activePositionIndex]) return;
         const currentPos = editingNote.positions[activePositionIndex];
-        const currentFret = parseInt(currentPos.fret);
-        const currentString = parseInt(currentPos.string);
+        const currentFret = currentPos.fret;
+        const currentString = currentPos.string;
         // Calculate current MIDI pitch
         const currentMidi = getMidiFromPosition(currentFret, currentString);
 
-        const newStringNum = parseInt(newString);
+        const newStringNum = newString;
         const openStrings: Record<number, number> = { 1: 64, 2: 59, 3: 55, 4: 50, 5: 45, 6: 40 };
         const openMidi = openStrings[newStringNum];
 
@@ -642,7 +642,7 @@ export default function TabEditorPage() {
 
         updateSelectedNotes(n => {
             const newPositions = [...n.positions];
-            newPositions[activePositionIndex] = { string: newString, fret: newFret.toString() };
+            newPositions[activePositionIndex] = { string: newString, fret: newFret };
             return { positions: newPositions };
         });
     };
@@ -771,7 +771,7 @@ export default function TabEditorPage() {
                         // Add chord note logic
                         return {
                             ...n,
-                            positions: [...n.positions, { fret: '0', string: (n.positions.length + 1).toString() }]
+                            positions: [...n.positions, { fret: 0, string: n.positions.length + 1 }]
                         };
                     }
                     return n;
@@ -847,7 +847,7 @@ export default function TabEditorPage() {
             const currentPos = n.positions[activePositionIndex];
             if (!currentPos) return {};
 
-            const currentMidi = getMidiFromPosition(parseInt(currentPos.fret), parseInt(currentPos.string));
+            const currentMidi = getMidiFromPosition(currentPos.fret, currentPos.string);
             const { name, octave } = getPitchFromMidi(currentMidi);
 
             // Calculate Natural MIDI for this pitch class/octave
@@ -863,10 +863,10 @@ export default function TabEditorPage() {
             }
 
             const newMidi = naturalMidi + offset;
-            const { fret } = findBestFretForPitch(newMidi, parseInt(currentPos.string));
+            const { fret } = findBestFretForPitch(newMidi, currentPos.string);
 
             const newPositions = [...n.positions];
-            newPositions[activePositionIndex] = { ...currentPos, fret: fret.toString() };
+            newPositions[activePositionIndex] = { ...currentPos, fret: fret };
 
             return {
                 accidental: desiredAccidental,

@@ -1,5 +1,5 @@
 import type { ChordDiagramProps } from "@/modules/core/domain/types";
-import { ChordDrawerBase } from "@/lib/chord-drawer-base";
+import { ChordDrawerBase } from "@/modules/engine/infrastructure/drawers/chord-drawer-base";
 import { easeInOutQuad } from "../utils/animacao";
 
 interface DrawCarouselParams {

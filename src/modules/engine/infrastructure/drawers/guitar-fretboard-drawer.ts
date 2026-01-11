@@ -1,5 +1,5 @@
 import { ChordDrawerBase } from "./chord-drawer-base";
-import type { FretboardTheme } from "@/lib/types";
+import type { FretboardTheme } from "@/modules/core/domain/types";
 import { FretboardDrawer } from "./fretboard-drawer";
 import type { Position, ChordDiagramProps, TabEffect } from "@/modules/core/domain/types";
 

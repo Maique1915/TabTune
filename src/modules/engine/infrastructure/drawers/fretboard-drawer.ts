@@ -1,4 +1,4 @@
-import type { FretboardTheme } from "@/lib/types";
+import type { FretboardTheme } from "@/modules/core/domain/types";
 
 export class FretboardDrawer {
   private _ctx: CanvasRenderingContext2D;

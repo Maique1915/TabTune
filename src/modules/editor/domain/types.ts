@@ -22,7 +22,7 @@ export interface NoteDecorator {
 }
 
 // NoteData now aligns with MusicalEvent
-export interface NoteData extends Omit<MusicalEvent, 'type' | 'barre'> {
+export interface NoteData extends Omit<MusicalEvent, 'type'> {
     // ID inherited
 
     // Editor specific duration (enum vs string)
@@ -46,16 +46,7 @@ export interface NoteData extends Omit<MusicalEvent, 'type' | 'barre'> {
     // Chord Identity (inherited chordName)
     manualChord?: ManualChordData; // The definition (root, quality, etc)
 
-    // Barre (mapped from MusicalEvent's BarreData)
-    // The editor uses a specific format for barre selection range, but we should try to align.
-    // MusicalEvent has 'barre?: BarreData'.
-    // If we want to keep specific editor fields:
-    barre?: { fret: string, startString: string, endString: string };
-    // We override `barre` to keep string-based for UI input ease? 
-    // OR we bite the bullet and convert everything to numbers. 
-    // Let's keep string-based for now in this interface if the UI heavily relies on it, 
-    // BUT `MusicalEvent` expects numbers. 
-    // `extends Omit<MusicalEvent, ... 'barre'>` allows us to redefine it.
+    // Barre (inherited from MusicalEvent as BarreData: all numbers)
 }
 
 export interface MeasureData {

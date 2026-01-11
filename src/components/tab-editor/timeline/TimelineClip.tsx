@@ -2,9 +2,9 @@
 
 import React from "react";
 import { cn } from "@/shared/lib/utils";
-import type { TimelineClip as TimelineClipType } from "@/lib/timeline/types";
-import { formatTimeMs } from "@/lib/timeline/utils";
-import { getNome } from "@/lib/chords";
+import type { TimelineClip as TimelineClipType } from "@/modules/studio/domain/types";
+import { formatTimeMs } from "@/modules/studio/application/utils";
+import { getNome } from "@/modules/core/domain/chord-logic";
 import { Music } from "lucide-react";
 import { AudioClipVisual } from "./AudioClipVisual";
 import { VexFlowScoreIcon } from "@/components/tab-editor/VexFlowScoreIcon";

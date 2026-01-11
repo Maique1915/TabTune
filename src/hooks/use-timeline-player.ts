@@ -1,8 +1,8 @@
 import { useRef, useEffect, useCallback, useState } from "react";
-import type { TimelineState } from "@/lib/timeline/types";
-import { TimelineAudio, TimelineChord, LoopContext, TimelineClipInstance } from "@/lib/timeline/clips";
+import type { TimelineState } from "@/modules/studio/domain/types";
+import { TimelineAudio, TimelineChord, LoopContext, TimelineClipInstance } from "@/modules/studio/domain/clips";
 import type { AnimationType } from "@/app/context/app--context";
-import type { ChordWithTiming, FretboardTheme } from "@/lib/types";
+import type { ChordWithTiming, FretboardTheme } from "@/modules/core/domain/types";
 
 interface UseTimelinePlayerProps {
   audioContext: AudioContext | null;

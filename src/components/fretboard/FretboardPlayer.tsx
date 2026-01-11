@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import Sidebar from "@/components/tab-editor/Sidebar";
 import { measuresToChords } from "@/lib/fretboard/converter";
-import { ChordDiagramProps } from "@/lib/types";
+import { ChordDiagramProps } from "@/modules/core/domain/types";
 import VisualTimeline from "@/components/fretboard/timeline/VisualTimeline";
 import { useAppContext } from "@/app/context/app--context";
 import { FretboardStage, FretboardStageRef } from "@/components/fretboard/FretboardStage";

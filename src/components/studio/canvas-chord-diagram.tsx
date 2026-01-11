@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useRef, useEffect } from 'react';
-import type { ChordDiagramProps } from '@/lib/types';
-import { ChordDrawerBase } from '@/lib/chord-drawer-base';
+import type { ChordDiagramProps } from '@/modules/core/domain/types';
+import { ChordDrawerBase } from '@/modules/engine/infrastructure/drawers/chord-drawer-base';
 import { useAppContext } from '@/app/context/app--context';
 
 // This component wraps the Canvas-based chord drawing logic for use in React.

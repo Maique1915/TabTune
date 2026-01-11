@@ -159,8 +159,9 @@ const VisualTimeline: React.FC<VisualEditorProps> = ({
                                             {/* Chord Badge */}
                                             {(() => {
                                                 // 1. Attempt Manual Chord
-                                                if (measure.manualChord && measure.manualChord.root && measure.manualChord.root !== 'none') {
-                                                    const { root, quality, bass, extensions } = measure.manualChord;
+                                                const chordNote = measure.notes.find(n => n.manualChord);
+                                                if (chordNote && chordNote.manualChord && chordNote.manualChord.root && chordNote.manualChord.root !== 'none') {
+                                                    const { root, quality, bass, extensions } = chordNote.manualChord;
                                                     let suffix = '';
                                                     if (quality === 'Minor') suffix = 'm';
                                                     else if (quality === 'Dim') suffix = 'dim';

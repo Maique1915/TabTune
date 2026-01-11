@@ -95,6 +95,8 @@ export const getFilteredChords = (
         const targetNoteIndex = notes.indexOf(selectedNote);
 
         baseChords.forEach((chordItem) => {
+            if (!chordItem.chord) return; // Skip invalid chords
+
             if (chordItem.unique) {
                 if (notes[chordItem.chord.note] === selectedNote) {
                     transposableChords.push(chordItem);
@@ -111,6 +113,7 @@ export const getFilteredChords = (
     let filtered = transposableChords;
     if (selectedQuality !== "all") {
         filtered = filtered.filter((chord) => {
+            if (!chord.chord) return false;
             const comp = complements[chord.chord.complement];
             if (selectedQuality === "major") return ["Major"].includes(comp);
             if (selectedQuality === "minor") return comp === "m";
@@ -120,13 +123,14 @@ export const getFilteredChords = (
     }
     if (selectedExtensions.length > 0) {
         filtered = filtered.filter((chord) => {
+            if (!chord.chord) return false;
             const chordExtensions = chord.chord.extension.map(ext => extensions[ext]);
             return selectedExtensions.every((ext) => chordExtensions.includes(ext));
         });
     }
     if (selectedBass !== "all") {
         const bassIndex = basses.indexOf(selectedBass);
-        filtered = filtered.filter((chord) => chord.chord.bass === bassIndex);
+        filtered = filtered.filter((chord) => chord.chord && chord.chord.bass === bassIndex);
     }
     return filtered;
 }

@@ -2,8 +2,8 @@
 
 import React from "react";
 import { TimelineClip } from "./TimelineClip";
-import type { TimelineTrack as TimelineTrackType, DragState } from "@/lib/timeline/types";
-import { xDeltaToTime } from "@/lib/timeline/utils";
+import type { TimelineTrack as TimelineTrackType, DragState } from "@/modules/studio/domain/types";
+import { xDeltaToTime } from "@/modules/studio/application/utils";
 
 interface TimelineTrackProps {
   track: TimelineTrackType;
