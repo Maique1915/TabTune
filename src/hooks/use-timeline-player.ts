@@ -81,10 +81,10 @@ export const useTimelinePlayer = ({
     setPlaybackIsPaused(false);
 
     playbackStartTimeRef.current = performance.now() - lastElapsedMsRef.current;
-    
+
     if (startTimeMs !== undefined) {
-        lastElapsedMsRef.current = startTimeMs;
-        playbackStartTimeRef.current = performance.now() - startTimeMs;
+      lastElapsedMsRef.current = startTimeMs;
+      playbackStartTimeRef.current = performance.now() - startTimeMs;
     }
   }, [setPlaybackIsPlaying, setPlaybackIsPaused]);
 
@@ -93,10 +93,10 @@ export const useTimelinePlayer = ({
     lastElapsedMsRef.current = newTimeMs;
 
     setPlaybackProgress(progress);
-    
+
     stopAllAudioClips();
     if (isGlobalAudioPlaying) {
-        playbackStartTimeRef.current = performance.now() - newTimeMs;
+      playbackStartTimeRef.current = performance.now() - newTimeMs;
     }
   }, [isGlobalAudioPlaying, playbackTotalDurationMs, setPlaybackProgress, stopAllAudioClips]);
 
@@ -105,9 +105,9 @@ export const useTimelinePlayer = ({
 
     const tick = (currentTime: DOMHighResTimeStamp) => {
       if (!isGlobalAudioPlaying) {
-          cancelAnimationFrame(animationFrameId.current!);
-          animationFrameId.current = null;
-          return;
+        cancelAnimationFrame(animationFrameId.current!);
+        animationFrameId.current = null;
+        return;
       }
 
       const elapsedSinceStart = currentTime - playbackStartTimeRef.current;
@@ -139,7 +139,7 @@ export const useTimelinePlayer = ({
           (clip as any).update(loopContext);
         }
         if (clip.type === 'audio' && (clip as TimelineAudio).isPlaying) {
-            currentAudioClipRef.current = clip as TimelineAudio;
+          currentAudioClipRef.current = clip as TimelineAudio;
         }
       });
 

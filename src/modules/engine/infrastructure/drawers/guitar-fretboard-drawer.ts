@@ -637,12 +637,12 @@ export class GuitarFretboardDrawer {
         const textMargin = 15;
         const targetY = this.boardY - textMargin;
         // Text height approx fontSize.
-        const fontSize = 32;
+        const fontSize = 64;
         // If targetY < fontSize, it might clip top.
         // Let's clamp the anchor position to be at least fontSize + padding.
         const safeY = Math.max(targetY, fontSize + 10);
 
-        this.ctx.font = `900 ${fontSize}px "Inter", sans-serif`;
+        this.ctx.font = `bold ${fontSize}px "Inter", sans-serif`;
         this.ctx.textAlign = "center";
         this.ctx.textBaseline = "bottom";
 

@@ -57,7 +57,7 @@ export class TimelineAudio {
   fileName: string;
   audioUrl: string;
   waveform: number[];
-  
+
   private _audioContext: AudioContext;
   private _audioBuffer: AudioBuffer | null = null;
   private _sourceNode: AudioBufferSourceNode | null = null;
@@ -67,7 +67,7 @@ export class TimelineAudio {
 
 
   constructor(
-    clip: AudioClip, 
+    clip: AudioClip,
     audioContext: AudioContext, // Receber o AudioContext do useTimelinePlayer
   ) {
     this.id = clip.id;

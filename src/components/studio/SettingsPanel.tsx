@@ -36,6 +36,7 @@ const STUDIO_PRESETS = {
       fretboardColor: "#f5f5f5",
       borderColor: "#cccccc",
       fretColor: "#dddddd",
+      chordNameColor: "#22d3ee", // Cyan to match Studio
       chordNameShadow: false,
       chordNameShadowColor: "transparent",
       chordNameShadowBlur: 0,
@@ -56,13 +57,13 @@ const STUDIO_PRESETS = {
       borderColor: "#fb00ff",
       fretColor: "#fb00ff50",
       textColor: "#00ff9d",
-      chordNameColor: "#fb00ff",
+      chordNameColor: "#fb00ff", // Pink
       chordNameOpacity: 1,
       chordNameShadow: true,
       chordNameShadowColor: "#fb00ff",
       chordNameShadowBlur: 20,
-      chordNameStrokeColor: "#2d0036", // Dark background color as stroke for contrast
-      chordNameStrokeWidth: 4,
+      chordNameStrokeColor: "transparent", // Removing hard stroke to rely on neon glow
+      chordNameStrokeWidth: 0,
       fingerColor: "#00ff9d",
       fingerTextColor: "#fffdfdff",
       fingerBorderColor: "#fb00ff",
@@ -78,13 +79,13 @@ const STUDIO_PRESETS = {
       borderColor: "#1e293b",
       fretColor: "#334155",
       textColor: "#94a3b8",
-      chordNameColor: "#60a5fa",
+      chordNameColor: "#60a5fa", // Blue
       chordNameOpacity: 1,
       chordNameShadow: true,
       chordNameShadowColor: "#60a5fa",
       chordNameShadowBlur: 15,
-      chordNameStrokeColor: "#0f172a", // Dark blue stroke
-      chordNameStrokeWidth: 4,
+      chordNameStrokeColor: "transparent", // Removing hard stroke
+      chordNameStrokeWidth: 0,
       fingerColor: "#3b82f6",
       fingerTextColor: "#ffffff",
       fingerBorderColor: "#60a5fa",
