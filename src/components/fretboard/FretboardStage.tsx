@@ -49,6 +49,9 @@ interface AnimationState {
     transitionProgress: number;
     buildProgress: number;
     chordProgress?: number;
+    currentChordName?: string;
+    prevChordName?: string;
+    nameTransitionProgress: number;
 }
 
 export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStageProps>(({
@@ -102,6 +105,9 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         chordIndex: 0,
         transitionProgress: 0,
         buildProgress: 1,
+        nameTransitionProgress: 1,
+        currentChordName: "",
+        prevChordName: "",
     });
     const {
         colors,
@@ -149,9 +155,23 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                         progress: state.chordProgress
                     });
 
-                    // Draw Chord Name (measure-level, displays throughout entire measure)
-                    if (showChordName && currentChordData.finalChord.chordName) {
-                        guitarFretboardDrawerRef.current.drawChordName(currentChordData.finalChord.chordName);
+                    // Draw Chord Name with Cross-Fade
+                    // Check Global AND Local visibility
+                    // If measure.showChordName is explicitly false, hide it.
+                    // If global showChordName is false, hide it.
+                    if (showChordName && currentChordData.finalChord.showChordName !== false) {
+                        // Draw Previous (Fading Out)
+                        if (state.nameTransitionProgress < 1 && state.prevChordName) {
+                            const fadeOutOpacity = 1 - state.nameTransitionProgress;
+                            guitarFretboardDrawerRef.current.drawChordName(state.prevChordName, { opacity: fadeOutOpacity });
+                        }
+
+                        // Draw Current (Fading In)
+                        if (state.currentChordName) {
+                            const fadeInOpacity = state.nameTransitionProgress; // Or just 1 if we want it strictly cross-fade, or pure transition. 
+                            // Usually cross-fade is: Prev goes 1->0, Cur goes 0->1.
+                            guitarFretboardDrawerRef.current.drawChordName(state.currentChordName, { opacity: fadeInOpacity });
+                        }
                     }
                 }
             }
@@ -306,7 +326,29 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
 
             // Draw
             const state = computeStateAtTimeMs(clampedElapsed);
-            if (state) {
+            if (state && chords) {
+                // Detect Name Change
+                const currentChordData = chords[state.chordIndex];
+                const newName = currentChordData?.finalChord?.chordName || "";
+
+                if (newName !== animationStateRef.current.currentChordName) {
+                    // Start Transition
+                    animationStateRef.current.prevChordName = animationStateRef.current.currentChordName;
+                    animationStateRef.current.currentChordName = newName;
+                    animationStateRef.current.nameTransitionProgress = 0;
+                }
+
+                // Increment Transition Progress
+                // Assume 60fps, want ~300ms transition. 300ms = 0.3s. 
+                // 1 frame ~ 16ms. 16/300 ~ 0.05 per frame.
+                // Using generic delta would be better but simple increment works for raf.
+                if (animationStateRef.current.nameTransitionProgress < 1) {
+                    animationStateRef.current.nameTransitionProgress += 0.05;
+                    if (animationStateRef.current.nameTransitionProgress > 1) {
+                        animationStateRef.current.nameTransitionProgress = 1;
+                    }
+                }
+
                 animationStateRef.current.chordIndex = state.chordIndex;
                 animationStateRef.current.chordProgress = state.chordProgress;
                 drawAnimatedChord();
@@ -405,6 +447,13 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         if (state) {
             animationStateRef.current.chordIndex = state.chordIndex;
             animationStateRef.current.chordProgress = state.chordProgress;
+
+            // Sync Name immediately for seek
+            const currentChordData = chords[state.chordIndex];
+            animationStateRef.current.currentChordName = currentChordData?.finalChord?.chordName || "";
+            animationStateRef.current.prevChordName = "";
+            animationStateRef.current.nameTransitionProgress = 1;
+
             drawAnimatedChord();
         }
     }, [chords, computeStateAtTimeMs, computeTotalPlaybackDurationMs, playbackSeekNonce, playbackSeekProgress, setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress]);
@@ -416,6 +465,13 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
             const index = Math.max(0, Math.min(chords.length - 1, activeChordIndex));
             animationStateRef.current.chordIndex = index;
             animationStateRef.current.chordProgress = 0;
+
+            // Sync Name immediately (no transition for instant jumps)
+            const currentChordData = chords[index];
+            animationStateRef.current.currentChordName = currentChordData?.finalChord?.chordName || "";
+            animationStateRef.current.prevChordName = ""; // Clear prev
+            animationStateRef.current.nameTransitionProgress = 1; // Fully visible
+
             drawAnimatedChord();
         }
     }, [activeChordIndex, chords, isAnimating, drawAnimatedChord]);

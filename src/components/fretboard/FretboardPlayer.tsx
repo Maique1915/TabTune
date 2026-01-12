@@ -100,50 +100,44 @@ export function FretboardPlayer() {
 
     // 4. Calculate Preview Chord (Ghost Note)
     const previewChord = useMemo<ChordDiagramProps | null>(() => {
-        // Priority 1: Note being edited
-        if (editingNote) {
-            // Fallback if activeMeasure is missing
-            const baseMeasure = activeMeasure || {
-                id: 'preview-measure',
-                notes: [],
-                isCollapsed: false,
-                showClef: false,
-                showTimeSig: false
-            };
-
-            const tempMeasure = { ...baseMeasure, notes: [editingNote] };
-            const converted = measuresToChords([tempMeasure], settings);
-
-            if (converted.length > 0) {
-                return converted[0].finalChord;
-            }
-        }
-
-        // Priority 2: Active Measure
-        if (activeMeasure) {
-            const converted = measuresToChords([activeMeasure], settings);
-            if (converted.length > 0) return converted[0].finalChord;
-        }
         return null;
-    }, [activeMeasure, editingNote, settings]);
+    }, [activeMeasure, settings, selectedNoteIds]);
 
+    // 5. Calculate Active Chord Index (for syncing canvas with timeline selection)
     // 5. Calculate Active Chord Index (for syncing canvas with timeline selection)
     const activeChordIndex = useMemo(() => {
         if (!activeMeasure || chords.length === 0) return 0;
 
         // Count how many chords are in the measures BEFORE the current measure
-        // Since chords are flattened, we need the sum of chord counts of previous measures.
-
         const previousMeasures = measures.slice(0, currentMeasureIndex);
-        if (previousMeasures.length === 0) return 0;
 
-        // Efficiently Count: 
-        // Note: measuresToChords is somewhat expensive, but doing it on subset is safer than guessing.
-        // Optimization: We could just map measures to counts if performance is an issue.
-        // But for now, let's reuse correct logic.
-        const prevChords = measuresToChords(previousMeasures, settings);
-        return prevChords.length;
-    }, [activeMeasure, currentMeasureIndex, measures, settings, chords]);
+        // Base Index: Start of the current measure
+        const prevChordsCount = measuresToChords(previousMeasures, settings).length;
+
+        // Offset: Find which note in the active measure is "focused"
+        let offset = 0;
+
+        // Priority 1: Note being edited (The "history" tip)
+        if (editingNoteId) {
+            const index = activeMeasure.notes.findIndex(n => n.id === editingNoteId);
+            if (index !== -1) offset = index;
+        }
+        // Priority 2: Last selected note
+        else if (selectedNoteIds.length > 0) {
+            // Find the selected note with the highest index (latest in measure)
+            // or just the last added to selection? 
+            // Let's assume the last note in the measure that is selected.
+            let maxIndex = -1;
+            activeMeasure.notes.forEach((n, idx) => {
+                if (selectedNoteIds.includes(n.id)) {
+                    maxIndex = Math.max(maxIndex, idx);
+                }
+            });
+            if (maxIndex !== -1) offset = maxIndex;
+        }
+
+        return prevChordsCount + offset;
+    }, [activeMeasure, currentMeasureIndex, measures, settings, chords, editingNoteId, selectedNoteIds]);
 
     // Force Guitar Fretboard mode on mount
     useEffect(() => {

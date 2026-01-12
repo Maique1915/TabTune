@@ -633,7 +633,7 @@ export class GuitarFretboardDrawer {
         console.log(`[GuitarFretboardDrawer] Drawn Barre at Fret ${fret}, Strings ${fromString}-${toString}`);
     }
 
-    public drawChordName(name: string) {
+    public drawChordName(name: string, options?: { opacity?: number }) {
         if (!name) return;
 
         this.ctx.save();
@@ -664,7 +664,10 @@ export class GuitarFretboardDrawer {
 
         // Use color from palette
         const color = this.colors.chordNameColor || "#22d3ee";
-        const opacity = this.colors.chordNameOpacity ?? 1;
+        // Combine theme opacity with transition opacity
+        const themeOpacity = this.colors.chordNameOpacity ?? 1;
+        const transitionOpacity = options?.opacity ?? 1;
+        const finalOpacity = themeOpacity * transitionOpacity;
 
         // Glow/Shadow effect
         if (this.colors.chordNameShadow) {
@@ -675,7 +678,7 @@ export class GuitarFretboardDrawer {
             this.ctx.shadowColor = "transparent";
         }
 
-        this.ctx.fillStyle = this.hexToRgba(color, opacity);
+        this.ctx.fillStyle = this.hexToRgba(color, finalOpacity);
 
         // Add stroke for contrast
         const strokeColor = this.colors.chordNameStrokeColor || "transparent";

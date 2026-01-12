@@ -95,10 +95,16 @@ const Sidebar: React.FC<SidebarProps> = ({
     const [chordExtensions, setChordExtensions] = React.useState<string[]>([]);
 
     // Chord builder local states for note inspector
+    // Chord builder local states for note inspector
     const [localRoot, setLocalRoot] = React.useState(chordRoot);
     const [localQuality, setLocalQuality] = React.useState(chordQuality);
     const [localBass, setLocalBass] = React.useState(chordBass);
     const [localExtensions, setLocalExtensions] = React.useState<string[]>(chordExtensions);
+
+
+    // Tab Interface State
+    const [activeTab, setActiveTab] = React.useState<'main' | 'notes' | 'effects'>('main');
+    const [measureTab, setMeasureTab] = React.useState<'general' | 'chord'>('general');
 
     // Reset selection when editing note changes
     React.useEffect(() => {
@@ -223,6 +229,52 @@ const Sidebar: React.FC<SidebarProps> = ({
         onUpdateNote?.({ positions: newPositions });
     };
 
+    const handleTechniqueToggle = (techCode: string) => {
+        if (!editingNote || !onUpdateNote) return;
+
+        // Special case for slur
+        if (techCode === 'slur') {
+            onUpdateNote({ isSlurred: !editingNote.isSlurred });
+            return;
+        }
+
+        const currentTech = editingNote.technique || "";
+        let newTech = "";
+
+        // If technique already exists, remove it
+        if (currentTech.includes(techCode)) {
+            newTech = currentTech.replace(techCode, "");
+        } else {
+            // Otherwise add it
+            newTech = currentTech + techCode;
+        }
+
+        onUpdateNote({ technique: newTech });
+    };
+
+    // Auto-update measure chord name when local builder state changes
+    React.useEffect(() => {
+        if (!isMeasureProperties || !activeMeasure) return;
+
+        const buildChordName = () => {
+            let qualitySuffix = localQuality;
+            let bassSuffix = localBass === "Root" ? "" : localBass;
+            let extensionStr = localExtensions.join("");
+            return `${localRoot}${qualitySuffix}${extensionStr}${bassSuffix}`;
+        };
+
+        const newName = buildChordName();
+        // Only update if changed prevents infinite loops if carefully managed,
+        // but here we are syncing local -> parent.
+        // We need to avoid overwriting if the user is typing manually?
+        // The user asked for auto-update based on dropdowns.
+        // We will update whenever these specific dependencies change.
+        if (activeMeasure.chordName !== newName) {
+            onUpdateMeasure?.(activeMeasure.id, { chordName: newName });
+        }
+
+    }, [localRoot, localQuality, localBass, localExtensions, isMeasureProperties, activeMeasure?.id]);
+
     // Simple mode - no tabs needed for fretboard
 
     const title = isInspector ? 'PROPERTIES' : isMeasureProperties ? 'PROPERTIES' : 'GLOBAL SETTINGS';
@@ -254,47 +306,87 @@ const Sidebar: React.FC<SidebarProps> = ({
         >
             <div className="space-y-8">
                 {/* Unified Duration Selector - Only show when editing/inspecting */}
-                {(isInspector || isMeasureProperties) && (
-                    <div className="space-y-3">
-                        <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center space-x-2">
-                            <span>Duration</span>
-                            {isInspector && <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[9px] border border-purple-500/20">ACTIVE</span>}
-                        </h3>
-
-                        <div className="grid grid-cols-3 gap-2">
-                            {durationItems.map((item) => {
-                                const active = getDurationActive(item.code);
-                                return (
-                                    <button
-                                        key={item.label}
-                                        onClick={() => handleDurationClick(item.code)}
-                                        className={`py-2 rounded-xl border font-black transition-all text-[10px] flex flex-col items-center justify-center space-y-1 ${active
-                                            ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.1)]'
-                                            : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
-                                            }`}
-                                    >
-                                        <div className={`transition-all ${active ? 'opacity-100' : 'opacity-40 grayscale'}`}>
-                                            <VexFlowRhythmIcon
-                                                duration={item.code}
-                                                fillColor={active ? '#67e8f9' : '#94a3b8'} // cyan-300 vs slate-400
-                                            />
-                                        </div>
-                                        <span>{item.label}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
+                {/* Unified Duration Selector - REMOVED DUPLICATE */}
 
                 {/* Conditional Content */}
                 {isInspector && editingNote ? (
                     <div className="space-y-6">
-                        {/* Note Inspector Content */}
-                        {(
+                        {/* TAB NAVIGATION */}
+                        <div className="flex bg-zinc-950/40 p-1 rounded-xl border border-zinc-800/50">
+                            {(['MAIN', 'NOTES', 'EFFECTS'] as const).map(tab => {
+                                const t = tab.toLowerCase() as typeof activeTab;
+                                return (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setActiveTab(t)}
+                                        className={`flex-1 py-1.5 text-[9px] font-black rounded-lg transition-all ${activeTab === t
+                                            ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700'
+                                            : 'text-zinc-600 hover:text-zinc-400'
+                                            }`}
+                                    >
+                                        {tab}
+                                    </button>
+                                )
+                            })}
+                        </div>
+
+                        {/* Note Inspector Content - MAIN */}
+                        {activeTab === 'main' && (
                             <div className="space-y-6">
+                                {/* Duration Selection */}
+                                <div className="space-y-3">
+                                    <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center space-x-2">
+                                        <span>Duration</span>
+                                        <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[9px] border border-purple-500/20">ACTIVE</span>
+                                    </h3>
+
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {durationItems.slice(0, 4).map((item) => {
+                                            const active = getDurationActive(item.code);
+                                            return (
+                                                <button
+                                                    key={item.label}
+                                                    onClick={() => handleDurationClick(item.code)}
+                                                    className={`py-2 rounded-xl border font-black transition-all text-[10px] flex flex-col items-center justify-center space-y-1 ${active
+                                                        ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.1)]'
+                                                        : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
+                                                        }`}
+                                                >
+                                                    <VexFlowRhythmIcon
+                                                        duration={item.code}
+                                                        fillColor={active ? '#67e8f9' : '#94a3b8'}
+                                                    />
+                                                    <span>{item.label}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {durationItems.slice(4).map((item) => {
+                                            const active = getDurationActive(item.code);
+                                            return (
+                                                <button
+                                                    key={item.label}
+                                                    onClick={() => handleDurationClick(item.code)}
+                                                    className={`py-2 rounded-xl border font-black transition-all text-[10px] flex flex-col items-center justify-center space-y-1 ${active
+                                                        ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.1)]'
+                                                        : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
+                                                        }`}
+                                                >
+                                                    <VexFlowRhythmIcon
+                                                        duration={item.code}
+                                                        fillColor={active ? '#67e8f9' : '#94a3b8'}
+                                                        className="w-8 h-10"
+                                                    />
+                                                    <span>{item.label}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
                                 {/* Dotted & Type */}
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-800/50">
                                     <button
                                         onClick={() => onNoteRhythmChange?.(undefined, !editingNote.decorators.dot)}
                                         className={`py-3 rounded-xl border transition-all text-xs font-bold flex items-center justify-center space-x-2 ${editingNote.decorators.dot ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
@@ -308,9 +400,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         <button onClick={() => onNoteTypeChange?.('rest')} className={`flex-1 text-[9px] font-black rounded-lg transition-all py-1 ${editingNote.type === 'rest' ? 'bg-zinc-100/10 text-zinc-100 border border-zinc-100/20' : 'text-zinc-600 hover:text-zinc-400'}`}>REST</button>
                                     </div>
                                 </div>
+                            </div>
+                        )}
 
-
-                                <div className="space-y-3 pt-2 border-t border-zinc-800/50">
+                        {/* Note Inspector Content - NOTES */}
+                        {activeTab === 'notes' && (
+                            <div className="space-y-6">
+                                <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Chord Notes</h3>
                                         <button
@@ -425,64 +521,191 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </div>
                         )}
 
+                        {activeTab === 'effects' && (
+                            <div className="space-y-6">
+                                {/* Techniques Grid */}
+                                <div className="space-y-3">
+                                    <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Techniques</h3>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[
+                                            { label: 'Hammer-on', code: 'h' },
+                                            { label: 'Pull-off', code: 'p' },
+                                            { label: 'Tap', code: 't' },
+                                            { label: 'Slide', code: 's' },
+                                            { label: 'Bend', code: 'b' },
+                                            { label: 'Vibrato', code: 'v' },
+                                        ].map(tech => {
+                                            const isActive = (editingNote.technique || "").includes(tech.code);
+                                            return (
+                                                <button
+                                                    key={tech.code}
+                                                    onClick={() => handleTechniqueToggle(tech.code)}
+                                                    className={`py-3 rounded-xl border font-bold text-xs transition-all ${isActive
+                                                        ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
+                                                        : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
+                                                        }`}
+                                                >
+                                                    {tech.label}
+                                                </button>
+                                            );
+                                        })}
+
+                                        <button
+                                            onClick={() => handleTechniqueToggle('slur')}
+                                            className={`py-3 rounded-xl border font-bold text-xs transition-all ${editingNote.isSlurred
+                                                ? 'bg-purple-500/10 border-purple-500/30 text-purple-400'
+                                                : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
+                                                }`}
+                                        >
+                                            Slur/Tie
+                                        </button>
+                                    </div>
+                                    <p className="text-[9px] text-zinc-600 italic">
+                                        Select note to apply individual effects.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
 
                     </div>
                 ) : isMeasureProperties && activeMeasure ? (
                     // Measure Properties
                     <div className="space-y-6">
-                        {/* CHORD NAME BUILDER FOR MEASURE */}
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Measure Chord Name</label>
-                                <button
-                                    onClick={() => onUpdateMeasure?.(activeMeasure.id, { showChordName: !activeMeasure.showChordName })}
-                                    className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all border ${activeMeasure.showChordName !== false
-                                        ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
-                                        : 'bg-zinc-900/50 text-zinc-500 border-zinc-800/50 hover:bg-zinc-800/80'
-                                        }`}
-                                >
-                                    {activeMeasure.showChordName !== false ? 'VISIBLE' : 'HIDDEN'}
-                                </button>
-                            </div>
-
-                            {/* Chord Builder */}
-                            {(() => {
-                                const ROOTS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-                                const QUALITIES = [
-                                    { label: "Major", value: "" },
-                                    { label: "Minor", value: "m" },
-                                    { label: "Dim", value: "dim" },
-                                    { label: "Aug", value: "aug" },
-                                    { label: "Sus2", value: "sus2" },
-                                    { label: "Sus4", value: "sus4" }
-                                ];
-                                const BASS_OPTIONS = ["Root", ...ROOTS.map(r => `/${r}`)];
-
-                                const buildChordName = () => {
-                                    let qualitySuffix = chordQuality;
-                                    let bassSuffix = chordBass === "Root" ? "" : chordBass;
-                                    let extensionStr = chordExtensions.join("");
-                                    return `${chordRoot}${qualitySuffix}${extensionStr}${bassSuffix}`;
-                                };
-
-                                const applyChordName = () => {
-                                    const name = buildChordName();
-                                    onUpdateMeasure?.(activeMeasure.id, { chordName: name });
-                                };
-
-                                const toggleExtension = (ext: string) => {
-                                    setChordExtensions(prev =>
-                                        prev.includes(ext) ? prev.filter(e => e !== ext) : [...prev, ext]
-                                    );
-                                };
-
-                                const currentChordName = buildChordName();
-
+                        {/* Tab Navigation */}
+                        <div className="flex bg-zinc-950/40 p-1 rounded-xl border border-zinc-800/50">
+                            {(['GENERAL', 'CHORD'] as const).map(tab => {
+                                const t = tab.toLowerCase() as typeof measureTab;
                                 return (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setMeasureTab(t)}
+                                        className={`flex-1 py-1.5 text-[9px] font-black rounded-lg transition-all ${measureTab === t
+                                            ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700'
+                                            : 'text-zinc-600 hover:text-zinc-400'
+                                            }`}
+                                    >
+                                        {tab}
+                                    </button>
+                                )
+                            })}
+                        </div>
+
+                        {measureTab === 'general' && (
+                            <div className="space-y-6">
+                                {/* Duration Selection */}
+                                <div className="space-y-3">
+                                    <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center space-x-2">
+                                        <span>Duration</span>
+                                        <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[9px] border border-purple-500/20">ACTIVE</span>
+                                    </h3>
+
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {durationItems.slice(0, 4).map((item) => {
+                                            const active = getDurationActive(item.code);
+                                            return (
+                                                <button
+                                                    key={item.label}
+                                                    onClick={() => handleDurationClick(item.code)}
+                                                    className={`py-2 rounded-xl border font-black transition-all text-[10px] flex flex-col items-center justify-center space-y-1 ${active
+                                                        ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.1)]'
+                                                        : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
+                                                        }`}
+                                                >
+                                                    <VexFlowRhythmIcon
+                                                        duration={item.code}
+                                                        fillColor={active ? '#67e8f9' : '#94a3b8'}
+                                                    />
+                                                    <span>{item.label}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {durationItems.slice(4).map((item) => {
+                                            const active = getDurationActive(item.code);
+                                            return (
+                                                <button
+                                                    key={item.label}
+                                                    onClick={() => handleDurationClick(item.code)}
+                                                    className={`py-2 rounded-xl border font-black transition-all text-[10px] flex flex-col items-center justify-center space-y-1 ${active
+                                                        ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.1)]'
+                                                        : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
+                                                        }`}
+                                                >
+                                                    <VexFlowRhythmIcon
+                                                        duration={item.code}
+                                                        fillColor={active ? '#67e8f9' : '#94a3b8'}
+                                                        className="w-8 h-10"
+                                                    />
+                                                    <span>{item.label}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* TRANSPOSITION CONTROL - Now inside General Tab */}
+                                <div className="space-y-3 pt-2 border-t border-zinc-800/50">
+                                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Transpose Measure</label>
+                                    <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/50 space-y-3">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <button
+                                                onClick={() => onTransposeMeasure?.(activeMeasure.id, -1)}
+                                                disabled={activeMeasure.notes.some(n => n.positions.some(p => p.fret <= 0))}
+                                                className="flex-1 py-2 rounded-lg border border-zinc-700 bg-zinc-900/50 text-zinc-400 font-bold text-xs hover:bg-zinc-800 hover:border-zinc-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                            >
+                                                -1 Semitone
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    // Reset to original by calculating difference
+                                                    // For now, just a visual indicator
+                                                }}
+                                                className="px-4 py-2 rounded-lg border border-zinc-700 bg-zinc-900/50 text-zinc-500 font-bold text-[10px] hover:bg-zinc-800 hover:border-zinc-600 transition-all"
+                                            >
+                                                RESET
+                                            </button>
+                                            <button
+                                                onClick={() => onTransposeMeasure?.(activeMeasure.id, 1)}
+                                                disabled={activeMeasure.notes.some(n => n.positions.some(p => p.fret >= 24))}
+                                                className="flex-1 py-2 rounded-lg border border-zinc-700 bg-zinc-900/50 text-zinc-400 font-bold text-xs hover:bg-zinc-800 hover:border-zinc-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                            >
+                                                +1 Semitone
+                                            </button>
+                                        </div>
+                                        <p className="text-[9px] text-zinc-600 text-center uppercase tracking-wider">
+                                            Shifts all notes in measure
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {measureTab === 'chord' && (
+                            <div className="space-y-6">
+                                {/* CHORD NAME BUILDER FOR MEASURE */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Measure Chord Name</label>
+                                        <button
+                                            onClick={() => onUpdateMeasure?.(activeMeasure.id, { showChordName: activeMeasure.showChordName === false ? true : false })}
+                                            className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all border ${activeMeasure.showChordName !== false
+                                                ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
+                                                : 'bg-zinc-900/50 text-zinc-500 border-zinc-800/50 hover:bg-zinc-800/80'
+                                                }`}
+                                        >
+                                            {activeMeasure.showChordName !== false ? 'VISIBLE' : 'HIDDEN'}
+                                        </button>
+                                    </div>
+
+                                    {/* Preview Card */}
                                     <div className="space-y-3 bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/50">
                                         {/* Preview */}
                                         <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-2 text-center">
-                                            <span className="text-sm font-black" style={{ color: theme?.chordNameColor || '#22d3ee' }}>{currentChordName}</span>
+                                            <span className="text-sm font-black" style={{ color: theme?.chordNameColor || '#22d3ee' }}>
+                                                {`${localRoot}${localQuality}${localExtensions.join("")}${localBass === "Root" ? "" : localBass}`}
+                                            </span>
                                         </div>
 
                                         {/* Root & Quality */}
@@ -492,10 +715,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                 <div className="relative">
                                                     <select
                                                         className="w-full px-2 py-1.5 bg-zinc-900/50 border border-zinc-800/50 rounded-lg text-xs font-bold text-zinc-300 focus:outline-none focus:border-cyan-500/30 appearance-none pr-6"
-                                                        value={chordRoot}
-                                                        onChange={(e) => setChordRoot(e.target.value)}
+                                                        value={localRoot}
+                                                        onChange={(e) => setLocalRoot(e.target.value)}
                                                     >
-                                                        {ROOTS.map(r => <option key={r} value={r}>{r}</option>)}
+                                                        {["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"].map(r => <option key={r} value={r}>{r}</option>)}
                                                     </select>
                                                     <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600 pointer-events-none" />
                                                 </div>
@@ -506,10 +729,17 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                 <div className="relative">
                                                     <select
                                                         className="w-full px-2 py-1.5 bg-zinc-900/50 border border-zinc-800/50 rounded-lg text-xs font-bold text-zinc-300 focus:outline-none focus:border-cyan-500/30 appearance-none pr-6"
-                                                        value={chordQuality}
-                                                        onChange={(e) => setChordQuality(e.target.value)}
+                                                        value={localQuality}
+                                                        onChange={(e) => setLocalQuality(e.target.value)}
                                                     >
-                                                        {QUALITIES.map(q => <option key={q.value} value={q.value}>{q.label}</option>)}
+                                                        {[
+                                                            { label: "Major", value: "" },
+                                                            { label: "Minor", value: "m" },
+                                                            { label: "Dim", value: "dim" },
+                                                            { label: "Aug", value: "aug" },
+                                                            { label: "Sus2", value: "sus2" },
+                                                            { label: "Sus4", value: "sus4" }
+                                                        ].map(q => <option key={q.value} value={q.value}>{q.label}</option>)}
                                                     </select>
                                                     <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600 pointer-events-none" />
                                                 </div>
@@ -522,37 +752,108 @@ const Sidebar: React.FC<SidebarProps> = ({
                                             <div className="relative">
                                                 <select
                                                     className="w-full px-2 py-1.5 bg-zinc-900/50 border border-zinc-800/50 rounded-lg text-xs font-bold text-zinc-300 focus:outline-none focus:border-cyan-500/30 appearance-none pr-6"
-                                                    value={chordBass}
-                                                    onChange={(e) => setChordBass(e.target.value)}
+                                                    value={localBass}
+                                                    onChange={(e) => setLocalBass(e.target.value)}
                                                 >
-                                                    {BASS_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
+                                                    {["Root", ...["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"].map(r => `/${r}`)].map(b => <option key={b} value={b}>{b}</option>)}
                                                 </select>
                                                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600 pointer-events-none" />
                                             </div>
                                         </div>
 
-                                        {/* Extensions */}
+                                        {/* Extensions with Object-Like Logic */}
                                         <div className="space-y-1">
-                                            <label className="text-[9px] font-bold text-zinc-500 uppercase">Extensions</label>
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[9px] font-bold text-zinc-500 uppercase">Extensions</label>
+                                            </div>
+
                                             <div className="flex flex-wrap gap-1">
                                                 {[
                                                     { label: "5", value: "5" },
                                                     { label: "6", value: "6" },
                                                     { label: "7", value: "7" },
-                                                    { label: "maj7", value: "maj7" },
+                                                    { label: "7+", value: "7+" },
                                                     { label: "9", value: "9" },
                                                     { label: "11", value: "11" },
                                                     { label: "13", value: "13" },
                                                 ].map(ext => {
-                                                    const isActive = chordExtensions.includes(ext.value);
+                                                    // Find if any variant of this extension is active
+                                                    const activeVariant = localExtensions.find(e => e.endsWith(ext.value) && (e === ext.value || e === `b${ext.value}` || e === `#${ext.value}`));
+                                                    const isActive = !!activeVariant;
+
+                                                    // Determine current modifier state for this specific extension
+                                                    const currentModifier = activeVariant?.startsWith('b') ? 'b' : activeVariant?.startsWith('#') ? '#' : 'none';
+
+                                                    if (isActive) {
+                                                        return (
+                                                            <div key={ext.value} className="flex items-center bg-cyan-500/10 border border-cyan-500/30 rounded overflow-hidden transition-all">
+                                                                {/* Flat Modifier Toggle */}
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setLocalExtensions(prev => {
+                                                                            // Remove current variant
+                                                                            const others = prev.filter(e => e !== activeVariant);
+                                                                            // If already flat, toggle to natural (none)
+                                                                            if (currentModifier === 'b') {
+                                                                                return [...others, ext.value];
+                                                                            } else {
+                                                                                // Switch to flat
+                                                                                return [...others, `b${ext.value}`];
+                                                                            }
+                                                                        });
+                                                                    }}
+                                                                    className={`px-1.5 py-1 text-[9px] font-bold hover:bg-cyan-500/20 transition-colors ${currentModifier === 'b' ? 'text-cyan-400' : 'text-zinc-600 hover:text-zinc-400'}`}
+                                                                >
+                                                                    b
+                                                                </button>
+
+                                                                {/* Main Label (Toggle Off) */}
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setLocalExtensions(prev => prev.filter(e => e !== activeVariant));
+                                                                    }}
+                                                                    className="px-1.5 py-1 text-[9px] font-black text-cyan-400 hover:bg-cyan-500/20 transition-colors border-x border-cyan-500/10"
+                                                                >
+                                                                    {ext.label}
+                                                                </button>
+
+                                                                {/* Sharp Modifier Toggle */}
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setLocalExtensions(prev => {
+                                                                            // Remove current variant
+                                                                            const others = prev.filter(e => e !== activeVariant);
+                                                                            // If already sharp, toggle to natural (none)
+                                                                            if (currentModifier === '#') {
+                                                                                return [...others, ext.value];
+                                                                            } else {
+                                                                                // Switch to sharp
+                                                                                return [...others, `#${ext.value}`];
+                                                                            }
+                                                                        });
+                                                                    }}
+                                                                    className={`px-1.5 py-1 text-[9px] font-bold hover:bg-cyan-500/20 transition-colors ${currentModifier === '#' ? 'text-cyan-400' : 'text-zinc-600 hover:text-zinc-400'}`}
+                                                                >
+                                                                    #
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    // Inactive State - Simple Button
                                                     return (
                                                         <button
                                                             key={ext.value}
-                                                            onClick={() => toggleExtension(ext.value)}
-                                                            className={`px-2 py-1 rounded text-[9px] font-bold border transition-all ${isActive
-                                                                ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
-                                                                : 'bg-zinc-900/50 text-zinc-500 border-zinc-800/50 hover:bg-zinc-800/80'
-                                                                }`}
+                                                            onClick={() => {
+                                                                setLocalExtensions(prev => {
+                                                                    // Add base value, ensure no other variants exist (though should be clean)
+                                                                    const others = prev.filter(e => !e.endsWith(ext.value));
+                                                                    return [...others, ext.value];
+                                                                });
+                                                            }}
+                                                            className="px-2 py-1 rounded text-[9px] font-bold border transition-all bg-zinc-900/50 text-zinc-500 border-zinc-800/50 hover:bg-zinc-800/80 hover:text-zinc-300"
                                                         >
                                                             {ext.label}
                                                         </button>
@@ -561,66 +862,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                             </div>
                                         </div>
 
-                                        {/* Apply Button */}
-                                        <button
-                                            onClick={applyChordName}
-                                            className="w-full py-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 font-bold text-xs hover:bg-cyan-500/20 transition-all uppercase tracking-wider"
-                                        >
-                                            Apply to Measure
-                                        </button>
-
-                                        {/* Direct Input */}
                                         <div className="pt-2 border-t border-zinc-800/50">
-                                            <label className="text-[9px] font-bold text-zinc-500 uppercase block mb-1">Or type directly</label>
-                                            <input
-                                                type="text"
-                                                value={activeMeasure.chordName || ''}
-                                                onChange={(e) => onUpdateMeasure?.(activeMeasure.id, { chordName: e.target.value })}
-                                                placeholder="e.g., C#m7/B"
-                                                className="w-full bg-zinc-950/40 border border-zinc-800/60 rounded-lg px-2 py-1.5 text-xs font-bold text-cyan-400 placeholder:text-zinc-600 focus:border-cyan-500/50 outline-none"
-                                            />
-                                            <p className="text-[9px] text-zinc-600 mt-1">Displays throughout entire measure</p>
+                                            <p className="text-[9px] text-zinc-600 mt-1 center">Displays throughout entire measure</p>
                                         </div>
                                     </div>
-                                );
-                            })()}
-                        </div>
-
-                        {/* TRANSPOSITION CONTROL */}
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Transpose Measure</label>
-                            <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/50 space-y-3">
-                                <div className="flex items-center justify-between gap-2">
-                                    <button
-                                        onClick={() => onTransposeMeasure?.(activeMeasure.id, -1)}
-                                        disabled={activeMeasure.notes.some(n => n.positions.some(p => p.fret <= 0))}
-                                        className="flex-1 py-2 rounded-lg border border-zinc-700 bg-zinc-900/50 text-zinc-400 font-bold text-xs hover:bg-zinc-800 hover:border-zinc-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                                    >
-                                        -1 Semitone
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            // Reset to original by calculating difference
-                                            // For now, just a visual indicator
-                                        }}
-                                        className="px-4 py-2 rounded-lg border border-zinc-700 bg-zinc-900/50 text-zinc-500 font-bold text-[10px] hover:bg-zinc-800 hover:border-zinc-600 transition-all"
-                                    >
-                                        RESET
-                                    </button>
-                                    <button
-                                        onClick={() => onTransposeMeasure?.(activeMeasure.id, 1)}
-                                        disabled={activeMeasure.notes.some(n => n.positions.some(p => p.fret >= 24))}
-                                        className="flex-1 py-2 rounded-lg border border-zinc-700 bg-zinc-900/50 text-zinc-400 font-bold text-xs hover:bg-zinc-800 hover:border-zinc-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                                    >
-                                        +1 Semitone
-                                    </button>
                                 </div>
-                                <p className="text-[9px] text-zinc-600 text-center">
-                                    Shifts all notes and updates chord name (Notes at fret 0 are hidden)
-                                </p>
                             </div>
-                        </div>
-                    </div >
+                        )}
+                    </div>
                 ) : (
                     <div className="space-y-8">
                         {/* Settings only - simplified for fretboard */}
@@ -676,7 +925,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </div>
                     </div>
                 )}
-            </div >
+            </div>
         </GenericSidebar >
     );
 };

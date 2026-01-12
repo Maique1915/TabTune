@@ -118,6 +118,10 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
                 chordData.chordName = chordName;
             }
 
+            if (measure.showChordName !== undefined) {
+                chordData.showChordName = measure.showChordName;
+            }
+
             result.push({
                 chord: chordData,
                 finalChord: chordData, // No transposition logic applied here yet

@@ -85,6 +85,7 @@ export interface ChordDiagramProps {
     list?: boolean;
     stringNames?: string[];
     chordName?: string;
+    showChordName?: boolean;
 }
 
 export interface ChordWithTiming {
