@@ -88,9 +88,9 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
   borderColor: "#FFFFFF",            // Cordas brancas
   fretColor: "#000000",              // Trastes brancos
   textColor: "#FF8C42",              // Nomes das cordas laranja
-  chordNameColor: "#22d3ee",         // Nome do acorde cyan default
+  chordNameColor: "#ffffff",         // Nome do acorde branco (user request)
   chordNameOpacity: 1,
-  chordNameShadow: true,
+  chordNameShadow: false,            // Sem sombra (user request)
   chordNameShadowColor: "#22d3ee",
   chordNameShadowBlur: 10,
   chordNameStrokeColor: "#000000",

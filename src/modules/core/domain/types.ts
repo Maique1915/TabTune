@@ -28,6 +28,7 @@ export interface MusicalEvent {
 
     // Harmonic identity
     chordName?: string;
+    showChordName?: boolean; // Per-event control for chord name visibility
 
     // Physical Execution
     positions: StandardPosition[];

@@ -105,39 +105,14 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
                 stringNames: settings.tuning
             };
 
-            // Determine Chord Name
+            // Determine Chord Name from MEASURE (not from individual notes)
+            // This makes the chord name display throughout the entire measure
             let chordName = '';
 
-            // 1. Priority: Explicit simple string name on the NOTE
-            if (note.chordName) {
-                chordName = note.chordName;
+            // Priority: Measure-level chord name
+            if (measure.chordName) {
+                chordName = measure.chordName;
             }
-            // 2. Fallback: ManualChord object on the NOTE
-            else if (note.manualChord && note.manualChord.root && note.manualChord.root !== 'none') {
-                const { root, quality, bass, extensions } = note.manualChord;
-                let suffix = '';
-                if (quality === 'Minor') suffix = 'm';
-                else if (quality === 'Dim') suffix = 'dim';
-                else if (quality === 'Aug') suffix = 'aug';
-                else if (quality === 'Sus2') suffix = 'sus2';
-                else if (quality === 'Sus4') suffix = 'sus4';
-
-                const ext = extensions ? extensions.join('') : '';
-
-                let bassStr = '';
-                if (bass && bass !== 'none') {
-                    bassStr = bass.startsWith('/') ? bass : `/${bass}`;
-                    const cleanBass = bassStr.replace('/', '');
-                    if (cleanBass === root) {
-                        bassStr = '';
-                    }
-                }
-
-                const fmtRoot = root.replace('s', '#');
-                chordName = `${fmtRoot}${suffix}${ext}${bassStr}`;
-            }
-            // 3. No auto-detection fallback desired by user.
-            // Previously: chordName = detectChordFromMeasure(measure.notes) || '';
 
             if (chordName) {
                 chordData.chordName = chordName;

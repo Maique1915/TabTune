@@ -156,3 +156,42 @@ export function detectChordFromMeasure(notes: NoteData[]): string | null {
     }
     return null;
 }
+
+/**
+ * Transposes a chord name by a given number of semitones.
+ * Example: transposeChordName("C", 2) => "D"
+ *          transposeChordName("Am7", -1) => "G#m7"
+ */
+export function transposeChordName(chordName: string | undefined, semitones: number): string {
+    if (!chordName || semitones === 0) return chordName || '';
+
+    // Parse the chord name to extract root note
+    const match = chordName.match(/^([A-G][#b]?)(.*)/);
+    if (!match) return chordName;
+
+    const [, root, suffix] = match;
+
+    // Find the current note index
+    let noteIndex = NOTE_NAMES.indexOf(root);
+
+    // Handle flats by converting to sharp equivalent
+    if (root.includes('b')) {
+        const flatToSharp: Record<string, string> = {
+            'Cb': 'B', 'Db': 'C#', 'Eb': 'D#', 'Fb': 'E',
+            'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#'
+        };
+        const sharpEquiv = flatToSharp[root];
+        if (sharpEquiv) {
+            noteIndex = NOTE_NAMES.indexOf(sharpEquiv);
+        }
+    }
+
+    if (noteIndex === -1) return chordName;
+
+    // Transpose
+    let newIndex = (noteIndex + semitones) % 12;
+    if (newIndex < 0) newIndex += 12;
+
+    const newRoot = NOTE_NAMES[newIndex];
+    return newRoot + suffix;
+}

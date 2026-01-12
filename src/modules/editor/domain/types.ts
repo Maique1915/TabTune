@@ -45,6 +45,7 @@ export interface NoteData extends Omit<MusicalEvent, 'type'> {
 
     // Chord Identity (inherited chordName)
     manualChord?: ManualChordData; // The definition (root, quality, etc)
+    showChordName?: boolean; // Per-note control for chord name visibility
 
     // Barre (inherited from MusicalEvent as BarreData: all numbers)
 }
@@ -56,7 +57,10 @@ export interface MeasureData {
     showClef?: boolean;
     clef?: 'treble' | 'bass' | 'alto' | 'tenor' | 'tab';
     showTimeSig?: boolean;
-    // chord data moved to specific notes for granularity
+
+    // Measure-level chord name (displays throughout entire measure)
+    chordName?: string;
+    showChordName?: boolean;
 }
 
 export interface GlobalSettings {
@@ -66,6 +70,7 @@ export interface GlobalSettings {
     clef: 'treble' | 'bass' | 'alto' | 'tenor' | 'tab';
     showNotation: boolean;
     showTablature: boolean;
+    showChordName?: boolean;
     displayMode?: 'tab' | 'score' | 'both';
     numStrings?: number;
     tuning?: string[]; // Optional tuning array

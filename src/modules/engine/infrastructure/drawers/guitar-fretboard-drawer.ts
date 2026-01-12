@@ -306,6 +306,9 @@ export class GuitarFretboardDrawer {
             // Skip if fret is undefined
             if (fret === undefined) return;
 
+            // Skip rendering notes at fret 0 (they are hidden)
+            if (fret === 0) return;
+
             // Check if this note is part of the barre
             const isBarreParts = barre && barre.fret === fret && stringNum >= barre.fromString && stringNum <= barre.toString;
 

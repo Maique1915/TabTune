@@ -34,9 +34,9 @@ const STUDIO_PRESETS = {
       ...DEFAULT_COLORS,
       cardColor: "#ffffff",
       fretboardColor: "#f5f5f5",
-      borderColor: "#cccccc",
+      borderColor: "#000000", // Black strings (user request)
       fretColor: "#dddddd",
-      chordNameColor: "#22d3ee", // Cyan to match Studio
+      chordNameColor: "#000000", // Black (user request)
       chordNameShadow: false,
       chordNameShadowColor: "transparent",
       chordNameShadowBlur: 0,
@@ -76,7 +76,7 @@ const STUDIO_PRESETS = {
       ...DEFAULT_COLORS,
       cardColor: "#020617",
       fretboardColor: "#0f172a",
-      borderColor: "#1e293b",
+      borderColor: "#94a3b8", // Lighter strings (user request)
       fretColor: "#334155",
       textColor: "#94a3b8",
       chordNameColor: "#60a5fa", // Blue

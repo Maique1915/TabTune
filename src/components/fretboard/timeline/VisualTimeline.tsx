@@ -109,9 +109,6 @@ const VisualTimeline: React.FC<FretboardVisualEditorProps> = ({
             <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 custom-scrollbar bg-black/40">
                 <div className="flex flex-row gap-4 min-w-max h-full items-start">
                     {measures.map((measure, mIdx) => {
-                        const currentTotal = measure.notes.reduce((sum, n) => sum + getNoteDurationValue(n.duration, !!n.decorators.dot), 0);
-                        const usagePercent = Math.min((currentTotal / capacity) * 100, 100);
-                        const isFull = currentTotal >= capacity - 0.001;
                         const isCollapsed = measure.isCollapsed;
                         const isDragging = draggedIndex === mIdx;
                         const isOver = dragOverIndex === mIdx;
@@ -158,13 +155,6 @@ const VisualTimeline: React.FC<FretboardVisualEditorProps> = ({
                                         </div>
 
                                         <div className="flex items-center space-x-1">
-                                            {!isCollapsed && (
-                                                <div className="flex items-center space-x-1 mr-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={(e) => { e.stopPropagation(); onUpdateMeasure(measure.id, { showClef: !measure.showClef }); }} className={`p-1 rounded transition-all ${measure.showClef ? 'text-cyan-400 bg-cyan-500/10' : 'text-slate-700 hover:text-slate-400'}`} title="Show Clef"><span className="text-[10px] font-serif">𝄞</span></button>
-                                                    <button onClick={(e) => { e.stopPropagation(); onUpdateMeasure(measure.id, { showTimeSig: !measure.showTimeSig }); }} className={`p-1 rounded transition-all ${measure.showTimeSig ? 'text-purple-400 bg-purple-500/10' : 'text-slate-700 hover:text-slate-400'}`} title="Show Time Sig"><span className="text-[8px] font-serif font-bold">4/4</span></button>
-                                                </div>
-                                            )}
-
                                             <button onClick={(e) => { e.stopPropagation(); onToggleCollapse(measure.id); }} className="p-1 hover:bg-[#222] rounded text-slate-600 hover:text-white transition-colors">
                                                 {isCollapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
                                             </button>
@@ -173,12 +163,7 @@ const VisualTimeline: React.FC<FretboardVisualEditorProps> = ({
 
                                     {/* Action Bar (Only visible on hover if not collapsed) */}
                                     {!isCollapsed && (
-                                        <div className="flex items-center justify-between pt-2">
-                                            <div className="flex flex-col w-full mr-4">
-                                                <div className="w-full h-0.5 bg-[#222] rounded-full overflow-hidden">
-                                                    <div className={`h-full transition-all duration-500 ${isFull ? 'bg-cyan-500' : 'bg-slate-600'}`} style={{ width: `${usagePercent}%` }} />
-                                                </div>
-                                            </div>
+                                        <div className="flex items-center justify-end pt-2">
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button onClick={(e) => { e.stopPropagation(); onCopyMeasure(measure.id); }} className="p-1 text-slate-600 hover:text-cyan-400 transition-colors"><Icons.Copy /></button>
                                                 <button onClick={(e) => { e.stopPropagation(); onRemoveMeasure(measure.id); }} className="p-1 text-slate-600 hover:text-red-400 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></button>
@@ -192,7 +177,7 @@ const VisualTimeline: React.FC<FretboardVisualEditorProps> = ({
                                             <div className="text-[9px] font-black text-slate-700 rotated-text uppercase tracking-widest whitespace-nowrap" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
                                                 {measure.notes.length} Notes
                                             </div>
-                                            <div className={`w-0.5 h-8 rounded-full ${isFull ? 'bg-cyan-500/50' : 'bg-[#222]'}`} />
+                                            <div className="w-0.5 h-8 rounded-full bg-[#222]" />
                                         </div>
                                     )}
                                 </div>
@@ -250,18 +235,16 @@ const VisualTimeline: React.FC<FretboardVisualEditorProps> = ({
                                                 );
                                             })}
 
-                                            {/* Add Button */}
-                                            {!isFull && (
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); onAddNote(measure.id); }}
-                                                    className="w-10 h-14 border border-dashed border-[#222] rounded-lg flex flex-col items-center justify-center text-[#333] hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all active:scale-95 group/add"
-                                                    title="Add Note"
-                                                >
-                                                    <span className="scale-75 opacity-50 group-hover/add:opacity-100 transition-opacity">
-                                                        <Icons.Plus />
-                                                    </span>
-                                                </button>
-                                            )}
+                                            {/* Add Button - Always visible */}
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onAddNote(measure.id); }}
+                                                className="w-10 h-14 border border-dashed border-[#222] rounded-lg flex flex-col items-center justify-center text-[#333] hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all active:scale-95 group/add"
+                                                title="Add Note"
+                                            >
+                                                <span className="scale-75 opacity-50 group-hover/add:opacity-100 transition-opacity">
+                                                    <Icons.Plus />
+                                                </span>
+                                            </button>
                                         </div>
                                     </div>
                                 )}

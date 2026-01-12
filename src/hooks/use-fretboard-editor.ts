@@ -10,7 +10,8 @@ import {
     getPitchFromMidi,
     findBestFretForPitch,
     getMidiFromPitch,
-    NOTE_NAMES
+    NOTE_NAMES,
+    transposeChordName
 } from '@/modules/editor/domain/music-math';
 
 interface FretboardEditorState {
@@ -24,6 +25,7 @@ interface FretboardEditorState {
     activePositionIndex: number;
     currentMeasureIndex: number;
     selectedMeasureId: string | null;
+    copiedMeasure: MeasureData | null; // For copy/paste functionality
 }
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -56,7 +58,8 @@ export function useFretboardEditor() {
         activeDuration: 'q',
         activePositionIndex: 0,
         currentMeasureIndex: 0,
-        selectedMeasureId: null
+        selectedMeasureId: null,
+        copiedMeasure: null
     });
 
     const {
@@ -285,59 +288,41 @@ export function useFretboardEditor() {
 
     // --- Core Actions (Add/Remove) ---
 
-    // Simplified Note Addition
+    // Simplified Note Addition - No time limit
     const handleAddNote = (measureId: string, durationOverride?: Duration) => {
         setState(prev => {
             const measureIndex = prev.measures.findIndex(m => m.id === measureId);
             if (measureIndex === -1) return prev;
 
-            const measure = prev.measures[measureIndex];
             const durationToAdd = durationOverride || prev.activeDuration;
-            const currentTotal = measure.notes.reduce((sum, n) => sum + getNoteDurationValue(n.duration, !!n.decorators.dot), 0);
-            const capacity = getMeasureCapacity(prev.settings.time);
-            const newNoteValue = getNoteDurationValue(durationToAdd, false);
+            const newNoteId = generateId();
 
-            let newMeasures = [...prev.measures];
-            let newMeasureFullIndex = measureIndex;
-            let targetMeasureId = measureId;
-
-            if (currentTotal + newNoteValue > capacity + 0.001) {
-                // Overflow (New Measure)
-                const newMeasureId = generateId();
-                const newNote: NoteData = {
-                    id: generateId(),
-                    positions: [{ fret: 0, string: 3 }],
-                    duration: durationToAdd,
-                    type: 'note',
-                    decorators: {},
-                    accidental: 'none'
-                };
-                newMeasures.splice(measureIndex + 1, 0, {
-                    id: newMeasureId,
-                    isCollapsed: false,
-                    showClef: false,
-                    showTimeSig: false,
-                    notes: [newNote]
-                });
-                newMeasureFullIndex = measureIndex + 1;
-                targetMeasureId = newMeasureId;
-            } else {
-                newMeasures = prev.measures.map((m, idx) => {
-                    if (idx === measureIndex) {
-                        return {
-                            ...m,
-                            notes: [...m.notes, { id: generateId(), positions: [{ fret: 0, string: 3 }], duration: durationToAdd, type: 'note', decorators: {}, accidental: 'none' }]
-                        };
-                    }
-                    return m;
-                });
-            }
+            // Always add to current measure, no capacity check
+            const newMeasures = prev.measures.map((m, idx) => {
+                if (idx === measureIndex) {
+                    return {
+                        ...m,
+                        notes: [...m.notes, {
+                            id: newNoteId,
+                            positions: [{ fret: 1, string: 3 }],
+                            duration: durationToAdd,
+                            type: 'note' as const,
+                            decorators: {},
+                            accidental: 'none' as const
+                        }]
+                    };
+                }
+                return m;
+            });
 
             return {
                 ...prev,
                 measures: newMeasures,
-                currentMeasureIndex: newMeasureFullIndex,
-                selectedMeasureId: targetMeasureId
+                currentMeasureIndex: measureIndex,
+                selectedMeasureId: measureId,
+                editingNoteId: newNoteId,
+                selectedNoteIds: [newNoteId],
+                activePositionIndex: 0
             };
         });
     };
@@ -722,6 +707,125 @@ export function useFretboardEditor() {
         handleUpdateMeasure,
         handleAddMeasure,
         handleRemoveMeasure,
+
+        // Toggle Collapse
+        handleToggleCollapse: (measureId: string) => {
+            setState(prev => ({
+                ...prev,
+                measures: prev.measures.map(m =>
+                    m.id === measureId ? { ...m, isCollapsed: !m.isCollapsed } : m
+                )
+            }));
+        },
+
+        // Reorder Measures
+        handleReorderMeasures: (fromIndex: number, toIndex: number) => {
+            setState(prev => {
+                const newMeasures = [...prev.measures];
+                const [movedMeasure] = newMeasures.splice(fromIndex, 1);
+                newMeasures.splice(toIndex, 0, movedMeasure);
+                return {
+                    ...prev,
+                    measures: newMeasures
+                };
+            });
+        },
+
+        // Copy Measure (duplicates and adds to end immediately)
+        handleCopyMeasure: (measureId: string) => {
+            setState(prev => {
+                const measureToCopy = prev.measures.find(m => m.id === measureId);
+                if (!measureToCopy) return prev;
+
+                // Deep clone the measure with new IDs
+                const newMeasure: MeasureData = {
+                    ...measureToCopy,
+                    id: generateId(),
+                    notes: measureToCopy.notes.map(note => ({
+                        ...note,
+                        id: generateId()
+                    }))
+                };
+
+                return {
+                    ...prev,
+                    measures: [...prev.measures, newMeasure],
+                    copiedMeasure: measureToCopy
+                };
+            });
+        },
+
+        // Paste Measure (adds copy to the end)
+        handlePasteMeasure: () => {
+            setState(prev => {
+                if (!prev.copiedMeasure) return prev;
+
+                // Deep clone the measure with new IDs
+                const newMeasure: MeasureData = {
+                    ...prev.copiedMeasure,
+                    id: generateId(),
+                    notes: prev.copiedMeasure.notes.map(note => ({
+                        ...note,
+                        id: generateId()
+                    }))
+                };
+
+                return {
+                    ...prev,
+                    measures: [...prev.measures, newMeasure]
+                };
+            });
+        },
+
+        // Transpose Measure (shift all notes by semitones)
+        handleTransposeMeasure: (measureId: string, semitones: number) => {
+            setState(prev => {
+                const measureIndex = prev.measures.findIndex(m => m.id === measureId);
+                if (measureIndex === -1) return prev;
+
+                const measure = prev.measures[measureIndex];
+
+                // Check if transposing would put any note outside valid fret range (0-24)
+                // Notes at fret 0 will be hidden in the UI
+                const wouldGoOutOfBounds = measure.notes.some(note =>
+                    note.positions.some(pos => {
+                        const newFret = pos.fret + semitones;
+                        return newFret < 0 || newFret > 24;
+                    })
+                );
+
+                if (wouldGoOutOfBounds) return prev; // Don't allow
+
+                // Transpose all notes
+                const transposedNotes = measure.notes.map(note => ({
+                    ...note,
+                    positions: note.positions.map(pos => ({
+                        ...pos,
+                        fret: pos.fret + semitones
+                    })),
+                    // Hide barre if it ends up at fret 0
+                    barre: note.barre && note.barre.fret + semitones === 0
+                        ? undefined
+                        : note.barre
+                            ? { ...note.barre, fret: note.barre.fret + semitones }
+                            : undefined
+                }));
+
+                // Transpose chord name if it exists
+                const newChordName = transposeChordName(measure.chordName, semitones);
+
+                const newMeasures = prev.measures.map((m, idx) =>
+                    idx === measureIndex
+                        ? { ...m, notes: transposedNotes, chordName: newChordName }
+                        : m
+                );
+
+                return {
+                    ...prev,
+                    measures: newMeasures
+                };
+            });
+        },
 
         // Advanced Actions
         handleNoteRhythmChange,

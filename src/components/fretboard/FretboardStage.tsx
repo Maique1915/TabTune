@@ -37,6 +37,7 @@ interface FretboardStageProps {
     prebufferMs?: number;
     activeChordIndex?: number;
     numStrings?: number;
+    showChordName?: boolean;
 }
 
 interface AnimationState {
@@ -65,6 +66,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
     buildEnabled = true,
     prebufferMs = 0,
     numStrings = 6,
+    showChordName = true,
 }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -147,8 +149,8 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                         progress: state.chordProgress
                     });
 
-                    // Draw Chord Name
-                    if (currentChordData.finalChord.chordName) {
+                    // Draw Chord Name (measure-level, displays throughout entire measure)
+                    if (showChordName && currentChordData.finalChord.chordName) {
                         guitarFretboardDrawerRef.current.drawChordName(currentChordData.finalChord.chordName);
                     }
                 }

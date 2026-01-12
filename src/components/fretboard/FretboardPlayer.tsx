@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useMemo } from "react";
-import Sidebar from "@/components/tab-editor/Sidebar";
+import Sidebar from "@/components/fretboard/Sidebar";
 import { measuresToChords } from "@/lib/fretboard/converter";
 import { ChordDiagramProps } from "@/modules/core/domain/types";
 import VisualTimeline from "@/components/fretboard/timeline/VisualTimeline";
@@ -57,6 +57,11 @@ export function FretboardPlayer() {
         handleAddChordNote,
         handleRemoveChordNote,
         handleToggleBarre,
+        handleToggleCollapse,
+        handleReorderMeasures,
+        handleCopyMeasure,
+        handlePasteMeasure,
+        handleTransposeMeasure,
         updateSelectedNotes,
         undo,
         redo,
@@ -74,7 +79,8 @@ export function FretboardPlayer() {
         setRenderProgress,
         renderCancelRequested,
         setRenderCancelRequested,
-        playbackTotalDurationMs
+        playbackTotalDurationMs,
+        colors
     } = useAppContext();
 
     const videoCanvasRef = useRef<FretboardStageRef>(null);
@@ -242,10 +248,10 @@ export function FretboardPlayer() {
         onRemoveMeasure: handleRemoveMeasure,
         onAddMeasure: handleAddMeasure,
         onUpdateMeasure: handleUpdateMeasure,
-        onToggleCollapse: (id: string) => { },
-        onCopyMeasure: (id: string) => { },
-        onPasteMeasure: (id: string) => { },
-        onReorderMeasures: (from: number, to: number) => { },
+        onToggleCollapse: handleToggleCollapse,
+        onCopyMeasure: handleCopyMeasure,
+        onPasteMeasure: handlePasteMeasure,
+        onReorderMeasures: handleReorderMeasures,
         onRemoveNote: handleRemoveNote,
         onSelectMeasure: handleSelectMeasure,
         onDeselectAll: () => handleSelectMeasure(''),
@@ -290,6 +296,8 @@ export function FretboardPlayer() {
                     onDecoratorChange={handleDecoratorChange}
                     activeMeasure={activeMeasure}
                     onMeasureUpdate={handleUpdateMeasure}
+                    onUpdateMeasure={handleUpdateMeasure}
+                    onTransposeMeasure={handleTransposeMeasure}
                     activePositionIndex={activePositionIndex}
                     onActivePositionIndexChange={setActivePositionIndex}
                     onAddChordNote={handleAddChordNote}
@@ -302,6 +310,7 @@ export function FretboardPlayer() {
                     onRedo={redo}
                     canUndo={canUndo}
                     canRedo={canRedo}
+                    theme={colors}
                 />
             }
             rightSidebar={<SettingsPanel isMobile={isMobile} isOpen={activePanel === 'customize'} onClose={() => setLocalActivePanel('studio')} />}
@@ -322,6 +331,7 @@ export function FretboardPlayer() {
                                     }}
                                     onRenderProgress={setRenderProgress}
                                     numStrings={settings.numStrings}
+                                    showChordName={settings.showChordName !== false}
                                 />
                             </StageContainer>
                         </div>
@@ -352,6 +362,7 @@ export function FretboardPlayer() {
                                 }}
                                 onRenderProgress={setRenderProgress}
                                 numStrings={settings.numStrings}
+                                showChordName={settings.showChordName !== false}
                             />
                         </StageContainer>
                     }
