@@ -207,6 +207,28 @@ export function FretboardPlayer() {
         }
     };
 
+    // Global Keyboard Listeners (Space for Play/Pause)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.code === 'Space') {
+                // Prevent toggling when typing in inputs
+                if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+
+                e.preventDefault(); // Prevent page scroll
+
+                if (isAnimating) {
+                    if (isPaused) handleResume();
+                    else handlePause();
+                } else {
+                    handleAnimate();
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isAnimating, isPaused]);
+
 
     const floatingControls = (
         <TimelineControls

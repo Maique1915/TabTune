@@ -255,6 +255,29 @@ export default function TabEditorPage() {
         }
     }, [isPlaying, playbackPosition, isLooping]);
 
+    // Keyboard Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.code === 'Space') {
+                // Ignore if user is typing in an input
+                const activeElement = document.activeElement;
+                const isInput = activeElement && (
+                    activeElement.tagName === 'INPUT' ||
+                    activeElement.tagName === 'TEXTAREA' ||
+                    (activeElement as HTMLElement).isContentEditable
+                );
+
+                if (!isInput) {
+                    e.preventDefault();
+                    setIsPlaying(prev => !prev);
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     const handleAddMeasure = () => {
         setState(prev => {
             const newMeasure: MeasureData = {

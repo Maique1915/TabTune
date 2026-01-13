@@ -88,6 +88,34 @@ export function HomePage() {
     }
   };
 
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        const activeElement = document.activeElement;
+        const isInput = activeElement && (
+          activeElement.tagName === 'INPUT' ||
+          activeElement.tagName === 'TEXTAREA' ||
+          (activeElement as HTMLElement).isContentEditable
+        );
+
+        if (!isInput) {
+          e.preventDefault();
+          if (!isAnimating) {
+            handleAnimate();
+          } else if (isPaused) {
+            handleResume();
+          } else {
+            handlePause();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAnimating, isPaused, handleAnimate, handleResume, handlePause]);
+
   const handleRenderVideo = async () => {
     if (videoCanvasRef.current) {
       setIsRendering(true);
