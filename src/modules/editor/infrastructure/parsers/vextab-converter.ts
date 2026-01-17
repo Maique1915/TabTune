@@ -85,6 +85,10 @@ export function convertToVextab(measures: MeasureData[], settings: GlobalSetting
                 textSymbols.unshift(chordStr);
             }
             if (n.annotation) textSymbols.push(n.annotation);
+            // Barre Annotation
+            if (n.barre) {
+                textSymbols.push(`B${n.barre.fret}`);
+            }
 
             // Text Sync
             textLine += ` :${n.duration}${n.decorators.dot ? 'd' : ''}, ${textSymbols.join(" ")},`;

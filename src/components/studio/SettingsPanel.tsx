@@ -23,7 +23,7 @@ import { GenericSidebar } from "@/components/shared/GenericSidebar";
 
 // --- PRESETS ---
 
-const STUDIO_PRESETS = {
+export const STUDIO_PRESETS = {
   default: {
     label: 'Default Dark',
     style: DEFAULT_COLORS

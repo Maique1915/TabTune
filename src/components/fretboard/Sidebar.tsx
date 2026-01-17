@@ -95,11 +95,85 @@ const Sidebar: React.FC<SidebarProps> = ({
     const [chordExtensions, setChordExtensions] = React.useState<string[]>([]);
 
     // Chord builder local states for note inspector
+
     // Chord builder local states for note inspector
     const [localRoot, setLocalRoot] = React.useState(chordRoot);
     const [localQuality, setLocalQuality] = React.useState(chordQuality);
     const [localBass, setLocalBass] = React.useState(chordBass);
     const [localExtensions, setLocalExtensions] = React.useState<string[]>(chordExtensions);
+
+    // Sync local state when active measure changes
+    React.useEffect(() => {
+        if (activeMeasure?.chordName) {
+            // Regex to parse chord name: e.g., "Cm7/G" -> Root: C, Quality: m, Ext: 7, Bass: /G
+            // This is a simplified parser, ideally we use Tonal or a robust parser.
+            // Assuming the basic format matches our builder's output: Root + Quality + Extensions + Bass
+
+            const chordName = activeMeasure.chordName;
+
+            // Extract Bass first
+            let bass = "Root";
+            let rest = chordName;
+            if (chordName.includes("/")) {
+                const parts = chordName.split("/");
+                bass = "/" + parts[1];
+                rest = parts[0];
+            }
+
+            // Extract Root (1 or 2 chars)
+            let root = "C";
+            let qualityExt = "";
+            if (rest.length > 1 && (rest[1] === "#" || rest[1] === "b")) {
+                root = rest.substring(0, 2);
+                qualityExt = rest.substring(2);
+            } else {
+                root = rest.substring(0, 1);
+                qualityExt = rest.substring(1);
+            }
+
+            // Extract Quality basic check
+            let quality = "";
+            let extensionsStr = qualityExt;
+
+            // Try to match specific quality prefixes first (Order matters: longest first)
+            const qualities = ["dim", "aug", "sus2", "sus4", "maj", "m"];
+            for (const q of qualities) {
+                if (qualityExt.startsWith(q)) {
+                    quality = q;
+                    extensionsStr = qualityExt.substring(q.length);
+                    break;
+                }
+            }
+
+            // Parse individual extensions using regex
+            const foundExts: string[] = [];
+            const extRegex = /([b#])?(5|6|7\+?|9|11|13)/g;
+            let match;
+            while ((match = extRegex.exec(extensionsStr)) !== null) {
+                foundExts.push(match[0]);
+            }
+
+            // Set state
+            setLocalRoot(root);
+            setLocalQuality(quality);
+            setLocalBass(bass);
+            setLocalExtensions(foundExts);
+            if (extensionsStr === "maj7") {
+                // Wait, "maj" is quality? No, "Cmaj7".
+                // In our logic above, if it didn't match 'm', 'dim'... quality is blank (Major).
+                // So "maj7" -> extension "maj7"? Or quality "maj"?
+                // The builder usually implies Major if empty.
+                // Let's just set Root/Bass for now to fix the main "sticky" issue.
+            }
+        } else {
+            // Reset to defaults if no name
+            setLocalRoot("C");
+            setLocalQuality("");
+            setLocalBass("Root");
+            setLocalExtensions([]);
+        }
+    }, [activeMeasure?.id, activeMeasure?.chordName]);
+
 
 
     // Tab Interface State
@@ -252,28 +326,31 @@ const Sidebar: React.FC<SidebarProps> = ({
         onUpdateNote({ technique: newTech });
     };
 
-    // Auto-update measure chord name when local builder state changes
-    React.useEffect(() => {
-        if (!isMeasureProperties || !activeMeasure) return;
+    // Helper to update both local state and parent measure
+    const handleChordChange = (updates: { root?: string, quality?: string, bass?: string, extensions?: string[] }) => {
+        const newRoot = updates.root !== undefined ? updates.root : localRoot;
+        const newQuality = updates.quality !== undefined ? updates.quality : localQuality;
+        const newBass = updates.bass !== undefined ? updates.bass : localBass;
+        const newExts = updates.extensions !== undefined ? updates.extensions : localExtensions;
 
-        const buildChordName = () => {
-            let qualitySuffix = localQuality;
-            let bassSuffix = localBass === "Root" ? "" : localBass;
-            let extensionStr = localExtensions.join("");
-            return `${localRoot}${qualitySuffix}${extensionStr}${bassSuffix}`;
-        };
+        // Update local state
+        if (updates.root !== undefined) setLocalRoot(updates.root);
+        if (updates.quality !== undefined) setLocalQuality(updates.quality);
+        if (updates.bass !== undefined) setLocalBass(updates.bass);
+        if (updates.extensions !== undefined) setLocalExtensions(updates.extensions);
 
-        const newName = buildChordName();
-        // Only update if changed prevents infinite loops if carefully managed,
-        // but here we are syncing local -> parent.
-        // We need to avoid overwriting if the user is typing manually?
-        // The user asked for auto-update based on dropdowns.
-        // We will update whenever these specific dependencies change.
-        if (activeMeasure.chordName !== newName) {
-            onUpdateMeasure?.(activeMeasure.id, { chordName: newName });
+        // Build name and update parent
+        if (activeMeasure && onUpdateMeasure) {
+            const qualitySuffix = newQuality;
+            const bassSuffix = newBass === "Root" ? "" : newBass;
+            const extensionStr = newExts.join("");
+            const newName = `${newRoot}${qualitySuffix}${extensionStr}${bassSuffix}`;
+
+            if (activeMeasure.chordName !== newName) {
+                onUpdateMeasure(activeMeasure.id, { chordName: newName });
+            }
         }
-
-    }, [localRoot, localQuality, localBass, localExtensions, isMeasureProperties, activeMeasure?.id]);
+    };
 
     // Simple mode - no tabs needed for fretboard
 
@@ -495,7 +572,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         <>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Pitch (Active)</span>
-                                                <span className="text-[10px] text-zinc-300 bg-zinc-800/50 px-2 py-0.5 rounded-lg border border-zinc-700/50 font-bold">{currentPitch?.name}{currentPitch?.accidental}{currentPitch?.octave}</span>
+                                                <span className="text-[10px] text-zinc-300 bg-zinc-800/50 px-2 py-0.5 rounded-lg border border-zinc-700/50 font-bold">
+                                                    {currentPitch?.name.replace('#', '♯').replace('b', '♭')}
+                                                    {currentPitch?.accidental?.replace('#', '♯').replace('b', '♭')}
+                                                    {currentPitch?.octave}
+                                                </span>
                                             </div>
                                             <div className="space-y-2">
                                                 <div className="grid grid-cols-7 gap-1">
@@ -503,7 +584,24 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                         <button key={n} onClick={() => onPitchChange?.(n)} className={`h-8 rounded-lg border font-black text-xs transition-all ${currentPitch?.name === n ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}>{n}</button>
                                                     ))}
                                                 </div>
-                                                <div className="flex bg-zinc-950/40 rounded-xl border border-zinc-800/50 p-1 mt-2">
+
+                                                <div className="grid grid-cols-3 gap-1 mt-1">
+                                                    {[
+                                                        { label: '♮', value: '' },
+                                                        { label: '♭', value: 'b' },
+                                                        { label: '♯', value: '#' }
+                                                    ].map(acc => (
+                                                        <button
+                                                            key={acc.value}
+                                                            onClick={() => onAccidentalChange?.(acc.value)}
+                                                            className={`py-1.5 rounded-lg border font-black text-xs transition-all ${currentPitch?.accidental === acc.value ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
+                                                        >
+                                                            {acc.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+
+                                                <div className="flex bg-zinc-950/40 rounded-xl border border-zinc-800/50 p-1 mt-1">
                                                     {[2, 3, 4, 5, 6].map(o => (
                                                         <button key={o} onClick={() => onPitchChange?.(undefined, undefined, o)} className={`flex-1 py-1 text-[9px] font-bold rounded-lg transition-all ${currentPitch?.octave === o ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}>{o}</button>
                                                     ))}
@@ -521,7 +619,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </div>
                         )}
 
-                        {activeTab === 'effects' && (
+                        {activeTab === 'effects' && editingNote && (
                             <div className="space-y-6">
                                 {/* Techniques Grid */}
                                 <div className="space-y-3">
@@ -549,21 +647,21 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                 </button>
                                             );
                                         })}
-
-                                        <button
-                                            onClick={() => handleTechniqueToggle('slur')}
-                                            className={`py-3 rounded-xl border font-bold text-xs transition-all ${editingNote.isSlurred
-                                                ? 'bg-purple-500/10 border-purple-500/30 text-purple-400'
-                                                : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
-                                                }`}
-                                        >
-                                            Slur/Tie
-                                        </button>
                                     </div>
-                                    <p className="text-[9px] text-zinc-600 italic">
-                                        Select note to apply individual effects.
-                                    </p>
+
+                                    <button
+                                        onClick={() => handleTechniqueToggle('slur')}
+                                        className={`py-3 rounded-xl border font-bold text-xs transition-all ${editingNote.isSlurred
+                                            ? 'bg-purple-500/10 border-purple-500/30 text-purple-400'
+                                            : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
+                                            }`}
+                                    >
+                                        Slur/Tie
+                                    </button>
                                 </div>
+                                <p className="text-[9px] text-zinc-600 italic">
+                                    Select note to apply individual effects.
+                                </p>
                             </div>
                         )}
 
@@ -704,7 +802,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         {/* Preview */}
                                         <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-2 text-center">
                                             <span className="text-sm font-black" style={{ color: theme?.chordNameColor || '#22d3ee' }}>
-                                                {`${localRoot}${localQuality}${localExtensions.join("")}${localBass === "Root" ? "" : localBass}`}
+                                                {(`${localRoot}${localQuality}${localExtensions.join("")}${localBass === "Root" ? "" : localBass}`).replace(/#/g, '♯').replace(/b/g, '♭')}
                                             </span>
                                         </div>
 
@@ -716,9 +814,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                     <select
                                                         className="w-full px-2 py-1.5 bg-zinc-900/50 border border-zinc-800/50 rounded-lg text-xs font-bold text-zinc-300 focus:outline-none focus:border-cyan-500/30 appearance-none pr-6"
                                                         value={localRoot}
-                                                        onChange={(e) => setLocalRoot(e.target.value)}
+                                                        onChange={(e) => handleChordChange({ root: e.target.value })}
                                                     >
-                                                        {["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"].map(r => <option key={r} value={r}>{r}</option>)}
+                                                        {["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"].map(r => <option key={r} value={r}>{r.replace('#', '♯').replace('b', '♭')}</option>)}
                                                     </select>
                                                     <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600 pointer-events-none" />
                                                 </div>
@@ -730,7 +828,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                     <select
                                                         className="w-full px-2 py-1.5 bg-zinc-900/50 border border-zinc-800/50 rounded-lg text-xs font-bold text-zinc-300 focus:outline-none focus:border-cyan-500/30 appearance-none pr-6"
                                                         value={localQuality}
-                                                        onChange={(e) => setLocalQuality(e.target.value)}
+                                                        onChange={(e) => handleChordChange({ quality: e.target.value })}
                                                     >
                                                         {[
                                                             { label: "Major", value: "" },
@@ -738,7 +836,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                             { label: "Dim", value: "dim" },
                                                             { label: "Aug", value: "aug" },
                                                             { label: "Sus2", value: "sus2" },
-                                                            { label: "Sus4", value: "sus4" }
+                                                            { label: "Sus4", value: "sus4" },
+                                                            { label: "Maj", value: "maj" }
                                                         ].map(q => <option key={q.value} value={q.value}>{q.label}</option>)}
                                                     </select>
                                                     <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600 pointer-events-none" />
@@ -753,9 +852,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                 <select
                                                     className="w-full px-2 py-1.5 bg-zinc-900/50 border border-zinc-800/50 rounded-lg text-xs font-bold text-zinc-300 focus:outline-none focus:border-cyan-500/30 appearance-none pr-6"
                                                     value={localBass}
-                                                    onChange={(e) => setLocalBass(e.target.value)}
+                                                    onChange={(e) => handleChordChange({ bass: e.target.value })}
                                                 >
-                                                    {["Root", ...["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"].map(r => `/${r}`)].map(b => <option key={b} value={b}>{b}</option>)}
+                                                    {["Root", ...["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"].map(r => `/${r}`)].map(b => <option key={b} value={b}>{b.replace('#', '♯').replace('b', '♭')}</option>)}
                                                 </select>
                                                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600 pointer-events-none" />
                                             </div>
@@ -791,27 +890,21 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        setLocalExtensions(prev => {
-                                                                            // Remove current variant
-                                                                            const others = prev.filter(e => e !== activeVariant);
-                                                                            // If already flat, toggle to natural (none)
-                                                                            if (currentModifier === 'b') {
-                                                                                return [...others, ext.value];
-                                                                            } else {
-                                                                                // Switch to flat
-                                                                                return [...others, `b${ext.value}`];
-                                                                            }
-                                                                        });
+                                                                        const others = localExtensions.filter(e => e !== activeVariant);
+                                                                        const newExt = currentModifier === 'b' ? ext.value : `b${ext.value}`;
+                                                                        handleChordChange({ extensions: [...others, newExt] });
                                                                     }}
-                                                                    className={`px-1.5 py-1 text-[9px] font-bold hover:bg-cyan-500/20 transition-colors ${currentModifier === 'b' ? 'text-cyan-400' : 'text-zinc-600 hover:text-zinc-400'}`}
+                                                                    className={`px-1.5 py-1 text-xs font-bold hover:bg-cyan-500/20 transition-colors border-r border-cyan-500/10 ${currentModifier === 'b' ? 'text-cyan-400' : 'text-zinc-600 hover:text-zinc-400'}`}
                                                                 >
-                                                                    b
+                                                                    ♭
                                                                 </button>
 
                                                                 {/* Main Label (Toggle Off) */}
                                                                 <button
-                                                                    onClick={() => {
-                                                                        setLocalExtensions(prev => prev.filter(e => e !== activeVariant));
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        const newExts = localExtensions.filter(e => e !== activeVariant);
+                                                                        handleChordChange({ extensions: newExts });
                                                                     }}
                                                                     className="px-1.5 py-1 text-[9px] font-black text-cyan-400 hover:bg-cyan-500/20 transition-colors border-x border-cyan-500/10"
                                                                 >
@@ -822,21 +915,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        setLocalExtensions(prev => {
-                                                                            // Remove current variant
-                                                                            const others = prev.filter(e => e !== activeVariant);
-                                                                            // If already sharp, toggle to natural (none)
-                                                                            if (currentModifier === '#') {
-                                                                                return [...others, ext.value];
-                                                                            } else {
-                                                                                // Switch to sharp
-                                                                                return [...others, `#${ext.value}`];
-                                                                            }
-                                                                        });
+                                                                        const others = localExtensions.filter(e => e !== activeVariant);
+                                                                        const newExt = currentModifier === '#' ? ext.value : `#${ext.value}`;
+                                                                        handleChordChange({ extensions: [...others, newExt] });
                                                                     }}
-                                                                    className={`px-1.5 py-1 text-[9px] font-bold hover:bg-cyan-500/20 transition-colors ${currentModifier === '#' ? 'text-cyan-400' : 'text-zinc-600 hover:text-zinc-400'}`}
+                                                                    className={`px-1.5 py-1 text-xs font-bold hover:bg-cyan-500/20 transition-colors border-l border-cyan-500/10 ${currentModifier === '#' ? 'text-cyan-400' : 'text-zinc-600 hover:text-zinc-400'}`}
                                                                 >
-                                                                    #
+                                                                    ♯
                                                                 </button>
                                                             </div>
                                                         );
@@ -846,14 +931,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                     return (
                                                         <button
                                                             key={ext.value}
-                                                            onClick={() => {
-                                                                setLocalExtensions(prev => {
-                                                                    // Add base value, ensure no other variants exist (though should be clean)
-                                                                    const others = prev.filter(e => !e.endsWith(ext.value));
-                                                                    return [...others, ext.value];
-                                                                });
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const others = localExtensions.filter(e => !e.endsWith(ext.value));
+                                                                handleChordChange({ extensions: [...others, ext.value] });
                                                             }}
-                                                            className="px-2 py-1 rounded text-[9px] font-bold border transition-all bg-zinc-900/50 text-zinc-500 border-zinc-800/50 hover:bg-zinc-800/80 hover:text-zinc-300"
+                                                            className="px-2 py-1 bg-zinc-900/50 border border-zinc-800/50 rounded text-zinc-500 text-[9px] font-bold hover:bg-zinc-800 hover:text-zinc-300 transition-colors"
                                                         >
                                                             {ext.label}
                                                         </button>
@@ -861,18 +944,109 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                 })}
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <div className="pt-2 border-t border-zinc-800/50">
-                                            <p className="text-[9px] text-zinc-600 mt-1 center">Displays throughout entire measure</p>
-                                        </div>
+                                    <div className="pt-2 border-t border-zinc-800/50">
+                                        <p className="text-[9px] text-zinc-600 mt-1 center">Displays throughout entire measure</p>
                                     </div>
                                 </div>
                             </div>
                         )}
                     </div>
                 ) : (
-                    <div className="space-y-8">
-                        {/* Settings only - simplified for fretboard */}
+                    <div className="space-y-6">
+                        {/* Instrument & Tuning Section */}
+                        <div className="space-y-4">
+                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Instrument & Tuning</h3>
+
+                            {/* Instrument Selector */}
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-bold text-zinc-600 uppercase">Instrument</label>
+                                <select
+                                    className="w-full bg-zinc-900/50 border border-zinc-800/50 rounded-xl px-3 py-2 text-xs font-bold text-zinc-300 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all appearance-none"
+                                    value={globalSettings?.instrumentId || 'violao'}
+                                    onChange={(e) => {
+                                        const newInstrumentId = e.target.value;
+                                        const instrument = INSTRUMENTS.find(i => i.id === newInstrumentId);
+                                        if (instrument && onGlobalSettingsChange) {
+                                            onGlobalSettingsChange({
+                                                instrumentId: newInstrumentId,
+                                                numStrings: instrument.tunings[0].length,
+                                                tuning: instrument.tunings[0],
+                                                tuningIndex: 0
+                                            });
+                                        }
+                                    }}
+                                >
+                                    {INSTRUMENTS.map(inst => (
+                                        <option key={inst.id} value={inst.id}>{inst.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Tuning Selector */}
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-bold text-zinc-600 uppercase">Tuning</label>
+                                <select
+                                    className="w-full bg-zinc-900/50 border border-zinc-800/50 rounded-xl px-3 py-2 text-xs font-bold text-zinc-300 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all appearance-none"
+                                    value={globalSettings?.tuningIndex || 0}
+                                    onChange={(e) => {
+                                        const newIndex = parseInt(e.target.value);
+                                        const instrument = INSTRUMENTS.find(i => i.id === (globalSettings?.instrumentId || 'violao'));
+                                        if (instrument && instrument.tunings[newIndex] && onGlobalSettingsChange) {
+                                            onGlobalSettingsChange({
+                                                tuning: instrument.tunings[newIndex],
+                                                tuningIndex: newIndex
+                                            });
+                                        }
+                                    }}
+                                >
+                                    {INSTRUMENTS.find(i => i.id === (globalSettings?.instrumentId || 'violao'))?.tunings.map((t, idx) => (
+                                        <option key={idx} value={idx}>{t.join(" ")}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Capo / Shift Control */}
+                        <div className="space-y-3 pt-4 border-t border-zinc-800/50">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Tuning Shift</span>
+                                <span className="text-[10px] text-zinc-300 bg-zinc-800/50 px-2 py-0.5 rounded-lg border border-zinc-700/50 font-bold">
+                                    {(globalSettings?.tuningShift || 0) > 0
+                                        ? `CAPO: ${globalSettings?.tuningShift}`
+                                        : (globalSettings?.tuningShift || 0) < 0
+                                            ? `DOWN: ${Math.abs(globalSettings?.tuningShift || 0)}`
+                                            : 'STANDARD'}
+                                </span>
+                            </div>
+
+                            <div className="flex bg-zinc-950/40 p-1 rounded-xl border border-zinc-800/50">
+                                <button
+                                    onClick={() => onGlobalSettingsChange?.({ tuningShift: (globalSettings?.tuningShift || 0) - 1 })}
+                                    className="flex-1 py-2 rounded-lg text-xs font-bold text-zinc-400 hover:text-cyan-400 hover:bg-zinc-800/50 transition-all"
+                                >
+                                    -1 Semitone
+                                </button>
+                                <div className="w-px bg-zinc-800/50 my-1 mx-1" />
+                                <button
+                                    onClick={() => onGlobalSettingsChange?.({ tuningShift: 0 })}
+                                    className="px-4 py-2 rounded-lg text-[10px] font-bold text-zinc-600 hover:text-zinc-300 transition-all"
+                                >
+                                    RESET
+                                </button>
+                                <div className="w-px bg-zinc-800/50 my-1 mx-1" />
+                                <button
+                                    onClick={() => onGlobalSettingsChange?.({ tuningShift: (globalSettings?.tuningShift || 0) + 1 })}
+                                    className="flex-1 py-2 rounded-lg text-xs font-bold text-zinc-400 hover:text-cyan-400 hover:bg-zinc-800/50 transition-all"
+                                >
+                                    +1 Semitone
+                                </button>
+                            </div>
+                            <p className="text-[9px] text-zinc-600 italic text-center">
+                                Positive adds Capo, Negative tunes down.
+                            </p>
+                        </div>
 
 
                         {/* Playback & View Settings (Compact) */}

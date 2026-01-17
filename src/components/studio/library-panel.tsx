@@ -226,17 +226,80 @@ export function LibraryPanel({ isMobile, isOpen, onClose }: LibraryPanelProps) {
               Extensions
             </h3>
             <div className="flex flex-wrap gap-2">
-              {extensions.map((ext) => (
-                <button key={ext} onClick={() => handleExtensionToggle(ext)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-xl text-[10px] font-black border transition-all uppercase tracking-wider",
-                    selectedExtensions.includes(ext)
-                      ? "bg-pink-500/20 text-pink-400 border-pink-500/30 shadow-[0_0_10px_rgba(236,72,153,0.1)]"
-                      : "bg-zinc-900/50 text-zinc-500 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-300"
-                  )}>
-                  {ext}
-                </button>
-              ))}
+              {[
+                { label: "5", value: "5" },
+                { label: "6", value: "6" },
+                { label: "7", value: "7" },
+                { label: "7+", value: "7+" },
+                { label: "9", value: "9" },
+                { label: "11", value: "11" },
+                { label: "13", value: "13" },
+              ].map((ext) => {
+                // Find if any variant of this extension is active
+                const activeVariant = selectedExtensions.find(e => e.endsWith(ext.value) && (e === ext.value || e === `b${ext.value}` || e === `#${ext.value}`));
+                const isActive = !!activeVariant;
+                const currentModifier = activeVariant?.startsWith('b') ? 'b' : activeVariant?.startsWith('#') ? '#' : 'none';
+
+                if (isActive) {
+                  return (
+                    <div key={ext.value} className="flex items-center bg-pink-500/10 border border-pink-500/30 rounded-xl overflow-hidden transition-all shadow-[0_0_10px_rgba(236,72,153,0.1)]">
+                      {/* Flat Modifier Toggle */}
+                      <button
+                        onClick={(e) => {
+                          // Remove current variant, add flat variant
+                          const others = selectedExtensions.filter(e => e !== activeVariant);
+                          const newExt = currentModifier === 'b' ? ext.value : `b${ext.value}`; // Toggle off if already b, else set b
+                          // Actually standard behavior: hitting 'b' on '9' makes 'b9'. Hitting 'b' on 'b9' makes '9'?
+                          // Sidebar logic: if currentModifier is 'b', newExt is plain value (toggle off modifier).
+                          setSelectedExtensions(currentModifier === 'b' ? [...others, ext.value] : [...others, `b${ext.value}`]);
+                        }}
+                        className={cn(
+                          "px-2 py-1.5 text-[10px] font-bold hover:bg-pink-500/20 transition-colors border-r border-pink-500/10",
+                          currentModifier === 'b' ? 'text-pink-400' : 'text-zinc-600 hover:text-zinc-400'
+                        )}
+                      >
+                        b
+                      </button>
+
+                      {/* Main Label (Toggle Off) */}
+                      <button
+                        onClick={() => {
+                          const others = selectedExtensions.filter(e => e !== activeVariant);
+                          setSelectedExtensions(others);
+                        }}
+                        className="px-2 py-1.5 text-[10px] font-black text-pink-400 hover:bg-pink-500/20 transition-colors border-x border-pink-500/10"
+                      >
+                        {ext.label}
+                      </button>
+
+                      {/* Sharp Modifier Toggle */}
+                      <button
+                        onClick={() => {
+                          const others = selectedExtensions.filter(e => e !== activeVariant);
+                          setSelectedExtensions(currentModifier === '#' ? [...others, ext.value] : [...others, `#${ext.value}`]);
+                        }}
+                        className={cn(
+                          "px-2 py-1.5 text-[10px] font-bold hover:bg-pink-500/20 transition-colors border-l border-pink-500/10",
+                          currentModifier === '#' ? 'text-pink-400' : 'text-zinc-600 hover:text-zinc-400'
+                        )}
+                      >
+                        #
+                      </button>
+                    </div>
+                  );
+                }
+
+                // Inactive State
+                return (
+                  <button
+                    key={ext.value}
+                    onClick={() => setSelectedExtensions([...selectedExtensions, ext.value])}
+                    className="px-3 py-1.5 bg-zinc-900/50 border border-zinc-800/50 rounded-xl text-zinc-500 text-[10px] font-bold hover:bg-zinc-800 hover:text-zinc-300 transition-colors"
+                  >
+                    {ext.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

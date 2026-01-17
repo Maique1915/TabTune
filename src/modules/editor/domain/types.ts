@@ -3,7 +3,7 @@ export type { ManualChordData } from "@/modules/core/domain/types";
 import { MusicalEvent, StandardPosition, BarreData, ManualChordData } from "@/modules/core/domain/types";
 
 export type Duration = 'w' | 'h' | 'q' | '8' | '16' | '32';
-export type Accidental = 'none' | '#' | '##' | 'b' | 'bb' | 'n';
+export type Accidental = 'none' | '♯' | '𝄪' | '♭' | '𝄫' | '♮';
 
 export interface NoteDecorator {
     staccato?: boolean;       // a.
@@ -76,6 +76,9 @@ export interface GlobalSettings {
     tuning?: string[]; // Optional tuning array
     instrumentId?: string;
     tuningIndex?: number;
+    capo?: number; // Visual Capo Fret
+    tuningShift?: number; // Shift in semitones (Positive = Capo, Negative = Down Tuning)
+    numFrets?: number;
 }
 
 export type TransitionType = 'snap' | 'slide' | 'fade' | 'assemble';

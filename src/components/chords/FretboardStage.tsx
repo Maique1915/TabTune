@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { type JSAnimation } from "animejs";
 import type { ChordWithTiming, ChordDiagramProps } from "@/modules/core/domain/types";
 import { useAppContext } from "@/app/context/app--context";
+import { ChordDrawerBase } from "@/modules/engine/infrastructure/drawers/chord-drawer-base";
 import { GuitarFretboardDrawer } from "@/modules/engine/infrastructure/drawers/guitar-fretboard-drawer";
 import { ScoreDrawer } from "@/modules/engine/infrastructure/drawers/score-drawer";
 import { TimelineState } from "@/modules/studio/domain/types";
@@ -39,6 +40,9 @@ interface FretboardStageProps {
     numStrings?: number;
     showChordName?: boolean;
     capo?: number;
+    tuningShift?: number;
+    stringNames?: string[];
+    numFrets?: number;
 }
 
 interface AnimationState {
@@ -72,6 +76,9 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
     numStrings = 6,
     showChordName = true,
     capo = 0,
+    tuningShift = 0,
+    stringNames = ["E", "A", "D", "G", "B", "e"],
+    numFrets = 24,
 }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -83,11 +90,6 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
     const playbackElapsedMsRef = useRef<number>(0);
     const playbackSessionIdRef = useRef<number>(0);
     const lastProgressEmitMsRef = useRef<number>(0);
-
-    // Specific Drawer for Fretboard
-    const guitarFretboardDrawerRef = useRef<GuitarFretboardDrawer | null>(null);
-    // Keep ScoreDrawer for consistency if musical notation is overlaid
-    const scoreDrawerRef = useRef<ScoreDrawer | null>(null);
 
     // Need ChordDrawerBase only if re-using some logic, otherwise can likely remove if GuitarFretboardDrawer is self-sufficient.
     // BUT: GuitarFretboardDrawer might not handle text/layout same way. 
@@ -113,6 +115,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
     });
     const {
         colors,
+        animationType,
         setPlaybackIsPlaying,
         setPlaybackIsPaused,
         setPlaybackProgress,
@@ -126,6 +129,10 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
 
     const isRenderCancelledRef = useRef(false);
 
+    const guitarFretboardDrawerRef = useRef<GuitarFretboardDrawer | null>(null);
+    const chordDrawerRef = useRef<ChordDrawerBase | null>(null);
+    const scoreDrawerRef = useRef<ScoreDrawer | null>(null);
+
     // Recorder Integration
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const [recorderOptions, setRecorderOptions] = useState<CanvasRecorderOptions>({});
@@ -133,53 +140,81 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
 
 
     const drawFrame = useCallback((state: AnimationState, timeMs: number) => {
-        // 1. Draw Guitar Fretboard
-        if (guitarFretboardDrawerRef.current) {
-            guitarFretboardDrawerRef.current.clear();
-            guitarFretboardDrawerRef.current.drawBoard();
+        // Clear canvas before drawing anything
+        if (!canvasRef.current) return;
+        const ctx = canvasRef.current.getContext("2d");
+        if (ctx) {
+            ctx.fillStyle = colors.cardColor;
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        // 1. Draw Fretboard (or Chord Diagram)
+        if (animationType === "guitar-fretboard" && guitarFretboardDrawerRef.current) {
+            const drawer = guitarFretboardDrawerRef.current;
+            drawer.drawHeadstock();
+            drawer.drawBoard(); // Already cleared above
+            drawer.drawBoard();
 
             if (capo > 0) {
-                guitarFretboardDrawerRef.current.drawCapo(capo);
+                drawer.drawCapo(capo);
             }
 
-            // Draw Preview Chord (Ghost)
             if (previewChord) {
-                guitarFretboardDrawerRef.current.drawChord(previewChord, {
-                    opacity: 0.7,
-                    style: 'ghost'
-                });
+                drawer.drawChord(previewChord, { opacity: 0.7, style: 'ghost' });
             }
 
             if (chords && chords.length > 0) {
                 const chordIndex = Math.max(0, Math.min(chords.length - 1, Math.floor(state.chordIndex)));
                 const currentChordData = chords[chordIndex];
                 if (currentChordData) {
-                    // Use specific strumming/effect data if available
-                    guitarFretboardDrawerRef.current.drawChord(currentChordData.finalChord, {
+                    drawer.drawChord(currentChordData.finalChord, {
                         strumming: currentChordData.strumming,
                         effects: currentChordData.effects,
                         progress: state.chordProgress
                     });
 
-                    // Draw Chord Name with Cross-Fade
-                    // Check Global AND Local visibility
-                    // If measure.showChordName is explicitly false, hide it.
-                    // If global showChordName is false, hide it.
                     if (showChordName && currentChordData.finalChord.showChordName !== false) {
-                        // Draw Previous (Fading Out)
                         if (state.nameTransitionProgress < 1 && state.prevChordName) {
-                            const fadeOutOpacity = 1 - state.nameTransitionProgress;
-                            guitarFretboardDrawerRef.current.drawChordName(state.prevChordName, { opacity: fadeOutOpacity });
+                            drawer.drawChordName(state.prevChordName, { opacity: 1 - state.nameTransitionProgress });
                         }
-
-                        // Draw Current (Fading In)
                         if (state.currentChordName) {
-                            const fadeInOpacity = state.nameTransitionProgress; // Or just 1 if we want it strictly cross-fade, or pure transition. 
-                            // Usually cross-fade is: Prev goes 1->0, Cur goes 0->1.
-                            guitarFretboardDrawerRef.current.drawChordName(state.currentChordName, { opacity: fadeInOpacity });
+                            drawer.drawChordName(state.currentChordName, { opacity: state.nameTransitionProgress });
                         }
                     }
                 }
+            }
+        } else if (chordDrawerRef.current) {
+            const drawer = chordDrawerRef.current;
+            // drawer.clear(); // Already cleared above
+
+            if (chords && chords.length > 0) {
+                const chordIndex = Math.max(0, Math.min(chords.length - 1, Math.floor(state.chordIndex)));
+                const currentChordData = chords[chordIndex];
+
+                if (currentChordData) {
+                    if (buildEnabled && state.buildProgress < 1) {
+                        drawer.drawChord(currentChordData.finalChord, currentChordData.transportDisplay, 0, { skipFretboard: state.buildProgress > 0.3 });
+                    } else {
+                        drawer.drawChord(currentChordData.finalChord, currentChordData.transportDisplay);
+                    }
+
+                    if (showChordName && currentChordData.finalChord.showChordName !== false) {
+                        if (state.nameTransitionProgress < 1 && state.prevChordName) {
+                            drawer.drawChordName(state.prevChordName);
+                        }
+                        if (state.currentChordName) {
+                            drawer.drawChordName(state.currentChordName);
+                        }
+                    }
+                }
+            } else if (previewChord) {
+                drawer.drawFretboard();
+                drawer.drawFingers(previewChord);
+                if (showChordName && previewChord.chordName) {
+                    drawer.drawChordName(previewChord.chordName);
+                }
+            } else {
+                drawer.drawFretboard();
             }
         }
 
@@ -193,11 +228,11 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                 }
             });
         }
-    }, [chords, height, timelineState, width]);
+    }, [chords, height, timelineState, width, animationType, previewChord, showChordName, capo, buildEnabled, colors]);
 
     const drawAnimatedChord = useCallback(() => {
-        if (!canvasRef.current || !chords || chords.length === 0) return;
-        if (!guitarFretboardDrawerRef.current) return;
+        if (!canvasRef.current) return;
+        if (!chordDrawerRef.current && !guitarFretboardDrawerRef.current) return;
 
         drawFrame(animationStateRef.current, playheadStateRef.current.t);
 
@@ -216,29 +251,34 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         const ctx = canvasRef.current.getContext("2d");
         if (!ctx) return;
 
-        if (!guitarFretboardDrawerRef.current || (guitarFretboardDrawerRef.current as any).cachedNumStrings !== numStrings) {
+        if (animationType === "guitar-fretboard") {
             guitarFretboardDrawerRef.current = new GuitarFretboardDrawer(ctx, colors, {
                 width,
                 height,
-                numFrets: 24,
+                numFrets: numFrets || 24,
                 numStrings: numStrings || 6,
                 rotation: colors.rotation,
-                mirror: colors.mirror
+                mirror: colors.mirror,
+                stringNames,
+                tuningShift
             });
-            // Monkey-patch to track current numStrings
-            (guitarFretboardDrawerRef.current as any).cachedNumStrings = numStrings;
-
-            scoreDrawerRef.current = new ScoreDrawer(canvasRef.current);
+            chordDrawerRef.current = null;
         } else {
-            guitarFretboardDrawerRef.current.setColors(colors);
-            guitarFretboardDrawerRef.current.setDimensions(width, height);
-            guitarFretboardDrawerRef.current.setTransforms(colors.rotation, colors.mirror);
+            chordDrawerRef.current = new ChordDrawerBase(ctx, colors, {
+                width,
+                height
+            }, colors.fretboardScale || 1);
+            chordDrawerRef.current.setNumStrings(numStrings);
+            chordDrawerRef.current.setNumFrets(numFrets);
+            guitarFretboardDrawerRef.current = null;
         }
+
+        scoreDrawerRef.current = new ScoreDrawer(canvasRef.current);
 
         if (!isAnimating) {
             drawAnimatedChord();
         }
-    }, [colors, width, height, isAnimating, drawAnimatedChord, previewChord, numStrings]);
+    }, [colors, width, height, isAnimating, drawAnimatedChord, previewChord, numStrings, numFrets, stringNames, tuningShift, animationType]);
 
     // Handle Static Background - simplified for Fretboard (maybe just background color)
     useEffect(() => {
@@ -318,6 +358,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
     }, [setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress, setPlaybackTotalDurationMs]);
 
     const startPlaybackRafLoop = useCallback((totalDurationMs: number) => {
+        // Stop current loop first
         if (playbackRafIdRef.current !== null) {
             cancelAnimationFrame(playbackRafIdRef.current);
             playbackRafIdRef.current = null;
@@ -344,10 +385,6 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                     animationStateRef.current.nameTransitionProgress = 0;
                 }
 
-                // Increment Transition Progress
-                // Assume 60fps, want ~300ms transition. 300ms = 0.3s. 
-                // 1 frame ~ 16ms. 16/300 ~ 0.05 per frame.
-                // Using generic delta would be better but simple increment works for raf.
                 if (animationStateRef.current.nameTransitionProgress < 1) {
                     animationStateRef.current.nameTransitionProgress += 0.05;
                     if (animationStateRef.current.nameTransitionProgress > 1) {
@@ -380,7 +417,21 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         };
 
         playbackRafIdRef.current = requestAnimationFrame(tick);
-    }, [computeStateAtTimeMs, drawAnimatedChord, onAnimationStateChange, setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress, stopPlayhead]);
+    }, [computeStateAtTimeMs, drawAnimatedChord, onAnimationStateChange, setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress, stopPlayhead, chords]);
+
+    // Manage animation loop lifecycle - restart loop if closure dependencies change
+    useEffect(() => {
+        if (isAnimating && !isPaused) {
+            const totalMs = computeTotalPlaybackDurationMs();
+            startPlaybackRafLoop(totalMs);
+        }
+        return () => {
+            if (playbackRafIdRef.current !== null) {
+                cancelAnimationFrame(playbackRafIdRef.current);
+                playbackRafIdRef.current = null;
+            }
+        };
+    }, [isAnimating, isPaused, startPlaybackRafLoop, computeTotalPlaybackDurationMs]);
 
 
     const startAnimation = () => {

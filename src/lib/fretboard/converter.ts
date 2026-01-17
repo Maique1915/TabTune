@@ -1,6 +1,6 @@
 
 import { MeasureData, GlobalSettings, Duration } from "@/modules/editor/domain/types";
-import { ChordWithTiming, ChordDiagramProps, Position, TabEffect } from "@/modules/core/domain/types";
+import { ChordWithTiming, ChordDiagramProps, Position, TabEffect, StandardPosition } from "@/modules/core/domain/types";
 import { getNoteDurationValue, findBestFretForPitch, getMidiFromPosition, detectChordFromMeasure } from "@/modules/editor/domain/music-math";
 
 /**
@@ -63,71 +63,90 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
             const durationValue = getNoteDurationValue(note.duration, !!note.decorators?.dot);
             const durationMs = durationValue * msPerBeat;
 
-            const positions: Position = {};
-            note.positions.forEach((pos, idx) => {
-                const stringNum = pos.string;
-                const fretNum = pos.fret;
-                // Position key is usually the fret or string?
-                // Checking `types.ts`: `key: number // Chave da posição` -> `[finger, string, fret]`.
-                // In `ChordDrawerBase`, it iterates keys? No, it often uses string as key idx or just mapped.
-                // Re-checking `Position` type: `{[key: number]: [finger, string, fret]}`.
-                // Usually `key` represents the STRING index (1-6) for easy lookup?
-                // Let's assume Key = String Number (1-6).
-                if (stringNum && fretNum) {
-                    // Finger 0 for now (unknown)
-                    positions[stringNum] = [0, stringNum, fretNum];
-                }
-            });
+            const fingers: StandardPosition[] = note.positions.map(pos => ({
+                string: pos.string,
+                endString: pos.endString,
+                fret: pos.fret,
+                finger: pos.finger
+            }));
 
             // Map Techniques to Effects
             const effects: TabEffect[] = [];
             if (note.technique) {
-                if (note.technique.includes('s')) effects.push({ type: 'slide', string: note.positions[0]?.string || 1 });
-                if (note.technique.includes('b')) effects.push({ type: 'bend', string: note.positions[0]?.string || 1 });
-                if (note.technique.includes('h')) effects.push({ type: 'hammer', string: note.positions[0]?.string || 1 });
-                if (note.technique.includes('p')) effects.push({ type: 'pull', string: note.positions[0]?.string || 1 });
-                if (note.technique.includes('v')) effects.push({ type: 'vibrato', string: note.positions[0]?.string || 1 });
-                if (note.technique.includes('t')) effects.push({ type: 'tap', string: note.positions[0]?.string || 1 });
+                if (note.technique.includes('s')) effects.push({ type: 'slide', string: fingers[0]?.string || 1 });
+                if (note.technique.includes('b')) effects.push({ type: 'bend', string: fingers[0]?.string || 1 });
+                if (note.technique.includes('h')) effects.push({ type: 'hammer', string: fingers[0]?.string || 1 });
+                if (note.technique.includes('p')) effects.push({ type: 'pull', string: fingers[0]?.string || 1 });
+                if (note.technique.includes('v')) effects.push({ type: 'vibrato', string: fingers[0]?.string || 1 });
+                if (note.technique.includes('t')) effects.push({ type: 'tap', string: fingers[0]?.string || 1 });
             }
 
             const chordData: ChordDiagramProps = {
-                chord: { note: 0, complement: 0, extension: [], bass: 0 }, // Dummy generic info
+                chord: { note: 0, complement: 0, extension: [], bass: 0 },
                 origin: 0,
-                positions: positions,
-                avoid: [], // Calculate avoided strings? (Those not in positions)
-                nut: note.barre ? {
-                    vis: true,
-                    str: [note.barre.startString, note.barre.endString],
-                    pos: note.barre.fret,
-                    fin: 1, // Index finger usually
-                    trn: 0
-                } : undefined,
-                stringNames: settings.tuning
+                fingers: fingers,
+                avoid: [],
+                stringNames: settings.tuning,
+                extends: {
+                    duration: note.duration,
+                    type: note.type,
+                    decorators: note.decorators,
+                    accidental: note.accidental,
+                    technique: note.technique,
+                    manualChord: note.manualChord,
+                    measureId: measure.id,
+                    noteId: note.id
+                }
             };
 
-            // Determine Chord Name from MEASURE (not from individual notes)
-            // This makes the chord name display throughout the entire measure
             let chordName = '';
-
-            // Priority: Measure-level chord name
-            if (measure.chordName) {
-                chordName = measure.chordName;
-            }
-
-            if (chordName) {
-                chordData.chordName = chordName;
-            }
-
+            if (measure.chordName) chordName = measure.chordName;
+            if (chordName) chordData.chordName = chordName;
             if (measure.showChordName !== undefined) {
                 chordData.showChordName = measure.showChordName;
             }
 
+            // Apply musical shift (Capo/Tuning Shift)
+            const shift = settings.tuningShift || 0;
+            let effectiveShift = shift;
+
+            if (shift < 0) {
+                // Shape-preserving lock: non-barre fingers stay >= 1
+                let minNonBarreFret = Infinity;
+                fingers.forEach(f => {
+                    const isBarre = f.endString && f.endString !== f.string;
+                    if (!isBarre && f.fret > 0) {
+                        if (f.fret < minNonBarreFret) minNonBarreFret = f.fret;
+                    }
+                });
+
+                if (minNonBarreFret !== Infinity) {
+                    const maxAllowedDownShift = minNonBarreFret - 1;
+                    effectiveShift = Math.max(shift, -maxAllowedDownShift);
+                }
+            }
+
+            const shiftedFingers = fingers.map(f => {
+                const isBarre = f.endString && f.endString !== f.string;
+                const currentShift = isBarre ? shift : effectiveShift;
+
+                let finalFret = f.fret;
+                if (f.fret > 0) {
+                    finalFret = f.fret + currentShift;
+                }
+
+                return {
+                    ...f,
+                    fret: Math.max(-12, finalFret)
+                };
+            });
+
             result.push({
                 chord: chordData,
-                finalChord: chordData, // No transposition logic applied here yet
+                finalChord: { ...chordData, fingers: shiftedFingers },
                 duration: durationMs,
                 transportDisplay: 0,
-                strumming: undefined, // Could infer from direction arrows if added later
+                strumming: undefined,
                 effects: effects.length > 0 ? effects : undefined
             });
         });
@@ -143,12 +162,10 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
                 // Find next note on the same string
                 for (let j = i + 1; j < result.length; j++) {
                     const nextChord = result[j];
-                    // Check if nextChord has a position on this string
-                    // positions is { stringKey: [finger, string, fret] }
-                    // key is number (string index)
-                    const nextPos = nextChord.chord.positions[effect.string];
-                    if (nextPos) {
-                        effect.toFret = nextPos[2]; // fret is index 2 of [finger, string, fret]
+                    // Search in fingers array
+                    const nextFinger = nextChord.chord.fingers.find(f => f.string === effect.string || (f.endString && effect.string >= Math.min(f.string, f.endString) && effect.string <= Math.max(f.string, f.endString)));
+                    if (nextFinger) {
+                        effect.toFret = nextFinger.fret;
                         break; // Found target
                     }
                 }
@@ -163,7 +180,7 @@ function createEmptyChord(): ChordDiagramProps {
     return {
         chord: { note: 0, complement: 0, extension: [], bass: 0 },
         origin: 0,
-        positions: {},
+        fingers: [],
         avoid: [],
         list: false
     };

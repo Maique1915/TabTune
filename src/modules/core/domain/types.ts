@@ -1,15 +1,16 @@
 // Standardized Position for all contexts
 export interface StandardPosition {
-    string: number; // 1-based index
+    string: number; // 1-based start string
+    endString?: number; // 1-based end string (if different from 'string', it's a barre)
     fret: number;
-    finger?: number; // 0 = unknown/open, 1-4 = fingers, T = thumb
+    finger?: number | string; // 0 = unknown/open, 1-4 = fingers, T = thumb
 }
 
 export interface BarreData {
     fret: number;
     startString: number;
     endString: number;
-    finger?: number;
+    finger?: number | string;
 }
 
 export interface ManualChordData {
@@ -32,7 +33,6 @@ export interface MusicalEvent {
 
     // Physical Execution
     positions: StandardPosition[];
-    barre?: BarreData;
 
     // Techniques
     technique?: string;
@@ -76,16 +76,17 @@ export interface TabEffect {
 export interface ChordDiagramProps {
     chord: Achord;
     origin: number;
-    positions: Position;
+    fingers: StandardPosition[];
     avoid: number[];
     scale?: number;
-    nut?: nutForm;
     transport?: number;
     unique?: boolean;
     list?: boolean;
     stringNames?: string[];
     chordName?: string;
     showChordName?: boolean;
+    capo?: number; // Visual Capo Fret (0 = none)
+    extends?: any; // Extra data for interoperability (Fretboard/Editor specific properties)
 }
 
 export interface ChordWithTiming {

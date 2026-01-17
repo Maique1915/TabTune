@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { MeasureData, NoteData, Duration } from '@/modules/editor/domain/types';
-import { getNoteDurationValue, getMeasureCapacity, detectChordFromMeasure } from '@/modules/editor/domain/music-math';
+import { getNoteDurationValue, getMeasureCapacity } from '@/modules/editor/domain/music-math';
 import { Icons } from '@/modules/editor/presentation/constants';
 
-interface VisualEditorProps {
+interface FretboardVisualEditorProps {
     measures: MeasureData[];
     selectedNoteIds: string[];
     timeSignature: string;
@@ -28,7 +28,7 @@ interface VisualEditorProps {
     selectedMeasureId: string | null;
 }
 
-const VisualTimeline: React.FC<VisualEditorProps> = ({
+const VisualTimeline: React.FC<FretboardVisualEditorProps> = ({
     measures,
     selectedNoteIds,
     timeSignature,
@@ -109,9 +109,6 @@ const VisualTimeline: React.FC<VisualEditorProps> = ({
             <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 custom-scrollbar bg-black/40">
                 <div className="flex flex-row gap-4 min-w-max h-full items-start">
                     {measures.map((measure, mIdx) => {
-                        const currentTotal = measure.notes.reduce((sum, n) => sum + getNoteDurationValue(n.duration, !!n.decorators.dot), 0);
-                        const usagePercent = Math.min((currentTotal / capacity) * 100, 100);
-                        const isFull = currentTotal >= capacity - 0.001;
                         const isCollapsed = measure.isCollapsed;
                         const isDragging = draggedIndex === mIdx;
                         const isOver = dragOverIndex === mIdx;
@@ -131,7 +128,7 @@ const VisualTimeline: React.FC<VisualEditorProps> = ({
                                     flex flex-col
                                     relative group transition-all duration-300
                                     rounded-2xl border
-                                    ${isCollapsed ? 'w-20' : 'min-w-[220px]'}
+                                    ${isCollapsed ? 'w-20' : 'min-w-[140px] max-w-[140px]'}
                                     ${isDragging ? 'opacity-40 border-dashed border-slate-600' :
                                         isMeasureSelected
                                             ? 'opacity-100 border-cyan-500 bg-[#161616] shadow-[0_0_20px_rgba(6,182,212,0.15)]'
@@ -152,54 +149,12 @@ const VisualTimeline: React.FC<VisualEditorProps> = ({
                                             </div>
                                             {!isCollapsed && (
                                                 <div className="flex flex-col">
-                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Measure {mIdx + 1}</span>
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Chord {mIdx + 1}</span>
                                                 </div>
                                             )}
-
-                                            {/* Chord Badge */}
-                                            {(() => {
-                                                // 1. Attempt Manual Chord
-                                                const chordNote = measure.notes.find(n => n.manualChord);
-                                                if (chordNote && chordNote.manualChord && chordNote.manualChord.root && chordNote.manualChord.root !== 'none') {
-                                                    const { root, quality, bass, extensions } = chordNote.manualChord;
-                                                    let suffix = '';
-                                                    if (quality === 'Minor') suffix = 'm';
-                                                    else if (quality === 'Dim') suffix = 'dim';
-                                                    else if (quality === 'Aug') suffix = 'aug';
-                                                    else if (quality === 'Sus2') suffix = 'sus2';
-                                                    else if (quality === 'Sus4') suffix = 'sus4';
-
-                                                    const ext = extensions ? extensions.join('') : '';
-                                                    const bassStr = (bass && bass !== 'none') ? `/${bass}` : '';
-
-                                                    // Simple Note formatting (since formatNoteName import might be complex, simple regex or map is safer given import limits)
-                                                    const fmtRoot = root.replace('s', '#');
-
-                                                    return (
-                                                        <div className="ml-2 px-1.5 py-0.5 rounded bg-pink-500/10 border border-pink-500/20 text-[10px] font-bold text-pink-400">
-                                                            {fmtRoot}{suffix}{ext}{bassStr}
-                                                        </div>
-                                                    );
-                                                }
-
-                                                // 2. Fallback to Auto-detect
-                                                const chordName = detectChordFromMeasure(measure.notes);
-                                                return chordName ? (
-                                                    <div className="ml-2 px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-bold text-cyan-400">
-                                                        {chordName}
-                                                    </div>
-                                                ) : null;
-                                            })()}
                                         </div>
 
                                         <div className="flex items-center space-x-1">
-                                            {!isCollapsed && (
-                                                <div className="flex items-center space-x-1 mr-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={(e) => { e.stopPropagation(); onUpdateMeasure(measure.id, { showClef: !measure.showClef }); }} className={`p-1 rounded transition-all ${measure.showClef ? 'text-cyan-400 bg-cyan-500/10' : 'text-slate-700 hover:text-slate-400'}`} title="Show Clef"><span className="text-[10px] font-serif">𝄞</span></button>
-                                                    <button onClick={(e) => { e.stopPropagation(); onUpdateMeasure(measure.id, { showTimeSig: !measure.showTimeSig }); }} className={`p-1 rounded transition-all ${measure.showTimeSig ? 'text-purple-400 bg-purple-500/10' : 'text-slate-700 hover:text-slate-400'}`} title="Show Time Sig"><span className="text-[8px] font-serif font-bold">4/4</span></button>
-                                                </div>
-                                            )}
-
                                             <button onClick={(e) => { e.stopPropagation(); onToggleCollapse(measure.id); }} className="p-1 hover:bg-[#222] rounded text-slate-600 hover:text-white transition-colors">
                                                 {isCollapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
                                             </button>
@@ -208,12 +163,7 @@ const VisualTimeline: React.FC<VisualEditorProps> = ({
 
                                     {/* Action Bar (Only visible on hover if not collapsed) */}
                                     {!isCollapsed && (
-                                        <div className="flex items-center justify-between pt-2">
-                                            <div className="flex flex-col w-full mr-4">
-                                                <div className="w-full h-0.5 bg-[#222] rounded-full overflow-hidden">
-                                                    <div className={`h-full transition-all duration-500 ${isFull ? 'bg-cyan-500' : 'bg-slate-600'}`} style={{ width: `${usagePercent}%` }} />
-                                                </div>
-                                            </div>
+                                        <div className="flex items-center justify-end pt-2">
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button onClick={(e) => { e.stopPropagation(); onCopyMeasure(measure.id); }} className="p-1 text-slate-600 hover:text-cyan-400 transition-colors"><Icons.Copy /></button>
                                                 <button onClick={(e) => { e.stopPropagation(); onRemoveMeasure(measure.id); }} className="p-1 text-slate-600 hover:text-red-400 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></button>
@@ -227,15 +177,15 @@ const VisualTimeline: React.FC<VisualEditorProps> = ({
                                             <div className="text-[9px] font-black text-slate-700 rotated-text uppercase tracking-widest whitespace-nowrap" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
                                                 {measure.notes.length} Notes
                                             </div>
-                                            <div className={`w-0.5 h-8 rounded-full ${isFull ? 'bg-cyan-500/50' : 'bg-[#222]'}`} />
+                                            <div className="w-0.5 h-8 rounded-full bg-[#222]" />
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Measure Content (Notes) */}
                                 {!isCollapsed && (
-                                    <div className="flex-1 p-3 overflow-y-auto custom-scrollbar">
-                                        <div className="flex flex-wrap content-start gap-1.5">
+                                    <div className="flex-1 p-2 overflow-hidden flex flex-col">
+                                        <div className="flex-1 w-full h-full relative">
                                             {measure.notes.map((note) => {
                                                 const isSelected = selectedNoteIds.includes(note.id);
                                                 const isRest = note.type === 'rest';
@@ -247,7 +197,7 @@ const VisualTimeline: React.FC<VisualEditorProps> = ({
                                                         onDoubleClick={(e) => { e.stopPropagation(); onDoubleClickNote(note.id); }}
                                                         className={`
                                                             relative cursor-pointer transition-all duration-200 group/note
-                                                            w-10 h-14 rounded-lg border flex flex-col items-center justify-center select-none
+                                                            w-full h-full rounded-xl border flex flex-col items-center justify-center select-none
                                                             ${isSelected
                                                                 ? (isRest ? 'bg-slate-800 border-slate-500' : 'bg-cyan-900/30 border-cyan-500/50')
                                                                 : 'bg-[#151515] border-[#222] hover:border-[#444] hover:bg-[#1a1a1a]'}
@@ -268,20 +218,15 @@ const VisualTimeline: React.FC<VisualEditorProps> = ({
                                                         </span>
 
                                                         {/* Main Value */}
-                                                        <div className={`flex flex-col items-center justify-center transition-transform duration-300 group-hover/note:scale-105 ${isRest ? 'text-[#333]' : 'text-slate-200'} ${note.positions.length > 3 ? 'gap-0' : 'gap-0.5'} relative`}>
-                                                            {/* Barre Indicator */}
-                                                            {note.barre && (
-                                                                <div
-                                                                    className="absolute -left-2 top-0 bottom-0 w-1.5 border-l-2 border-t-2 border-b-2 border-cyan-500/50 rounded-l-sm transition-all"
-                                                                    style={{ height: '100%' }}
-                                                                    title={`Barre Fret ${note.barre.fret}`}
-                                                                />
-                                                            )}
-
+                                                        <div className={`flex flex-col items-center justify-center transition-transform duration-300 group-hover/note:scale-105 ${isRest ? 'text-[#333]' : 'text-slate-200'} ${note.positions.length > 3 ? 'gap-0' : 'gap-0.5'}`}>
                                                             {isRest ? Icons.MusicRest(note.duration) : note.positions.map((pos, idx) => (
-                                                                <div key={idx} className="flex flex-col items-center leading-none z-10">
+                                                                <div key={idx} className="flex flex-col items-center leading-none">
                                                                     <span className={`${note.positions.length > 3 ? 'text-[9px]' : note.positions.length > 2 ? 'text-[11px]' : 'text-base'} font-black`}>{pos.fret}</span>
-                                                                    {note.positions.length <= 2 && <span className="text-[5px] font-bold text-[#444] uppercase">S{pos.string}</span>}
+                                                                    {note.positions.length <= 2 && (
+                                                                        <span className="text-[5px] font-bold text-[#444] uppercase">
+                                                                            S{pos.string}{pos.endString && pos.endString !== pos.string ? `-${pos.endString}` : ''}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -294,18 +239,7 @@ const VisualTimeline: React.FC<VisualEditorProps> = ({
                                                 );
                                             })}
 
-                                            {/* Add Button */}
-                                            {!isFull && (
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); onAddNote(measure.id); }}
-                                                    className="w-10 h-14 border border-dashed border-[#222] rounded-lg flex flex-col items-center justify-center text-[#333] hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all active:scale-95 group/add"
-                                                    title="Add Note"
-                                                >
-                                                    <span className="scale-75 opacity-50 group-hover/add:opacity-100 transition-opacity">
-                                                        <Icons.Plus />
-                                                    </span>
-                                                </button>
-                                            )}
+                                            {/* Add Button - REMOVED */}
                                         </div>
                                     </div>
                                 )}
@@ -317,7 +251,7 @@ const VisualTimeline: React.FC<VisualEditorProps> = ({
                     <button
                         onClick={(e) => { e.stopPropagation(); onAddMeasure(); }}
                         className="w-16 h-[90%] border-2 border-dashed border-zinc-700/50 bg-zinc-900/50 hover:bg-cyan-500/10 hover:border-cyan-500/50 rounded-2xl flex flex-col items-center justify-center text-zinc-500 hover:text-cyan-400 transition-all shrink-0 group/add-m"
-                        title="Add New Measure"
+                        title="Add New Chord"
                     >
                         <Icons.Plus />
                         <span className="text-[8px] font-black uppercase tracking-tighter mt-2 opacity-0 group-hover/add-m:opacity-100 transition-opacity">Add</span>

@@ -25,9 +25,16 @@ export class FretboardDrawer {
   // Visual settings
   private _neckRadius: number;
   private _stringNamesY: number;
-  private _scaleFactor: number; // Adicionar scaleFactor aqui
+  private _scaleFactor: number;
   private _rotation: number = 0;
   private _mirror: boolean = false;
+
+  // Conditional Rendering Flags
+  private _showNut: boolean = true;
+  private _showHeadBackground: boolean = true;
+  private _headstockGap: number = 0;
+  private _showCapo: boolean = false;
+  private _capoFret: number = 0;
 
   constructor(
     ctx: CanvasRenderingContext2D,
@@ -74,6 +81,41 @@ export class FretboardDrawer {
     this._neckRadius = diagramSettings.neckRadius;
     this._stringNamesY = diagramSettings.stringNamesY;
   }
+
+  private calculateDimensions(
+    width: number,
+    height: number,
+    numStrings: number,
+    numFrets: number,
+    scaleFactor: number
+  ): void {
+    this._diagramWidth = width;
+    this._diagramHeight = height;
+    this._scaleFactor = scaleFactor;
+
+    // For SHORT NECK mode, reserve space at top for header
+    const headerSpace = numFrets <= 6 ? 120 * scaleFactor : 0;
+
+    // Adjust available height for fretboard
+    const availableHeight = height - headerSpace;
+
+    this._horizontalPadding = 55 * scaleFactor;
+    this._fretboardWidth = width - this._horizontalPadding * 2;
+    this._fretboardHeight = availableHeight * 0.8;
+
+    this._stringSpacing = this._fretboardWidth / (numStrings - 1);
+    this._realFretSpacing = this._fretboardHeight / numFrets;
+
+    this._fretboardX = this._horizontalPadding;
+    // Start fretboard lower when in SHORT NECK mode
+    this._fretboardY = headerSpace + (availableHeight - this._fretboardHeight) / 2;
+
+    this._diagramX = 0;
+    this._diagramY = this._fretboardY;
+
+    this._neckRadius = 20 * scaleFactor;
+    this._stringNamesY = this._fretboardY - 40 * scaleFactor;
+  }
   public setDiagramX(diagramX: number): void {
     this._diagramX = diagramX;
     this._fretboardX = diagramX;
@@ -93,6 +135,28 @@ export class FretboardDrawer {
     this._numStrings = num;
   }
 
+  public setNumFrets(num: number): void {
+    this._numFrets = num;
+  }
+
+  public setScaleFactor(scale: number): void {
+    this._scaleFactor = scale;
+  }
+
+  public setConditionalFlags(showNut: boolean, showHeadBackground: boolean): void {
+    this._showNut = showNut;
+    this._showHeadBackground = showHeadBackground;
+  }
+
+  public setHeadstockGap(gap: number): void {
+    this._headstockGap = gap;
+  }
+
+  public setCapo(show: boolean, fret: number = 0): void {
+    this._showCapo = show;
+    this._capoFret = fret;
+  }
+
   public setStringNames(names: string[] | undefined): void {
     // We'll use this in drawStringNames
   }
@@ -109,6 +173,7 @@ export class FretboardDrawer {
   public setHorizontalPadding(padding: number): void {
     this._horizontalPadding = padding;
   }
+
 
   public setColors(colors: FretboardTheme): void {
     this._colors = colors;
@@ -134,24 +199,76 @@ export class FretboardDrawer {
    */
   drawNeck(): void {
     this._ctx.save();
+    const isShortNeck = this._numFrets <= 6;
     const neckX = this._diagramX;
-    const neckY = this._diagramY;
     const neckWidth = this._diagramWidth;
-    const neckHeight = this._diagramHeight;
 
-    this._ctx.fillStyle = this._colors.fretboardColor;
-    this._ctx.beginPath();
-    this._ctx.moveTo(neckX + this._neckRadius, neckY);
-    this._ctx.lineTo(neckX + neckWidth - this._neckRadius, neckY);
-    this._ctx.quadraticCurveTo(neckX + neckWidth, neckY, neckX + neckWidth, neckY + this._neckRadius);
-    this._ctx.lineTo(neckX + neckWidth, neckY + neckHeight - this._neckRadius);
-    this._ctx.quadraticCurveTo(neckX + neckWidth, neckY + neckHeight, neckX + neckWidth - this._neckRadius, neckY + neckHeight);
-    this._ctx.lineTo(neckX + this._neckRadius, neckY + neckHeight);
-    this._ctx.quadraticCurveTo(neckX, neckY + neckHeight, neckX, neckY + neckHeight - this._neckRadius);
-    this._ctx.lineTo(neckX, neckY + this._neckRadius);
-    this._ctx.quadraticCurveTo(neckX, neckY, neckX + this._neckRadius, neckY);
-    this._ctx.closePath();
-    this._ctx.fill();
+    if (isShortNeck) {
+      const radius = 24 * this._scaleFactor;
+      const extraBottomPadding = 40 * this._scaleFactor;
+
+      // 1. CABEÇA (Headstock) - Largura igual ao braço e mais separada
+      const headWidth = this._diagramWidth;
+      const headX = this._diagramX;
+      const headY = this._diagramY;
+      // Altura reduzida para criar maior espaço de separação (gap = 45)
+      const headHeight = 55 * this._scaleFactor;
+
+      this._ctx.fillStyle = this._colors.fretboardColor; // Cor do tema para a cabeça
+      this._ctx.beginPath();
+      // Ambos os cantos superiores arredondados de forma igual
+      this._ctx.roundRect(headX, headY, headWidth, headHeight, [radius, radius, 0, 0]);
+      this._ctx.fill();
+
+      // 2. BRAÇO (Neck)
+      const neckWidth = this._diagramWidth;
+      const neckX = this._diagramX;
+      // O braço começa no Nut (fretboardY), criando o vão solicitado
+      const neckY = this._fretboardY;
+      const neckHeight = (this._diagramHeight - (this._fretboardY - this._diagramY)) + extraBottomPadding;
+
+      this._ctx.fillStyle = this._colors.fretboardColor;
+      this._ctx.beginPath();
+      // Cantos inferiores arredondados para acabamento de card
+      this._ctx.roundRect(neckX, neckY, neckWidth, neckHeight, [0, 0, radius, radius]);
+      this._ctx.fill();
+    } else {
+      this._ctx.fillStyle = this._colors.fretboardColor;
+      const neckY = this._diagramY;
+      const neckHeight = this._diagramHeight;
+      this._ctx.beginPath();
+      // Lógica original para braço completo (Full Neck)
+      if (this._showHeadBackground) {
+        this._ctx.moveTo(neckX + this._neckRadius, neckY);
+        this._ctx.lineTo(neckX + neckWidth - this._neckRadius, neckY);
+        this._ctx.quadraticCurveTo(neckX + neckWidth, neckY, neckX + neckWidth, neckY + this._neckRadius);
+      } else {
+        this._ctx.moveTo(neckX, neckY);
+        this._ctx.lineTo(neckX + neckWidth, neckY);
+        this._ctx.lineTo(neckX + neckWidth, neckY + this._neckRadius);
+      }
+
+      // Lateral Direita
+      this._ctx.lineTo(neckX + neckWidth, neckY + neckHeight - this._neckRadius);
+
+      // Canto Inferior Direito
+      this._ctx.quadraticCurveTo(neckX + neckWidth, neckY + neckHeight, neckX + neckWidth - this._neckRadius, neckY + neckHeight);
+      this._ctx.lineTo(neckX + this._neckRadius, neckY + neckHeight);
+
+      // Canto Inferior Esquerdo
+      this._ctx.quadraticCurveTo(neckX, neckY + neckHeight, neckX, neckY + neckHeight - this._neckRadius);
+
+      // Lateral Esquerda
+      this._ctx.lineTo(neckX, neckY + (this._showHeadBackground ? this._neckRadius : 0));
+
+      // Canto Superior Esquerdo
+      if (this._showHeadBackground) {
+        this._ctx.quadraticCurveTo(neckX, neckY, neckX + this._neckRadius, neckY);
+      }
+      this._ctx.closePath();
+      this._ctx.fill();
+    }
+
     this._ctx.restore();
   }
 
@@ -161,31 +278,95 @@ export class FretboardDrawer {
   drawStringNames(progress: number = 1, customNames?: string[]): void {
     const easedProgress = this.easeInOutQuad(progress);
     const namesToDraw = customNames || ["E", "A", "D", "G", "B", "e"];
+    const isShortNeck = this._numFrets <= 6;
 
     this._ctx.save();
-    const translateY = (1 - easedProgress) * (-10 * this._scaleFactor); // Scaled slide in from top
 
-    this._ctx.fillStyle = this._colors.textColor;
-    const fontSize = 40 * this._scaleFactor; // Scaled font size
+    if (isShortNeck) {
+      // Para SHORT_NECK, desenhamos os nomes usando a cor de texto do tema (Orange no padrão)
+      this._ctx.fillStyle = this._colors.textColor;
+      this._ctx.globalAlpha = easedProgress;
+
+      const fontSize = 28 * this._scaleFactor;
+      this._ctx.font = `bold ${fontSize}px 'Inter', sans-serif`;
+      this._ctx.textAlign = "center";
+      this._ctx.textBaseline = "middle";
+
+      // Centralizado no box da cabeça (headHeight = 30)
+      const headHeight = 55 * this._scaleFactor;
+      const headerCenterY = this._diagramY + (headHeight / 2);
+
+      namesToDraw.forEach((name, i) => {
+        if (i >= this._numStrings) return;
+        const stringX = this._fretboardX + this._horizontalPadding + i * this._stringSpacing;
+
+        this._ctx.save();
+        this._ctx.translate(stringX, headerCenterY);
+        if (this._mirror) this._ctx.scale(-1, 1);
+        if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
+        this._ctx.fillText(name, 0, 0);
+        this._ctx.restore();
+      });
+    } else {
+      // Original rendering for FULL NECK
+      const translateY = (1 - easedProgress) * (-10 * this._scaleFactor);
+
+      this._ctx.fillStyle = this._colors.textColor;
+      const fontSize = 40 * this._scaleFactor;
+      this._ctx.font = `bold ${fontSize}px sans-serif`;
+      this._ctx.textAlign = "center";
+      this._ctx.textBaseline = "middle";
+
+      namesToDraw.forEach((name, i) => {
+        if (i >= this._numStrings) return;
+        const x = this._fretboardX + this._horizontalPadding + i * this._stringSpacing;
+
+        this._ctx.save();
+        this._ctx.translate(x, this._stringNamesY + translateY - this._headstockGap);
+        if (this._mirror) this._ctx.scale(-1, 1);
+        if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
+        this._ctx.fillText(name, 0, 0);
+        this._ctx.restore();
+      });
+    }
+    this._ctx.restore();
+  }
+
+  /**
+   * Desenha o capotraste (capo) entre a cabeça e o braço
+   */
+  drawCapo(): void {
+    if (!this._showCapo) return;
+
+    this._ctx.save();
+
+    const capoWidth = this._fretboardWidth + (this._horizontalPadding * 0.5);
+    const capoHeight = 40 * this._scaleFactor;
+    const capoX = this._fretboardX + (this._fretboardWidth / 2) - (capoWidth / 2);
+    // Position capo in the gap, just below the headstock
+    const capoY = this._stringNamesY - (this._headstockGap / 2) - (capoHeight / 2);
+    const cornerRadius = 12 * this._scaleFactor;
+
+    // Draw capo background
+    this._ctx.fillStyle = this._colors.cardColor; // Usar cardColor para o corpo do capotraste
+    this._ctx.beginPath();
+    this._ctx.roundRect(capoX, capoY, capoWidth, capoHeight, cornerRadius);
+    this._ctx.fill();
+
+    // Draw "CAPO" text
+    this._ctx.fillStyle = this._colors.textColor; // Usar textColor (Laranja no Midnight) para o texto
+    const fontSize = 28 * this._scaleFactor;
     this._ctx.font = `bold ${fontSize}px sans-serif`;
     this._ctx.textAlign = "center";
     this._ctx.textBaseline = "middle";
 
-    namesToDraw.forEach((name, i) => {
-      // Map index i to string position. 
-      // Usually strings are drawn from left to right.
-      if (i >= this._numStrings) return;
+    this._ctx.save();
+    this._ctx.translate(capoX + (capoWidth / 2), capoY + (capoHeight / 2));
+    if (this._mirror) this._ctx.scale(-1, 1);
+    if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
+    this._ctx.fillText("CAPO", 0, 0);
+    this._ctx.restore();
 
-      const x = this._fretboardX + this._horizontalPadding + i * this._stringSpacing;
-
-      // Counter-rotate text
-      this._ctx.save();
-      this._ctx.translate(x, this._stringNamesY + translateY);
-      if (this._mirror) this._ctx.scale(-1, 1);
-      if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
-      this._ctx.fillText(name, 0, 0);
-      this._ctx.restore();
-    });
     this._ctx.restore();
   }
 
@@ -194,16 +375,21 @@ export class FretboardDrawer {
    */
   drawStrings(): void {
     if (this._colors.borderWidth <= 0) return;
+    const isShortNeck = this._numFrets <= 6;
 
     this._ctx.save();
+    // Usar borderColor do tema para as cordas
     this._ctx.strokeStyle = this._colors.borderColor;
-    this._ctx.lineWidth = this._colors.stringThickness;
+    this._ctx.lineWidth = isShortNeck ? 2 * this._scaleFactor : this._colors.stringThickness;
 
     for (let i = 0; i < this._numStrings; i++) {
       const x = this._fretboardX + this._horizontalPadding + i * this._stringSpacing;
+      const startY = this._fretboardY;
+      const endY = this._fretboardY + this._fretboardHeight;
+
       this._ctx.beginPath();
-      this._ctx.moveTo(x, this._fretboardY);
-      this._ctx.lineTo(x, this._fretboardY + this._fretboardHeight);
+      this._ctx.moveTo(x, startY);
+      this._ctx.lineTo(x, endY);
       this._ctx.stroke();
     }
     this._ctx.restore();
@@ -215,14 +401,28 @@ export class FretboardDrawer {
   drawFrets(): void {
     this._ctx.save();
     this._ctx.strokeStyle = this._colors.fretColor;
+    const isShortNeck = this._numFrets <= 6;
 
     for (let i = 0; i <= this._numFrets; i++) {
       const y = this._fretboardY + i * this._realFretSpacing;
-      this._ctx.lineWidth = i === 0 ? (this._colors.borderWidth * 8) : this._colors.borderWidth;
-      this._ctx.beginPath();
-      this._ctx.moveTo(this._fretboardX, y);
-      this._ctx.lineTo(this._fretboardX + this._fretboardWidth, y);
-      this._ctx.stroke();
+
+      if (isShortNeck) {
+        // Trastes uniformes usando fretColor do tema
+        this._ctx.lineWidth = 2 * this._scaleFactor;
+        this._ctx.strokeStyle = this._colors.fretColor;
+        this._ctx.beginPath();
+        this._ctx.moveTo(this._fretboardX, y);
+        this._ctx.lineTo(this._fretboardX + this._fretboardWidth, y);
+        this._ctx.stroke();
+      } else {
+        // Nut (i=0) is drawn thick only if showNut is true
+        this._ctx.lineWidth = (i === 0 && this._showNut) ? (this._colors.borderWidth * 8) : this._colors.borderWidth;
+        this._ctx.strokeStyle = this._colors.fretColor;
+        this._ctx.beginPath();
+        this._ctx.moveTo(this._fretboardX, y);
+        this._ctx.lineTo(this._fretboardX + this._fretboardWidth, y);
+        this._ctx.stroke();
+      }
     }
     this._ctx.restore();
   }
@@ -298,7 +498,8 @@ export class FretboardDrawer {
 
     for (let i = 0; i <= fretsToDraw && i <= this._numFrets; i++) {
       const y = this._fretboardY + i * this._realFretSpacing;
-      this._ctx.lineWidth = i === 0 ? (this._colors.borderWidth * 8) : this._colors.borderWidth;
+      // Nut (i=0) is drawn thick only if showNut is true
+      this._ctx.lineWidth = (i === 0 && this._showNut) ? (this._colors.borderWidth * 8) : this._colors.borderWidth;
 
       // Se for o último traste sendo desenhado, pode estar parcial
       const isLastFret = i === fretsToDraw;

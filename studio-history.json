@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "chords": [
+    {
+      "stringNames": [
+        "E",
+        "A",
+        "D",
+        "G",
+        "B",
+        "e"
+      ],
+      "chord": {
+        "note": 4,
+        "complement": 0,
+        "extension": [],
+        "bass": 0
+      },
+      "positions": {
+        "2": [
+          2,
+          2
+        ],
+        "3": [
+          2,
+          3
+        ],
+        "4": [
+          1,
+          1
+        ]
+      },
+      "avoid": [],
+      "nut": {
+        "vis": false,
+        "str": [
+          0,
+          0
+        ],
+        "pos": 0,
+        "fin": 0,
+        "trn": 1
+      },
+      "origin": 4,
+      "extends": {
+        "durationMs": 2000
+      }
+    },
+    {
+      "stringNames": [
+        "E",
+        "A",
+        "D",
+        "G",
+        "B",
+        "e"
+      ],
+      "chord": {
+        "note": 11,
+        "complement": 1,
+        "extension": [
+          5,
+          7
+        ],
+        "bass": 0
+      },
+      "positions": {
+        "2": [
+          2,
+          2
+        ],
+        "4": [
+          2,
+          3
+        ],
+        "5": [
+          2,
+          4
+        ]
+      },
+      "avoid": [
+        1,
+        6
+      ],
+      "nut": {
+        "vis": false,
+        "str": [
+          0,
+          0
+        ],
+        "pos": 0,
+        "fin": 0,
+        "trn": 1
+      },
+      "origin": 11,
+      "extends": {
+        "durationMs": 2000
+      }
+    }
+  ],
+  "theme": {
+    "cardColor": "#ffffff",
+    "fingerColor": "#333333",
+    "fretboardColor": "#f5f5f5",
+    "borderColor": "#000000",
+    "fretColor": "#dddddd",
+    "textColor": "#FF8C42",
+    "chordNameColor": "#000000",
+    "chordNameOpacity": 1,
+    "chordNameShadow": false,
+    "chordNameShadowColor": "transparent",
+    "chordNameShadowBlur": 0,
+    "chordNameStrokeColor": "transparent",
+    "chordNameStrokeWidth": 0,
+    "borderWidth": 3,
+    "stringThickness": 3,
+    "fingerTextColor": "#ffffff",
+    "fingerBorderColor": "#000000",
+    "fingerBorderWidth": 4,
+    "fingerBoxShadowHOffset": 0,
+    "fingerBoxShadowVOffset": 0,
+    "fingerBoxShadowBlur": 0,
+    "fingerBoxShadowSpread": 0,
+    "fingerBoxShadowColor": "#00000050",
+    "fingerBackgroundAlpha": 0.3,
+    "fretboardScale": 1,
+    "rotation": 0,
+    "mirror": false
+  }
+}

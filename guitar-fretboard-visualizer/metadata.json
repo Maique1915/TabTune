@@ -1,0 +1,5 @@
+{
+  "name": "Guitar Fretboard Visualizer",
+  "description": "A high-fidelity guitar fretboard rendering tool featuring dynamic chord visualization and a customizable capo, built with React and Canvas API.",
+  "requestFramePermissions": []
+}

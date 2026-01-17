@@ -38,11 +38,9 @@ export function TimelineClip({
   let visualContent = null;
 
   if (clip.type === 'chord') {
-    const chordName = clip.chord?.chordName
-      ? clip.chord.chordName
-      : (clip.chord?.chord
-        ? getNome(clip.chord.chord).replace(/#/g, "♯").replace(/b/g, "♭")
-        : 'Chord');
+    const chordName = clip.chord?.chord
+      ? getNome(clip.chord.chord).replace(/#/g, "♯").replace(/b/g, "♭")
+      : 'Chord';
     clipContent = <span className="text-sm font-semibold truncate">{chordName}</span>;
   } else if (clip.type === 'audio') {
     visualContent = (

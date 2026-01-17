@@ -8,7 +8,9 @@ interface HeaderProps {
   onSettingsClick?: () => void;
 }
 
-export function AppHeader({ onMenuClick, onSettingsClick }: HeaderProps) {
+import { HistoryControls } from '@/components/shared/HistoryControls';
+
+export function AppHeader({ onMenuClick, onSettingsClick, onImportHistory, onExportHistory }: HeaderProps & { onImportHistory?: (file: File) => void, onExportHistory?: () => void }) {
   return (
     <header className="flex justify-between items-center px-6 py-4 bg-zinc-950/40 backdrop-blur-md border-b border-zinc-800/50 shrink-0 z-20">
       <div className="flex items-center space-x-3">
@@ -18,6 +20,9 @@ export function AppHeader({ onMenuClick, onSettingsClick }: HeaderProps) {
         <h1 className="text-sm font-black tracking-[0.2em] text-zinc-100 uppercase">TabTune</h1>
       </div>
       <div className="flex items-center gap-3">
+        {onImportHistory && onExportHistory && (
+          <HistoryControls onImport={onImportHistory} onExport={onExportHistory} />
+        )}
         {onSettingsClick && (
           <Button
             variant="ghost"
@@ -42,3 +47,4 @@ export function AppHeader({ onMenuClick, onSettingsClick }: HeaderProps) {
     </header>
   );
 }
+

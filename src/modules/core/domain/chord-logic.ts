@@ -3,7 +3,16 @@ import type { Achord, ChordDiagramProps, Position, nutForm } from './types';
 export const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 export const complements = ['Major', 'm', '°'];
 export const basses = ['Tonica', '/2', '/3', '/4', '/5', '/6', '/7', '/8', '/9', '/10', '/11', '/12'];
-export const extensions = ['sus2', 'sus4', 'aug', '5', "6", "7", "7+", "9", "11", "13", "(#5)", "(b5)"];
+export const extensions = [
+    'sus2', 'sus4', 'aug',
+    '5', 'b5', '#5',
+    '6', 'b6', '#6',
+    '7', 'b7', '#7',
+    '7+', 'b7+', '#7+',
+    '9', 'b9', '#9',
+    '11', 'b11', '#11',
+    '13', 'b13', '#13'
+];
 
 export const getExtension = (value: string): number => { return extensions.indexOf(value) }
 export const getNote = (value: string): number => { return notes.indexOf(value) }

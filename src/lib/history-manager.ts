@@ -1,0 +1,459 @@
+import { ChordDiagramProps, FretboardTheme, Achord } from "@/modules/core/domain/types";
+import { MeasureData, NoteData, Duration, GlobalSettings } from "@/modules/editor/domain/types";
+import { measuresToChords } from "@/lib/fretboard/converter";
+import { getNote, getComplement, getExtension, getBasse, notes, complements, extensions, basses } from "@/modules/core/domain/chord-logic";
+
+export interface FullHistoryState {
+    version: number;
+    chords: ChordDiagramProps[];
+    measures?: MeasureData[]; // Added to preserve exact editor state
+    settings?: GlobalSettings;
+    theme?: FretboardTheme;
+}
+
+export function createFullHistory(measures: MeasureData[], settings: GlobalSettings, theme: FretboardTheme): FullHistoryState {
+    const chords = fretboardToHistory(measures, settings);
+    return {
+        version: 1,
+        chords,
+        measures,
+        settings,
+        theme
+    };
+}
+
+/**
+ * Parses a chord name string into an Achord structure used by the system.
+ */
+function parseChordValues(chordName: string | undefined): Achord {
+    if (!chordName) return { note: 0, complement: 0, extension: [], bass: 0 };
+
+    console.log('[history-manager] Parsing:', chordName);
+
+    // Hardcoded arrays to avoid import issues
+    const notesRef = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const extensionsRef = ['sus2', 'sus4', 'aug', '5', "6", "7", "7+", "9", "11", "13", "(#5)", "(b5)"];
+    const bassesRef = ['Tonica', '/2', '/3', '/4', '/5', '/6', '/7', '/8', '/9', '/10', '/11', '/12'];
+
+    // 1. Extract Bass if present (after last '/')
+    let baseName = chordName;
+    let bassIndex = 0;
+
+    const slashIndex = chordName.lastIndexOf('/');
+    if (slashIndex > -1) {
+        const bassPart = chordName.substring(slashIndex); // e.g., "/G"
+        bassIndex = bassesRef.indexOf(bassPart);
+
+        if (bassIndex > -1) {
+            baseName = chordName.substring(0, slashIndex);
+        } else {
+            bassIndex = 0;
+        }
+    }
+
+    // 2. Extract Root
+    let rootIndex = -1;
+    let rootLen = 0;
+
+    // Sort notes by length desc to match F# before F
+    const sortedNotes = [...notesRef].sort((a, b) => b.length - a.length);
+
+    for (const note of sortedNotes) {
+        if (baseName.startsWith(note)) {
+            rootIndex = notesRef.indexOf(note);
+            rootLen = note.length;
+            break;
+        }
+    }
+
+    if (rootIndex === -1) {
+        console.warn('[history-manager] Failed to find root for:', baseName);
+        return { note: 0, complement: 0, extension: [], bass: 0 };
+    }
+
+    // 3. Extract Remainder (Quality + Extensions)
+    const remainder = baseName.substring(rootLen);
+
+    // 4. Determine Complement (Quality)
+    let complementIndex = 0; // Major
+    let extStr = remainder;
+
+    if (remainder.startsWith('m') && !remainder.startsWith('maj')) {
+        complementIndex = 1; // m
+        extStr = remainder.substring(1);
+    }
+    else if (remainder.startsWith('°') || remainder.startsWith('dim')) {
+        complementIndex = 2; // °
+        extStr = remainder.startsWith('dim') ? remainder.substring(3) : remainder.substring(1);
+    }
+
+    // 5. Extract Extensions
+    const extIndices: number[] = [];
+    let processingExts = extStr;
+
+    const sortedExts = extensionsRef.map((e, i) => ({ val: e, idx: i })).sort((a, b) => b.val.length - a.val.length);
+
+    for (const { val, idx } of sortedExts) {
+        if (processingExts.includes(val)) {
+            extIndices.push(idx);
+            processingExts = processingExts.replace(val, '');
+        }
+    }
+
+    const result = {
+        note: rootIndex,
+        complement: complementIndex,
+        extension: extIndices.sort((a, b) => a - b),
+        bass: bassIndex
+    };
+
+    console.log('[history-manager] Parsed Result:', result);
+    return result;
+}
+
+/**
+ * Downloads the history object as a JSON file.
+ */
+export function downloadHistory(data: any, filename: string = "history.json") {
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+/**
+ * Reads a JSON file and returns the parsed history object.
+ * Returns a normalized object containing chords, measures (optional), and settings/theme.
+ */
+export function readHistoryFile(file: File): Promise<{
+    chords: ChordDiagramProps[],
+    measures?: MeasureData[],
+    settings?: GlobalSettings,
+    theme?: FretboardTheme
+}> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const json = JSON.parse(e.target?.result as string);
+                console.log('[history-manager] Parsed JSON keys:', Object.keys(json));
+                if (json.theme) console.log('[history-manager] Found theme in JSON:', json.theme);
+                else console.warn('[history-manager] Theme missing in JSON root.');
+
+                // Legacy Format: Array of chords
+                if (Array.isArray(json)) {
+                    resolve({ chords: json as ChordDiagramProps[] });
+                }
+                // New Format: Object with version
+                else if (json.chords && Array.isArray(json.chords)) {
+                    resolve({
+                        chords: json.chords,
+                        measures: json.measures, // Load raw measures if present
+                        settings: json.settings,
+                        theme: json.theme
+                    });
+                } else {
+                    reject(new Error("Invalid history file format."));
+                }
+            } catch (err) {
+                reject(err);
+            }
+        };
+        reader.onerror = reject;
+        reader.readAsText(file);
+    });
+}
+
+import { getNoteDurationValue, getMeasureCapacity } from "@/modules/editor/domain/music-math";
+
+/**
+ * Converts Fretboard measures to the unified history format (ChordDiagramProps[]).
+ * Merges all notes in a measure into a single ChordDiagramProps to represent the full chord shape.
+ */
+export function fretboardToHistory(measures: MeasureData[], settings: GlobalSettings): ChordDiagramProps[] {
+    const history: ChordDiagramProps[] = [];
+    const bpm = settings.bpm || 120;
+    const msPerBeat = 60000 / bpm;
+
+    // Calculate measure duration based on Time Signature
+    // capacity is in "Whole Note" units (e.g., 4/4 = 1.0)
+    // We assume 1 Whole Note = 4 Quarter Notes (Beats)
+    const capacity = getMeasureCapacity(settings.time);
+    const measureDurationMs = capacity * 4 * msPerBeat;
+
+    measures.forEach(measure => {
+        // 1. Collect all positions from all notes in the measure
+        const mergedPositions: any = {};
+        let barreData: any = undefined;
+
+        measure.notes.forEach(note => {
+            // Merge positions
+            note.positions.forEach(pos => {
+                if (pos.string > 0) {
+                    // Studio expects [fret, finger]
+                    mergedPositions[pos.string] = [pos.fret, pos.finger || 0];
+                }
+            });
+
+            // Capture barre info if present (last one wins or first? usually consistent in a measure chord)
+            if (note.barre) {
+                barreData = note.barre;
+            }
+        });
+
+        // 2. Parse Chord Name to populate Achord
+        const chordName = measure.chordName || '';
+        const achord = parseChordValues(chordName);
+
+        // 3. Create the unified ChordDiagramProps
+        const chordData: ChordDiagramProps = {
+            chord: achord,
+            origin: achord.note,
+            positions: mergedPositions,
+            avoid: [],
+            stringNames: settings.tuning,
+            chordName: chordName,
+            showChordName: measure.showChordName,
+            capo: settings.tuningShift && settings.tuningShift > 0 ? settings.tuningShift : 0,
+            extends: {
+                durationMs: measureDurationMs,
+                measureId: measure.id,
+            }
+        };
+
+        // Map BarreData to nutForm
+        if (barreData) {
+            chordData.nut = {
+                vis: true,
+                pos: barreData.fret,
+                str: [barreData.startString, barreData.endString],
+                fin: barreData.finger || 1,
+                trn: 0
+            };
+        } else {
+            // Try to auto-detect if user didn't explicitly set it? 
+            // Ideally we trust the explicit data. If it wasn't there, we don't force it.
+            // But if we want to retain the visuals exactly, we rely on what was in note.barre.
+        }
+
+        history.push(chordData);
+    });
+
+    return history;
+}
+
+
+/**
+ * Converts the unified history format (ChordDiagramProps[]) back to Fretboard measures.
+ * Maps each History Chord to ONE Fretboard Measure containing ONE Note (Chord).
+ */
+export function historyToFretboard(history: ChordDiagramProps[]): MeasureData[] {
+    const measures: MeasureData[] = [];
+
+    history.forEach(chord => {
+        // Create a new measure for THIS chord
+        const measure = createEmptyMeasure();
+
+        // Restore chord name
+        measure.chordName = chord.chordName;
+        measure.showChordName = chord.showChordName;
+
+        const ext = chord.extends || {};
+
+        // Calculate duration code from durationMs if possible, or default to whole/quarter?
+        // If we came from Studio, we might have durationMs.
+        // If we came from Fretboard, we might have durationMs.
+        // We'll default to 'w' (whole) or 'q' if short?
+        // For simplicity, let's try to map ms back to duration or just use 'w' to fill measure.
+        // Or if we stored 'extends.duration', use that.
+        let durationCode: Duration = 'q';
+        if (ext.duration) {
+            durationCode = ext.duration;
+        } else if (ext.durationMs) {
+            // Approximate? 
+            if (ext.durationMs >= 2000) durationCode = 'w'; // > 2s roughly
+            else if (ext.durationMs >= 1000) durationCode = 'h';
+            else durationCode = 'q';
+        }
+
+        // Create the single "Chord Note"
+        const note: NoteData = {
+            id: generateId(),
+            type: 'note',
+            duration: durationCode,
+            positions: [],
+            decorators: ext.decorators || {},
+            accidental: ext.accidental || 'none',
+            technique: ext.technique,
+            manualChord: ext.manualChord,
+        };
+
+        // Restore Barre from nut
+        if (chord.nut && chord.nut.vis) {
+            note.barre = {
+                fret: chord.nut.pos,
+                startString: chord.nut.str[0],
+                endString: chord.nut.str[1],
+                finger: chord.nut.fin
+            };
+        }
+
+        // Populate positions
+        if (chord.positions) {
+            Object.entries(chord.positions).forEach(([strKey, pos]) => {
+                // pos is [fret, finger] or legacy [finger, string, fret]
+
+                let finger = 0;
+                let fret = 0;
+                let stringNum = parseInt(strKey);
+
+                if (pos.length === 3) {
+                    // Legacy: [finger, string, fret]
+                    finger = pos[0];
+                    fret = pos[2] || 0;
+                } else {
+                    // Standard: [fret, finger]
+                    fret = pos[0];
+                    finger = pos[1];
+                }
+
+                note.positions.push({
+                    finger: finger,
+                    string: stringNum,
+                    fret: fret
+                });
+            });
+        }
+
+        // Handle empty/rest
+        if (note.positions.length === 0) {
+            note.type = 'rest';
+            note.positions = [{ fret: 0, string: 1 }];
+        }
+
+        measure.notes.push(note);
+        measures.push(measure);
+    });
+
+    return measures;
+}
+
+
+// --- Studio Import/Export ---
+import { TimelineState, TimelineTrack, TimelineClip, ClipType } from "@/modules/studio/domain/types";
+
+
+/**
+ * Converts Studio Timeline to unified history.
+
+ * We only export Chord tracks for now.
+ */
+export function studioToHistory(timeline: TimelineState, theme?: FretboardTheme): FullHistoryState {
+    const history: ChordDiagramProps[] = [];
+
+    // Flatten all chord clips from all chord tracks
+    // Sort by start time to maintain sequence
+    const allClips: TimelineClip[] = [];
+    timeline.tracks.forEach(t => {
+        if (t.type === 'chord' || t.name.toLowerCase().includes('chord')) {
+            allClips.push(...t.clips);
+        }
+    });
+
+    allClips.sort((a, b) => a.start - b.start);
+
+    allClips.forEach(clip => {
+        if (clip.type === 'chord') {
+            const chordProp = { ...clip.chord };
+            // Ensure extends exists
+            if (!chordProp.extends) chordProp.extends = {};
+
+            // Save duration in ms if not present
+            if (!chordProp.extends.durationMs) {
+                chordProp.extends.durationMs = clip.duration;
+            }
+
+            // If we don't have note duration ('q', 'w'), try to approximate or leave empty
+            // logic to reverse-engineer 'q' from ms could go here if needed.
+
+            history.push(chordProp);
+        }
+    });
+
+    return {
+        version: 1,
+        chords: history,
+        theme
+    };
+}
+
+/**
+ * Converts history to a new TimelineState for Studio.
+ * This overwrites the existing state or creates a new one.
+ */
+export function historyToStudio(history: ChordDiagramProps[]): TimelineState {
+    const trackId = generateId();
+    const track: TimelineTrack = {
+        id: trackId,
+        name: 'Imported Chords',
+        type: 'chord',
+        clips: []
+    };
+
+    let currentTime = 0;
+    const BPM = 120; // Default BPM for import if unknown
+    const msPerBeat = 60000 / BPM;
+
+    history.forEach(chord => {
+        const clipId = generateId();
+        let durationMs = 1000; // Default 1s
+
+        if (chord.extends?.durationMs) {
+            durationMs = chord.extends.durationMs;
+        } else if (chord.extends?.duration) {
+            // Convert 'q' etc to ms
+            const val = getNoteDurationValue(chord.extends.duration, !!chord.extends.decorators?.dot);
+            durationMs = val * msPerBeat;
+        }
+
+        const clip: TimelineClip = {
+            id: clipId,
+            start: currentTime,
+            duration: durationMs,
+            type: 'chord',
+            chord: chord,
+            finalChord: chord, // No transp yet
+        } as any;
+        // Force cast because TimelineClip union is strict, and I'm lazy to fully strictly type the union check here in this snippet, 
+        // but clip is definitely a ChordClip structure.
+
+        track.clips.push(clip);
+        currentTime += durationMs;
+    });
+
+    return {
+        tracks: [track],
+        totalDuration: Math.max(currentTime, 10000), // Min 10s
+        zoom: 100
+    };
+}
+
+function createEmptyMeasure(): MeasureData {
+    return {
+        id: generateId(),
+        isCollapsed: false,
+        showClef: true,
+        showTimeSig: true,
+        notes: []
+    };
+}
+
+function generateId() {
+    return Math.random().toString(36).substr(2, 9);
+}

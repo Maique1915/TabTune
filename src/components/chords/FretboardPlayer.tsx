@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useMemo } from "react";
-import Sidebar from "@/components/fretboard/Sidebar";
+import Sidebar from "@/components/chords/Sidebar";
 import { measuresToChords } from "@/lib/fretboard/converter";
 import { ChordDiagramProps } from "@/modules/core/domain/types";
-import VisualTimeline from "@/components/fretboard/timeline/VisualTimeline";
+import VisualTimeline from "@/components/chords/timeline/VisualTimeline";
 import { useAppContext } from "@/app/context/app--context";
-import { FretboardStage, FretboardStageRef } from "@/components/fretboard/FretboardStage";
+import { FretboardStage, FretboardStageRef } from "@/components/chords/FretboardStage";
 import { SettingsPanel } from "@/components/studio/SettingsPanel";
 import { AppHeader } from "@/components/studio/app-header";
 import { StageContainer } from "@/components/shared/StageContainer";
@@ -18,8 +18,8 @@ import { RenderingProgressCard } from "@/components/studio/rendering-progress-ca
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/shared/lib/utils";
 import { Music2, Library, Settings, Guitar } from "lucide-react";
-import { TimelineControls } from "@/components/fretboard/timeline/TimelineControls";
-import { useFretboardEditor } from "@/hooks/use-fretboard-editor";
+import { TimelineControls } from "@/components/chords/timeline/TimelineControls";
+import { useChordsEditor } from "@/hooks/use-chords-editor";
 
 export function FretboardPlayer() {
     // 1. New Editor State
@@ -57,6 +57,7 @@ export function FretboardPlayer() {
         handleAddChordNote,
         handleRemoveChordNote,
         handleToggleBarre,
+        handleToggleBarreTo,
         handleToggleCollapse,
         handleReorderMeasures,
         handleCopyMeasure,
@@ -67,7 +68,7 @@ export function FretboardPlayer() {
         redo,
         canUndo,
         canRedo
-    } = useFretboardEditor();
+    } = useChordsEditor();
 
     // 2. App Context (Visualizer State)
     const {
@@ -355,6 +356,7 @@ export function FretboardPlayer() {
                     onAddChordNote={handleAddChordNote}
                     onRemoveChordNote={handleRemoveChordNote}
                     onToggleBarre={handleToggleBarre}
+                    onToggleBarreTo={handleToggleBarreTo}
                     globalSettings={settings}
                     onGlobalSettingsChange={(newSettings: any) => setSettings(prev => ({ ...prev, ...newSettings }))}
                     onImportScore={() => { }}
@@ -383,8 +385,10 @@ export function FretboardPlayer() {
                                     }}
                                     onRenderProgress={setRenderProgress}
                                     numStrings={settings.numStrings}
+                                    numFrets={settings.numFrets}
                                     showChordName={settings.showChordName !== false}
-                                    capo={settings.tuningShift && settings.tuningShift > 0 ? settings.tuningShift : 0}
+                                    tuningShift={settings.tuningShift || 0}
+                                    stringNames={settings.tuning}
                                 />
                             </StageContainer>
                         </div>
@@ -415,8 +419,10 @@ export function FretboardPlayer() {
                                 }}
                                 onRenderProgress={setRenderProgress}
                                 numStrings={settings.numStrings}
+                                numFrets={settings.numFrets}
                                 showChordName={settings.showChordName !== false}
-                                capo={settings.tuningShift && settings.tuningShift > 0 ? settings.tuningShift : 0}
+                                tuningShift={settings.tuningShift || 0}
+                                stringNames={settings.tuning}
                             />
                         </StageContainer>
                     }

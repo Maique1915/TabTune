@@ -32,8 +32,11 @@ export function HomePage() {
     setTimelineState,
     playbackTotalDurationMs,
     selectedChords,
+    setSelectedChords,
     playbackTransitionsEnabled,
     playbackBuildEnabled,
+    setColors,
+    colors,
   } = useAppContext();
 
   const videoCanvasRef = useRef<VideoCanvasStageRef>(null);
@@ -255,7 +258,56 @@ export function HomePage() {
   return (
     <WorkspaceLayout
       isMobile={isMobile}
-      header={<AppHeader />}
+      header={<AppHeader
+        onImportHistory={async (file) => {
+          try {
+            const { readHistoryFile, historyToStudio } = await import('@/lib/history-manager');
+            const history = await readHistoryFile(file);
+
+            // Restore timeline from chords
+            const newTimeline = historyToStudio(history.chords);
+            setTimelineState(newTimeline);
+
+            console.log('[HomePage] Imported Timeline Clips:', newTimeline.tracks[0].clips);
+
+            // Sync selectedChords for the Canvas
+            const chordTrack = newTimeline.tracks.find(t => t.type === 'chord');
+            if (chordTrack) {
+              const newSelectedChords = chordTrack.clips.map(c => {
+                if (c.type === 'chord') {
+                  return {
+                    chord: c.chord,
+                    duration: c.duration,
+                    finalChord: c.finalChord || c.chord,
+                    transportDisplay: c.transportDisplay || 0
+                  };
+                }
+                return null;
+              }).filter(c => c !== null) as any[]; // Cast to match type
+
+              // Update AppContext to sync canvas
+              setSelectedChords(newSelectedChords);
+            }
+
+            // Restore theme if available (fixing user request "o estilo não esta sendo salvo")
+            if (history.theme) {
+              console.log('[HomePage] Restoring Theme:', history.theme);
+              // Ensure the theme is applied after a slight delay to allow timeline state to settle?
+              // Or just set it directly. React should batch or handle it.
+              setColors(history.theme);
+            } else {
+              console.warn('[HomePage] No theme found in history file.');
+            }
+          } catch (e) {
+            console.error("Import failed", e);
+          }
+        }}
+        onExportHistory={async () => {
+          const { downloadHistory, studioToHistory } = await import('@/lib/history-manager');
+          const history = studioToHistory(timelineState, colors);
+          downloadHistory(history, 'studio-history.json');
+        }}
+      />}
       mobileHeader={<MobileHeader title="TabTune" showBack={true} />}
       mobileBottomNav={
         <MobileNav
