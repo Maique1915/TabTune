@@ -148,6 +148,8 @@ interface SettingsPanelProps {
   isMobile: boolean;
   isOpen?: boolean;
   onClose?: () => void;
+  colors?: FretboardTheme;
+  onColorChange?: (newColors: any) => void;
 }
 
 // --- COMPONENTS ---
@@ -287,8 +289,13 @@ const SETTING_GROUPS: SettingGroup[] = [
 
 // --- MAIN COMPONENT ---
 
-export function SettingsPanel({ isMobile, isOpen, onClose }: SettingsPanelProps) {
-  const { colors, setColors, animationType, setAnimationType } = useAppContext();
+export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, onColorChange }: SettingsPanelProps) {
+  const { setColors: contextSetColors, colors: contextColors, animationType, setAnimationType } = useAppContext();
+
+  // Use props if available (from FretboardPlayer with history), otherwise fallback to context
+  const colors = propsColors || contextColors;
+  const setColors = onColorChange || contextSetColors;
+
   const [activeTab, setActiveTab] = useState<'basic' | 'advanced' | 'motion'>('basic');
   const [expandedKey, setExpandedKey] = useState<string | null>('fretboard');
 

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { type JSAnimation } from "animejs";
-import type { ChordWithTiming, ChordDiagramProps } from "@/modules/core/domain/types";
+import type { ChordWithTiming, ChordDiagramProps, FretboardTheme } from "@/modules/core/domain/types";
 import { useAppContext } from "@/app/context/app--context";
 import { ChordDrawerBase } from "@/modules/engine/infrastructure/drawers/chord-drawer-base";
 import { GuitarFretboardDrawer } from "@/modules/engine/infrastructure/drawers/guitar-fretboard-drawer";
@@ -43,6 +43,7 @@ interface FretboardStageProps {
     tuningShift?: number;
     stringNames?: string[];
     numFrets?: number;
+    colors?: any; // FretboardTheme
 }
 
 interface AnimationState {
@@ -79,6 +80,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
     tuningShift = 0,
     stringNames = ["E", "A", "D", "G", "B", "e"],
     numFrets = 24,
+    colors: propsColors,
 }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -114,7 +116,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         prevChordName: "",
     });
     const {
-        colors,
+        colors: contextColors,
         animationType,
         setPlaybackIsPlaying,
         setPlaybackIsPaused,
@@ -124,6 +126,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         playbackSeekNonce,
         playbackSeekProgress,
     } = useAppContext();
+    const colors = propsColors || contextColors || undefined;
     const [isAnimating, setIsAnimating] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
 

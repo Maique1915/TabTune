@@ -1,7 +1,9 @@
 
 import { useState, useMemo } from 'react';
 import { MeasureData, GlobalSettings, ScoreStyle, DEFAULT_SCORE_STYLE, Duration, NoteData } from '@/modules/editor/domain/types';
+import { FretboardTheme } from '@/modules/core/domain/types';
 import { useUndoRedo } from '@/hooks/use-undo-redo';
+import { DEFAULT_COLORS } from '@/app/context/app--context';
 import {
     getNoteDurationValue,
     getMeasureCapacity,
@@ -18,6 +20,7 @@ interface FretboardEditorState {
     measures: MeasureData[];
     settings: GlobalSettings;
     scoreStyle: ScoreStyle;
+    theme: FretboardTheme;
     selectedNoteIds: string[];
     editingNoteId: string | null;
     activePanel: 'studio' | 'library' | 'mixer' | 'customize';
@@ -55,6 +58,7 @@ export function useChordsEditor() {
             numFrets: 24
         },
         scoreStyle: DEFAULT_SCORE_STYLE,
+        theme: DEFAULT_COLORS,
         selectedNoteIds: [],
         editingNoteId: null,
         activePanel: 'studio',
@@ -69,6 +73,7 @@ export function useChordsEditor() {
         measures,
         settings,
         scoreStyle,
+        theme,
         selectedNoteIds,
         editingNoteId,
         activePanel,
@@ -141,6 +146,13 @@ export function useChordsEditor() {
         setState(prev => ({
             ...prev,
             scoreStyle: typeof newStyle === 'function' ? newStyle(prev.scoreStyle) : newStyle
+        }));
+    };
+
+    const setTheme = (newTheme: FretboardTheme | ((prev: FretboardTheme) => FretboardTheme)) => {
+        setState(prev => ({
+            ...prev,
+            theme: typeof newTheme === 'function' ? newTheme(prev.theme) : newTheme
         }));
     };
 
@@ -844,6 +856,7 @@ export function useChordsEditor() {
         updateSelectedNotes,
 
         // Utils
-        undo, redo, canUndo, canRedo
+        undo, redo, canUndo, canRedo,
+        theme, setTheme
     };
 }

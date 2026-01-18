@@ -68,7 +68,9 @@ export function FretboardPlayer() {
         undo,
         redo,
         canUndo,
-        canRedo
+        canRedo,
+        theme,     // Local History-tracked theme
+        setTheme   // Setter that pushes to history
     } = useChordsEditor();
 
     // 2. App Context (Visualizer State)
@@ -82,8 +84,8 @@ export function FretboardPlayer() {
         renderCancelRequested,
         setRenderCancelRequested,
         playbackTotalDurationMs,
-        colors,
-        setColors
+        animationType, // Needed for SettingsPanel props? or Stage?
+        // colors/setColors removed from here
     } = useAppContext();
 
     const videoCanvasRef = useRef<FretboardStageRef>(null);
@@ -302,7 +304,7 @@ export function FretboardPlayer() {
 
                         // Restore theme if available & supported
                         if (data.theme) {
-                            setColors(data.theme); // Assuming setColors is available in scope (it is from context)
+                            setTheme(prev => ({ ...prev, ...data.theme }));
                         }
 
                     } catch (e) {
@@ -312,8 +314,8 @@ export function FretboardPlayer() {
                 onExportHistory={async () => {
                     const { downloadHistory, createFullHistory } = await import('@/lib/history-manager');
                     // We need colors here. 'colors' is available in scope from context.
-                    console.log('[FretboardPlayer] Exporting History. Current Theme:', colors);
-                    const history = createFullHistory(measures, settings, colors);
+                    console.log('[FretboardPlayer] Exporting History. Current Theme:', theme);
+                    const history = createFullHistory(measures, settings, theme);
                     downloadHistory(history, 'fretboard-history.json');
                 }}
             />}
@@ -366,10 +368,16 @@ export function FretboardPlayer() {
                     onRedo={redo}
                     canUndo={canUndo}
                     canRedo={canRedo}
-                    theme={colors}
+                    theme={theme}
                 />
             }
-            rightSidebar={<SettingsPanel isMobile={isMobile} isOpen={activePanel === 'customize'} onClose={() => setLocalActivePanel('studio')} />}
+            rightSidebar={<SettingsPanel
+                isMobile={isMobile}
+                isOpen={activePanel === 'customize'}
+                onClose={() => setLocalActivePanel('studio')}
+                colors={theme}
+                onColorChange={setTheme as any}
+            />}
         >
             {isMobile ? (
                 <div className="flex-1 px-4 py-2 flex flex-col min-h-[250px] relative overflow-hidden">
@@ -392,6 +400,7 @@ export function FretboardPlayer() {
                                     capo={settings.capo}
                                     tuningShift={settings.tuningShift || 0}
                                     stringNames={settings.tuning}
+                                    colors={theme}
                                 />
                             </StageContainer>
                         </div>
@@ -427,6 +436,7 @@ export function FretboardPlayer() {
                                 capo={settings.capo}
                                 tuningShift={settings.tuningShift || 0}
                                 stringNames={settings.tuning}
+                                colors={theme}
                             />
                         </StageContainer>
                     }

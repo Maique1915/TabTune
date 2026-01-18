@@ -129,7 +129,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     onTransposeAll,
     theme,
 }) => {
-    const { setAnimationType, animationType, setColors } = useAppContext();
+    const { setAnimationType, animationType } = useAppContext();
 
     const [selectedIndices, setSelectedIndices] = React.useState<number[]>([]);
     const [selectedStrings, setSelectedStrings] = React.useState<number[]>([]);
