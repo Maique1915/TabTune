@@ -85,6 +85,8 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
   cardColor: "#000000",              // Fundo preto
   fingerColor: "#200f0f",            // Dedos brancos
   fretboardColor: "#303135",         // Braço cinza escuro moderno
+  fretboardShadow: false,
+  fretboardShadowColor: "rgba(0,0,0,0.5)",
   borderColor: "#FFFFFF",            // Cordas brancas
   fretColor: "#000000",              // Trastes brancos
   textColor: "#FF8C42",              // Nomes das cordas laranja
@@ -109,6 +111,11 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
   fretboardScale: 1.0,               // Escala padrão
   rotation: 0,                       // Rotação padrão
   mirror: false,                     // Espelhamento padrão
+  // Capo Defaults
+  capoColor: "rgba(100, 100, 110, 0.9)",
+  capoBorderColor: "rgba(0, 0, 0, 0.3)",
+  capoShadow: true,
+  capoShadowColor: "rgba(0, 0, 0, 0.5)",
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);

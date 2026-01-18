@@ -34,6 +34,8 @@ export const STUDIO_PRESETS = {
       ...DEFAULT_COLORS,
       cardColor: "#ffffff",
       fretboardColor: "#f5f5f5",
+      fretboardShadow: false,
+      fretboardShadowColor: "transparent",
       borderColor: "#000000", // Black strings (user request)
       fretColor: "#dddddd",
       chordNameColor: "#000000", // Black (user request)
@@ -46,6 +48,11 @@ export const STUDIO_PRESETS = {
       fingerTextColor: "#ffffff",
       fingerBorderColor: "#000000",
       fingerBoxShadowColor: "#00000050",
+      // Capo
+      capoColor: "#e4e4e7", // Zinc-200 (Silver)
+      capoBorderColor: "#a1a1aa", // Zinc-400
+      capoShadow: true,
+      capoShadowColor: "rgba(0,0,0,0.2)",
     }
   },
   cyberpunk: {
@@ -54,6 +61,8 @@ export const STUDIO_PRESETS = {
       ...DEFAULT_COLORS,
       cardColor: "#0f0518",
       fretboardColor: "#2d0036",
+      fretboardShadow: true,
+      fretboardShadowColor: "#fb00ff", // Neon Pink Outer Glow
       borderColor: "#fb00ff",
       fretColor: "#fb00ff50",
       textColor: "#00ff9d",
@@ -68,6 +77,11 @@ export const STUDIO_PRESETS = {
       fingerTextColor: "#fffdfdff",
       fingerBorderColor: "#fb00ff",
       fingerBoxShadowColor: "#00ff9d80",
+      // Capo
+      capoColor: "#180220", // Very Dark Purple
+      capoBorderColor: "#fb00ff", // Neon Pink Border
+      capoShadow: true,
+      capoShadowColor: "#fb00ff", // Pink Glow
     }
   },
   midnight: {
@@ -76,6 +90,8 @@ export const STUDIO_PRESETS = {
       ...DEFAULT_COLORS,
       cardColor: "#020617",
       fretboardColor: "#0f172a",
+      fretboardShadow: true,
+      fretboardShadowColor: "#3b82f6", // Blue Outer Glow
       borderColor: "#94a3b8", // Lighter strings (user request)
       fretColor: "#334155",
       textColor: "#94a3b8",
@@ -90,6 +106,11 @@ export const STUDIO_PRESETS = {
       fingerTextColor: "#ffffff",
       fingerBorderColor: "#60a5fa",
       fingerBoxShadowColor: "#3b82f660",
+      // Capo
+      capoColor: "#1e293b", // Slate-800
+      capoBorderColor: "#60a5fa", // Blue-400
+      capoShadow: true,
+      capoShadowColor: "#3b82f6aa", // Blue Glow
     }
   },
   vintage: {
@@ -98,6 +119,8 @@ export const STUDIO_PRESETS = {
       ...DEFAULT_COLORS,
       cardColor: "#efe6d5",
       fretboardColor: "#e6dcc8",
+      fretboardShadow: true,
+      fretboardShadowColor: "rgba(0,0,0,0.5)", // Dark shadow
       borderColor: "#8b4513",
       fretColor: "#a68b6c",
       textColor: "#5c4033",
@@ -112,6 +135,11 @@ export const STUDIO_PRESETS = {
       fingerTextColor: "#efe6d5",
       fingerBorderColor: "#3e2723",
       fingerBoxShadowColor: "#5c403350",
+      // Capo
+      capoColor: "#5d4037", // Brown
+      capoBorderColor: "#3e2723", // Dark Brown
+      capoShadow: true,
+      capoShadowColor: "rgba(62, 39, 35, 0.4)",
     }
   }
 };
@@ -166,7 +194,8 @@ const ColorPicker = ({ color, onChange }: { color: string; onChange: (c: string)
 type SettingControl =
   | { type: 'color'; label: string; key: keyof FretboardTheme }
   | { type: 'number'; label: string; key: keyof FretboardTheme; min?: number; max?: number; step?: number }
-  | { type: 'slider'; label: string; key: keyof FretboardTheme; min: number; max: number; step: number };
+  | { type: 'slider'; label: string; key: keyof FretboardTheme; min: number; max: number; step: number }
+  | { type: 'toggle'; label: string; key: keyof FretboardTheme };
 
 interface SettingGroup {
   id: string;
@@ -184,6 +213,8 @@ const SETTING_GROUPS: SettingGroup[] = [
       { type: 'color', label: 'Background', key: 'cardColor' },
       { type: 'color', label: 'Neck Color', key: 'fretboardColor' },
       { type: 'color', label: 'Frets Color', key: 'fretColor' },
+      { type: 'toggle', label: 'Shadow', key: 'fretboardShadow' },
+      { type: 'color', label: 'Shadow Color', key: 'fretboardShadowColor' },
     ]
   },
   {
@@ -213,7 +244,17 @@ const SETTING_GROUPS: SettingGroup[] = [
     controls: [
       { type: 'color', label: 'Shadow Color', key: 'fingerBoxShadowColor' },
       { type: 'number', label: 'Offset X', key: 'fingerBoxShadowHOffset', min: -10, max: 10 },
-      { type: 'number', label: 'Offset Y', key: 'fingerBoxShadowVOffset', min: -10, max: 10 },
+    ]
+  },
+  {
+    id: 'capo',
+    label: 'Capo & Visuals',
+    icon: Target,
+    controls: [
+      { type: 'color', label: 'Capo Color', key: 'capoColor' },
+      { type: 'color', label: 'Border Color', key: 'capoBorderColor' },
+      { type: 'toggle', label: 'Shadow', key: 'capoShadow' },
+      { type: 'color', label: 'Shadow Color', key: 'capoShadowColor' }
     ]
   },
   {
@@ -378,6 +419,24 @@ export function SettingsPanel({ isMobile, isOpen, onClose }: SettingsPanelProps)
                           onChange={(e) => handleColorChange(control.key, parseFloat(e.target.value))}
                           className="w-16 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-300 font-mono focus:border-pink-500/50 outline-none text-right"
                         />
+                      </div>
+                    );
+                  }
+
+                  if (control.type === 'toggle') {
+                    return (
+                      <div key={control.key} className="flex items-center justify-between">
+                        <span className="text-[10px] font-medium text-zinc-400 uppercase">{control.label}</span>
+                        <button
+                          onClick={() => handleColorChange(control.key, !currentValue)}
+                          className={`w-8 h-4 rounded-full transition-colors relative ${currentValue ? 'bg-pink-500/20' : 'bg-zinc-800'
+                            }`}
+                        >
+                          <div className={`absolute top-0.5 bottom-0.5 w-3 h-3 rounded-full transition-all duration-300 ${currentValue
+                            ? 'left-[18px] bg-pink-400 shadow-[0_0_8px_rgba(244,114,182,0.6)]'
+                            : 'left-0.5 bg-zinc-600'
+                            }`} />
+                        </button>
                       </div>
                     );
                   }

@@ -140,6 +140,8 @@ export interface FretboardTheme {
     cardColor: string;
     fingerColor: string;
     fretboardColor: string;
+    fretboardShadow: boolean;
+    fretboardShadowColor: string;
     borderColor: string;
     fretColor: string;
     textColor: string;
@@ -164,4 +166,9 @@ export interface FretboardTheme {
     fretboardScale: number;
     rotation: 0 | 90 | 270;
     mirror: boolean;
+    // Capo Settings
+    capoColor: string;
+    capoBorderColor: string;
+    capoShadow: boolean;
+    capoShadowColor: string;
 }

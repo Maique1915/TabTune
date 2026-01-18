@@ -248,8 +248,17 @@ export class FretboardDrawer {
     const headY = this._diagramY;
     const headHeight = 55 * this._scaleFactor; // Espaço para os nomes, separado do Nut
 
+    this._ctx.save();
+    // Shadow logic for Headstock
+    if (this._colors.fretboardShadow) {
+      this._ctx.shadowColor = this._colors.fretboardShadowColor;
+      this._ctx.shadowBlur = 20 * this._scaleFactor;
+      this._ctx.shadowOffsetY = 0; // Outer glow essentially
+    }
+
     this._ctx.fillStyle = this._colors.fretboardColor;
     this._safeRoundRect(headX, headY, headWidth, headHeight, [neckRadius, neckRadius, 0, 0]);
+    this._ctx.restore();
   }
 
   /**
@@ -261,8 +270,17 @@ export class FretboardDrawer {
     const neckY = this._fretboardY;
     const neckHeight = (this._diagramHeight - (this._fretboardY - this._diagramY)) + extraBottomPadding;
 
+    this._ctx.save();
+    // Shadow logic for Neck Body
+    if (this._colors.fretboardShadow) {
+      this._ctx.shadowColor = this._colors.fretboardShadowColor;
+      this._ctx.shadowBlur = 20 * this._scaleFactor;
+      this._ctx.shadowOffsetY = 0;
+    }
+
     this._ctx.fillStyle = this._colors.fretboardColor;
     this._safeRoundRect(neckX, neckY, neckWidth, neckHeight, [0, 0, neckRadius, neckRadius]);
+    this._ctx.restore();
   }
 
   /**
@@ -349,6 +367,14 @@ export class FretboardDrawer {
     this._ctx.save();
     const neckX = this._diagramX;
     const neckWidth = this._diagramWidth;
+
+    // Shadow logic for Full Neck
+    if (this._colors.fretboardShadow) {
+      this._ctx.shadowColor = this._colors.fretboardShadowColor;
+      this._ctx.shadowBlur = 20 * this._scaleFactor;
+      this._ctx.shadowOffsetY = 0;
+    }
+
     this._ctx.fillStyle = this._colors.fretboardColor;
     const neckY = this._diagramY;
     const neckHeight = this._diagramHeight;
@@ -477,13 +503,19 @@ export class FretboardDrawer {
 
     // 2. ESTILO VISUAL (Premium para Short Neck, simples para Full)
     if (isShortNeck) {
-      // Sombra para o capo (Premium look)
-      this._ctx.shadowColor = "rgba(0,0,0,0.6)";
-      this._ctx.shadowBlur = 15 * this._scaleFactor;
-      this._ctx.shadowOffsetY = 5 * this._scaleFactor;
-      this._ctx.fillStyle = "#3f3f44"; // Dark metallic grey
+      // Sombra para o capo (Customizável)
+      if (this._colors.capoShadow) {
+        this._ctx.shadowColor = this._colors.capoShadowColor;
+        this._ctx.shadowBlur = 15 * this._scaleFactor;
+        this._ctx.shadowOffsetY = 5 * this._scaleFactor;
+      } else {
+        this._ctx.shadowColor = "transparent";
+        this._ctx.shadowBlur = 0;
+        this._ctx.shadowOffsetY = 0;
+      }
+      this._ctx.fillStyle = this._colors.capoColor;
     } else {
-      this._ctx.fillStyle = this._colors.cardColor;
+      this._ctx.fillStyle = this._colors.capoColor; // Usar a cor do tema também para Full Neck
     }
 
     // Desenhar a barra
@@ -491,10 +523,10 @@ export class FretboardDrawer {
 
     // 3. DETALHES (Borda e Texto)
     if (isShortNeck) {
-      // Stroke/Borda preta definida
+      // Stroke/Borda definida
       this._ctx.shadowBlur = 0;
       this._ctx.shadowOffsetY = 0;
-      this._ctx.strokeStyle = "#000000";
+      this._ctx.strokeStyle = this._colors.capoBorderColor;
       this._ctx.lineWidth = 2 * this._scaleFactor;
       this._ctx.stroke();
 
