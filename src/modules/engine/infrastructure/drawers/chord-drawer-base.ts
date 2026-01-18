@@ -860,35 +860,33 @@ export class ChordDrawerBase {
   drawTransposeIndicator(transportDisplay: number, barreInfo: BarreInfo | null = null): void {
     if (transportDisplay <= 1) return;
 
-    let x = 0;
-    let y = 0;
-    let onBarre = false;
+    // Use the padding area for the indicator
+    // Position it at roughly 25% of the left padding to keep it away from the barre/neck
+    const x = this.fretboardX + (this.horizontalPadding * 0.25);
 
-    // Always position to the left of the first string
-    // If Barre, align with Barre fret. If not, align with Fret 1.
+    // Align vertically with the reference fret (Barre or Fret 1)
     const refFret = barreInfo ? barreInfo.fret : 1;
     const fretY = this.fretboardY + (refFret - 0.5) * this.realFretSpacing;
 
-    x = this.fretboardX + this.horizontalPadding - (this.stringSpacing * 0.8);
-    y = fretY;
-    onBarre = false;
-
     this._ctx.save();
-    this._ctx.translate(x, y);
+    this._ctx.translate(x, fretY);
 
-    // Contra-rotação para manter o texto em pé
+    // Counter-rotate to keep text upright
     if (this._mirror) this._ctx.scale(-1, 1);
     if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
 
-    // Cor: branca se na pestana (para contraste), ou cor de texto normal
-    this._ctx.fillStyle = onBarre ? (this._colors.fingers.textColor || '#ffffff') : this._colors.global.primaryTextColor;
+    // Color fallback to white if undefined
+    const textColor = this._colors.global.primaryTextColor || '#FFFFFF';
+    this._ctx.fillStyle = barreInfo ? (this._colors.fingers.textColor || '#FFFFFF') : textColor;
 
-    // Fonte um pouco maior para destaque
-    const fontSize = 45 * this._scaleFactor;
+    // Font size - slightly reduced for better proportion
+    const fontSize = 36 * this._scaleFactor;
     this._ctx.font = `bold ${fontSize}px sans-serif`;
     this._ctx.textAlign = "center";
     this._ctx.textBaseline = "middle";
-    this._ctx.fillText(`${transportDisplay}ª`, -15, 0);
+
+    // Draw text (e.g. "6ª")
+    this._ctx.fillText(`${transportDisplay}ª`, -60, 0);
     this._ctx.restore();
   }
 
@@ -898,7 +896,7 @@ export class ChordDrawerBase {
     this._ctx.font = `bold ${fontSize}px sans-serif`;
     this._ctx.textAlign = "center";
     this._ctx.textBaseline = "middle";
-    this._ctx.fillText(`${transportDisplay}ª`, -15, 0);
+    this._ctx.fillText(`${transportDisplay}ª`, -60, 0);
   }
 
   /**
@@ -990,7 +988,7 @@ export class ChordDrawerBase {
    * Transposes the chord data to fit within available frets if necessary.
    * Logic ported from chord-diagram.tsx
    */
-  private _transposeForDisplay(chord: ChordDiagramProps, currentTransport: number): { finalChord: ChordDiagramProps, transportDisplay: number } {
+  public transposeForDisplay(chord: ChordDiagramProps, currentTransport: number): { finalChord: ChordDiagramProps, transportDisplay: number } {
     const { fingers, avoid } = chord;
     const [minFret, maxFret] = this._findMinNonZeroNote(fingers, avoid || []);
 
@@ -1039,7 +1037,7 @@ export class ChordDrawerBase {
   }
 
   drawChord(inputChord: ChordDiagramProps, inputTransportDisplay: number, offsetX: number = 0, options: { skipFretboard?: boolean } = {}): void {
-    const { finalChord, transportDisplay } = this._transposeForDisplay(inputChord, inputTransportDisplay);
+    const { finalChord, transportDisplay } = this.transposeForDisplay(inputChord, inputTransportDisplay);
 
     this._applyChordSettings(finalChord);
 
@@ -1100,6 +1098,13 @@ export class ChordDrawerBase {
     this.drawFingers(finalChord);
     this.drawAvoidedStrings(finalChord.avoid);
 
+    // Draw Transpose Indicator (Data Shift / High Fret)
+    // Must be drawn even if fretboard is skipped (e.g. static-fingers animation)
+    const transposeConfig = this._getTransposeConfig(transportDisplay);
+    if (transposeConfig.isActive) {
+      this.drawTransposeIndicator(transposeConfig.fret, barreInfo);
+    }
+
     this._ctx.restore();
   }
 
@@ -1107,7 +1112,7 @@ export class ChordDrawerBase {
    * Desenha um acorde completo com animação build-in (progressiva)
    */
   drawChordWithBuildAnimation(inputChord: ChordDiagramProps, inputTransportDisplay: number, progress: number, offsetX: number = 0, options: { skipFretboard?: boolean } = {}): void {
-    const { finalChord, transportDisplay } = this._transposeForDisplay(inputChord, inputTransportDisplay);
+    const { finalChord, transportDisplay } = this.transposeForDisplay(inputChord, inputTransportDisplay);
 
     console.log("Chord animation started (build-in):", finalChord);
     if (offsetX !== 0) {
@@ -1276,8 +1281,8 @@ export class ChordDrawerBase {
 
     this._applyChordSettings(nextFinalChord);
 
-    const { finalChord: current, transportDisplay: currentTransport } = this._transposeForDisplay(currentFinalChord, currentTransportDisplay);
-    const { finalChord: next, transportDisplay: nextTransport } = this._transposeForDisplay(nextFinalChord, nextTransportDisplay);
+    const { finalChord: current, transportDisplay: currentTransport } = this.transposeForDisplay(currentFinalChord, currentTransportDisplay);
+    const { finalChord: next, transportDisplay: nextTransport } = this.transposeForDisplay(nextFinalChord, nextTransportDisplay);
 
     const currentBarreInfo = this._detectBarre(current);
     const nextBarreInfo = this._detectBarre(next);
@@ -1616,7 +1621,7 @@ export class ChordDrawerBase {
     });
   }
 
-  private drawTransposeIndicatorWithTransition(
+  public drawTransposeIndicatorWithTransition(
     currentTransport: number,
     nextTransport: number,
     currentBarre: BarreInfo | null,
@@ -1627,8 +1632,11 @@ export class ChordDrawerBase {
 
     // Helper to get target position (local coordinates)
     const getPos = (transport: number, barre: BarreInfo | null) => {
-      const pos = this._getLabelPosition('transpose');
-      return pos;
+      // Use logic consistent with static drawTransposeIndicator
+      const x = this.fretboardX + (this.horizontalPadding * 0.25);
+      const refFret = barre ? barre.fret : 1;
+      const y = this.fretboardY + (refFret - 0.5) * this.realFretSpacing;
+      return { x, y };
     };
 
     const startPos = getPos(currentTransport, currentBarre);
@@ -1664,7 +1672,25 @@ export class ChordDrawerBase {
       // We can apply scale here too
       this._ctx.scale(scale, scale);
 
-      this._drawTransposeIndicatorTextAtOrigin(transport);
+      // Match styles from drawTransposeIndicator
+      const textColor = this._colors.global.primaryTextColor || '#FFFFFF';
+      // Use logic for color based on start/end pos? 
+      // Ideally interpolate color, but start/end might be different (Barre vs Non-Barre).
+      // For simplicity, use white if EITHER is barre, or just primary.
+      // Let's us textColor for now or white.
+      // Actually, static uses: barreInfo ? fingers.textColor : primary.
+
+      // We will use primary text color for simplicity in transition 
+      // or we can strictly match the 'current' state?
+      // Let's use primaryTextColor with fallback.
+      this._ctx.fillStyle = textColor;
+
+      const fontSize = 36 * this._scaleFactor;
+      this._ctx.font = `bold ${fontSize}px sans-serif`;
+      this._ctx.textAlign = "center";
+      this._ctx.textBaseline = "middle";
+
+      this._ctx.fillText(`${transport}ª`, -60, 0); // Include user's manual offset
       this._ctx.restore();
     };
 

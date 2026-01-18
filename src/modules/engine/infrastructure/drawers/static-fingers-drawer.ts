@@ -75,7 +75,20 @@ export function drawStaticFingersAnimation(params: DrawStaticFingersParams) {
     );
   } else if (nextDisplayChord && transitionProgress > 0) {
     // Custom Transition Animation
-    drawTransition(drawer, currentDisplayChord, nextDisplayChord, transitionProgress, skipFretboard);
+    // BUFFER: Pre-calculate the VISUAL state (relative frets + offset) for both chords
+    // This prevents the animation from interpolating absolute frets (e.g. 6->5) and instead
+    // interpolates relative frets (e.g. 1->1) + applies transport text change.
+    const currentVisual = drawer.transposeForDisplay(
+      currentDisplayChord.finalChord,
+      currentDisplayChord.transportDisplay
+    );
+    const nextVisual = drawer.transposeForDisplay(
+      nextDisplayChord.finalChord,
+      nextDisplayChord.transportDisplay
+    );
+
+    // Pass the PRE-TRANSPOSED visual chords to drawTransition
+    drawTransition(drawer, { finalChord: currentVisual.finalChord, transportDisplay: currentVisual.transportDisplay }, { finalChord: nextVisual.finalChord, transportDisplay: nextVisual.transportDisplay }, transitionProgress, skipFretboard);
   } else {
     // Static Draw
     drawer.drawChord(currentFinalChord, currentTransportDisplay, 0, { skipFretboard });
@@ -236,6 +249,16 @@ function drawTransition(
       });
     }
   });
+
+  // C. TRANSPOSE INDICATOR TRANSITION
+  // Animates the fret number (e.g. 6ª -> 5ª)
+  drawer.drawTransposeIndicatorWithTransition(
+    current.transportDisplay,
+    next.transportDisplay,
+    curBarre,
+    nxtBarre,
+    progress
+  );
 
   // Helper to draw Chord Name simply (Static for now to avoid complexity, or simple fade)
   if (!skipFretboard) {

@@ -394,6 +394,10 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
 
         // Clear or fill background
         bgCtx.clearRect(0, 0, width, height);
+        if (colors?.global?.backgroundColor) {
+            bgCtx.fillStyle = colors.global.backgroundColor;
+            bgCtx.fillRect(0, 0, width, height);
+        }
 
         // Draw static fretboard on background to decouple it from finger animations
         if (animationType === 'static-fingers' || animationType === 'dynamic-fingers' || animationType === 'default' || !animationType) {
