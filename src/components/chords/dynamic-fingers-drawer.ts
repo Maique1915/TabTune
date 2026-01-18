@@ -1,9 +1,9 @@
 import type { ChordDiagramProps, BarreInfo, StandardPosition } from "@/modules/core/domain/types";
 import { ChordDrawerBase } from "@/modules/engine/infrastructure/drawers/chord-drawer-base";
-import { easeInOutQuad, withCanvasTransformAtPoint, withCanvasTransformAround } from "../utils/animacao";
+import { easeInOutQuad, withCanvasTransformAtPoint, withCanvasTransformAround } from "@/modules/engine/infrastructure/utils/animacao";
 import { getNome } from "@/modules/core/domain/chord-logic";
 
-interface DrawStaticFingersParams {
+interface DrawDynamicFingersParams {
   drawer: ChordDrawerBase;
   currentDisplayChord: { finalChord: ChordDiagramProps; transportDisplay: number; };
   nextDisplayChord: { finalChord: ChordDiagramProps; transportDisplay: number; } | null;
@@ -43,7 +43,7 @@ function detectBarre(fingers: StandardPosition[]): BarreInfo | null {
   return bestBarre;
 }
 
-export function drawStaticFingersAnimation(params: DrawStaticFingersParams) {
+export function drawDynamicFingersAnimation(params: DrawDynamicFingersParams) {
   const { drawer, currentDisplayChord, nextDisplayChord, transitionProgress, buildProgress, skipFretboard } = params;
 
   if (!currentDisplayChord) return;
@@ -251,14 +251,15 @@ function drawTransition(
 
 // --- HELPERS ---
 
-function getScreenX(drawer: ChordDrawerBase, stringNum: number): number {
-  const visualIndex = drawer.numStrings - stringNum;
-  return drawer.fretboardX + drawer.horizontalPadding + visualIndex * drawer.stringSpacing;
+// Usa o mesmo mapeamento do ChordDrawerBase: corda 1 (e aguda) fica à direita.
+function mapStringToX(drawer: ChordDrawerBase, stringNum: number) {
+  const visualIdx = drawer.numStrings - stringNum; // inverte eixo X
+  return drawer.fretboardX + drawer.horizontalPadding + visualIdx * drawer.stringSpacing;
 }
 
 function getFingerVisualPos(drawer: ChordDrawerBase, pos: StandardPosition) {
   const fretY = drawer.fretboardY + (pos.fret - 0.5) * drawer.realFretSpacing;
-  const stringX = getScreenX(drawer, pos.string);
+  const stringX = mapStringToX(drawer, pos.string);
   return { x: stringX, y: fretY };
 }
 
@@ -271,15 +272,16 @@ function drawInterpolatedBarre(drawer: ChordDrawerBase, from: BarreInfo, to: Bar
   const endStr = from.endString + (to.endString - from.endString) * progress;
 
   const y = drawer.fretboardY + (fret - 0.5) * drawer.realFretSpacing;
-  const startX = getScreenX(drawer, startStr);
-  const endX = getScreenX(drawer, endStr);
+  
+  // Invert mapping for start and end strings
+  const startX = mapStringToX(drawer, startStr);
+  const endX = mapStringToX(drawer, endStr);
 
   // Adjust for visual width (radius padding)
-  // Ensure left/right correctness regardless of string order (logic inversion)
-  const realLeftX = Math.min(startX, endX) - drawer.fingerRadius;
-  const realRightX = Math.max(startX, endX) + drawer.fingerRadius;
-  const width = realRightX - realLeftX;
-  const centerX = realLeftX + width / 2;
+  const leftX = Math.min(startX, endX) - drawer.fingerRadius;
+  const rightX = Math.max(startX, endX) + drawer.fingerRadius;
+  const width = rightX - leftX;
+  const centerX = leftX + width / 2;
 
   ctx.save();
   ctx.translate(centerX, y);
@@ -335,17 +337,14 @@ function drawMorphBarreToFinger(drawer: ChordDrawerBase, barre: BarreInfo, finge
   const endFretY = drawer.fretboardY + (finger.fret - 0.5) * drawer.realFretSpacing;
   const curY = startFretY + (endFretY - startFretY) * progress;
 
-  const bStartX = getScreenX(drawer, barre.startString) - drawer.fingerRadius;
-  // NOTE: getScreenX inverts, so startString (e.g. 1) -> Right, endString (e.g. 6) -> Left.
-  // We need to properly calculate coordinates.
-  const bX1 = getScreenX(drawer, barre.startString);
-  const bX2 = getScreenX(drawer, barre.endString);
-  const bLeft = Math.min(bX1, bX2) - drawer.fingerRadius;
-  const bRight = Math.max(bX1, bX2) + drawer.fingerRadius;
-  const bWidth = bRight - bLeft;
-  const bCenterX = bLeft + bWidth / 2;
+  // Invert mapping for barre strings
+  const bStartX = Math.min(mapStringToX(drawer, barre.startString), mapStringToX(drawer, barre.endString)) - drawer.fingerRadius;
+  const bEndX = Math.max(mapStringToX(drawer, barre.startString), mapStringToX(drawer, barre.endString)) + drawer.fingerRadius;
+  const bWidth = bEndX - bStartX;
+  const bCenterX = bStartX + bWidth / 2;
 
-  const fX = getScreenX(drawer, finger.string);
+  // Invert mapping for finger string
+  const fX = mapStringToX(drawer, finger.string);
   const fWidth = drawer.fingerRadius * 2;
 
   const curCenterX = bCenterX + (fX - bCenterX) * progress;
@@ -373,22 +372,21 @@ function drawMorphBarreToFinger(drawer: ChordDrawerBase, barre: BarreInfo, finge
 function drawMorphFingerToBarre(drawer: ChordDrawerBase, finger: StandardPosition, barre: BarreInfo, progress: number) {
   // Inverse of above
   // Interpolate FROM finger TO barre
-  // Using logic similar to above:
   const ctx = drawer.ctx;
 
   const startFretY = drawer.fretboardY + (finger.fret - 0.5) * drawer.realFretSpacing;
   const endFretY = drawer.fretboardY + (barre.fret - 0.5) * drawer.realFretSpacing;
   const curY = startFretY + (endFretY - startFretY) * progress;
 
-  const fCenterX = getScreenX(drawer, finger.string);
+  // Invert mapping for finger string
+  const fCenterX = mapStringToX(drawer, finger.string);
   const fWidth = drawer.fingerRadius * 2;
 
-  const bX1 = getScreenX(drawer, barre.startString);
-  const bX2 = getScreenX(drawer, barre.endString);
-  const bLeft = Math.min(bX1, bX2) - drawer.fingerRadius;
-  const bRight = Math.max(bX1, bX2) + drawer.fingerRadius;
-  const bWidth = bRight - bLeft;
-  const bCenterX = bLeft + bWidth / 2;
+  // Invert mapping for barre strings
+  const bStartX = Math.min(mapStringToX(drawer, barre.startString), mapStringToX(drawer, barre.endString)) - drawer.fingerRadius;
+  const bEndX = Math.max(mapStringToX(drawer, barre.startString), mapStringToX(drawer, barre.endString)) + drawer.fingerRadius;
+  const bWidth = bEndX - bStartX;
+  const bCenterX = bStartX + bWidth / 2;
 
   const curCenterX = fCenterX + (bCenterX - fCenterX) * progress;
   const curWidth = fWidth + (bWidth - fWidth) * progress;

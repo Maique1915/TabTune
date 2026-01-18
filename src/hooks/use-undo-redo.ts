@@ -77,11 +77,15 @@ export function useUndoRedo<T>(initialState: T, options: Options = { enableShort
             }
 
             if (options?.overwrite) {
-                console.log('[useUndoRedo] Overwrite at index', prev.index);
+                // console.log('[useUndoRedo] Overwrite at index', prev.index);
                 const newHistory = [...prev.history];
                 newHistory[prev.index] = resolvedState;
                 return { ...prev, history: newHistory };
             }
+
+            // DEBUG: Identify loop source
+            const keysDiff = Object.keys(resolvedState as any).filter(k => (resolvedState as any)[k] !== (current as any)[k]);
+            console.log('[useUndoRedo] Update Trace. Changed Keys:', keysDiff);
 
             const newHistory = prev.history.slice(0, prev.index + 1);
             newHistory.push(resolvedState);

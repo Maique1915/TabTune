@@ -22,10 +22,11 @@ interface FretboardVisualEditorProps {
     onCopyMeasure: (id: string) => void;
     onPasteMeasure: (id: string) => void;
     onReorderMeasures: (from: number, to: number) => void;
-    onRemoveNote: (id: string) => void;
     onSelectMeasure: (id: string) => void;
     onDeselectAll: () => void;
     selectedMeasureId: string | null;
+    totalDurationMs?: number;
+    currentCursorMs?: number;
 }
 
 const VisualTimeline: React.FC<FretboardVisualEditorProps> = ({
@@ -44,10 +45,11 @@ const VisualTimeline: React.FC<FretboardVisualEditorProps> = ({
     onCopyMeasure,
     onPasteMeasure,
     onReorderMeasures,
-    onRemoveNote,
     onSelectMeasure,
     onDeselectAll,
-    selectedMeasureId
+    selectedMeasureId,
+    totalDurationMs = 0,
+    currentCursorMs = 0
 }) => {
     const capacity = getMeasureCapacity(timeSignature);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -99,12 +101,39 @@ const VisualTimeline: React.FC<FretboardVisualEditorProps> = ({
         }
     };
 
+    const formatTime = (ms: number) => {
+        const totalSeconds = Math.floor(ms / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    };
+
+    // Pre-calculate note timings for playback highlighting
+    const noteTimingMap = new Map<string, { start: number, end: number }>();
+    let accumulatedTimeMs = 0;
+    measures.forEach(measure => {
+        measure.notes.forEach(note => {
+            const durationMs = note.customDurationMs || 2000;
+            noteTimingMap.set(note.id, { start: accumulatedTimeMs, end: accumulatedTimeMs + durationMs });
+            accumulatedTimeMs += durationMs;
+        });
+    });
+
     // Timeline / Horizontal Layout
     return (
         <div
             className="flex flex-col w-full h-full bg-black/20 backdrop-blur-xl border-t border-white/5 relative"
             onClick={onDeselectAll}
         >
+            {/* Time Status */}
+            <div className="absolute top-2 right-6 z-10 pointer-events-none">
+                <div className="flex items-center space-x-2 bg-black/60 px-3 py-1.5 rounded-full border border-white/10 backdrop-blur-md">
+                    <span className="text-[10px] font-mono font-bold text-cyan-400">{formatTime(currentCursorMs)}</span>
+                    <span className="text-[10px] font-mono text-zinc-500">/</span>
+                    <span className="text-[10px] font-mono font-bold text-zinc-400">{formatTime(totalDurationMs)}</span>
+                </div>
+            </div>
+
             {/* Horizontal Timeline Container */}
             <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 custom-scrollbar bg-black/40">
                 <div className="flex flex-row gap-4 min-w-max h-full items-start">
@@ -190,6 +219,10 @@ const VisualTimeline: React.FC<FretboardVisualEditorProps> = ({
                                                 const isSelected = selectedNoteIds.includes(note.id);
                                                 const isRest = note.type === 'rest';
 
+                                                // Calculate Timing for Playback Highlight
+                                                const timing = noteTimingMap.get(note.id);
+                                                const isPlaying = timing && currentCursorMs > 0 && currentCursorMs >= timing.start && currentCursorMs < timing.end;
+
                                                 return (
                                                     <div
                                                         key={note.id}
@@ -198,20 +231,14 @@ const VisualTimeline: React.FC<FretboardVisualEditorProps> = ({
                                                         className={`
                                                             relative cursor-pointer transition-all duration-200 group/note
                                                             w-full h-full rounded-xl border flex flex-col items-center justify-center select-none
-                                                            ${isSelected
-                                                                ? (isRest ? 'bg-slate-800 border-slate-500' : 'bg-cyan-900/30 border-cyan-500/50')
-                                                                : 'bg-[#151515] border-[#222] hover:border-[#444] hover:bg-[#1a1a1a]'}
+                                                            ${isPlaying
+                                                                ? 'bg-cyan-500/20 border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.3)] scale-[1.02] z-10'
+                                                                : isSelected
+                                                                    ? (isRest ? 'bg-slate-800 border-slate-500' : 'bg-cyan-900/30 border-cyan-500/50')
+                                                                    : 'bg-[#151515] border-[#222] hover:border-[#444] hover:bg-[#1a1a1a]'}
                                                             ${isRest ? 'grayscale opacity-60' : ''}
                                                         `}
                                                     >
-                                                        {/* Delete Button */}
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); onRemoveNote(note.id); }}
-                                                            className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover/note:opacity-100 transition-all hover:scale-110 shadow-sm z-20"
-                                                        >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                                        </button>
-
                                                         {/* Note Info */}
                                                         <span className={`absolute top-0.5 left-1 text-[7px] font-black uppercase ${isSelected ? 'text-white' : 'text-[#444]'}`}>
                                                             {note.duration}{note.decorators.dot && '.'}

@@ -47,7 +47,7 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
                 // So we SHOULD generate an empty "rest" chord to hold the time.
 
                 const durationValue = getNoteDurationValue(note.duration, !!note.decorators?.dot);
-                const durationMs = durationValue * msPerBeat;
+                const durationMs = note.customDurationMs || (durationValue * msPerBeat);
 
                 result.push({
                     chord: createEmptyChord(),
@@ -61,7 +61,7 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
 
             // It is a note (or chord of notes)
             const durationValue = getNoteDurationValue(note.duration, !!note.decorators?.dot);
-            const durationMs = durationValue * msPerBeat;
+            const durationMs = note.customDurationMs || (durationValue * msPerBeat);
 
             const fingers: StandardPosition[] = note.positions.map(pos => ({
                 string: pos.string,

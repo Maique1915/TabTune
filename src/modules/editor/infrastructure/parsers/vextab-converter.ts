@@ -75,7 +75,7 @@ export function convertToVextab(measures: MeasureData[], settings: GlobalSetting
                 const { root, quality, bass, extensions } = n.manualChord;
                 let suffix = '';
                 if (quality === 'Minor') suffix = 'm';
-                else if (quality === 'Dim') suffix = 'dim';
+                else if (quality === 'Dim') suffix = '°';
                 else if (quality === 'Aug') suffix = 'aug';
                 else if (quality === 'Sus2') suffix = 'sus2';
                 else if (quality === 'Sus4') suffix = 'sus4';

@@ -136,39 +136,53 @@ export interface ScoreData {
     tempo: number;
 }
 
+// === THEME INTERFACES ===
+
+export interface BorderStyle {
+    color: string;
+    width?: number;
+}
+
+export interface ElementStyle {
+    color: string;
+    border?: BorderStyle;
+    opacity?: number;
+    shadow?: {
+        enabled?: boolean;
+        color?: string;
+        blur?: number;
+        offsetX?: number;
+        offsetY?: number;
+    };
+}
+
+export interface TextStyle extends ElementStyle {
+    stroke?: {
+        color: string;
+        width: number;
+    };
+    textColor?: string; // For things that have background + text (like fingers)
+}
+
 export interface FretboardTheme {
-    cardColor: string;
-    fingerColor: string;
-    fretboardColor: string;
-    fretboardShadow: boolean;
-    fretboardShadowColor: string;
-    borderColor: string;
-    fretColor: string;
-    textColor: string;
-    chordNameColor: string;
-    chordNameOpacity: number;
-    chordNameShadow: boolean;
-    chordNameShadowColor: string;
-    chordNameShadowBlur: number;
-    chordNameStrokeColor: string;
-    chordNameStrokeWidth: number;
-    borderWidth: number;
-    stringThickness: number;
-    fingerTextColor: string;
-    fingerBorderColor: string;
-    fingerBorderWidth: number;
-    fingerBoxShadowHOffset: number;
-    fingerBoxShadowVOffset: number;
-    fingerBoxShadowBlur: number;
-    fingerBoxShadowSpread: number;
-    fingerBoxShadowColor: string;
-    fingerBackgroundAlpha: number;
-    fretboardScale: number;
-    rotation: 0 | 90 | 270;
-    mirror: boolean;
-    // Capo Settings
-    capoColor: string;
-    capoBorderColor: string;
-    capoShadow: boolean;
-    capoShadowColor: string;
+    global: {
+        backgroundColor: string; // was cardColor
+        primaryTextColor: string; // was textColor
+        scale: number;
+        rotation: 0 | 90 | 270;
+        mirror: boolean;
+    };
+    fretboard: {
+        neck: ElementStyle; // fretboardColor + shadow
+        frets: { color: string };
+        strings: { color: string; thickness: number }; // borderColor -> color
+    };
+    fingers: TextStyle; // color, border, shadow, textColor, opacity (backgroundAlpha)
+    chordName: TextStyle; // color, opacity, shadow, stroke
+    capo: ElementStyle & {
+        textColors: {
+            name: string;
+            number: string;
+        };
+    };
 }

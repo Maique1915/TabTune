@@ -42,6 +42,7 @@ export interface NoteData extends Omit<MusicalEvent, 'type'> {
     tuplet?: string;
     isSlurred?: boolean;
     annotation?: string; // Text above/below note
+    customDurationMs?: number; // User-defined duration in seconds/ms (overrides BPM/rhythm)
 
     // Chord Identity (inherited chordName)
     manualChord?: ManualChordData; // The definition (root, quality, etc)
@@ -87,9 +88,6 @@ export type TransitionType = 'snap' | 'slide' | 'fade' | 'assemble';
 export interface ElementStyle {
     color: string;
     opacity: number;
-    shadow: boolean;
-    shadowColor?: string;
-    shadowBlur?: number;
     strokeColor?: string;
     strokeWidth?: number;
 }
@@ -125,19 +123,16 @@ export interface ScoreStyle {
 }
 
 export const DEFAULT_SCORE_STYLE: ScoreStyle = {
-    clefs: { color: '#ff9823ff', opacity: 1, shadow: true, shadowColor: '#000000', shadowBlur: 10 },
-    timeSignature: { color: '#ff9823ff', opacity: 1, shadow: true, shadowColor: '#000000', shadowBlur: 10 },
-    notes: { color: '#ffffffff', opacity: 1, shadow: true, shadowColor: '#000000', shadowBlur: 12 },
-    rests: { color: '#ffffffff', opacity: 0.8, shadow: false },
-    tabNumbers: { color: '#ffffffff', opacity: 1, shadow: false },
-    symbols: { color: '#ffffffff', opacity: 1, shadow: false },
-    staffLines: { color: '#ffffffff', opacity: 0.4, shadow: false },
+    clefs: { color: '#ff9823ff', opacity: 1 },
+    timeSignature: { color: '#ff9823ff', opacity: 1 },
+    notes: { color: '#ffffffff', opacity: 1 },
+    rests: { color: '#ffffffff', opacity: 0.8 },
+    tabNumbers: { color: '#ffffffff', opacity: 1 },
+    symbols: { color: '#ffffffff', opacity: 1 },
+    staffLines: { color: '#ffffffff', opacity: 0.4 },
     chordName: {
         color: '#22d3ee',
         opacity: 1,
-        shadow: true,
-        shadowColor: '#22d3ee',
-        shadowBlur: 10,
         strokeColor: '#000000',
         strokeWidth: 3
     },

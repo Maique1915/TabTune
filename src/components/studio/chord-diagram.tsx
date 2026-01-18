@@ -131,7 +131,8 @@ const ChordDiagram: React.FC<ChordDiagramProps> = (props) => {
 
 
 
-  const fingerBoxShadow = `${colors.fingerBoxShadowHOffset}px ${colors.fingerBoxShadowVOffset}px ${colors.fingerBoxShadowBlur}px ${colors.fingerBoxShadowSpread}px ${colors.fingerBoxShadowColor}`;
+  const shadowStyles = colors.fingers.shadow || { hOffset: 0, vOffset: 0, blur: 0, spread: 0, color: 'transparent' };
+  const fingerBoxShadow = `${shadowStyles.hOffset || 0}px ${shadowStyles.vOffset || 0}px ${shadowStyles.blur || 0}px ${shadowStyles.spread || 0}px ${shadowStyles.color}`;
 
   // Converte uma cor HEX para RGBA com o alfa fornecido
   const hexToRgba = (hex: string, alpha: number) => {
@@ -142,7 +143,7 @@ const ChordDiagram: React.FC<ChordDiagramProps> = (props) => {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
-  const fingerBackgroundColor = hexToRgba(colors.fingerColor, colors.fingerBackgroundAlpha);
+  const fingerBackgroundColor = hexToRgba(colors.fingers.color, colors.fingers.opacity ?? 1);
 
   // Calculate dynamic dimensions based on string count
   const stringCount = stringNames.length;
@@ -187,32 +188,32 @@ const ChordDiagram: React.FC<ChordDiagramProps> = (props) => {
   const finalDiagramHeight = diagramHeight + extraTopSpace;
 
   return (
-    <div className="rounded-lg overflow-hidden flex items-center justify-center" style={{ backgroundColor: colors.cardColor, borderRadius: '10px', width: `${diagramWidth * scale}px`, height: `${finalDiagramHeight * scale}px` }}>
+    <div className="rounded-lg overflow-hidden flex items-center justify-center" style={{ backgroundColor: colors.global.backgroundColor, borderRadius: '10px', width: `${diagramWidth * scale}px`, height: `${finalDiagramHeight * scale}px` }}>
       <div className="chord" style={{ transform: `scale(${scale})`, transformOrigin: 'center' }}>
         <div className="chord-diagram" style={{ width: `${diagramWidth}px`, height: `${finalDiagramHeight}px` }}>
           {transportDisplay > 1 && (
             <div
               className="transpose"
               style={{
-                backgroundColor: colors.cardColor,
-                color: colors.textColor,
+                backgroundColor: colors.global.backgroundColor,
+                color: colors.global.primaryTextColor,
                 top: `${80 + extraTopSpace}px`
               }}
             >
               {`${transportDisplay}ª`}
             </div>
           )}
-          <div className="chord-name" style={{ color: colors.chordNameColor }}>{getNome(props.chord).replace(/#/g, '♯').replace(/b/g, '♭')}</div>
+          <div className="chord-name" style={{ color: colors.chordName.color }}>{getNome(props.chord).replace(/#/g, '♯').replace(/b/g, '♭')}</div>
 
           <div className="neck" style={{
-            backgroundColor: colors.fretboardColor,
+            backgroundColor: colors.fretboard.neck.color,
             width: `${neckWidth}px`,
             marginTop: `${extraTopSpace}px`,
             position: 'relative'
           }}>
-            <div className="nut-line" style={{ backgroundColor: colors.borderColor, height: `${colors.stringThickness}px` }}></div>
+            <div className="nut-line" style={{ backgroundColor: colors.fretboard.strings.color, height: `${colors.fretboard.strings.thickness}px` }}></div>
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="fret" style={{ top: `${40 + 50 * (i)}px`, backgroundColor: colors.borderColor, height: `${2}px` }}></div>
+              <div key={i} className="fret" style={{ top: `${40 + 50 * (i)}px`, backgroundColor: colors.fretboard.frets.color, height: `${2}px` }}></div>
             ))}
             {/* Base Strings */}
             {stringNames.map((name, i) => {
@@ -222,9 +223,9 @@ const ChordDiagram: React.FC<ChordDiagramProps> = (props) => {
                 : name;
 
               return (
-                <div key={i} className="string" style={{ left: `${40 * i + 10}px`, backgroundColor: colors.borderColor, width: `${colors.stringThickness}px` }}>
-                  <div className="string-name" style={{ color: colors.textColor, top: hasVisibleCapo ? '-35px' : undefined }}>{displayName}</div>
-                  {avoid && avoid.includes(i + 1) && <div className="avoid" style={{ color: colors.textColor }}>x</div>}
+                <div key={i} className="string" style={{ left: `${40 * i + 10}px`, backgroundColor: colors.fretboard.strings.color, width: `${colors.fretboard.strings.thickness}px` }}>
+                  <div className="string-name" style={{ color: colors.global.primaryTextColor, top: hasVisibleCapo ? '-35px' : undefined }}>{displayName}</div>
+                  {avoid && avoid.includes(i + 1) && <div className="avoid" style={{ color: colors.global.primaryTextColor }}>x</div>}
                 </div>
               );
             })}
@@ -255,9 +256,9 @@ const ChordDiagram: React.FC<ChordDiagramProps> = (props) => {
                     left: `${leftPos - 17}px`,
                     width: `${barreWidth}px`,
                     backgroundColor: fingerBackgroundColor,
-                    color: colors.fingerTextColor,
-                    borderColor: colors.fingerBorderColor,
-                    borderWidth: `${colors.fingerBorderWidth}px`,
+                    color: colors.fingers.textColor,
+                    borderColor: colors.fingers.border?.color || 'transparent',
+                    borderWidth: `${colors.fingers.border?.width || 0}px`,
                     boxShadow: fingerBoxShadow,
                     display: 'flex',
                     alignItems: 'center',

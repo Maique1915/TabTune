@@ -254,14 +254,7 @@ export class FretboardDrawer {
     const headHeight = 55 * this._scaleFactor; // Espaço para os nomes, separado do Nut
 
     this._ctx.save();
-    // Shadow logic for Headstock
-    if (this._colors.fretboardShadow) {
-      this._ctx.shadowColor = this._colors.fretboardShadowColor;
-      this._ctx.shadowBlur = 20 * this._scaleFactor;
-      this._ctx.shadowOffsetY = 0; // Outer glow essentially
-    }
-
-    this._ctx.fillStyle = this._colors.fretboardColor;
+    this._ctx.fillStyle = this._colors.fretboard.neck.color;
     this._safeRoundRect(headX, headY, headWidth, headHeight, [neckRadius, neckRadius, 0, 0]);
     this._ctx.restore();
   }
@@ -276,14 +269,7 @@ export class FretboardDrawer {
     const neckHeight = (this._diagramHeight - (this._fretboardY - this._diagramY)) + extraBottomPadding;
 
     this._ctx.save();
-    // Shadow logic for Neck Body
-    if (this._colors.fretboardShadow) {
-      this._ctx.shadowColor = this._colors.fretboardShadowColor;
-      this._ctx.shadowBlur = 20 * this._scaleFactor;
-      this._ctx.shadowOffsetY = 0;
-    }
-
-    this._ctx.fillStyle = this._colors.fretboardColor;
+    this._ctx.fillStyle = this._colors.fretboard.neck.color;
     this._safeRoundRect(neckX, neckY, neckWidth, neckHeight, [0, 0, neckRadius, neckRadius]);
     this._ctx.restore();
   }
@@ -320,8 +306,9 @@ export class FretboardDrawer {
     const nutX = this._diagramX;
     const nutWidth = this._diagramWidth;
 
-    this._ctx.fillStyle = this._colors.fretColor || "#ffffff";
-    this._ctx.fillRect(nutX, nutY, nutWidth, nutHeight);
+    // Use a fixed bone-like color for the Nut
+    //this._ctx.fillStyle = "#e8e5d1"; // Bone color
+    //this._ctx.fillRect(nutX, nutY, nutWidth, nutHeight);
 
     // Borda inferior da pestana para definição
     this._ctx.strokeStyle = "rgba(0,0,0,0.3)";
@@ -373,14 +360,7 @@ export class FretboardDrawer {
     const neckX = this._diagramX;
     const neckWidth = this._diagramWidth;
 
-    // Shadow logic for Full Neck
-    if (this._colors.fretboardShadow) {
-      this._ctx.shadowColor = this._colors.fretboardShadowColor;
-      this._ctx.shadowBlur = 20 * this._scaleFactor;
-      this._ctx.shadowOffsetY = 0;
-    }
-
-    this._ctx.fillStyle = this._colors.fretboardColor;
+    this._ctx.fillStyle = this._colors.fretboard.neck.color;
     const neckY = this._diagramY;
     const neckHeight = this._diagramHeight;
     this._ctx.beginPath();
@@ -430,7 +410,7 @@ export class FretboardDrawer {
 
     if (isShortNeck) {
       // Para SHORT_NECK, desenhamos os nomes usando a cor de texto do tema (Orange no padrão)
-      this._ctx.fillStyle = this._colors.textColor;
+      this._ctx.fillStyle = this._colors.global.primaryTextColor;
       this._ctx.globalAlpha = easedProgress;
 
       const fontSize = 28 * this._scaleFactor;
@@ -457,7 +437,7 @@ export class FretboardDrawer {
       // Original rendering for FULL NECK
       const translateY = (1 - easedProgress) * (-10 * this._scaleFactor);
 
-      this._ctx.fillStyle = this._colors.textColor;
+      this._ctx.fillStyle = this._colors.global.primaryTextColor;
       const fontSize = 40 * this._scaleFactor;
       this._ctx.font = `bold ${fontSize}px sans-serif`;
       this._ctx.textAlign = "center";
@@ -509,19 +489,14 @@ export class FretboardDrawer {
     // 2. ESTILO VISUAL (Premium para Short Neck, simples para Full)
     if (isShortNeck) {
       // Sombra para o capo (Customizável)
-      if (this._colors.capoShadow) {
-        this._ctx.shadowColor = this._colors.capoShadowColor;
-        this._ctx.shadowBlur = 15 * this._scaleFactor;
-        this._ctx.shadowOffsetY = 5 * this._scaleFactor;
-      } else {
-        this._ctx.shadowColor = "transparent";
-        this._ctx.shadowBlur = 0;
-        this._ctx.shadowOffsetY = 0;
-      }
-      this._ctx.fillStyle = this._colors.capoColor;
-    } else {
-      this._ctx.fillStyle = this._colors.capoColor; // Usar a cor do tema também para Full Neck
+
+      this._ctx.shadowColor = "transparent";
+      this._ctx.shadowBlur = 0;
+      this._ctx.shadowOffsetY = 0;
+
     }
+    this._ctx.fillStyle = this._colors.capo.color; // Usar a cor do tema também para Full Neck
+
 
     // Desenhar a barra
     this._safeRoundRect(capoX, capoY - capoHeight / 2, capoWidth, capoHeight, cornerRadius);
@@ -531,7 +506,7 @@ export class FretboardDrawer {
       // Stroke/Borda definida
       this._ctx.shadowBlur = 0;
       this._ctx.shadowOffsetY = 0;
-      this._ctx.strokeStyle = this._colors.capoBorderColor;
+      this._ctx.strokeStyle = this._colors.capo.border?.color || "rgba(0,0,0,0.3)";
       this._ctx.lineWidth = 2 * this._scaleFactor;
       this._ctx.stroke();
 
@@ -539,18 +514,29 @@ export class FretboardDrawer {
 
       if (!this._hideCapoTitle) {
         // Texto "CAPO" Industrial
-        this._ctx.fillStyle = this._colors.textColor;
+        // Usar capoNameColor se definido, senão fallback para fingerTextColor ou branco
+        this._ctx.fillStyle = this._colors.capo.textColors?.name || this._colors.fingers.textColor || "#ffffff";
         const fontSize = 18 * this._scaleFactor;
         this._ctx.font = `900 ${fontSize}px "Inter", sans-serif`;
         this._ctx.letterSpacing = `${5 * this._scaleFactor}px`;
         this._ctx.textAlign = "center";
         this._ctx.textBaseline = "middle";
+
+        // Adicionar sombra suave no texto para garantir contraste em qualquer fundo
+        this._ctx.shadowColor = "rgba(0,0,0,0.5)";
+        this._ctx.shadowBlur = 4;
+        this._ctx.shadowOffsetY = 1;
+
         this._ctx.fillText("C A P O", capoX + (capoWidth / 2), capoY - 5);
+
+        // Reset shadow
+        this._ctx.shadowColor = "transparent";
+        this._ctx.shadowBlur = 0;
       }
     } else {
       if (!this._hideCapoTitle) {
         // Desenhar texto "CAPO" simples para o braço completo
-        this._ctx.fillStyle = this._colors.textColor;
+        this._ctx.fillStyle = this._colors.global.primaryTextColor;
         const fontSize = 28 * this._scaleFactor;
         this._ctx.font = `bold ${fontSize}px sans-serif`;
         this._ctx.textAlign = "center";
@@ -567,8 +553,8 @@ export class FretboardDrawer {
 
     // 4. DRAW CAPO FRET LABEL (e.g., "2ª")
     if (this._showCapo && this._capoFret >= 1) {
-      // Usar a cor do número do dedo (geralmente branco/claro)
-      this._ctx.fillStyle = this._colors.fingerTextColor;
+      // Usar a cor de capoNumberColor (ex: Laranja) ou fallback para textColor (geralmente escuro no claro)
+      this._ctx.fillStyle = this._colors.capo.textColors?.number || this._colors.global.primaryTextColor || "#000000";
       const labelFontSize = 35 * this._scaleFactor; // Smaller font
       this._ctx.font = `bold ${labelFontSize}px sans-serif`;
       this._ctx.textAlign = "center";
@@ -593,13 +579,16 @@ export class FretboardDrawer {
    * Desenha as cordas
    */
   drawStrings(): void {
-    if (this._colors.borderWidth <= 0) return;
+    // Check global scale or some logical property instead of deleted borderWidth?
+    // Assuming strings are always drawn if opacity > 0 or similar checks. 
+    // Or just always draw unless hidden.
+    if (this._colors.fretboard.strings.thickness <= 0) return;
     const isShortNeck = this._numFrets <= 6;
 
     this._ctx.save();
     // Usar borderColor do tema para as cordas
-    this._ctx.strokeStyle = this._colors.borderColor;
-    this._ctx.lineWidth = isShortNeck ? 2 * this._scaleFactor : this._colors.stringThickness;
+    this._ctx.strokeStyle = this._colors.fretboard.strings.color;
+    this._ctx.lineWidth = isShortNeck ? 2 * this._scaleFactor : this._colors.fretboard.strings.thickness;
 
     for (let i = 0; i < this._numStrings; i++) {
       const x = this._fretboardX + this._horizontalPadding + i * this._stringSpacing;
@@ -619,7 +608,7 @@ export class FretboardDrawer {
    */
   drawFrets(): void {
     this._ctx.save();
-    this._ctx.strokeStyle = this._colors.fretColor;
+    this._ctx.strokeStyle = this._colors.fretboard.frets.color;
     const isShortNeck = this._numFrets <= 6;
 
     for (let i = 0; i <= this._numFrets; i++) {
@@ -628,15 +617,17 @@ export class FretboardDrawer {
       if (isShortNeck) {
         // Trastes uniformes usando fretColor do tema
         this._ctx.lineWidth = 2 * this._scaleFactor;
-        this._ctx.strokeStyle = this._colors.fretColor;
+        this._ctx.strokeStyle = this._colors.fretboard.frets.color;
         this._ctx.beginPath();
         this._ctx.moveTo(this._fretboardX, y);
         this._ctx.lineTo(this._fretboardX + this._fretboardWidth, y);
         this._ctx.stroke();
       } else {
         // Nut (i=0) is drawn thick only if showNut is true
-        this._ctx.lineWidth = (i === 0 && this._showNut) ? (this._colors.borderWidth * 8) : this._colors.borderWidth;
-        this._ctx.strokeStyle = this._colors.fretColor;
+        // Default border width? Let's assume 3 if not present in generic theme, or derive from stringThickness
+        const borderWidth = this._colors.fingers.border?.width || 3;
+        this._ctx.lineWidth = (i === 0 && this._showNut) ? (borderWidth * 8) : borderWidth;
+        this._ctx.strokeStyle = this._colors.fretboard.frets.color;
         this._ctx.beginPath();
         this._ctx.moveTo(this._fretboardX, y);
         this._ctx.lineTo(this._fretboardX + this._fretboardWidth, y);
@@ -677,7 +668,7 @@ export class FretboardDrawer {
     const neckHeight = this._diagramHeight * easedProgress;
 
     this._ctx.save();
-    this._ctx.fillStyle = this._colors.fretboardColor;
+    this._ctx.fillStyle = this._colors.fretboard.neck.color;
     this._ctx.beginPath();
     this._ctx.moveTo(neckX + this._neckRadius, neckY);
     this._ctx.lineTo(neckX + neckWidth - this._neckRadius, neckY);
@@ -695,14 +686,14 @@ export class FretboardDrawer {
    * Desenha as cordas progressivamente de cima para baixo
    */
   drawStringsProgressive(progress: number): void {
-    if (this._colors.borderWidth <= 0) return;
+    if (this._colors.fretboard.strings.thickness <= 0) return;
 
     const easedProgress = this.easeInOutQuad(progress);
     const fretboardHeight = this._fretboardHeight * easedProgress;
 
     this._ctx.save();
-    this._ctx.strokeStyle = this._colors.borderColor;
-    this._ctx.lineWidth = this._colors.stringThickness;
+    this._ctx.strokeStyle = this._colors.fretboard.strings.color;
+    this._ctx.lineWidth = this._colors.fretboard.strings.thickness;
 
     for (let i = 0; i < this._numStrings; i++) {
       const x = this._fretboardX + this._horizontalPadding + i * this._stringSpacing;
@@ -723,12 +714,13 @@ export class FretboardDrawer {
     const fretsToDraw = Math.floor(easedProgress * numFrets);
 
     this._ctx.save();
-    this._ctx.strokeStyle = this._colors.fretColor;
+    this._ctx.strokeStyle = this._colors.fretboard.frets.color;
 
     for (let i = 0; i <= fretsToDraw && i <= this._numFrets; i++) {
       const y = this._fretboardY + i * this._realFretSpacing;
       // Nut (i=0) is drawn thick only if showNut is true
-      this._ctx.lineWidth = (i === 0 && this._showNut) ? (this._colors.borderWidth * 8) : this._colors.borderWidth;
+      const borderWidth = this._colors.fingers.border?.width || 3;
+      this._ctx.lineWidth = (i === 0 && this._showNut) ? (borderWidth * 8) : borderWidth;
 
       // Se for o último traste sendo desenhado, pode estar parcial
       const isLastFret = i === fretsToDraw;

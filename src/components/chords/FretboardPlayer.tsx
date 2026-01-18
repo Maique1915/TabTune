@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import Sidebar from "@/components/chords/Sidebar";
 import { measuresToChords } from "@/lib/fretboard/converter";
 import { ChordDiagramProps } from "@/modules/core/domain/types";
@@ -44,7 +44,6 @@ export function FretboardPlayer() {
         handleSelectMeasure,
         handleSelectNote,
         handleAddNote,
-        handleRemoveNote,
         handleUpdateMeasure,
         handleAddMeasure,
         handleRemoveMeasure,
@@ -84,13 +83,19 @@ export function FretboardPlayer() {
         renderCancelRequested,
         setRenderCancelRequested,
         playbackTotalDurationMs,
-        animationType, // Needed for SettingsPanel props? or Stage?
-        // colors/setColors removed from here
+        animationType,
+        playbackProgress,
+        playbackIsPlaying
     } = useAppContext();
 
     const videoCanvasRef = useRef<FretboardStageRef>(null);
     const [isAnimating, setIsAnimating] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
+
+    const handleAnimationStateChange = useCallback((animating: boolean, paused: boolean) => {
+        setIsAnimating(animating);
+        setIsPaused(paused);
+    }, []);
 
     // We use a local state for navigation within the layout
     const [activePanel, setLocalActivePanel] = useState<'studio' | 'library' | 'mixer' | 'customize'>('studio');
@@ -142,21 +147,55 @@ export function FretboardPlayer() {
         }
 
         return prevChordsCount + offset;
+        return prevChordsCount + offset;
     }, [activeMeasure, currentMeasureIndex, measures, settings, chords, editingNoteId, selectedNoteIds]);
 
+    // 6. Calculate Time Metrics
+    const totalDurationMs = useMemo(() => {
+        return chords.reduce((acc, chord) => acc + (chord.duration || 0), 0);
+    }, [chords]);
+
+
+    const currentCursorMs = useMemo(() => {
+        if (playbackIsPlaying && playbackTotalDurationMs > 0) {
+            return playbackProgress * playbackTotalDurationMs;
+        }
+
+        if (!chords.length) return 0;
+        // Sum duration of all chords UP TO activeChordIndex
+        const safeIndex = Math.min(activeChordIndex, chords.length);
+        const previousChords = chords.slice(0, safeIndex);
+        return previousChords.reduce((acc, chord) => acc + (chord.duration || 0), 0);
+    }, [chords, activeChordIndex, playbackIsPlaying, playbackProgress, playbackTotalDurationMs]);
+
     // Force Guitar Fretboard mode on mount if coming from Studio default
+    // Force Guitar Fretboard mode on mount if coming from Studio default
+    /*
     useEffect(() => {
-        setAnimationType(prev => (prev === 'carousel' ? 'guitar-fretboard' : prev));
+        setAnimationType('dynamic-fingers');
     }, [setAnimationType]);
+    */
 
     // Sync animation type with numFrets to ensure Undo/Redo restores the correct view
     useEffect(() => {
+        // TEMP: Disabled to prevent infinite loop
+        /*
         const numFrets = settings.numFrets || 24;
-        if (numFrets <= 6 && animationType !== 'static-fingers') {
-            setAnimationType('static-fingers');
-        } else if (numFrets > 6 && animationType !== 'guitar-fretboard') {
-            setAnimationType('guitar-fretboard');
+
+        // Short Neck: Allow 'static-fingers' OR 'dynamic-fingers'
+        // Only force change if currently in 'guitar-fretboard' mode
+        if (numFrets <= 6) {
+            if (animationType === 'guitar-fretboard') {
+                setAnimationType('static-fingers');
+            }
         }
+        // Full Neck: Must be 'guitar-fretboard'
+        else {
+            if (animationType !== 'guitar-fretboard') {
+                setAnimationType('guitar-fretboard');
+            }
+        }
+        */
     }, [settings.numFrets, animationType, setAnimationType]);
 
     // Handle render cancellation
@@ -283,12 +322,26 @@ export function FretboardPlayer() {
         onCopyMeasure: handleCopyMeasure,
         onPasteMeasure: handlePasteMeasure,
         onReorderMeasures: handleReorderMeasures,
-        onRemoveNote: handleRemoveNote,
         onSelectMeasure: handleSelectMeasure,
         onDeselectAll: () => handleSelectMeasure(''),
         selectedMeasureId: selectedMeasureId,
         onUpdateNote: (id: string, updates: any) => updateSelectedNotes(updates),
+        totalDurationMs: totalDurationMs,
+        currentCursorMs: currentCursorMs
     };
+
+    // Helper to determine valid animation type for passing to Stage
+    const getValidAnimationType = () => {
+        const numFrets = settings.numFrets || 24;
+        if (numFrets <= 6) {
+            // If we are somehow in guitar-fretboard mode but on short neck, fallback to static-fingers
+            return animationType === 'guitar-fretboard' ? 'static-fingers' : animationType;
+        }
+        return 'guitar-fretboard';
+    };
+
+    // Only used for passing to Stage props
+    const activeAnimationType = getValidAnimationType();
 
     return (
         <WorkspaceLayout
@@ -387,6 +440,7 @@ export function FretboardPlayer() {
                 onClose={() => setLocalActivePanel('studio')}
                 colors={theme}
                 onColorChange={setTheme as any}
+                numFrets={settings.numFrets}
             />}
         >
             {isMobile ? (
@@ -399,10 +453,7 @@ export function FretboardPlayer() {
                                     chords={chords}
                                     transitionsEnabled={playbackTransitionsEnabled}
                                     buildEnabled={playbackBuildEnabled}
-                                    onAnimationStateChange={(animating: boolean, paused: boolean) => {
-                                        setIsAnimating(animating);
-                                        setIsPaused(paused);
-                                    }}
+                                    onAnimationStateChange={handleAnimationStateChange}
                                     onRenderProgress={setRenderProgress}
                                     numStrings={settings.numStrings}
                                     numFrets={settings.numFrets}
@@ -411,7 +462,7 @@ export function FretboardPlayer() {
                                     tuningShift={settings.tuningShift || 0}
                                     stringNames={settings.tuning}
                                     colors={theme}
-                                    animationType={(settings.numFrets || 24) <= 6 ? 'static-fingers' : (animationType === 'static-fingers' ? 'guitar-fretboard' : animationType)}
+                                    animationType={activeAnimationType}
                                 />
                             </StageContainer>
                         </div>
@@ -448,7 +499,7 @@ export function FretboardPlayer() {
                                 tuningShift={settings.tuningShift || 0}
                                 stringNames={settings.tuning}
                                 colors={theme}
-                                animationType={(settings.numFrets || 24) <= 6 ? 'static-fingers' : (animationType === 'static-fingers' ? 'guitar-fretboard' : animationType)}
+                                animationType={activeAnimationType}
                             />
                         </StageContainer>
                     }

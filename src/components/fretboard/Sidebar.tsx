@@ -507,9 +507,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                     onClick={(e) => handlePosClick(idx, e)}
                                                     className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border ${activePositionIndex === idx || selectedIndices.includes(idx) ? 'shadow-[0_0_10px_rgba(255,255,255,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
                                                     style={activePositionIndex === idx || selectedIndices.includes(idx) ? {
-                                                        backgroundColor: theme?.fingerColor || '#06b6d4',
-                                                        borderColor: theme?.fingerBorderColor || '#22d3ee',
-                                                        color: theme?.fingerTextColor || '#ffffff'
+                                                        backgroundColor: theme?.fingers?.color || '#06b6d4',
+                                                        borderColor: theme?.fingers?.border?.color || '#22d3ee',
+                                                        color: theme?.fingers?.textColor || '#ffffff'
                                                     } : {}}
                                                 >
                                                     {pos.fret}/{pos.string}
@@ -546,9 +546,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                             onClick={() => handleFretChange(fret)}
                                                             className={`h-8 rounded-lg border font-black text-xs transition-all ${currentFret === fret ? 'shadow-[0_0_10px_rgba(255,255,255,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
                                                             style={currentFret === fret ? {
-                                                                backgroundColor: theme?.fingerColor || '#06b6d4',
-                                                                borderColor: theme?.fingerBorderColor || '#22d3ee',
-                                                                color: theme?.fingerTextColor || '#ffffff'
+                                                                backgroundColor: theme?.fingers?.color || '#06b6d4',
+                                                                borderColor: theme?.fingers?.border?.color || '#22d3ee',
+                                                                color: theme?.fingers?.textColor || '#ffffff'
                                                             } : {}}
                                                         >
                                                             {fret}
@@ -560,9 +560,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                 {[6, 5, 4, 3, 2, 1].map(s => (
                                                     <button key={s} onClick={(e) => handleStringClick(s.toString(), e)} className={`py-1.5 rounded-lg border font-bold text-[9px] transition-all ${editingNote.positions[activePositionIndex]?.string === s || selectedStrings.includes(s) ? 'shadow-[0_0_10px_rgba(255,255,255,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
                                                         style={editingNote.positions[activePositionIndex]?.string === s || selectedStrings.includes(s) ? {
-                                                            backgroundColor: theme?.fingerColor || '#06b6d4',
-                                                            borderColor: theme?.fingerBorderColor || '#22d3ee',
-                                                            color: theme?.fingerTextColor || '#ffffff'
+                                                            backgroundColor: theme?.fingers?.color || '#06b6d4',
+                                                            borderColor: theme?.fingers?.border?.color || '#22d3ee',
+                                                            color: theme?.fingers?.textColor || '#ffffff'
                                                         } : {}}
                                                     >{s}</button>
                                                 ))}
@@ -801,7 +801,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     <div className="space-y-3 bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/50">
                                         {/* Preview */}
                                         <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-lg p-2 text-center">
-                                            <span className="text-sm font-black" style={{ color: theme?.chordNameColor || '#22d3ee' }}>
+                                            <span className="text-sm font-black" style={{ color: '#22d3ee' }}>
                                                 {(`${localRoot}${localQuality}${localExtensions.join("")}${localBass === "Root" ? "" : localBass}`).replace(/#/g, '♯').replace(/b/g, '♭')}
                                             </span>
                                         </div>

@@ -23,6 +23,8 @@ import { GenericSidebar } from "@/components/shared/GenericSidebar";
 
 // --- PRESETS ---
 
+// --- PRESETS ---
+
 export const STUDIO_PRESETS = {
   default: {
     label: 'Default Dark',
@@ -32,114 +34,151 @@ export const STUDIO_PRESETS = {
     label: 'Classic Light',
     style: {
       ...DEFAULT_COLORS,
-      cardColor: "#ffffff",
-      fretboardColor: "#f5f5f5",
-      fretboardShadow: false,
-      fretboardShadowColor: "transparent",
-      borderColor: "#000000", // Black strings (user request)
-      fretColor: "#dddddd",
-      chordNameColor: "#000000", // Black (user request)
-      chordNameShadow: false,
-      chordNameShadowColor: "transparent",
-      chordNameShadowBlur: 0,
-      chordNameStrokeColor: "transparent",
-      chordNameStrokeWidth: 0,
-      fingerColor: "#333333",
-      fingerTextColor: "#ffffff",
-      fingerBorderColor: "#000000",
-      fingerBoxShadowColor: "#00000050",
-      // Capo
-      capoColor: "#e4e4e7", // Zinc-200 (Silver)
-      capoBorderColor: "#a1a1aa", // Zinc-400
-      capoShadow: true,
-      capoShadowColor: "rgba(0,0,0,0.2)",
+      global: {
+        ...DEFAULT_COLORS.global,
+        primaryTextColor: "#3b3b3bff",
+        backgroundColor: "#000000",
+      },
+      fretboard: {
+        neck: {
+          color: "#f5f5f5",
+          opacity: 1
+        },
+        frets: { color: "#474747ff" },
+        strings: { color: "#000000", thickness: 3 }
+      },
+      chordName: {
+        color: "#f4f4f5",
+        opacity: 1,
+        shadow: { enabled: false, color: "transparent", blur: 0 },
+        stroke: { color: "transparent", width: 0 }
+      },
+
+      fingers: {
+        color: "#200f0f",
+        textColor: "#200f0f",
+        border: {
+          color: "#200f0f",
+          width: 4,
+        },
+        shadow: {
+          enabled: true,
+          color: "#000000",
+          hOffset: 0,
+          vOffset: 0,
+          blur: 0,
+          spread: 0,
+        },
+        opacity: 0.3, // backgroundAlpha
+      },
+      capo: {
+        color: "#e4e4e7",
+        border: { color: "#a1a1aa", width: 1 },
+        shadow: { enabled: true, color: "rgba(0,0,0,0.2)" },
+        textColors: { name: "#333333ff", number: "#dddddd" }
+      }
     }
   },
   cyberpunk: {
     label: 'Cyberpunk',
     style: {
       ...DEFAULT_COLORS,
-      cardColor: "#0f0518",
-      fretboardColor: "#2d0036",
-      fretboardShadow: true,
-      fretboardShadowColor: "#fb00ff", // Neon Pink Outer Glow
-      borderColor: "#fb00ff",
-      fretColor: "#fb00ff50",
-      textColor: "#00ff9d",
-      chordNameColor: "#fb00ff", // Pink
-      chordNameOpacity: 1,
-      chordNameShadow: true,
-      chordNameShadowColor: "#fb00ff",
-      chordNameShadowBlur: 20,
-      chordNameStrokeColor: "transparent", // Removing hard stroke to rely on neon glow
-      chordNameStrokeWidth: 0,
-      fingerColor: "#00ff9d",
-      fingerTextColor: "#fffdfdff",
-      fingerBorderColor: "#fb00ff",
-      fingerBoxShadowColor: "#00ff9d80",
-      // Capo
-      capoColor: "#180220", // Very Dark Purple
-      capoBorderColor: "#fb00ff", // Neon Pink Border
-      capoShadow: true,
-      capoShadowColor: "#fb00ff", // Pink Glow
+      global: { ...DEFAULT_COLORS.global, primaryTextColor: "#ffffffff" },
+      fretboard: {
+        neck: {
+          color: "#2d0036",
+          opacity: 1
+        },
+        frets: { color: "#fb00ff50" },
+        strings: { color: "#fb00ff", thickness: 3 }
+      },
+      chordName: {
+        color: "#fb00ff",
+        opacity: 1,
+        shadow: { enabled: true, color: "#fb00ff", blur: 20 },
+        stroke: { color: "transparent", width: 0 }
+      },
+      fingers: {
+        color: "#fb00ff50",
+        textColor: "#fffdfdff",
+        border: { color: "#fb00ff", width: 4 },
+        shadow: { enabled: true, color: "#00ff9d80", hOffset: 0, vOffset: 0, blur: 0, spread: 0 },
+        opacity: 0.3
+      },
+      capo: {
+        color: "#180220",
+        border: { color: "#fb00ff", width: 1 },
+        shadow: { enabled: true, color: "#fb00ff" },
+        textColors: { name: "#00ff9d", number: "#00ff9d" }
+      }
     }
   },
   midnight: {
     label: 'Midnight Blue',
     style: {
       ...DEFAULT_COLORS,
-      cardColor: "#020617",
-      fretboardColor: "#0f172a",
-      fretboardShadow: true,
-      fretboardShadowColor: "#3b82f6", // Blue Outer Glow
-      borderColor: "#94a3b8", // Lighter strings (user request)
-      fretColor: "#334155",
-      textColor: "#94a3b8",
-      chordNameColor: "#60a5fa", // Blue
-      chordNameOpacity: 1,
-      chordNameShadow: true,
-      chordNameShadowColor: "#60a5fa",
-      chordNameShadowBlur: 15,
-      chordNameStrokeColor: "transparent", // Removing hard stroke
-      chordNameStrokeWidth: 0,
-      fingerColor: "#3b82f6",
-      fingerTextColor: "#ffffff",
-      fingerBorderColor: "#60a5fa",
-      fingerBoxShadowColor: "#3b82f660",
-      // Capo
-      capoColor: "#1e293b", // Slate-800
-      capoBorderColor: "#60a5fa", // Blue-400
-      capoShadow: true,
-      capoShadowColor: "#3b82f6aa", // Blue Glow
+      global: { ...DEFAULT_COLORS.global, primaryTextColor: "#ffffffff" },
+      fretboard: {
+        neck: {
+          color: "#0f172a",
+          opacity: 1
+        },
+        frets: { color: "#334155" },
+        strings: { color: "#94a3b8", thickness: 3 }
+      },
+      chordName: {
+        color: "#60a5fa",
+        opacity: 1,
+        shadow: { enabled: true, color: "#60a5fa", blur: 15 },
+        stroke: { color: "transparent", width: 0 }
+      },
+      fingers: {
+        color: "#334155",
+        textColor: "#ffffff",
+        border: { color: "#60a5fa", width: 4 },
+        shadow: { enabled: true, color: "#3b82f660", hOffset: 0, vOffset: 0, blur: 0, spread: 0 },
+        opacity: 0.9
+      },
+      capo: {
+        color: "#1e293b",
+        border: { color: "#60a5fa", width: 1 },
+        shadow: { enabled: true, color: "#3b82f6aa" },
+        textColors: { name: "#d5e0eeff", number: "#a8c6eeff" }
+      }
     }
   },
   vintage: {
     label: 'Vintage',
     style: {
       ...DEFAULT_COLORS,
-      cardColor: "#efe6d5",
-      fretboardColor: "#e6dcc8",
-      fretboardShadow: true,
-      fretboardShadowColor: "rgba(0,0,0,0.5)", // Dark shadow
-      borderColor: "#8b4513",
-      fretColor: "#a68b6c",
-      textColor: "#5c4033",
-      chordNameColor: "#3e2723",
-      chordNameOpacity: 0.9,
-      chordNameShadow: false,
-      chordNameShadowColor: "transparent",
-      chordNameShadowBlur: 0,
-      chordNameStrokeColor: "transparent",
-      chordNameStrokeWidth: 0,
-      fingerColor: "#5c4033",
-      fingerTextColor: "#efe6d5",
-      fingerBorderColor: "#3e2723",
-      fingerBoxShadowColor: "#5c403350",
-      // Capo
-      capoColor: "#5d4037", // Brown
-      capoBorderColor: "#3e2723", // Dark Brown
-      capoShadow: true,
-      capoShadowColor: "rgba(62, 39, 35, 0.4)",
+      global: { ...DEFAULT_COLORS.global, primaryTextColor: "#8b4513" },
+      fretboard: {
+        neck: {
+          color: "#e6dcc8",
+          opacity: 1
+        },
+        frets: { color: "#a68b6c" },
+        strings: { color: "#8b4513", thickness: 3 }
+      },
+      chordName: {
+        color: "#ece5e3ff",
+        opacity: 0.9,
+        shadow: { enabled: false, color: "transparent", blur: 0 },
+        stroke: { color: "transparent", width: 0 }
+      },
+      fingers: {
+        color: "#5c4033",
+        textColor: "#efe6d5",
+        border: { color: "#3e2723", width: 4 },
+        shadow: { enabled: true, color: "#5c403350", hOffset: 0, vOffset: 0, blur: 0, spread: 0 },
+        opacity: 0.9
+      },
+      capo: {
+        color: "#5d4037",
+        border: { color: "#3e2723", width: 1 },
+        shadow: { enabled: true, color: "rgba(62, 39, 35, 0.4)" },
+        textColors: { name: "#ffffff", number: "#5c4033" }
+      }
     }
   }
 };
@@ -150,6 +189,7 @@ interface SettingsPanelProps {
   onClose?: () => void;
   colors?: FretboardTheme;
   onColorChange?: (newColors: any) => void;
+  numFrets?: number;
 }
 
 // --- COMPONENTS ---
@@ -194,10 +234,10 @@ const ColorPicker = ({ color, onChange }: { color: string; onChange: (c: string)
 // --- GROUPS DEFINITION ---
 
 type SettingControl =
-  | { type: 'color'; label: string; key: keyof FretboardTheme }
-  | { type: 'number'; label: string; key: keyof FretboardTheme; min?: number; max?: number; step?: number }
-  | { type: 'slider'; label: string; key: keyof FretboardTheme; min: number; max: number; step: number }
-  | { type: 'toggle'; label: string; key: keyof FretboardTheme };
+  | { type: 'color'; label: string; key: string }
+  | { type: 'number'; label: string; key: string; min?: number; max?: number; step?: number }
+  | { type: 'slider'; label: string; key: string; min: number; max: number; step: number }
+  | { type: 'toggle'; label: string; key: string };
 
 interface SettingGroup {
   id: string;
@@ -208,15 +248,21 @@ interface SettingGroup {
 
 const SETTING_GROUPS: SettingGroup[] = [
   {
+    id: 'global',
+    label: 'Global',
+    icon: Sun,
+    controls: [
+      { type: 'color', label: 'Background', key: 'global.backgroundColor' },
+      { type: 'color', label: 'Primary Text', key: 'global.primaryTextColor' },
+    ]
+  },
+  {
     id: 'fretboard',
-    label: 'Fretboard Board',
+    label: 'Fretboard',
     icon: Grid,
     controls: [
-      { type: 'color', label: 'Background', key: 'cardColor' },
-      { type: 'color', label: 'Neck Color', key: 'fretboardColor' },
-      { type: 'color', label: 'Frets Color', key: 'fretColor' },
-      { type: 'toggle', label: 'Shadow', key: 'fretboardShadow' },
-      { type: 'color', label: 'Shadow Color', key: 'fretboardShadowColor' },
+      { type: 'color', label: 'Neck Color', key: 'fretboard.neck.color' },
+      { type: 'color', label: 'Frets Color', key: 'fretboard.frets.color' },
     ]
   },
   {
@@ -224,8 +270,8 @@ const SETTING_GROUPS: SettingGroup[] = [
     label: 'Strings & Structure',
     icon: Music,
     controls: [
-      { type: 'color', label: 'String Color', key: 'borderColor' }, // borderColor acts as string color in ChordDrawerBase
-      { type: 'number', label: 'String Thick.', key: 'stringThickness', min: 1, max: 10, step: 1 },
+      { type: 'color', label: 'String Color', key: 'fretboard.strings.color' },
+      { type: 'number', label: 'String Thick.', key: 'fretboard.strings.thickness', min: 1, max: 10, step: 1 },
     ]
   },
   {
@@ -233,19 +279,10 @@ const SETTING_GROUPS: SettingGroup[] = [
     label: 'Fingers',
     icon: Target,
     controls: [
-      { type: 'color', label: 'Fill Color', key: 'fingerColor' },
-      { type: 'color', label: 'Text Color', key: 'fingerTextColor' },
-      { type: 'color', label: 'Border Color', key: 'fingerBorderColor' },
-      { type: 'slider', label: 'BG Opacity', key: 'fingerBackgroundAlpha', min: 0, max: 1, step: 0.1 },
-    ]
-  },
-  {
-    id: 'shadows',
-    label: 'Finger Shadows',
-    icon: Layers,
-    controls: [
-      { type: 'color', label: 'Shadow Color', key: 'fingerBoxShadowColor' },
-      { type: 'number', label: 'Offset X', key: 'fingerBoxShadowHOffset', min: -10, max: 10 },
+      { type: 'color', label: 'Fill Color', key: 'fingers.color' },
+      { type: 'color', label: 'Text Color', key: 'fingers.textColor' },
+      { type: 'color', label: 'Border Color', key: 'fingers.border.color' },
+      { type: 'slider', label: 'BG Opacity', key: 'fingers.opacity', min: 0, max: 1, step: 0.1 },
     ]
   },
   {
@@ -253,10 +290,12 @@ const SETTING_GROUPS: SettingGroup[] = [
     label: 'Capo & Visuals',
     icon: Target,
     controls: [
-      { type: 'color', label: 'Capo Color', key: 'capoColor' },
-      { type: 'color', label: 'Border Color', key: 'capoBorderColor' },
-      { type: 'toggle', label: 'Shadow', key: 'capoShadow' },
-      { type: 'color', label: 'Shadow Color', key: 'capoShadowColor' }
+      { type: 'color', label: 'Capo Color', key: 'capo.color' },
+      { type: 'color', label: 'Border Color', key: 'capo.border.color' },
+      { type: 'color', label: 'Name Text Color', key: 'capo.textColors.name' },
+      { type: 'color', label: 'Number Color', key: 'capo.textColors.number' },
+      { type: 'toggle', label: 'Shadow', key: 'capo.shadow.enabled' },
+      { type: 'color', label: 'Shadow Color', key: 'capo.shadow.color' }
     ]
   },
   {
@@ -264,32 +303,19 @@ const SETTING_GROUPS: SettingGroup[] = [
     label: 'Typography',
     icon: Type,
     controls: [
-      { type: 'color', label: 'Chord Name', key: 'chordNameColor' },
-      { type: 'slider', label: 'Opacity', key: 'chordNameOpacity', min: 0, max: 1, step: 0.1 },
-      // Shadow Toggles are not supported by the simple SettingControl type yet (needs boolean toggle).
-      // But I can implement Shadow Color, Shadow Blur.
-      // Or I can just add color and leave shadow logic to be "if shadow color is transparent"?
-      // My drawer logic: if (chordNameShadow) ...
-      // I don't see a boolean toggle in SettingControl types.
-      // I will check `handleColorChange` logic. It handles numbers and strings.
-      // I should add a Checkbox type?
-      // Or I can piggyback on ColorPicker alpha being 0?
-      // For now, let's just add Shadow Color and Blur, and assume shadow is always ON if user wants it (default true).
-      // Wait, `chordNameShadow` is boolean.
-      // I'll skip boolean for now or implement it if I see a pattern.
-      // I'll add Shadow Color and Blur.
-      { type: 'color', label: 'Shadow Color', key: 'chordNameShadowColor' },
-      { type: 'number', label: 'Shadow Blur', key: 'chordNameShadowBlur', min: 0, max: 50 },
-      { type: 'color', label: 'Stroke Color', key: 'chordNameStrokeColor' },
-      { type: 'number', label: 'Stroke Width', key: 'chordNameStrokeWidth', min: 0, max: 10 },
-      { type: 'color', label: 'General Text', key: 'textColor' },
+      { type: 'color', label: 'Chord Name', key: 'chordName.color' },
+      { type: 'slider', label: 'Opacity', key: 'chordName.opacity', min: 0, max: 1, step: 0.1 },
+      { type: 'color', label: 'Shadow Color', key: 'chordName.shadow.color' },
+      { type: 'number', label: 'Shadow Blur', key: 'chordName.shadow.blur', min: 0, max: 50 },
+      { type: 'color', label: 'Stroke Color', key: 'chordName.stroke.color' },
+      { type: 'number', label: 'Stroke Width', key: 'chordName.stroke.width', min: 0, max: 10 },
     ]
   }
 ];
 
 // --- MAIN COMPONENT ---
 
-export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, onColorChange }: SettingsPanelProps) {
+export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, onColorChange, numFrets }: SettingsPanelProps) {
   const { setColors: contextSetColors, colors: contextColors, animationType, setAnimationType } = useAppContext();
 
   // Use props if available (from FretboardPlayer with history), otherwise fallback to context
@@ -299,8 +325,18 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
   const [activeTab, setActiveTab] = useState<'basic' | 'advanced' | 'motion'>('basic');
   const [expandedKey, setExpandedKey] = useState<string | null>('fretboard');
 
-  const handleColorChange = (key: keyof FretboardTheme, value: any) => {
-    setColors(prev => ({ ...prev, [key]: value }));
+  const handleColorChange = (key: string, value: any) => {
+    setColors(prev => {
+      const deepUpdate = (obj: any, path: string[], val: any): any => {
+        if (path.length === 0) return val;
+        const [head, ...tail] = path;
+        return {
+          ...obj,
+          [head]: tail.length === 0 ? val : deepUpdate(obj[head] || {}, tail, val)
+        };
+      };
+      return deepUpdate(prev, key.split('.'), value);
+    });
   };
 
   const handleReset = () => {
@@ -326,12 +362,12 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
             <div className="flex items-center gap-3">
               <div
                 className="w-10 h-10 rounded-full border-2 border-white/10 shadow-lg relative overflow-hidden"
-                style={{ backgroundColor: preset.style.cardColor }}
+                style={{ backgroundColor: preset.style.global.backgroundColor }}
               >
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div
                     className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: preset.style.fingerColor }}
+                    style={{ backgroundColor: preset.style.fingers.color }}
                   />
                 </div>
               </div>
@@ -379,7 +415,8 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
             {isExpanded && (
               <div className="px-3 pb-3 pt-0 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 border-t border-zinc-800/30 mt-1 pt-3">
                 {group.controls.map(control => {
-                  const currentValue = colors[control.key];
+                  // Resolve deep value
+                  const currentValue = control.key.split('.').reduce((obj: any, k) => obj?.[k], colors);
 
                   if (control.type === 'color') {
                     return (
@@ -476,11 +513,14 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                 // Consolidate updates to avoid race conditions in undo/redo state
                 setColors(prev => ({
                   ...prev,
-                  rotation: deg as 0 | 90 | 270,
-                  mirror: deg === 270
+                  global: {
+                    ...prev.global,
+                    rotation: deg as 0 | 90 | 270,
+                    mirror: deg === 270
+                  }
                 }));
               }}
-              className={`py-2 rounded-lg border text-[10px] font-black transition-all ${colors.rotation === deg
+              className={`py-2 rounded-lg border text-[10px] font-black transition-all ${colors.global?.rotation === deg
                 ? 'bg-pink-500/10 border-pink-500/40 text-pink-400'
                 : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
                 }`}
@@ -499,23 +539,31 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
       <div className="space-y-3">
         <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Animation Type</span>
         <div className="grid grid-cols-1 gap-2">
-          <button
-            onClick={() => setAnimationType('carousel')}
-            className={`p-3 rounded-lg border text-left transition-all ${animationType === 'carousel'
-              ? 'bg-pink-500/10 border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.15)]'
-              : 'bg-zinc-900/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
-              }`}
-          >
-            <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${animationType === 'carousel' ? 'text-pink-400' : 'text-zinc-300'}`}>
-              Carousel
-            </div>
-            <div className="text-[9px] opacity-70">
-              Flowing stream of chords sliding across the screen.
-            </div>
-          </button>
+          {(!numFrets || numFrets === 5) && (
+            <button
+              onClick={() => {
+                console.log('Set animation to carousel');
+                setAnimationType('carousel');
+              }}
+              className={`p-3 rounded-lg border text-left transition-all ${animationType === 'carousel'
+                ? 'bg-pink-500/10 border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.15)]'
+                : 'bg-zinc-900/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                }`}
+            >
+              <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${animationType === 'carousel' ? 'text-pink-400' : 'text-zinc-300'}`}>
+                Carousel
+              </div>
+              <div className="text-[9px] opacity-70">
+                Flowing stream of chords sliding across the screen.
+              </div>
+            </button>
+          )}
 
           <button
-            onClick={() => setAnimationType('static-fingers')}
+            onClick={() => {
+              console.log('Set animation to static-fingers');
+              setAnimationType('static-fingers');
+            }}
             className={`p-3 rounded-lg border text-left transition-all ${animationType === 'static-fingers'
               ? 'bg-pink-500/10 border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.15)]'
               : 'bg-zinc-900/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
@@ -537,15 +585,15 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
             <Sun className="w-3 h-3 text-zinc-500" />
             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Global Scale</span>
           </div>
-          <span className="text-[10px] font-mono text-zinc-500">{colors.fretboardScale}x</span>
+          <span className="text-[10px] font-mono text-zinc-500">{colors.global?.scale}x</span>
         </div>
         <input
           type="range"
           min="0.5"
           max="1.5"
           step="0.1"
-          value={colors.fretboardScale}
-          onChange={(e) => handleColorChange('fretboardScale', parseFloat(e.target.value))}
+          value={colors.global?.scale || 1}
+          onChange={(e) => handleColorChange('global.scale', parseFloat(e.target.value))}
           className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-pink-500 [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-pink-400 transition-all"
         />
       </div>

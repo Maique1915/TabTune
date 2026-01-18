@@ -37,6 +37,19 @@ export class GuitarFretboardDrawer {
     private stringNames: string[] = ["E", "A", "D", "G", "B", "e"];
     private tuningShift: number = 0;
 
+    // Getters for Animation
+    public get geometry() {
+        return {
+            paddingX: this.paddingX,
+            boardY: this.boardY,
+            fretWidth: this.fretWidth,
+            stringSpacing: this.stringSpacing,
+            stringMargin: this.stringMargin,
+            fretboardHeight: this.fretboardHeight,
+            numStrings: this.numStrings
+        };
+    }
+
     constructor(
         ctx: CanvasRenderingContext2D,
         colors: FretboardTheme,
@@ -135,7 +148,7 @@ export class GuitarFretboardDrawer {
 
     public clear() {
         // Fill background with cardColor to match Studio style
-        this.ctx.fillStyle = this.colors.cardColor;
+        this.ctx.fillStyle = this.colors.global.backgroundColor;
         this.ctx.fillRect(0, 0, this.width, this.height);
     }
 
@@ -153,7 +166,7 @@ export class GuitarFretboardDrawer {
         const headstockY = this.boardY;
         const radius = 20;
 
-        ctx.fillStyle = this.colors.fretboardColor;
+        ctx.fillStyle = this.colors.fretboard.neck.color;
         ctx.beginPath();
         ctx.roundRect(headstockX, headstockY, headstockWidth, headstockHeight, [radius, 0, 0, radius]);
         ctx.fill();
@@ -167,11 +180,11 @@ export class GuitarFretboardDrawer {
         // No global transforms - board stays in original orientation
 
         // 1. Draw Fretboard Background
-        ctx.fillStyle = this.colors.fretboardColor;
+        ctx.fillStyle = this.colors.fretboard.neck.color;
         ctx.fillRect(this.paddingX, this.boardY, this.width - this.paddingX * 2, this.fretboardHeight);
 
         // 2. Draw Frets (Vertical lines)
-        ctx.strokeStyle = this.colors.fretColor;
+        ctx.strokeStyle = this.colors.fretboard.frets.color;
         ctx.lineWidth = 2;
         ctx.beginPath();
         // Nut (zero fret) is thick
@@ -202,7 +215,7 @@ export class GuitarFretboardDrawer {
 
             ctx.beginPath();
             ctx.lineWidth = thickness;
-            ctx.strokeStyle = this.colors.borderColor; // String color
+            ctx.strokeStyle = this.colors.fretboard.strings.color; // String color
             ctx.moveTo(this.paddingX, y);
             ctx.lineTo(this.width - this.paddingX, y);
             ctx.stroke();
@@ -210,7 +223,7 @@ export class GuitarFretboardDrawer {
 
         // 4. Draw Inlays (Circles)
         const inlayFrets = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24];
-        ctx.fillStyle = this.colors.fretColor; // Or a specific inlay color
+        ctx.fillStyle = this.colors.fretboard.frets.color; // Or a specific inlay color
         ctx.globalAlpha = 0.5;
 
         inlayFrets.forEach(fret => {
@@ -239,7 +252,7 @@ export class GuitarFretboardDrawer {
         const headstockX = this.paddingX - headstockWidth - headstockGap;
         const headstockCenterX = headstockX + (headstockWidth / 2);
 
-        this.ctx.fillStyle = this.colors.textColor;
+        this.ctx.fillStyle = this.colors.global.primaryTextColor;
         this.ctx.font = `bold ${this.stringSpacing * 0.45}px "Inter", sans-serif`;
         this.ctx.textAlign = "center"; // Changed to center
         this.ctx.textBaseline = "middle";
@@ -320,7 +333,7 @@ export class GuitarFretboardDrawer {
                     f.fret,
                     fromIdx,
                     toIdx,
-                    this.colors.fingerColor,
+                    this.colors.fingers.color,
                     options?.opacity ?? 1,
                     { finger: fingerNum }
                 );
@@ -358,7 +371,7 @@ export class GuitarFretboardDrawer {
                             currentYOffset += releaseProgress * (this.stringSpacing * 0.5);
                         }
                     } else if (effect.type === 'pull' && effect.toFret !== undefined) {
-                        drawFinger(effect.toFret, visualIdx, 0, this.colors.fingerColor, 1, 0.7);
+                        drawFinger(effect.toFret, visualIdx, 0, this.colors.fingers.color, 1, 0.7);
                         if (progress > 0.5) {
                             const removeProgress = (progress - 0.5) * 2;
                             currentRadiusScale *= 1 - removeProgress;
@@ -368,7 +381,7 @@ export class GuitarFretboardDrawer {
                         extraDraws.push(() => {
                             if (progress > 0.3) {
                                 const appearProgress = Math.min(1, (progress - 0.3) * 3);
-                                drawFinger(effect.toFret as number, visualIdx, 0, this.colors.fingerColor, appearProgress, appearProgress);
+                                drawFinger(effect.toFret as number, visualIdx, 0, this.colors.fingers.color, appearProgress, appearProgress);
                             }
                         });
                     } else if (effect.type === 'bend') {
@@ -379,7 +392,7 @@ export class GuitarFretboardDrawer {
             }
 
             if (!isBarre) {
-                drawFinger(currentFret, visualIdx, fingerNum, this.colors.fingerColor, currentRadiusScale, currentAlpha, currentYOffset, currentXOffset);
+                drawFinger(currentFret, visualIdx, fingerNum, this.colors.fingers.color, currentRadiusScale, currentAlpha, currentYOffset, currentXOffset);
             }
         });
 
@@ -390,7 +403,7 @@ export class GuitarFretboardDrawer {
                 const y = this.boardY + this.stringMargin + (visualIdx * this.stringSpacing);
                 const x = this.paddingX - (this.fretWidth * 0.3);
 
-                this.ctx.fillStyle = this.colors.textColor;
+                this.ctx.fillStyle = this.colors.global.primaryTextColor;
                 this.ctx.font = `bold ${this.stringSpacing * 0.6}px sans-serif`;
                 this.ctx.textAlign = "center";
                 this.ctx.textBaseline = "middle";
@@ -515,7 +528,7 @@ export class GuitarFretboardDrawer {
         const rectHeight = height + (radius * 2);
         const rectWidth = visualBarWidth;
 
-        this.ctx.fillStyle = this.hexToRgba(color, this.colors.fingerBackgroundAlpha * alpha);
+        this.ctx.fillStyle = this.hexToRgba(color, (this.colors.fingers.opacity ?? 1) * alpha);
 
         this.ctx.beginPath();
         // Manual Rounded Rect
@@ -542,14 +555,14 @@ export class GuitarFretboardDrawer {
         this.ctx.fill();
 
         this.ctx.lineWidth = 2;
-        this.ctx.strokeStyle = this.hexToRgba(this.colors.fingerBorderColor, alpha);
+        this.ctx.strokeStyle = this.hexToRgba(this.colors.fingers.border?.color || '#000000', alpha);
         this.ctx.stroke();
 
         // Finger Number Logic (drawn on the 'toIdx' end or center?)
         // Let's draw it at the toIdx end for barres, or center for circles.
         if (finger !== 0 && alpha > 0.5 && radiusScale > 0.5) {
             const textY = (y1 + y2) / 2; // Midpoint between strings
-            this.ctx.fillStyle = this.colors.fingerTextColor;
+            this.ctx.fillStyle = this.colors.fingers.textColor || '#ffffff';
             this.ctx.font = `bold ${(this.stringSpacing * 0.35 * radiusScale) * 1.5}px sans-serif`;
             this.ctx.textAlign = "center";
             this.ctx.textBaseline = "middle";
@@ -669,16 +682,16 @@ export class GuitarFretboardDrawer {
         this.ctx.textBaseline = "bottom";
 
         // Use color from palette
-        const color = this.colors.chordNameColor || "#22d3ee";
+        const color = this.colors.chordName.color || "#22d3ee";
         // Combine theme opacity with transition opacity
-        const themeOpacity = this.colors.chordNameOpacity ?? 1;
+        const themeOpacity = this.colors.chordName.opacity ?? 1;
         const transitionOpacity = options?.opacity ?? 1;
         const finalOpacity = themeOpacity * transitionOpacity;
 
         // Glow/Shadow effect
-        if (this.colors.chordNameShadow) {
-            this.ctx.shadowColor = this.colors.chordNameShadowColor || color;
-            this.ctx.shadowBlur = this.colors.chordNameShadowBlur || 10;
+        if (this.colors.chordName.shadow?.enabled) {
+            this.ctx.shadowColor = this.colors.chordName.shadow.color || color;
+            this.ctx.shadowBlur = this.colors.chordName.shadow.blur || 10;
         } else {
             this.ctx.shadowBlur = 0;
             this.ctx.shadowColor = "transparent";
@@ -687,8 +700,8 @@ export class GuitarFretboardDrawer {
         this.ctx.fillStyle = this.hexToRgba(color, finalOpacity);
 
         // Add stroke for contrast
-        const strokeColor = this.colors.chordNameStrokeColor || "transparent";
-        const strokeWidth = this.colors.chordNameStrokeWidth || 0;
+        const strokeColor = this.colors.chordName.stroke?.color || "transparent";
+        const strokeWidth = this.colors.chordName.stroke?.width || 0;
 
         if (strokeWidth > 0 && strokeColor !== "transparent") {
             this.ctx.lineWidth = strokeWidth;
@@ -699,6 +712,53 @@ export class GuitarFretboardDrawer {
         // Draw Text
         this.ctx.fillText(name, centerX, safeY);
 
+        this.ctx.restore();
+    }
+    public drawRawFinger(centerX: number, centerY: number, fingerNum: number | string, color: string, opacity: number = 1, radiusScale: number = 1) {
+        const radius = this.stringSpacing * 0.45 * radiusScale;
+
+        this.ctx.save();
+        this.ctx.fillStyle = this.hexToRgba(color, (this.colors.fingers.opacity ?? 1) * opacity);
+
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeStyle = this.hexToRgba(this.colors.fingers.border?.color || '#000000', opacity);
+        this.ctx.stroke();
+
+        if (fingerNum !== 0) {
+            this.ctx.fillStyle = this.colors.fingers.textColor || '#ffffff';
+            this.ctx.font = `bold ${(this.stringSpacing * 0.35 * radiusScale) * 1.5}px sans-serif`;
+            this.ctx.textAlign = "center";
+            this.ctx.textBaseline = "middle";
+            this.ctx.fillText(fingerNum.toString(), centerX, centerY);
+        }
+        this.ctx.restore();
+    }
+
+    public drawRawBarre(centerX: number, centerY: number, width: number, height: number, fingerNum: number | string, color: string, opacity: number = 1) {
+        const radius = this.stringSpacing * 0.45; // Match finger radius
+
+        this.ctx.save();
+        this.ctx.fillStyle = this.hexToRgba(color, (this.colors.fingers.opacity ?? 1) * opacity);
+
+        this.ctx.beginPath();
+        this.ctx.roundRect(centerX - (width / 2), centerY - (height / 2), width, height, radius);
+        this.ctx.fill();
+
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeStyle = this.hexToRgba(this.colors.fingers.border?.color || '#000000', opacity);
+        this.ctx.stroke();
+
+        if (fingerNum !== 0) {
+            this.ctx.fillStyle = this.colors.fingers.textColor || '#ffffff';
+            this.ctx.font = `bold ${(this.stringSpacing * 0.35) * 1.5}px sans-serif`;
+            this.ctx.textAlign = "center";
+            this.ctx.textBaseline = "middle";
+            this.ctx.fillText(fingerNum.toString(), centerX, centerY);
+        }
         this.ctx.restore();
     }
 }

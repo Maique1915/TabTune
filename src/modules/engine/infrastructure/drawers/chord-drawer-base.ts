@@ -96,8 +96,8 @@ export class ChordDrawerBase {
 
     this._dimensions = dimensions;
     this._scaleFactor = scaleFactor;
-    this._rotation = colors.rotation || 0;
-    this._mirror = colors.mirror || false;
+    this._rotation = colors.global.rotation || 0;
+    this._mirror = colors.global.mirror || false;
 
     this._calculateDimensions();
 
@@ -134,6 +134,18 @@ export class ChordDrawerBase {
 
   get dimensions(): { width: number; height: number } {
     return this._dimensions;
+  }
+
+  get scaleFactor(): number {
+    return this._scaleFactor;
+  }
+
+  get rotation(): number {
+    return this._rotation;
+  }
+
+  get mirror(): boolean {
+    return this._mirror;
   }
 
   get diagramWidth(): number {
@@ -211,8 +223,8 @@ export class ChordDrawerBase {
 
   public setColors(value: FretboardTheme) {
     this._colors = value;
-    this._rotation = value.rotation || 0;
-    this._mirror = value.mirror || false;
+    this._rotation = value.global.rotation || 0;
+    this._mirror = value.global.mirror || false;
     this.fretboardDrawer.setColors(value);
     this.fretboardDrawer.setTransforms(this._rotation as any, this._mirror);
     this._fretboardCache = null; // Invalidate cache
@@ -405,7 +417,7 @@ export class ChordDrawerBase {
     isBarre: boolean,
     barreVisualWidth: number // The actual drawn width of the barre (fromX to toX)
   ): void {
-    this._ctx.fillStyle = this.hexToRgba(this._colors.fingerColor, this._colors.fingerBackgroundAlpha);
+    this._ctx.fillStyle = this.hexToRgba(this._colors.fingers.color, this._colors.fingers.opacity ?? 1);
     this._ctx.beginPath();
 
     if (isBarre) {
@@ -424,15 +436,16 @@ export class ChordDrawerBase {
     this._ctx.fill();
 
     // Borda
-    if (this._colors.fingerBorderWidth > 0) {
-      this._ctx.strokeStyle = this._colors.fingerBorderColor;
-      this._ctx.lineWidth = this._colors.fingerBorderWidth;
+    const borderWidth = this._colors.fingers.border?.width ?? 0;
+    if (borderWidth > 0) {
+      this._ctx.strokeStyle = this._colors.fingers.border?.color || "#000000";
+      this._ctx.lineWidth = borderWidth;
       this._ctx.stroke();
     }
 
     // Número do dedo
     if (finger !== undefined && finger !== null && finger !== -2) {
-      this._ctx.fillStyle = this._colors.fingerTextColor;
+      this._ctx.fillStyle = this._colors.fingers.textColor || "#ffffff";
       const fontSize = 45 * this._scaleFactor;
       this._ctx.font = `bold ${fontSize}px sans-serif`;
       this._ctx.textAlign = "center";
@@ -459,7 +472,7 @@ export class ChordDrawerBase {
     isBarre: boolean,
     barreVisualWidth: number // The actual drawn width of the barre (fromX to toX)
   ): void {
-    this._ctx.fillStyle = this.hexToRgba(this._colors.fingerColor, this._colors.fingerBackgroundAlpha);
+    this._ctx.fillStyle = this.hexToRgba(this._colors.fingers.color, this._colors.fingers.opacity ?? 1);
     this._ctx.beginPath();
 
     if (isBarre) {
@@ -475,14 +488,15 @@ export class ChordDrawerBase {
     }
     this._ctx.fill();
 
-    if (this._colors.fingerBorderWidth > 0) {
-      this._ctx.strokeStyle = this._colors.fingerBorderColor;
-      this._ctx.lineWidth = this._colors.fingerBorderWidth;
+    const borderWidth = this._colors.fingers.border?.width ?? 0;
+    if (borderWidth > 0) {
+      this._ctx.strokeStyle = this._colors.fingers.border?.color || "#000000";
+      this._ctx.lineWidth = borderWidth;
       this._ctx.stroke();
     }
 
     if (finger !== undefined && finger !== null && finger !== -2) {
-      this._ctx.fillStyle = this._colors.fingerTextColor;
+      this._ctx.fillStyle = this._colors.fingers.textColor || "#ffffff";
       const fontSize = 45 * this._scaleFactor;
       this._ctx.font = `bold ${fontSize}px sans-serif`;
       this._ctx.textAlign = "center";
@@ -545,7 +559,7 @@ export class ChordDrawerBase {
    * Limpa o canvas
    */
   clearCanvas(): void {
-    this._ctx.fillStyle = this._colors.cardColor;
+    this._ctx.fillStyle = this._colors.global.backgroundColor;
     this._ctx.fillRect(0, 0, this._dimensions.width, this._dimensions.height);
   }
 
@@ -633,8 +647,13 @@ export class ChordDrawerBase {
   /**
    * Desenha o nome do acorde
    */
-  drawChordName(chordName: string): void {
-    this._ctx.fillStyle = this._colors.chordNameColor;
+  drawChordName(chordName: string, options?: { opacity?: number }): void {
+    const themeOpacity = this._colors.chordName.opacity ?? 1;
+    const transitionOpacity = options?.opacity ?? 1;
+    const finalOpacity = themeOpacity * transitionOpacity;
+
+    this._ctx.fillStyle = this.hexToRgba(this._colors.chordName.color, finalOpacity);
+
     const fontSize = 75 * this._scaleFactor;
     this._ctx.font = `bold ${fontSize}px sans-serif`;
     this._ctx.textAlign = "center";
@@ -645,6 +664,7 @@ export class ChordDrawerBase {
     // Drawing in absolute screen space
     this._ctx.save();
     this._ctx.translate(pos.x, pos.y);
+
     this._ctx.fillText(chordName, 0, 0);
     this._ctx.restore();
   }
@@ -818,7 +838,7 @@ export class ChordDrawerBase {
         // Invert mapping: string 1 -> rightmost, string 6 -> leftmost
         const visualIdx = this._numStrings - stringNumber;
         const x = this.fretboardX + this.horizontalPadding + visualIdx * this.stringSpacing;
-        this._ctx.fillStyle = this._colors.textColor;
+        this._ctx.fillStyle = this._colors.global.primaryTextColor;
 
         this._ctx.save();
         this._ctx.translate(x, y);
@@ -861,7 +881,7 @@ export class ChordDrawerBase {
     if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
 
     // Cor: branca se na pestana (para contraste), ou cor de texto normal
-    this._ctx.fillStyle = onBarre ? this._colors.fingerTextColor : this._colors.textColor;
+    this._ctx.fillStyle = onBarre ? (this._colors.fingers.textColor || '#ffffff') : this._colors.global.primaryTextColor;
 
     // Fonte um pouco maior para destaque
     const fontSize = 45 * this._scaleFactor;
@@ -873,7 +893,7 @@ export class ChordDrawerBase {
   }
 
   private _drawTransposeIndicatorTextAtOrigin(transportDisplay: number): void {
-    this._ctx.fillStyle = this._colors.textColor;
+    this._ctx.fillStyle = this._colors.global.primaryTextColor;
     const fontSize = 45 * this._scaleFactor; // Same as finger numbers
     this._ctx.font = `bold ${fontSize}px sans-serif`;
     this._ctx.textAlign = "center";
@@ -1216,7 +1236,7 @@ export class ChordDrawerBase {
           this._ctx.save();
           this._ctx.translate(x, y);
           this._ctx.scale(scale, scale);
-          this._ctx.fillStyle = this._colors.textColor;
+          this._ctx.fillStyle = this._colors.global.primaryTextColor;
           const fontSize = 45 * this._scaleFactor;
           this._ctx.font = `bold ${fontSize}px sans-serif`;
           this._ctx.textAlign = "center";
@@ -1378,19 +1398,19 @@ export class ChordDrawerBase {
         this._ctx.save();
         this._ctx.translate(currentCenterX, currentY);
 
-        this._ctx.fillStyle = this.hexToRgba(this._colors.fingerColor, this._colors.fingerBackgroundAlpha);
+        this._ctx.fillStyle = this.hexToRgba(this._colors.fingers.color, this._colors.fingers.opacity ?? 1);
         this._ctx.beginPath();
         // Use a large radius to ensure it looks circular when square
         this._ctx.roundRect(-currentWidth / 2, -currentHeight / 2, currentWidth, currentHeight, this.neckRadius * 2);
         this._ctx.fill();
 
-        if (this._colors.fingerBorderWidth > 0) {
-          this._ctx.strokeStyle = this._colors.fingerBorderColor;
-          this._ctx.lineWidth = this._colors.fingerBorderWidth;
+        if ((this._colors.fingers.border?.width || 0) > 0) {
+          this._ctx.strokeStyle = this._colors.fingers.border?.color || '#000000';
+          this._ctx.lineWidth = this._colors.fingers.border?.width || 0;
           this._ctx.stroke();
         }
 
-        this._ctx.fillStyle = this._colors.fingerTextColor;
+        this._ctx.fillStyle = this._colors.fingers.textColor || '#ffffff';
         const fontSize = 45 * this._scaleFactor;
         this._ctx.font = `bold ${fontSize}px sans-serif`;
         this._ctx.textAlign = "center";
@@ -1456,18 +1476,18 @@ export class ChordDrawerBase {
         this._ctx.save();
         this._ctx.translate(currentCenterX, currentY);
 
-        this._ctx.fillStyle = this.hexToRgba(this._colors.fingerColor, this._colors.fingerBackgroundAlpha);
+        this._ctx.fillStyle = this.hexToRgba(this._colors.fingers.color, this._colors.fingers.opacity ?? 1);
         this._ctx.beginPath();
         this._ctx.roundRect(-currentWidth / 2, -currentHeight / 2, currentWidth, currentHeight, this.neckRadius * 2);
         this._ctx.fill();
 
-        if (this._colors.fingerBorderWidth > 0) {
-          this._ctx.strokeStyle = this._colors.fingerBorderColor;
-          this._ctx.lineWidth = this._colors.fingerBorderWidth;
+        if ((this._colors.fingers.border?.width || 0) > 0) {
+          this._ctx.strokeStyle = this._colors.fingers.border?.color || '#000000';
+          this._ctx.lineWidth = this._colors.fingers.border?.width || 0;
           this._ctx.stroke();
         }
 
-        this._ctx.fillStyle = this._colors.fingerTextColor;
+        this._ctx.fillStyle = this._colors.fingers.textColor || '#ffffff';
         const fontSize = 45 * this._scaleFactor;
         this._ctx.font = `bold ${fontSize}px sans-serif`;
         this._ctx.textAlign = "center";
@@ -1581,7 +1601,7 @@ export class ChordDrawerBase {
       else return;
 
       withCanvasTransformAtPoint(this._ctx, { x, y, opacity, scale }, () => {
-        this._ctx.fillStyle = this._colors.textColor;
+        this._ctx.fillStyle = this._colors.global.primaryTextColor;
         const fontSize = 45 * this._scaleFactor;
         this._ctx.font = `bold ${fontSize}px sans-serif`;
         this._ctx.textAlign = "center";
@@ -1672,7 +1692,7 @@ export class ChordDrawerBase {
     this._ctx.translate(centerX, centerY + translateY);
     this._ctx.scale(scale, scale);
 
-    this._ctx.fillStyle = this._colors.chordNameColor;
+    this._ctx.fillStyle = this._colors.chordName.color || '#22d3ee';
     const fontSize = 75 * this._scaleFactor;
     this._ctx.font = `bold ${fontSize}px sans-serif`;
     this._ctx.textAlign = "center";

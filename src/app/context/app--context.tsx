@@ -1,7 +1,7 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
-import { createContext, useContext, useState, useRef, useMemo } from "react";
+import { createContext, useContext, useState, useRef, useMemo, useCallback } from "react";
 import type { Achord, ChordDiagramProps, ChordWithTiming, FretboardTheme } from "@/modules/core/domain/types";
 import type { TimelineState } from "@/modules/studio/domain/types";
 import { useUndoRedo } from "@/hooks/use-undo-redo";
@@ -23,7 +23,7 @@ export interface StudioState {
 // Type alias for backward compatibility
 export type ChordDiagramColors = FretboardTheme;
 
-export type AnimationType = "carousel" | "static-fingers" | "guitar-fretboard";
+export type AnimationType = "carousel" | "static-fingers" | "dynamic-fingers" | "guitar-fretboard";
 
 interface AppContextType {
   selectedChords: ChordWithTiming[];
@@ -62,7 +62,7 @@ interface AppContextType {
   renderCancelRequested: boolean;
   setRenderCancelRequested: Dispatch<SetStateAction<boolean>>;
 
-  minClipDurationMs: number; // Adicione esta linha
+  minClipDurationMs: number;
 
   audioRefs: React.MutableRefObject<Record<string, HTMLAudioElement | null>>;
 
@@ -78,44 +78,57 @@ interface AppContextType {
   setTuningIndex: (index: number) => void;
 }
 
-// ... imports ...
-
 
 export const DEFAULT_COLORS: ChordDiagramColors = {
-  cardColor: "#000000",              // Fundo preto
-  fingerColor: "#200f0f",            // Dedos brancos
-  fretboardColor: "#303135",         // Braço cinza escuro moderno
-  fretboardShadow: false,
-  fretboardShadowColor: "rgba(0,0,0,0.5)",
-  borderColor: "#FFFFFF",            // Cordas brancas
-  fretColor: "#000000",              // Trastes brancos
-  textColor: "#FF8C42",              // Nomes das cordas laranja
-  chordNameColor: "#ffffff",         // Nome do acorde branco (user request)
-  chordNameOpacity: 1,
-  chordNameShadow: false,            // Sem sombra (user request)
-  chordNameShadowColor: "#22d3ee",
-  chordNameShadowBlur: 10,
-  chordNameStrokeColor: "#000000",
-  chordNameStrokeWidth: 3,
-  borderWidth: 3,
-  stringThickness: 3,                // Cordas um pouco mais grossas
-  fingerTextColor: "#ffffff",        // Texto dos dedos preto
-  fingerBorderColor: "#FFFFFF",      // Borda branca nos dedos
-  fingerBorderWidth: 4,              // Borda mais visível
-  fingerBoxShadowHOffset: 0,
-  fingerBoxShadowVOffset: 0,
-  fingerBoxShadowBlur: 0,
-  fingerBoxShadowSpread: 0,
-  fingerBoxShadowColor: "#000000",
-  fingerBackgroundAlpha: 0.3,        // Dedos totalmente opacos
-  fretboardScale: 1.0,               // Escala padrão
-  rotation: 0,                       // Rotação padrão
-  mirror: false,                     // Espelhamento padrão
-  // Capo Defaults
-  capoColor: "rgba(100, 100, 110, 0.9)",
-  capoBorderColor: "rgba(0, 0, 0, 0.3)",
-  capoShadow: true,
-  capoShadowColor: "rgba(0, 0, 0, 0.5)",
+  global: {
+    backgroundColor: "#000000",
+    primaryTextColor: "#FF8C42",
+    scale: 1.0,
+    rotation: 0,
+    mirror: false,
+  },
+  fretboard: {
+    neck: {
+      color: "#303135",
+      opacity: 1,
+    },
+    frets: {
+      color: "#000000",
+    },
+    strings: {
+      color: "#FFFFFF",
+      thickness: 3,
+    },
+  },
+  fingers: {
+    color: "#200f0f",
+    textColor: "#ffffff",
+    border: {
+      color: "#FFFFFF",
+      width: 4,
+    },
+    opacity: 0.3, // backgroundAlpha
+  },
+  chordName: {
+    color: "#ffffff",
+    textColor: "#ffffff", // Redundant but fits interface
+    opacity: 1,
+    stroke: {
+      color: "#000000",
+      width: 3,
+    },
+  },
+  capo: {
+    color: "rgba(100, 100, 110, 0.9)",
+    border: {
+      color: "rgba(0, 0, 0, 0.3)",
+      width: 1, // Added default width
+    },
+    textColors: {
+      name: "#ffffff",
+      number: "#FF8C42",
+    },
+  },
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -132,6 +145,7 @@ const INITIAL_TIMELINE_STATE: TimelineState = {
   totalDuration: 10000, // 10s default
   zoom: 100 // 100px por segundo
 };
+
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
 
@@ -160,7 +174,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     tuningIndex
   } = state;
 
-  // 2. Compatibility Setters
+  // 3. Ephemeral State (No Undo) - MOVED UP
+  const [playbackIsPlaying, setPlaybackIsPlaying] = useState(false);
+  const [playbackIsPaused, setPlaybackIsPaused] = useState(false);
+  const [playbackProgress, setPlaybackProgress] = useState(0);
+  const [playbackTotalDurationMs, setPlaybackTotalDurationMs] = useState(0);
+  const [playbackIsScrubbing, setPlaybackIsScrubbing] = useState(false);
+  const [playbackSeekProgress, setPlaybackSeekProgress] = useState(0);
+  const [playbackSeekNonce, setPlaybackSeekNonce] = useState(0);
+  const [isRendering, setIsRendering] = useState(false);
+  const [renderProgress, setRenderProgress] = useState(0);
+  const [renderCancelRequested, setRenderCancelRequested] = useState(false);
+
+  const minClipDurationMs = 200;
+
+  const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
+
+  // 2. Compatibility Setters & Handlers
   const setSelectedChords = (action: SetStateAction<ChordWithTiming[]>) => {
     setState(prev => ({
       ...prev,
@@ -203,15 +233,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
-  const setInstrumentId = (id: string) => {
+  const setInstrumentId = useCallback((id: string) => {
     setState(prev => ({ ...prev, instrumentId: id, tuningIndex: 0 }));
-  };
+  }, [setState]);
 
-  const setTuningIndex = (index: number) => {
+  const setTuningIndex = useCallback((index: number) => {
     setState(prev => ({ ...prev, tuningIndex: index }));
-  };
+  }, [setState]);
 
-  const addChordToTimeline = (chordData: ChordDiagramProps) => {
+  const addChordToTimeline = useCallback((chordData: ChordDiagramProps) => {
     console.log('[AppProvider] addChordToTimeline called', chordData);
     setState((prev) => {
       const selectedInst = INSTRUMENTS.find(i => i.id === prev.instrumentId) || INSTRUMENTS[0];
@@ -269,29 +299,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       };
     });
-  };
-
-  // 3. Ephemeral State (No Undo)
-  const [playbackIsPlaying, setPlaybackIsPlaying] = useState(false);
-  const [playbackIsPaused, setPlaybackIsPaused] = useState(false);
-  const [playbackProgress, setPlaybackProgress] = useState(0);
-  const [playbackTotalDurationMs, setPlaybackTotalDurationMs] = useState(0);
-  const [playbackIsScrubbing, setPlaybackIsScrubbing] = useState(false);
-  const [playbackSeekProgress, setPlaybackSeekProgress] = useState(0);
-  const [playbackSeekNonce, setPlaybackSeekNonce] = useState(0);
-  const [isRendering, setIsRendering] = useState(false);
-  const [renderProgress, setRenderProgress] = useState(0);
-  const [renderCancelRequested, setRenderCancelRequested] = useState(false);
-
-  const minClipDurationMs = 200; // Defina um valor padrão ou obtenha de outro lugar
-
+  }, [setState, minClipDurationMs, playbackTotalDurationMs]);
 
   const requestPlaybackSeek = (progress: number) => {
     setPlaybackSeekProgress(progress);
     setPlaybackSeekNonce((n) => n + 1);
   };
-
-  const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
 
   const value: AppContextType = useMemo(() => ({
     selectedChords,

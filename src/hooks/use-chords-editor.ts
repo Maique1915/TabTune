@@ -41,7 +41,7 @@ export function useChordsEditor() {
             showClef: true,
             showTimeSig: true,
             notes: [
-                { id: generateId(), positions: [], duration: 'q', type: 'note', decorators: { dot: false }, accidental: 'none' }
+                { id: generateId(), positions: [], duration: 'q', type: 'note', decorators: { dot: false }, accidental: 'none', customDurationMs: 2000 }
             ]
         }],
         settings: {
@@ -307,29 +307,7 @@ export function useChordsEditor() {
         });
     };
 
-    const handleRemoveNote = (noteId: string) => {
-        setState(prev => {
-            let targetMeasureIndex = prev.currentMeasureIndex;
-            let targetMeasureId = prev.selectedMeasureId;
-            const newMeasures = prev.measures.map((m, idx) => {
-                const found = m.notes.some(n => n.id === noteId);
-                if (found) {
-                    targetMeasureIndex = idx;
-                    targetMeasureId = m.id;
-                    return { ...m, notes: m.notes.filter(n => n.id !== noteId) };
-                }
-                return m;
-            });
-            return {
-                ...prev,
-                measures: newMeasures,
-                selectedNoteIds: prev.selectedNoteIds.filter(id => id !== noteId),
-                editingNoteId: prev.editingNoteId === noteId ? null : prev.editingNoteId,
-                currentMeasureIndex: targetMeasureIndex,
-                selectedMeasureId: targetMeasureId
-            };
-        });
-    };
+
 
     const handleUpdateMeasure = (id: string, updates: Partial<MeasureData>) => {
         setMeasures(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
@@ -351,7 +329,8 @@ export function useChordsEditor() {
                         decorators: { dot: false },
                         positions: [],
                         technique: '',
-                        isSlurred: false
+                        isSlurred: false,
+                        customDurationMs: 2000 // Default to 2 seconds as requested
                     }
                 ]
             };
@@ -766,7 +745,7 @@ export function useChordsEditor() {
         handleSelectMeasure,
         handleSelectNote,
         handleAddNote,
-        handleRemoveNote,
+
         handleUpdateMeasure,
         handleAddMeasure,
         handleRemoveMeasure,

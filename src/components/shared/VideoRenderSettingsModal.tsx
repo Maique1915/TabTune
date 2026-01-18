@@ -37,8 +37,12 @@ export const VideoRenderSettingsModal: React.FC<VideoRenderSettingsModalProps> =
     }, []);
 
     useEffect(() => {
-        setLocalSettings(settings);
-    }, [settings]);
+        // Deep compare to prevent infinite loops if the parent passes a new object
+        // with the same values on every render.
+        if (JSON.stringify(settings) !== JSON.stringify(localSettings)) {
+            setLocalSettings(settings);
+        }
+    }, [settings, localSettings]);
 
     const handleConfirm = () => {
         onRender(localSettings);
