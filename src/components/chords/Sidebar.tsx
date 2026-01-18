@@ -891,7 +891,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     <div className="grid grid-cols-2 gap-2">
                                         <button
                                             onClick={() => {
-                                                setColors(STUDIO_PRESETS.default.style);
                                                 onGlobalSettingsChange?.({ numFrets: 24 });
                                                 setAnimationType('guitar-fretboard');
                                             }}
@@ -904,7 +903,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         </button>
                                         <button
                                             onClick={() => {
-                                                setColors(STUDIO_PRESETS.classic.style);
                                                 onGlobalSettingsChange?.({ numFrets: 5 });
                                                 setAnimationType('static-fingers');
                                             }}
