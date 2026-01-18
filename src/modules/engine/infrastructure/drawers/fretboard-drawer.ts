@@ -26,6 +26,7 @@ export class FretboardDrawer {
   private _neckRadius: number;
   private _stringNamesY: number;
   private _scaleFactor: number;
+  private _stringNames: string[] = ["E", "A", "D", "G", "B", "e"];
   private _rotation: number = 0;
   private _mirror: boolean = false;
 
@@ -162,8 +163,12 @@ export class FretboardDrawer {
     this._hideCapoTitle = hide;
   }
 
-  public setStringNames(names: string[] | undefined): void {
-    // We'll use this in drawStringNames
+  public setStringNames(arg1: number | string[] | undefined, arg2?: string[]): void {
+    if (Array.isArray(arg1)) {
+      this._stringNames = arg1;
+    } else if (arg2) {
+      this._stringNames = arg2;
+    }
   }
 
   public setStringSpacing(spacing: number): void {
@@ -418,7 +423,7 @@ export class FretboardDrawer {
    */
   drawStringNames(progress: number = 1, customNames?: string[]): void {
     const easedProgress = this.easeInOutQuad(progress);
-    const namesToDraw = customNames || ["E", "A", "D", "G", "B", "e"];
+    const namesToDraw = customNames || this._stringNames;
     const isShortNeck = this._numFrets <= 6;
 
     this._ctx.save();

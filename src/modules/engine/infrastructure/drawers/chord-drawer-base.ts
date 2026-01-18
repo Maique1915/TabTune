@@ -260,7 +260,7 @@ export class ChordDrawerBase {
   public setStringNames(names: string[] | undefined): void {
     if (names) {
       this._stringNames = names;
-      this.fretboardDrawer.setStringNames(names);
+      this.fretboardDrawer.setStringNames(0, names);
       this._fretboardCache = null; // Invalidate cache when tuning changes
     }
   }
@@ -1046,7 +1046,7 @@ export class ChordDrawerBase {
       const showNut = capoConfig.showNut && transposeConfig.showNut;
 
       this.fretboardDrawer.setConditionalFlags(showNut, showNut);
-      this.fretboardDrawer.setStringNames(1, finalChord.stringNames);
+      this.fretboardDrawer.setStringNames(1, (finalChord.stringNames && finalChord.stringNames.length > 0) ? finalChord.stringNames : ["E", "A", "D", "G", "B", "e"]);
       this.fretboardDrawer.setHeadstockGap(showNut ? 20 * this._scaleFactor : 0);
 
       // Draw Capo (Visual Shift)

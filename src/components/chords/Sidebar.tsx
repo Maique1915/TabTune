@@ -448,34 +448,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </div>
                         </div>
 
-                        <div className="h-px bg-zinc-800/50 w-full" />
-
-                        {/* Transposition Control */}
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Transpose</label>
-                                <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/30 text-[9px] font-black uppercase tracking-widest leading-none">
-                                    SEMITONES
-                                </span>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => onTransposeMeasure?.(activeMeasure?.id || '', -1)}
-                                    className="flex-1 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-all font-black text-sm flex items-center justify-center gap-2"
-                                >
-                                    <span>-</span>
-                                    <span className="text-[10px]">DOWN</span>
-                                </button>
-                                <button
-                                    onClick={() => onTransposeMeasure?.(activeMeasure?.id || '', 1)}
-                                    className="flex-1 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-all font-black text-sm flex items-center justify-center gap-2"
-                                >
-                                    <span>+</span>
-                                    <span className="text-[10px]">UP</span>
-                                </button>
-                            </div>
-                        </div>
 
                         <div className="h-px bg-zinc-800/50 w-full" />
                         <div className="space-y-3">
@@ -661,6 +633,37 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         </button>
                                     );
                                 })}
+                            </div>
+                        </div>
+
+                        {/* Transpose Entire Song */}
+                        <div className="space-y-3 pt-2 border-t border-zinc-800/50">
+                            <div className="flex items-center justify-between">
+                                <div className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">
+                                    Transpose Entire Song
+                                </div>
+                                <div className="text-[9px] font-bold text-orange-500/80 uppercase px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20">
+                                    Data Shift
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => onTransposeAll?.(-1)}
+                                    className="w-10 h-8 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center font-bold"
+                                    title="Shift all chords and names down 1 semitone"
+                                >
+                                    -
+                                </button>
+                                <div className="flex-1 text-center font-bold text-zinc-300 bg-zinc-950/30 rounded-lg py-1.5 border border-zinc-800/50 text-[10px] uppercase">
+                                    Shift Notes + Names
+                                </div>
+                                <button
+                                    onClick={() => onTransposeAll?.(1)}
+                                    className="w-10 h-8 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center font-bold"
+                                    title="Shift all chords and names up 1 semitone"
+                                >
+                                    +
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -884,6 +887,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </>
                         )}
 
+
+
                         {/* VIEW WHEN NO CHORD IS SELECTED (GLOBAL SETTINGS) */}
                         {!editingNote && (
                             <div className="space-y-4 pt-4 border-t border-zinc-800/50 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -1028,38 +1033,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     </div>
                                 </div>
 
-                                <div className="h-px bg-zinc-800/20 w-full" />
-
-                                {/* Global Transposition (Shift Notes + Names) */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-1">
-                                            Transpose Entire Song
-                                        </div>
-                                        <div className="text-[9px] font-bold text-orange-500/80 uppercase px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20">
-                                            Data Shift
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => onTransposeAll?.(-1)}
-                                            className="w-10 h-8 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center font-bold"
-                                            title="Shift all chords and names down 1 semitone"
-                                        >
-                                            -
-                                        </button>
-                                        <div className="flex-1 text-center font-bold text-zinc-300 bg-zinc-950/30 rounded-lg py-1.5 border border-zinc-800/50 text-[10px] uppercase">
-                                            Shift Notes + Names
-                                        </div>
-                                        <button
-                                            onClick={() => onTransposeAll?.(1)}
-                                            className="w-10 h-8 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center font-bold"
-                                            title="Shift all chords and names up 1 semitone"
-                                        >
-                                            +
-                                        </button>
-                                    </div>
-                                </div>
 
                                 {/* Import/Export (Stub for now) */}
                                 <div className="space-y-2 pt-4 border-t border-zinc-800/50">
@@ -1074,7 +1047,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                         )}
                     </div>
                 )}
+
+
             </div>
+
+
         </GenericSidebar>
     );
 };
