@@ -140,6 +140,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
 
 
     const drawFrame = useCallback((state: AnimationState, timeMs: number) => {
+        console.log('[FretboardStage] drawFrame called, capo:', capo, 'animationType:', animationType);
         // Clear canvas before drawing anything
         if (!canvasRef.current) return;
         const ctx = canvasRef.current.getContext("2d");
@@ -153,9 +154,9 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
             const drawer = guitarFretboardDrawerRef.current;
             drawer.drawHeadstock();
             drawer.drawBoard(); // Already cleared above
-            drawer.drawBoard();
 
             if (capo > 0) {
+                console.log('[FretboardStage] Drawing capo at fret:', capo);
                 drawer.drawCapo(capo);
             }
 
@@ -173,6 +174,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                         progress: state.chordProgress
                     });
 
+                    // GuitarFretboardDrawer DOES NOT draw the name internally, so we draw it here.
                     if (showChordName && currentChordData.finalChord.showChordName !== false) {
                         if (state.nameTransitionProgress < 1 && state.prevChordName) {
                             drawer.drawChordName(state.prevChordName, { opacity: 1 - state.nameTransitionProgress });
@@ -197,20 +199,12 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                     } else {
                         drawer.drawChord(currentChordData.finalChord, currentChordData.transportDisplay);
                     }
-
-                    if (showChordName && currentChordData.finalChord.showChordName !== false) {
-                        if (state.nameTransitionProgress < 1 && state.prevChordName) {
-                            drawer.drawChordName(state.prevChordName);
-                        }
-                        if (state.currentChordName) {
-                            drawer.drawChordName(state.currentChordName);
-                        }
-                    }
                 }
             } else if (previewChord) {
                 drawer.drawFretboard();
                 drawer.drawFingers(previewChord);
-                if (showChordName && previewChord.chordName) {
+                // ChordDrawerBase.drawFingers doesn't draw the name, so we draw it here.
+                if (showChordName && previewChord.chordName && previewChord.showChordName !== false) {
                     drawer.drawChordName(previewChord.chordName);
                 }
             } else {
@@ -234,6 +228,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         if (!canvasRef.current) return;
         if (!chordDrawerRef.current && !guitarFretboardDrawerRef.current) return;
 
+        console.log('[FretboardStage] drawAnimatedChord called');
         drawFrame(animationStateRef.current, playheadStateRef.current.t);
 
         if (isRecording && onFrameCapture) {
@@ -270,6 +265,8 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
             }, colors.fretboardScale || 1);
             chordDrawerRef.current.setNumStrings(numStrings);
             chordDrawerRef.current.setNumFrets(numFrets);
+            chordDrawerRef.current.setGlobalCapo(capo || 0);
+            chordDrawerRef.current.setStringNames(stringNames);
             guitarFretboardDrawerRef.current = null;
         }
 
@@ -278,7 +275,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         if (!isAnimating) {
             drawAnimatedChord();
         }
-    }, [colors, width, height, isAnimating, drawAnimatedChord, previewChord, numStrings, numFrets, stringNames, tuningShift, animationType]);
+    }, [colors, width, height, isAnimating, drawAnimatedChord, previewChord, numStrings, numFrets, stringNames, tuningShift, animationType, capo]);
 
     // Handle Static Background - simplified for Fretboard (maybe just background color)
     useEffect(() => {

@@ -528,11 +528,11 @@ export function useChordsEditor() {
             const naturalMidi = (octave + 1) * 12 + baseIndex;
 
             let offset = 0;
-            if (desiredAccidental === '#') offset = 1;
-            else if (desiredAccidental === 'b') offset = -1;
+            if (desiredAccidental === '♯') offset = 1;
+            else if (desiredAccidental === '♭') offset = -1;
             else if (desiredAccidental === 'none') {
-                if (n.accidental === '#') offset = -1;
-                else if (n.accidental === 'b') offset = 1;
+                if (n.accidental === '♯') offset = -1;
+                else if (n.accidental === '♭') offset = 1;
             }
 
             const newMidi = naturalMidi + offset;
@@ -637,8 +637,7 @@ export function useChordsEditor() {
                         const newPositions = n.positions.filter((_, i) => i !== idx);
                         if (newIndex >= newPositions.length) newIndex = Math.max(0, newPositions.length - 1);
 
-                        let updatedNote = { ...n, positions: newPositions };
-                        return updatedNote;
+                        return { ...n, positions: newPositions };
                     }
                     return n;
                 })
@@ -647,8 +646,84 @@ export function useChordsEditor() {
         });
     };
 
-    // Removed duplicate handleToggleBarre
+    const handleTransposeMeasure = (measureId: string, semitones: number) => {
+        setState(prev => {
+            const measureIndex = prev.measures.findIndex(m => m.id === measureId);
+            if (measureIndex === -1) return prev;
 
+            const measure = prev.measures[measureIndex];
+
+            // Check if transposing would put any note outside valid fret range (0-24)
+            const wouldGoOutOfBounds = measure.notes.some(note =>
+                note.positions.some(pos => {
+                    const newFret = pos.fret + semitones;
+                    return newFret < 0 || newFret > 24;
+                })
+            );
+
+            if (wouldGoOutOfBounds) return prev; // Don't allow
+
+            // Transpose all notes
+            const transposedNotes = measure.notes.map(note => ({
+                ...note,
+                positions: note.positions.map(pos => ({
+                    ...pos,
+                    fret: pos.fret + semitones
+                })),
+                // Clear barre on transpose
+                barre: undefined
+            }));
+
+            // Transpose chord name if it exists
+            const newChordName = transposeChordName(measure.chordName, semitones);
+
+            const newMeasures = prev.measures.map((m, idx) =>
+                idx === measureIndex
+                    ? { ...m, notes: transposedNotes, chordName: newChordName }
+                    : m
+            );
+
+            return {
+                ...prev,
+                measures: newMeasures
+            };
+        });
+    };
+
+    const handleTransposeAll = (semitones: number) => {
+        setState(prev => {
+            // Check bounds for ALL notes in ALL measures
+            const wouldGoOutOfBounds = prev.measures.some(measure =>
+                measure.notes.some(note =>
+                    note.positions.some(pos => {
+                        const newFret = pos.fret + semitones;
+                        return newFret < 0 || newFret > 24;
+                    })
+                )
+            );
+
+            if (wouldGoOutOfBounds) return prev;
+
+            const newMeasures = prev.measures.map(measure => {
+                const transposedNotes = measure.notes.map(note => ({
+                    ...note,
+                    positions: note.positions.map(pos => ({
+                        ...pos,
+                        fret: pos.fret + semitones
+                    })),
+                    barre: undefined
+                }));
+
+                const newName = transposeChordName(measure.chordName, semitones);
+                return { ...measure, notes: transposedNotes, chordName: newName };
+            });
+
+            return {
+                ...prev,
+                measures: newMeasures
+            };
+        });
+    };
 
     return {
         // State
@@ -753,52 +828,6 @@ export function useChordsEditor() {
             });
         },
 
-        // Transpose Measure (shift all notes by semitones)
-        handleTransposeMeasure: (measureId: string, semitones: number) => {
-            setState(prev => {
-                const measureIndex = prev.measures.findIndex(m => m.id === measureId);
-                if (measureIndex === -1) return prev;
-
-                const measure = prev.measures[measureIndex];
-
-                // Check if transposing would put any note outside valid fret range (0-24)
-                // Notes at fret 0 will be hidden in the UI
-                const wouldGoOutOfBounds = measure.notes.some(note =>
-                    note.positions.some(pos => {
-                        const newFret = pos.fret + semitones;
-                        return newFret < 0 || newFret > 24;
-                    })
-                );
-
-                if (wouldGoOutOfBounds) return prev; // Don't allow
-
-                // Transpose all notes
-                const transposedNotes = measure.notes.map(note => ({
-                    ...note,
-                    positions: note.positions.map(pos => ({
-                        ...pos,
-                        fret: pos.fret + semitones
-                    })),
-                    // Clear barre on transpose
-                    barre: undefined
-                }));
-
-                // Transpose chord name if it exists
-                const newChordName = transposeChordName(measure.chordName, semitones);
-
-                const newMeasures = prev.measures.map((m, idx) =>
-                    idx === measureIndex
-                        ? { ...m, notes: transposedNotes, chordName: newChordName }
-                        : m
-                );
-
-                return {
-                    ...prev,
-                    measures: newMeasures
-                };
-            });
-        },
-
         // Advanced Actions
         handleNoteRhythmChange,
         handlePitchChange,
@@ -810,6 +839,8 @@ export function useChordsEditor() {
         handleRemoveChordNote,
         handleToggleBarre,
         handleToggleBarreTo,
+        handleTransposeMeasure,
+        handleTransposeAll,
         updateSelectedNotes,
 
         // Utils

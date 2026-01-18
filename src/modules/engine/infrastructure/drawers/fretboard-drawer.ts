@@ -35,6 +35,7 @@ export class FretboardDrawer {
   private _headstockGap: number = 0;
   private _showCapo: boolean = false;
   private _capoFret: number = 0;
+  private _hideCapoTitle: boolean = false;
 
   constructor(
     ctx: CanvasRenderingContext2D,
@@ -157,6 +158,10 @@ export class FretboardDrawer {
     this._capoFret = fret;
   }
 
+  public setHideCapoTitle(hide: boolean): void {
+    this._hideCapoTitle = hide;
+  }
+
   public setStringNames(names: string[] | undefined): void {
     // We'll use this in drawStringNames
   }
@@ -168,6 +173,15 @@ export class FretboardDrawer {
   public setFretboardWidth(width: number): void {
     this._fretboardWidth = width;
     this._diagramWidth = width; // Usually same
+  }
+
+  public setFretboardHeight(height: number): void {
+    this._fretboardHeight = height;
+    this._diagramHeight = height + (this._numFrets <= 6 ? 75 * this._scaleFactor : 0);
+  }
+
+  public setFretSpacing(spacing: number): void {
+    this._realFretSpacing = spacing;
   }
 
   public setHorizontalPadding(padding: number): void {
@@ -186,6 +200,7 @@ export class FretboardDrawer {
   public setCtx(ctx: CanvasRenderingContext2D): void {
     this._ctx = ctx;
   }
+
   /**
    * Função de easing cúbico (easeInOutQuad) para transições suaves.
    * t: current time (progress from 0 to 1)
@@ -193,81 +208,181 @@ export class FretboardDrawer {
   private easeInOutQuad(t: number): number {
     return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
   }
+  /**
+   * Helper robusto para desenhar retângulos arredondados com fallback.
+   */
+  private _safeRoundRect(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    radius: number | number[],
+    fill: boolean = true,
+    stroke: boolean = false
+  ): void {
+    this._ctx.beginPath();
+
+    // Tenta usar roundRect se disponível
+    if (typeof this._ctx.roundRect === 'function') {
+      try {
+        this._ctx.roundRect(x, y, width, height, radius);
+      } catch (e) {
+        // Fallback para retângulo normal se o formato do radius (array) der erro
+        this._ctx.rect(x, y, width, height);
+      }
+    } else {
+      // Fallback para retângulo normal
+      this._ctx.rect(x, y, width, height);
+    }
+
+    if (fill) this._ctx.fill();
+    if (stroke) this._ctx.stroke();
+  }
+
+  /**
+   * Helper privado para desenhar a cabeça (Headstock) em SHORT_NECK
+   */
+  private _drawHeadstockShort(neckRadius: number): void {
+    const headWidth = this._diagramWidth;
+    const headX = this._diagramX;
+    const headY = this._diagramY;
+    const headHeight = 55 * this._scaleFactor; // Espaço para os nomes, separado do Nut
+
+    this._ctx.fillStyle = this._colors.fretboardColor;
+    this._safeRoundRect(headX, headY, headWidth, headHeight, [neckRadius, neckRadius, 0, 0]);
+  }
+
+  /**
+   * Helper privado para desenhar o corpo do braço em SHORT_NECK
+   */
+  private _drawNeckBodyShort(neckRadius: number, extraBottomPadding: number): void {
+    const neckX = this._diagramX;
+    const neckWidth = this._diagramWidth;
+    const neckY = this._fretboardY;
+    const neckHeight = (this._diagramHeight - (this._fretboardY - this._diagramY)) + extraBottomPadding;
+
+    this._ctx.fillStyle = this._colors.fretboardColor;
+    this._safeRoundRect(neckX, neckY, neckWidth, neckHeight, [0, 0, neckRadius, neckRadius]);
+  }
+
+  /**
+   * Desenha o braço do violão (versão SHORT NECK SEM CAPO)
+   */
+  drawNeckWithoutCapo(): void {
+    this._ctx.save();
+    const neckRadius = 24 * this._scaleFactor;
+    const extraBottomPadding = 40 * this._scaleFactor;
+
+    this._drawHeadstockShort(neckRadius);
+    this._drawNeckBodyShort(neckRadius, extraBottomPadding);
+
+    this._ctx.restore();
+  }
+
+  /**
+   * Desenha o braço do violão (versão SHORT NECK COM PESTANA/NUT)
+   * A "Pestana" é a barra que conecta a cabeça ao braço.
+   */
+  drawNeckWithPestana(): void {
+    this._ctx.save();
+    const neckRadius = 24 * this._scaleFactor;
+    const extraBottomPadding = 40 * this._scaleFactor;
+
+    this._drawHeadstockShort(neckRadius);
+
+    // 2. PESTANA (Nut)
+    // Agora flutuando ou colada ao braço, com o gap de 20px acima dela
+    const nutHeight = 15 * this._scaleFactor;
+    const nutY = this._fretboardY - nutHeight;
+    const nutX = this._diagramX;
+    const nutWidth = this._diagramWidth;
+
+    this._ctx.fillStyle = this._colors.fretColor || "#ffffff";
+    this._ctx.fillRect(nutX, nutY, nutWidth, nutHeight);
+
+    // Borda inferior da pestana para definição
+    this._ctx.strokeStyle = "rgba(0,0,0,0.3)";
+    this._ctx.lineWidth = 1 * this._scaleFactor;
+    this._ctx.beginPath();
+    this._ctx.moveTo(nutX, nutY + nutHeight);
+    this._ctx.lineTo(nutX + nutWidth, nutY + nutHeight);
+    this._ctx.stroke();
+
+    this._drawNeckBodyShort(neckRadius, extraBottomPadding);
+
+    this._ctx.restore();
+  }
+
+  /**
+   * Desenha o braço do violão (versão SHORT NECK COM CAPO)
+   * Baseado na referência do @[guitar-fretboard-visualizer/services]
+   */
+  drawNeckWithCapo(): void {
+    this._ctx.save();
+    const neckRadius = 24 * this._scaleFactor;
+    const extraBottomPadding = 40 * this._scaleFactor;
+
+    this._drawHeadstockShort(neckRadius);
+    this.drawCapo(); // Call the consolidated drawCapo function
+    this._drawNeckBodyShort(neckRadius, extraBottomPadding);
+
+    this._ctx.restore();
+  }
 
   /**
    * Desenha o braço do violão
    */
   drawNeck(): void {
-    this._ctx.save();
     const isShortNeck = this._numFrets <= 6;
-    const neckX = this._diagramX;
-    const neckWidth = this._diagramWidth;
 
     if (isShortNeck) {
-      const radius = 24 * this._scaleFactor;
-      const extraBottomPadding = 40 * this._scaleFactor;
-
-      // 1. CABEÇA (Headstock) - Largura igual ao braço e mais separada
-      const headWidth = this._diagramWidth;
-      const headX = this._diagramX;
-      const headY = this._diagramY;
-      // Altura reduzida para criar maior espaço de separação (gap = 45)
-      const headHeight = 55 * this._scaleFactor;
-
-      this._ctx.fillStyle = this._colors.fretboardColor; // Cor do tema para a cabeça
-      this._ctx.beginPath();
-      // Ambos os cantos superiores arredondados de forma igual
-      this._ctx.roundRect(headX, headY, headWidth, headHeight, [radius, radius, 0, 0]);
-      this._ctx.fill();
-
-      // 2. BRAÇO (Neck)
-      const neckWidth = this._diagramWidth;
-      const neckX = this._diagramX;
-      // O braço começa no Nut (fretboardY), criando o vão solicitado
-      const neckY = this._fretboardY;
-      const neckHeight = (this._diagramHeight - (this._fretboardY - this._diagramY)) + extraBottomPadding;
-
-      this._ctx.fillStyle = this._colors.fretboardColor;
-      this._ctx.beginPath();
-      // Cantos inferiores arredondados para acabamento de card
-      this._ctx.roundRect(neckX, neckY, neckWidth, neckHeight, [0, 0, radius, radius]);
-      this._ctx.fill();
-    } else {
-      this._ctx.fillStyle = this._colors.fretboardColor;
-      const neckY = this._diagramY;
-      const neckHeight = this._diagramHeight;
-      this._ctx.beginPath();
-      // Lógica original para braço completo (Full Neck)
-      if (this._showHeadBackground) {
-        this._ctx.moveTo(neckX + this._neckRadius, neckY);
-        this._ctx.lineTo(neckX + neckWidth - this._neckRadius, neckY);
-        this._ctx.quadraticCurveTo(neckX + neckWidth, neckY, neckX + neckWidth, neckY + this._neckRadius);
+      if (this._showCapo || this._capoFret > 0) {
+        this.drawNeckWithCapo();
+      } else if (this._showNut) {
+        this.drawNeckWithPestana();
       } else {
-        this._ctx.moveTo(neckX, neckY);
-        this._ctx.lineTo(neckX + neckWidth, neckY);
-        this._ctx.lineTo(neckX + neckWidth, neckY + this._neckRadius);
+        this.drawNeckWithoutCapo();
       }
-
-      // Lateral Direita
-      this._ctx.lineTo(neckX + neckWidth, neckY + neckHeight - this._neckRadius);
-
-      // Canto Inferior Direito
-      this._ctx.quadraticCurveTo(neckX + neckWidth, neckY + neckHeight, neckX + neckWidth - this._neckRadius, neckY + neckHeight);
-      this._ctx.lineTo(neckX + this._neckRadius, neckY + neckHeight);
-
-      // Canto Inferior Esquerdo
-      this._ctx.quadraticCurveTo(neckX, neckY + neckHeight, neckX, neckY + neckHeight - this._neckRadius);
-
-      // Lateral Esquerda
-      this._ctx.lineTo(neckX, neckY + (this._showHeadBackground ? this._neckRadius : 0));
-
-      // Canto Superior Esquerdo
-      if (this._showHeadBackground) {
-        this._ctx.quadraticCurveTo(neckX, neckY, neckX + this._neckRadius, neckY);
-      }
-      this._ctx.closePath();
-      this._ctx.fill();
+      return;
     }
+
+    this._ctx.save();
+    const neckX = this._diagramX;
+    const neckWidth = this._diagramWidth;
+    this._ctx.fillStyle = this._colors.fretboardColor;
+    const neckY = this._diagramY;
+    const neckHeight = this._diagramHeight;
+    this._ctx.beginPath();
+    // Lógica original para braço completo (Full Neck)
+    if (this._showHeadBackground) {
+      this._ctx.moveTo(neckX + this._neckRadius, neckY);
+      this._ctx.lineTo(neckX + neckWidth - this._neckRadius, neckY);
+      this._ctx.quadraticCurveTo(neckX + neckWidth, neckY, neckX + neckWidth, neckY + this._neckRadius);
+    } else {
+      this._ctx.moveTo(neckX, neckY);
+      this._ctx.lineTo(neckX + neckWidth, neckY);
+      this._ctx.lineTo(neckX + neckWidth, neckY + this._neckRadius);
+    }
+
+    // Lateral Direita
+    this._ctx.lineTo(neckX + neckWidth, neckY + neckHeight - this._neckRadius);
+
+    // Canto Inferior Direito
+    this._ctx.quadraticCurveTo(neckX + neckWidth, neckY + neckHeight, neckX + neckWidth - this._neckRadius, neckY + neckHeight);
+    this._ctx.lineTo(neckX + this._neckRadius, neckY + neckHeight);
+
+    // Canto Inferior Esquerdo
+    this._ctx.quadraticCurveTo(neckX, neckY + neckHeight, neckX, neckY + neckHeight - this._neckRadius);
+
+    // Lateral Esquerda
+    this._ctx.lineTo(neckX, neckY + (this._showHeadBackground ? this._neckRadius : 0));
+
+    // Canto Superior Esquerdo
+    if (this._showHeadBackground) {
+      this._ctx.quadraticCurveTo(neckX, neckY, neckX + this._neckRadius, neckY);
+    }
+    this._ctx.closePath();
+    this._ctx.fill();
 
     this._ctx.restore();
   }
@@ -337,35 +452,102 @@ export class FretboardDrawer {
    */
   drawCapo(): void {
     if (!this._showCapo) return;
+    const isShortNeck = this._numFrets <= 6;
 
     this._ctx.save();
 
-    const capoWidth = this._fretboardWidth + (this._horizontalPadding * 0.5);
-    const capoHeight = 40 * this._scaleFactor;
-    const capoX = this._fretboardX + (this._fretboardWidth / 2) - (capoWidth / 2);
-    // Position capo in the gap, just below the headstock
-    const capoY = this._stringNamesY - (this._headstockGap / 2) - (capoHeight / 2);
-    const cornerRadius = 12 * this._scaleFactor;
+    // 1. DIMENSÕES E POSIÇÃO (Horizontalmente simétrico ao diagrama)
+    const capoWidth = this._diagramWidth + (30 * this._scaleFactor);
+    const capoX = this._diagramX - (15 * this._scaleFactor);
 
-    // Draw capo background
-    this._ctx.fillStyle = this._colors.cardColor; // Usar cardColor para o corpo do capotraste
-    this._ctx.beginPath();
-    this._ctx.roundRect(capoX, capoY, capoWidth, capoHeight, cornerRadius);
-    this._ctx.fill();
+    // Altura e vertical dependem do estilo do braço
+    let capoHeight = 45 * this._scaleFactor;
+    let capoY = 0;
+    let cornerRadius = 10 * this._scaleFactor;
 
-    // Draw "CAPO" text
-    this._ctx.fillStyle = this._colors.textColor; // Usar textColor (Laranja no Midnight) para o texto
-    const fontSize = 28 * this._scaleFactor;
-    this._ctx.font = `bold ${fontSize}px sans-serif`;
-    this._ctx.textAlign = "center";
-    this._ctx.textBaseline = "middle";
+    if (isShortNeck) {
+      // No Short Neck, centralizado no gap entre cabeça (55) e braço (75)
+      capoY = this._diagramY + (65 * this._scaleFactor);
+    } else {
+      // No braço completo, centralizado entre nomes das cordas e o topo do fretboard
+      capoHeight = 40 * this._scaleFactor;
+      capoY = this._stringNamesY - (this._headstockGap / 2);
+      cornerRadius = 12 * this._scaleFactor;
+    }
 
-    this._ctx.save();
-    this._ctx.translate(capoX + (capoWidth / 2), capoY + (capoHeight / 2));
-    if (this._mirror) this._ctx.scale(-1, 1);
-    if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
-    this._ctx.fillText("CAPO", 0, 0);
-    this._ctx.restore();
+    // 2. ESTILO VISUAL (Premium para Short Neck, simples para Full)
+    if (isShortNeck) {
+      // Sombra para o capo (Premium look)
+      this._ctx.shadowColor = "rgba(0,0,0,0.6)";
+      this._ctx.shadowBlur = 15 * this._scaleFactor;
+      this._ctx.shadowOffsetY = 5 * this._scaleFactor;
+      this._ctx.fillStyle = "#3f3f44"; // Dark metallic grey
+    } else {
+      this._ctx.fillStyle = this._colors.cardColor;
+    }
+
+    // Desenhar a barra
+    this._safeRoundRect(capoX, capoY - capoHeight / 2, capoWidth, capoHeight, cornerRadius);
+
+    // 3. DETALHES (Borda e Texto)
+    if (isShortNeck) {
+      // Stroke/Borda preta definida
+      this._ctx.shadowBlur = 0;
+      this._ctx.shadowOffsetY = 0;
+      this._ctx.strokeStyle = "#000000";
+      this._ctx.lineWidth = 2 * this._scaleFactor;
+      this._ctx.stroke();
+
+      this._ctx.stroke();
+
+      if (!this._hideCapoTitle) {
+        // Texto "CAPO" Industrial
+        this._ctx.fillStyle = this._colors.textColor;
+        const fontSize = 18 * this._scaleFactor;
+        this._ctx.font = `900 ${fontSize}px "Inter", sans-serif`;
+        this._ctx.letterSpacing = `${5 * this._scaleFactor}px`;
+        this._ctx.textAlign = "center";
+        this._ctx.textBaseline = "middle";
+        this._ctx.fillText("C A P O", capoX + (capoWidth / 2), capoY - 5);
+      }
+    } else {
+      if (!this._hideCapoTitle) {
+        // Desenhar texto "CAPO" simples para o braço completo
+        this._ctx.fillStyle = this._colors.textColor;
+        const fontSize = 28 * this._scaleFactor;
+        this._ctx.font = `bold ${fontSize}px sans-serif`;
+        this._ctx.textAlign = "center";
+        this._ctx.textBaseline = "middle";
+
+        this._ctx.save();
+        this._ctx.translate(capoX + (capoWidth / 2), capoY);
+        if (this._mirror) this._ctx.scale(-1, 1);
+        if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
+        this._ctx.fillText("CAPO", 0, 0);
+        this._ctx.restore();
+      }
+    }
+
+    // 4. DRAW CAPO FRET LABEL (e.g., "2ª")
+    if (this._showCapo && this._capoFret >= 1) {
+      // Usar a cor do número do dedo (geralmente branco/claro)
+      this._ctx.fillStyle = this._colors.fingerTextColor;
+      const labelFontSize = 35 * this._scaleFactor; // Smaller font
+      this._ctx.font = `bold ${labelFontSize}px sans-serif`;
+      this._ctx.textAlign = "center";
+      this._ctx.textBaseline = "middle";
+
+      const labelX = capoX - (35 * this._scaleFactor);
+      // Afastar mais para cima para não colidir com indicador de transposição
+      const labelY = capoY - (5 * this._scaleFactor); // More separation
+
+      this._ctx.save();
+      this._ctx.translate(labelX, labelY);
+      if (this._mirror) this._ctx.scale(-1, 1);
+      if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
+      this._ctx.fillText(`${this._capoFret}ª`, 0, 0);
+      this._ctx.restore();
+    }
 
     this._ctx.restore();
   }
@@ -441,6 +623,16 @@ export class FretboardDrawer {
    * Desenha o braço progressivamente de cima para baixo
    */
   drawNeckProgressive(progress: number): void {
+    const isShortNeck = this._numFrets <= 6;
+    if (isShortNeck) {
+      // Para SHORT NECK, usamos um fade-in simples por enquanto para preservar o design complexo
+      this._ctx.save();
+      this._ctx.globalAlpha = progress;
+      this.drawNeck();
+      this._ctx.restore();
+      return;
+    }
+
     const easedProgress = this.easeInOutQuad(progress);
     const neckX = this._diagramX;
     const neckY = this._diagramY;

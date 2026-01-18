@@ -166,7 +166,8 @@ export function transposeChordName(chordName: string | undefined, semitones: num
     if (!chordName || semitones === 0) return chordName || '';
 
     // Parse the chord name to extract root note
-    const match = chordName.match(/^([A-G][#b]?)(.*)/);
+    // Support standard #/b and musical ♯/♭
+    const match = chordName.match(/^([A-G][#b♯♭]?)(.*)/);
     if (!match) return chordName;
 
     const [, root, suffix] = match;
@@ -174,13 +175,16 @@ export function transposeChordName(chordName: string | undefined, semitones: num
     // Find the current note index
     let noteIndex = NOTE_NAMES.indexOf(root);
 
-    // Handle flats by converting to sharp equivalent
-    if (root.includes('b')) {
-        const flatToSharp: Record<string, string> = {
+    // Handle flats and musical symbols by converting to sharp equivalent
+    if (noteIndex === -1) {
+        const altToSharp: Record<string, string> = {
             'Cb': 'B', 'Db': 'C#', 'Eb': 'D#', 'Fb': 'E',
-            'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#'
+            'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#',
+            'C♯': 'C#', 'D♯': 'D#', 'F♯': 'F#', 'G♯': 'G#', 'A♯': 'A#',
+            'C♭': 'B', 'D♭': 'C#', 'E♭': 'D#', 'F♭': 'E',
+            'G♭': 'F#', 'A♭': 'G#', 'B♭': 'A#'
         };
-        const sharpEquiv = flatToSharp[root];
+        const sharpEquiv = altToSharp[root];
         if (sharpEquiv) {
             noteIndex = NOTE_NAMES.indexOf(sharpEquiv);
         }

@@ -107,39 +107,12 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
             }
 
             // Apply musical shift (Capo/Tuning Shift)
-            const shift = settings.tuningShift || 0;
-            let effectiveShift = shift;
-
-            if (shift < 0) {
-                // Shape-preserving lock: non-barre fingers stay >= 1
-                let minNonBarreFret = Infinity;
-                fingers.forEach(f => {
-                    const isBarre = f.endString && f.endString !== f.string;
-                    if (!isBarre && f.fret > 0) {
-                        if (f.fret < minNonBarreFret) minNonBarreFret = f.fret;
-                    }
-                });
-
-                if (minNonBarreFret !== Infinity) {
-                    const maxAllowedDownShift = minNonBarreFret - 1;
-                    effectiveShift = Math.max(shift, -maxAllowedDownShift);
-                }
-            }
-
-            const shiftedFingers = fingers.map(f => {
-                const isBarre = f.endString && f.endString !== f.string;
-                const currentShift = isBarre ? shift : effectiveShift;
-
-                let finalFret = f.fret;
-                if (f.fret > 0) {
-                    finalFret = f.fret + currentShift;
-                }
-
-                return {
-                    ...f,
-                    fret: Math.max(-12, finalFret)
-                };
-            });
+            // Apply musical shift (Capo/Tuning Shift)
+            // REMOVIDO: O usuário quer que o "Visual Shift" (Capo) NÃO mude a posição dos dedos.
+            // A posição dos dedos (fret) deve permanecer absoluta em relação ao braço/capo conforme definido no editor.
+            // O ChordDrawerBase agora lida visualmente com a exibição do Capo sem mover os pontos.
+            // A transposição de altura de som (pitch) deve ser lidada pelo AudioEngine separadamente, se necessário.
+            const shiftedFingers = fingers; // Mantém os dedos originais
 
             result.push({
                 chord: chordData,

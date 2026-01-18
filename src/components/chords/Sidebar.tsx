@@ -10,6 +10,46 @@ import Link from 'next/link';
 import { Music, Settings2, Guitar, Home, ChevronDown } from 'lucide-react';
 import { useAppContext } from '@/app/context/app--context';
 import { STUDIO_PRESETS } from '@/components/studio/SettingsPanel';
+import { NOTE_NAMES } from '@/modules/editor/domain/music-math';
+
+const calculateShiftedTuning = (baseTuning: string[], shift: number): string[] => {
+    if (shift >= 0) return [...baseTuning]; // Fix names for Capo or Standard
+
+    return baseTuning.map(note => {
+        // Extract note part (handles cases like 'e' for high E)
+        const isHighE = note === 'e';
+        const baseNote = isHighE ? 'E' : note;
+
+        // Find index in NOTE_NAMES. Root might be like 'C#', 'Bb', etc.
+        // NOTE_NAMES: ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+        let idx = NOTE_NAMES.indexOf(baseNote);
+
+        // Handle common flat aliases if not found directly
+        if (idx === -1) {
+            const aliases: Record<string, string> = {
+                'Db': 'C#', 'Eb': 'D#', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#', 'Cb': 'B', 'Fb': 'E'
+            };
+            if (aliases[baseNote]) idx = NOTE_NAMES.indexOf(aliases[baseNote]);
+        }
+
+        if (idx === -1) return note; // Fallback
+
+        let newIdx = (idx + shift) % 12;
+        if (newIdx < 0) newIdx += 12;
+
+        let newNote = NOTE_NAMES[newIdx];
+
+        // Use flats if shift is negative (Down tuning)
+        if (shift < 0) {
+            const sharpToFlat: Record<string, string> = {
+                'C#': 'Db', 'D#': 'Eb', 'F#': 'Gb', 'G#': 'Ab', 'A#': 'Bb'
+            };
+            if (sharpToFlat[newNote]) newNote = sharpToFlat[newNote];
+        }
+
+        return isHighE ? newNote.toLowerCase() : newNote;
+    });
+};
 
 interface SidebarProps {
     activeDuration: Duration;
@@ -54,6 +94,7 @@ interface SidebarProps {
     simpleMode?: boolean;
     onUpdateMeasure?: (measureId: string, updates: Partial<MeasureData>) => void;
     onTransposeMeasure?: (measureId: string, semitones: number) => void;
+    onTransposeAll?: (semitones: number) => void;
     theme?: FretboardTheme;
 }
 
@@ -85,6 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     onClose,
     onUpdateMeasure,
     onTransposeMeasure,
+    onTransposeAll,
     theme,
 }) => {
     const { setAnimationType, animationType, setColors } = useAppContext();
@@ -363,7 +405,72 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {activeUnifiedTab === 'chord' && (
                     <div className="space-y-6 animate-in slide-in-from-left-2 duration-300">
 
-                        {/* Chord Name Builder */}
+                        {/* Duration Selection */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Duration</label>
+                                <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/30 text-[9px] font-black uppercase tracking-widest leading-none">
+                                    ACTIVE
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-4 gap-2">
+                                {durationItems.map((item) => {
+                                    const isActive = getDurationActive(item.code);
+                                    return (
+                                        <button
+                                            key={item.code}
+                                            onClick={() => handleDurationClick(item.code)}
+                                            className={`group relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-300 ${isActive
+                                                ? 'bg-zinc-900 border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.15)]'
+                                                : 'bg-zinc-950/40 border-zinc-800/60 hover:border-zinc-700 hover:bg-zinc-900/60'
+                                                }`}
+                                        >
+                                            <VexFlowRhythmIcon
+                                                duration={item.code}
+                                                className="w-8 h-10 mb-1"
+                                                fillColor={isActive ? '#22d3ee' : '#71717a'}
+                                            />
+                                            <span className={`text-[8px] font-black uppercase tracking-tight transition-colors ${isActive ? 'text-cyan-400' : 'text-zinc-500 group-hover:text-zinc-400'
+                                                }`}>
+                                                {item.label}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="h-px bg-zinc-800/50 w-full" />
+
+                        {/* Transposition Control */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Transpose</label>
+                                <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/30 text-[9px] font-black uppercase tracking-widest leading-none">
+                                    SEMITONES
+                                </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => onTransposeMeasure?.(activeMeasure?.id || '', -1)}
+                                    className="flex-1 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-all font-black text-sm flex items-center justify-center gap-2"
+                                >
+                                    <span>-</span>
+                                    <span className="text-[10px]">DOWN</span>
+                                </button>
+                                <button
+                                    onClick={() => onTransposeMeasure?.(activeMeasure?.id || '', 1)}
+                                    className="flex-1 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-all font-black text-sm flex items-center justify-center gap-2"
+                                >
+                                    <span>+</span>
+                                    <span className="text-[10px]">UP</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="h-px bg-zinc-800/50 w-full" />
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Chord Symbol</label>
@@ -380,10 +487,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 )}
                             </div>
 
-                            <div className="bg-zinc-950/40 p-4 rounded-xl border border-zinc-800/50 text-center space-y-4">
-                                {/* Manual Name Input */}
+                            <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/50 text-center space-y-3">
+                                {/* Consolidated Name Input */}
                                 <div className="space-y-1 text-left">
-                                    <label className="text-[8px] font-bold text-zinc-600 uppercase">Values</label>
+                                    <label className="text-[8px] font-bold text-zinc-600 uppercase">Symbol</label>
                                     <input
                                         type="text"
                                         value={activeMeasure?.chordName || ''}
@@ -392,16 +499,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                 onUpdateMeasure(activeMeasure.id, { chordName: e.target.value });
                                             }
                                         }}
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg text-lg font-black tracking-tight text-center py-2 text-cyan-400 focus:outline-none focus:border-cyan-500 placeholder-zinc-700"
+                                        className="w-full bg-zinc-900/50 border border-zinc-800/80 rounded-lg text-2xl font-black tracking-tight text-center py-3 text-cyan-400 focus:outline-none focus:border-cyan-500/50 transition-all placeholder-zinc-700 shadow-inner"
                                         placeholder="Cmaj7..."
+                                        style={{ color: theme?.chordNameColor || '#22d3ee' }}
                                     />
                                 </div>
-
-                                <div className="h-px bg-zinc-800/50 w-full" />
-
-                                <span className="text-2xl font-black tracking-tight" style={{ color: theme?.chordNameColor || '#22d3ee' }}>
-                                    {(`${localRoot}${localQuality}${localExtensions.join("")}${localBass === "Root" ? "" : localBass}`).replace(/#/g, '♯').replace(/b/g, '♭')}
-                                </span>
 
                                 {/* Root & Quality */}
                                 <div className="grid grid-cols-2 gap-2">
@@ -564,6 +666,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                         {/* VIEW WHEN A CHORD IS SELECTED */}
                         {editingNote && (
                             <>
+                                <div className="h-px bg-zinc-800/50 w-full" />
+
                                 {/* Strings & Frets - Consolidated */}
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
@@ -821,14 +925,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         className="w-full bg-zinc-900/50 border border-zinc-800/50 rounded-xl px-3 py-2 text-xs font-bold text-zinc-300 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all appearance-none"
                                         value={globalSettings?.instrumentId || 'violao'}
                                         onChange={(e) => {
-                                            const newInstrumentId = e.target.value;
-                                            const instrument = INSTRUMENTS.find(i => i.id === newInstrumentId);
-                                            if (instrument && onGlobalSettingsChange) {
+                                            const instId = e.target.value;
+                                            const inst = INSTRUMENTS.find(i => i.id === instId);
+                                            if (inst && onGlobalSettingsChange) {
+                                                const baseTuning = inst.tunings[0];
+                                                const shift = globalSettings?.tuningShift || 0;
                                                 onGlobalSettingsChange({
-                                                    instrumentId: newInstrumentId,
-                                                    numStrings: instrument.tunings[0].length,
-                                                    tuning: instrument.tunings[0],
-                                                    tuningIndex: 0
+                                                    instrumentId: instId,
+                                                    tuningIndex: 0,
+                                                    tuning: calculateShiftedTuning(baseTuning, shift)
                                                 });
                                             }
                                         }}
@@ -849,9 +954,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                                             const idx = parseInt(e.target.value);
                                             const instrument = INSTRUMENTS.find(i => i.id === (globalSettings?.instrumentId || 'violao'));
                                             if (instrument && onGlobalSettingsChange) {
+                                                const baseTuning = instrument.tunings[idx];
+                                                const shift = globalSettings?.tuningShift || 0;
                                                 onGlobalSettingsChange({
                                                     tuningIndex: idx,
-                                                    tuning: instrument.tunings[idx]
+                                                    tuning: calculateShiftedTuning(baseTuning, shift)
                                                 });
                                             }
                                         }}
@@ -863,13 +970,27 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 </div>
 
                                 {/* Tuning Shift / Capo Selector */}
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-bold text-zinc-600 uppercase">Tuning Shift / Capo</label>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-1">
+                                            Capo / Guitar Tuning
+                                        </div>
+                                        <div className="text-[9px] font-bold text-cyan-500/80 uppercase px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20">
+                                            Visual Shift
+                                        </div>
+                                    </div>
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => {
                                                 const current = globalSettings?.tuningShift || 0;
-                                                onGlobalSettingsChange?.({ tuningShift: Math.max(-12, current - 1) });
+                                                const instrument = INSTRUMENTS.find(i => i.id === (globalSettings?.instrumentId || 'violao'));
+                                                const baseTuning = instrument?.tunings[globalSettings?.tuningIndex || 0] || ["E", "A", "D", "G", "B", "e"];
+                                                const newShift = Math.max(-12, current - 1);
+                                                onGlobalSettingsChange?.({
+                                                    tuningShift: newShift,
+                                                    capo: Math.max(0, newShift), // capo is 0 if shift is negative
+                                                    tuning: calculateShiftedTuning(baseTuning, newShift)
+                                                });
                                             }}
                                             className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center font-bold"
                                         >
@@ -886,9 +1007,49 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         <button
                                             onClick={() => {
                                                 const current = globalSettings?.tuningShift || 0;
-                                                onGlobalSettingsChange?.({ tuningShift: Math.min(12, current + 1) });
+                                                const instrument = INSTRUMENTS.find(i => i.id === (globalSettings?.instrumentId || 'violao'));
+                                                const baseTuning = instrument?.tunings[globalSettings?.tuningIndex || 0] || ["E", "A", "D", "G", "B", "e"];
+                                                const newShift = Math.min(12, current + 1);
+                                                onGlobalSettingsChange?.({
+                                                    tuningShift: newShift,
+                                                    capo: Math.max(0, newShift), // capo is the shift value if positive
+                                                    tuning: calculateShiftedTuning(baseTuning, newShift)
+                                                });
                                             }}
                                             className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center font-bold"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="h-px bg-zinc-800/20 w-full" />
+
+                                {/* Global Transposition (Shift Notes + Names) */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-1">
+                                            Transpose Entire Song
+                                        </div>
+                                        <div className="text-[9px] font-bold text-orange-500/80 uppercase px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20">
+                                            Data Shift
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => onTransposeAll?.(-1)}
+                                            className="w-10 h-8 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center font-bold"
+                                            title="Shift all chords and names down 1 semitone"
+                                        >
+                                            -
+                                        </button>
+                                        <div className="flex-1 text-center font-bold text-zinc-300 bg-zinc-950/30 rounded-lg py-1.5 border border-zinc-800/50 text-[10px] uppercase">
+                                            Shift Notes + Names
+                                        </div>
+                                        <button
+                                            onClick={() => onTransposeAll?.(1)}
+                                            className="w-10 h-8 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center font-bold"
+                                            title="Shift all chords and names up 1 semitone"
                                         >
                                             +
                                         </button>

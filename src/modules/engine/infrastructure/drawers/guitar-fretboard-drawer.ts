@@ -142,12 +142,12 @@ export class GuitarFretboardDrawer {
     public drawHeadstock() {
         const ctx = this.ctx;
         ctx.save();
-        this.applyTransforms();
+        // No global transforms - headstock stays in original orientation
 
         // Headstock should be on the LEFT side of the fretboard (before the nut)
         // It should be vertical, matching the height of the fretboard
-        const headstockWidth = 100; // Increased for better visibility
-        const headstockGap = 15;
+        const headstockWidth = 50; // Reduced for better proportions
+        const headstockGap = 10; // Reduced gap
         const headstockX = this.paddingX - headstockWidth - headstockGap;
         const headstockHeight = this.fretboardHeight;
         const headstockY = this.boardY;
@@ -164,7 +164,7 @@ export class GuitarFretboardDrawer {
     public drawBoard() {
         const ctx = this.ctx;
         ctx.save();
-        this.applyTransforms();
+        // No global transforms - board stays in original orientation
 
         // 1. Draw Fretboard Background
         ctx.fillStyle = this.colors.fretboardColor;
@@ -233,10 +233,15 @@ export class GuitarFretboardDrawer {
             this.ctx.fill();
         });
 
-        // 5. Draw String Names (Left of Nut)
+        // 5. Draw String Names (Centered on Headstock)
+        const headstockWidth = 50;
+        const headstockGap = 10;
+        const headstockX = this.paddingX - headstockWidth - headstockGap;
+        const headstockCenterX = headstockX + (headstockWidth / 2);
+
         this.ctx.fillStyle = this.colors.textColor;
         this.ctx.font = `bold ${this.stringSpacing * 0.45}px "Inter", sans-serif`;
-        this.ctx.textAlign = "right";
+        this.ctx.textAlign = "center"; // Changed to center
         this.ctx.textBaseline = "middle";
 
         for (let i = 0; i < this.numStrings; i++) {
@@ -246,7 +251,7 @@ export class GuitarFretboardDrawer {
                 : originalName;
 
             const formattedName = formatNoteName(displayName);
-            const x = this.paddingX - 15;
+            const x = headstockCenterX; // Center of headstock
             const y = this.boardY + this.stringMargin + (i * this.stringSpacing);
 
             this.ctx.save();
@@ -288,7 +293,7 @@ export class GuitarFretboardDrawer {
         const progress = options?.progress ?? 0; // 0 to 1
 
         this.ctx.save();
-        this.applyTransforms();
+        // No global transforms - only text elements will be rotated individually
 
         // Helper to draw a finger/note
         const drawFinger = (fret: number, visualIndex: number, finger: number | string, color: string, radiusScale: number = 1, alpha: number = 1, yOffset: number = 0, xOffset: number = 0) => {
@@ -407,7 +412,7 @@ export class GuitarFretboardDrawer {
 
         const ctx = this.ctx;
         ctx.save();
-        this.applyTransforms();
+        // No global transforms for strum animation
 
         // Visual swipe across strings
         // Down: Top string to Bottom string (0 -> 5)
@@ -561,10 +566,15 @@ export class GuitarFretboardDrawer {
     }
 
     public drawCapo(fret: number) {
-        if (fret <= 0 || fret > this.numFrets) return;
+        console.log('[GuitarFretboardDrawer] drawCapo called with fret:', fret, 'numFrets:', this.numFrets);
+        if (fret <= 0 || fret > this.numFrets) {
+            console.log('[GuitarFretboardDrawer] Capo not drawn - fret out of range');
+            return;
+        }
 
         // Capo spans ALL strings (1 to numStrings)
         const x = this.paddingX + (fret - 0.5) * this.fretWidth;
+        console.log('[GuitarFretboardDrawer] Drawing capo at x:', x, 'fretWidth:', this.fretWidth, 'paddingX:', this.paddingX);
 
         // Geometry: We want it WIDER than the visual neck ("braço")
         // The neck goes from this.boardY to this.boardY + this.fretboardHeight
@@ -576,6 +586,16 @@ export class GuitarFretboardDrawer {
         // Visuals
         const width = this.fretWidth * 0.55; // Slightly wider to fit text
         const rectX = x - (width / 2);
+
+        console.log('[GuitarFretboardDrawer] Capo geometry:', {
+            rectX,
+            rectY,
+            width,
+            rectHeight,
+            boardY: this.boardY,
+            fretboardHeight: this.fretboardHeight,
+            stringSpacing: this.stringSpacing
+        });
 
         this.ctx.save();
 
@@ -627,12 +647,8 @@ export class GuitarFretboardDrawer {
         if (!name) return;
 
         this.ctx.save();
-        // Since we are inside draw(), we assume the context might be clean or we need to apply our own transforms.
-        // But usually the drawer manages its own transforms per frame or applyTransforms() does it.
-        // If applyTransforms() accumulates, that's bad. But here it seems stateless (translate/rotate based on props).
-        // Standard practice: save, apply transform, draw, restore.
-
-        this.applyTransforms();
+        // No global transforms - chord name stays in original orientation
+        // The text is already positioned correctly without rotation for FULL NECK mode
 
         // Position: Top centered horizontally on the board width, 
         // Vertical Y: boardY - margin

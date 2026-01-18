@@ -60,15 +60,19 @@ export class ChordDrawerBase {
 
   // Configurações visuais (valores base não escalados)
 
-  private _baseNeckRadius: number = 30;
+  private _baseNeckRadius: number = 24;
 
-  private _baseFingerRadius: number = 35;
+  private _baseFingerRadius: number = 28;
 
-  private _baseBarreWidth: number = 90;
+  private _baseBarreWidth: number = 56; // 2 * fingerRadius para consistência
 
   private _stringNamesY: number = 0;
 
   private _scaleFactor: number = 1;
+
+  private _globalCapo: number = 0; // Global capo value from settings menu
+
+  private _stringNames: string[] = ["E", "A", "D", "G", "B", "e"];
 
 
 
@@ -246,6 +250,21 @@ export class ChordDrawerBase {
     }
   }
 
+  public setGlobalCapo(value: number): void {
+    this._globalCapo = value;
+    // Pass to fretboardDrawer so it can use it in drawFretboard
+    this.fretboardDrawer.setCapo(value > 0, value);
+    this._fretboardCache = null; // Invalidate cache when capo changes
+  }
+
+  public setStringNames(names: string[] | undefined): void {
+    if (names) {
+      this._stringNames = names;
+      this.fretboardDrawer.setStringNames(names);
+      this._fretboardCache = null; // Invalidate cache when tuning changes
+    }
+  }
+
   // ============ MÉTODOS UTILITÁRIOS ============
 
   // Easing centralizado em `src/lib/animacao.ts`.
@@ -273,6 +292,11 @@ export class ChordDrawerBase {
     this._fretboardHeight = this._diagramHeight - (75 * this._scaleFactor);
     this._realFretSpacing = this._fretboardHeight / (1 + this._numFrets);
 
+    if (this.fretboardDrawer) {
+      this.fretboardDrawer.setFretboardHeight(this._fretboardHeight);
+      this.fretboardDrawer.setFretSpacing(this._realFretSpacing);
+    }
+
     this._stringNamesY = this._diagramY + (40 * this._scaleFactor);
   }
 
@@ -295,8 +319,12 @@ export class ChordDrawerBase {
     this._stringNamesY = this._diagramY + (40 * this._scaleFactor);
 
     // Propagate position changes to the fretboard drawer
-    this.fretboardDrawer.setDiagramX(this._diagramX);
-    this.fretboardDrawer.setDiagramY(this._diagramY);
+    if (this.fretboardDrawer) {
+      this.fretboardDrawer.setDiagramX(this._diagramX);
+      this.fretboardDrawer.setDiagramY(this._diagramY);
+      this.fretboardDrawer.setFretboardHeight(this._fretboardHeight);
+      this.fretboardDrawer.setFretSpacing(this._realFretSpacing);
+    }
 
     // Invalidate cache only if offset actually changes render (usually it does for full sprite)
     // Note: If we cached *only* the fretboard relative to itself, we wouldn't need to invalidate on offset.
@@ -840,7 +868,7 @@ export class ChordDrawerBase {
     this._ctx.font = `bold ${fontSize}px sans-serif`;
     this._ctx.textAlign = "center";
     this._ctx.textBaseline = "middle";
-    this._ctx.fillText(`${transportDisplay}ª`, 0, 0);
+    this._ctx.fillText(`${transportDisplay}ª`, -15, 0);
     this._ctx.restore();
   }
 
@@ -850,7 +878,7 @@ export class ChordDrawerBase {
     this._ctx.font = `bold ${fontSize}px sans-serif`;
     this._ctx.textAlign = "center";
     this._ctx.textBaseline = "middle";
-    this._ctx.fillText(`${transportDisplay}ª`, 0, 0);
+    this._ctx.fillText(`${transportDisplay}ª`, -15, 0);
   }
 
   /**
@@ -969,45 +997,88 @@ export class ChordDrawerBase {
   /**
    * Desenha um acorde completo
    */
+
+  /**
+   * Calculates the configuration for the independent Capo (Visual Shift).
+   */
+  private _getCapoConfig(): { isActive: boolean; fret: number; showNut: boolean } {
+    if (this._globalCapo > 0) {
+      return { isActive: true, fret: this._globalCapo, showNut: false };
+    }
+    return { isActive: false, fret: 0, showNut: true };
+  }
+
+  /**
+   * Calculates the configuration for the independent Transpose (Data Shift / High Fret).
+   */
+  private _getTransposeConfig(transportDisplay: number): { isActive: boolean; fret: number; showNut: boolean } {
+    if (transportDisplay > 1) {
+      return { isActive: true, fret: transportDisplay, showNut: false };
+    }
+    return { isActive: false, fret: 1, showNut: true };
+  }
+
   drawChord(inputChord: ChordDiagramProps, inputTransportDisplay: number, offsetX: number = 0, options: { skipFretboard?: boolean } = {}): void {
     const { finalChord, transportDisplay } = this._transposeForDisplay(inputChord, inputTransportDisplay);
 
     this._applyChordSettings(finalChord);
 
-    const chordName = finalChord.chord ? getNome(finalChord.chord).replace(/#/g, "♯").replace(/b/g, "♭") : "";
-
-    // For visual consistency, we might still want to identify a primary barre
-    // to handle the label positioning or specific animation phases.
+    const chordName = finalChord.chordName || (finalChord.chord ? getNome(finalChord.chord).replace(/#/g, "♯").replace(/b/g, "♭") : "");
     const barreInfo = this._detectBarre(finalChord);
 
-    // Draw labels in screen space
-    this.drawChordName(chordName);
+    if (finalChord.showChordName !== false) {
+      this.drawChordName(chordName);
+    }
 
     this._ctx.save();
     this.applyTransforms();
 
     if (!options.skipFretboard) {
       this._skipFretboard = false;
-      // Set flags based on whether it's the open position (transportDisplay === 1)
-      this.fretboardDrawer.setConditionalFlags(
-        transportDisplay === 1,
-        transportDisplay === 1
-      );
-      this.fretboardDrawer.drawStringNames(1, finalChord.stringNames);
-      // Set gap to separate headstock from neck (only for open position)
-      this.fretboardDrawer.setHeadstockGap(transportDisplay === 1 ? 20 * this._scaleFactor : 0);
-      // Set capo for movable chords
-      this.fretboardDrawer.setCapo(transportDisplay > 1, transportDisplay);
+
+      // === SEPARATED LOGIC FOR CAPO AND TRANSPOSE ===
+      const capoConfig = this._getCapoConfig();
+      const transposeConfig = this._getTransposeConfig(transportDisplay);
+
+      // Conflict Resolution:
+      // If either Capo or Transpose (High Fret) is active, valid Nut is hidden.
+      // Capo replaces Nut. High Fret implies no Nut.
+      const showNut = capoConfig.showNut && transposeConfig.showNut;
+
+      this.fretboardDrawer.setConditionalFlags(showNut, showNut);
+      this.fretboardDrawer.setStringNames(1, finalChord.stringNames);
+      this.fretboardDrawer.setHeadstockGap(showNut ? 20 * this._scaleFactor : 0);
+
+      // Draw Capo (Visual Shift)
+      // Completely independent of Transpose logic.
+      this.fretboardDrawer.setHideCapoTitle(false); // Always show title for real Capo
+      this.fretboardDrawer.setCapo(capoConfig.isActive, capoConfig.fret);
       this.fretboardDrawer.drawCapo();
+
       this.drawFretboard();
+
+      // Draw Transpose Indicator (Data Shift / High Fret)
+      // Completely independent of Capo logic.
+      // Shows "Xª" label for starting fret.
+      // We pass 1 (supress) if Capo is active? 
+      // User said "one should not depend on the other".
+      // But if Capo is active (e.g. at 2), and Transport is 1...
+      // drawTransposeIndicator(1) does nothing. 
+      // If Transport is 5. drawTransposeIndicator(5) draws "5ª".
+      // Using `transposeConfig.fret` (which is transportDisplay) is correct.
+      // However, if Capo is active, drawCapo already puts a label.
+      // If we are at standard position (transport 1) relative to Capo...
+      // We DON'T want "1ª" from transpose indicator.
+      // transposeConfig.isActive check handles this (isActive is false for 1).
+
+      if (transposeConfig.isActive) {
+        this.drawTransposeIndicator(transposeConfig.fret, barreInfo);
+      }
     }
 
     // Draw all fingers (including barres if present in the array)
     this.drawFingers(finalChord);
     this.drawAvoidedStrings(finalChord.avoid);
-
-    // Draw Transpose Indicator LAST
-    this.drawTransposeIndicator(transportDisplay, barreInfo);
 
     this._ctx.restore();
   }
@@ -1025,13 +1096,13 @@ export class ChordDrawerBase {
 
     this._applyChordSettings(finalChord);
 
-    const chordName = finalChord.chord ? getNome(finalChord.chord).replace(/#/g, "♯").replace(/b/g, "♭") : "";
+    const chordName = finalChord.chordName || (finalChord.chord ? getNome(finalChord.chord).replace(/#/g, "♯").replace(/b/g, "♭") : "");
     const phases = this.calculateAnimationPhases(progress);
     const barreInfo = this._detectBarre(finalChord);
 
     // Draw labels in screen space
     // Fase 1: Nome do acorde
-    if (phases.chordName > 0) {
+    if (phases.chordName > 0 && finalChord.showChordName !== false) {
       this._ctx.save();
       this._ctx.globalAlpha = phases.chordName;
       const translateVal = (1 - phases.chordName) * 30; // Slide in from top
@@ -1062,13 +1133,22 @@ export class ChordDrawerBase {
     if (!options.skipFretboard && phases.neck > 0) {
       this._skipFretboard = false;
 
+      // === SEPARATED LOGIC FOR CAPO AND TRANSPOSE (ANIMATION) ===
+      const capoConfig = this._getCapoConfig();
+      const transposeConfig = this._getTransposeConfig(transportDisplay);
+
+      // Conflict Resolution:
+      const showNut = capoConfig.showNut && transposeConfig.showNut;
+
       // Set flags for consistent rendering during animation
-      this.fretboardDrawer.setConditionalFlags(
-        transportDisplay === 1,
-        transportDisplay === 1
-      );
+      this.fretboardDrawer.setConditionalFlags(showNut, showNut);
+
       // Set gap to separate headstock from neck (only for open position)
-      this.fretboardDrawer.setHeadstockGap(transportDisplay === 1 ? 20 * this._scaleFactor : 0);
+      this.fretboardDrawer.setHeadstockGap(showNut ? 20 * this._scaleFactor : 0);
+
+      // Set Capo for movable chords OR if a global capo is active
+      this.fretboardDrawer.setHideCapoTitle(false);
+      this.fretboardDrawer.setCapo(capoConfig.isActive, capoConfig.fret);
 
       this.fretboardDrawer.drawAnimatedFretboard({
         neckProgress: phases.neck,
@@ -1077,6 +1157,14 @@ export class ChordDrawerBase {
         fretsProgress: phases.frets,
         nutProgress: phases.nut,
       });
+
+      // Draw Capo if active (using neck progress for fade-in)
+      if (capoConfig.isActive) {
+        this._ctx.save();
+        this._ctx.globalAlpha = phases.neck; // Fade in with neck
+        this.fretboardDrawer.drawCapo();
+        this._ctx.restore();
+      }
     }
 
     // Phase 6 & 7: Unified Fingers draw

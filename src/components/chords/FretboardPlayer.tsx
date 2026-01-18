@@ -63,6 +63,7 @@ export function FretboardPlayer() {
         handleCopyMeasure,
         handlePasteMeasure,
         handleTransposeMeasure,
+        handleTransposeAll,
         updateSelectedNotes,
         undo,
         redo,
@@ -351,6 +352,7 @@ export function FretboardPlayer() {
                     onMeasureUpdate={handleUpdateMeasure}
                     onUpdateMeasure={handleUpdateMeasure}
                     onTransposeMeasure={handleTransposeMeasure}
+                    onTransposeAll={handleTransposeAll}
                     activePositionIndex={activePositionIndex}
                     onActivePositionIndexChange={setActivePositionIndex}
                     onAddChordNote={handleAddChordNote}
@@ -387,6 +389,7 @@ export function FretboardPlayer() {
                                     numStrings={settings.numStrings}
                                     numFrets={settings.numFrets}
                                     showChordName={settings.showChordName !== false}
+                                    capo={settings.capo}
                                     tuningShift={settings.tuningShift || 0}
                                     stringNames={settings.tuning}
                                 />
@@ -421,6 +424,7 @@ export function FretboardPlayer() {
                                 numStrings={settings.numStrings}
                                 numFrets={settings.numFrets}
                                 showChordName={settings.showChordName !== false}
+                                capo={settings.capo}
                                 tuningShift={settings.tuningShift || 0}
                                 stringNames={settings.tuning}
                             />
