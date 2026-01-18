@@ -149,6 +149,16 @@ export function FretboardPlayer() {
         setAnimationType(prev => (prev === 'carousel' ? 'guitar-fretboard' : prev));
     }, [setAnimationType]);
 
+    // Sync animation type with numFrets to ensure Undo/Redo restores the correct view
+    useEffect(() => {
+        const numFrets = settings.numFrets || 24;
+        if (numFrets <= 6 && animationType !== 'static-fingers') {
+            setAnimationType('static-fingers');
+        } else if (numFrets > 6 && animationType !== 'guitar-fretboard') {
+            setAnimationType('guitar-fretboard');
+        }
+    }, [settings.numFrets, animationType, setAnimationType]);
+
     // Handle render cancellation
     useEffect(() => {
         if (renderCancelRequested) {
@@ -401,6 +411,7 @@ export function FretboardPlayer() {
                                     tuningShift={settings.tuningShift || 0}
                                     stringNames={settings.tuning}
                                     colors={theme}
+                                    animationType={(settings.numFrets || 24) <= 6 ? 'static-fingers' : (animationType === 'static-fingers' ? 'guitar-fretboard' : animationType)}
                                 />
                             </StageContainer>
                         </div>
@@ -437,6 +448,7 @@ export function FretboardPlayer() {
                                 tuningShift={settings.tuningShift || 0}
                                 stringNames={settings.tuning}
                                 colors={theme}
+                                animationType={(settings.numFrets || 24) <= 6 ? 'static-fingers' : (animationType === 'static-fingers' ? 'guitar-fretboard' : animationType)}
                             />
                         </StageContainer>
                     }

@@ -44,6 +44,7 @@ interface FretboardStageProps {
     stringNames?: string[];
     numFrets?: number;
     colors?: any; // FretboardTheme
+    animationType?: string;
 }
 
 interface AnimationState {
@@ -81,6 +82,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
     stringNames = ["E", "A", "D", "G", "B", "e"],
     numFrets = 24,
     colors: propsColors,
+    animationType: propsAnimationType,
 }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -117,7 +119,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
     });
     const {
         colors: contextColors,
-        animationType,
+        animationType: contextAnimationType,
         setPlaybackIsPlaying,
         setPlaybackIsPaused,
         setPlaybackProgress,
@@ -127,6 +129,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         playbackSeekProgress,
     } = useAppContext();
     const colors = propsColors || contextColors || undefined;
+    const animationType = propsAnimationType || contextAnimationType || 'guitar-fretboard';
     const [isAnimating, setIsAnimating] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
 

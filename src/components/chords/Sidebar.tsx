@@ -226,6 +226,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         setSelectedStrings([]);
     }, [editingNote?.id]);
 
+    // Auto-switch to Fretboard tab when a note is selected for editing
+    React.useEffect(() => {
+        if (editingNote) {
+            setActiveUnifiedTab('fretboard');
+        }
+    }, [editingNote?.id]);
+
     const handleStringClick = (strStr: string, e: React.MouseEvent) => {
         const str = parseInt(strStr);
         if (e.shiftKey || e.ctrlKey || e.metaKey) {
