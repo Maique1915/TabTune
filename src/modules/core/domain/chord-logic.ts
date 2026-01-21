@@ -138,6 +138,11 @@ export const getFilteredChords = (
     return filtered;
 }
 
+// ... existing imports
+import { BarreInfo } from './types'; // Ensure BarreInfo is imported or defined
+
+// ... existing code ...
+
 const findMinNonZeroNote = (fingers: StandardPosition[], avoid: number[]): [number, number] => {
     let min = Infinity;
     let max = 0;
@@ -161,44 +166,133 @@ const findMinNonZeroNote = (fingers: StandardPosition[], avoid: number[]): [numb
 };
 
 /**
- * Calculates the chord data adjusted for display, including transposition for higher frets.
- * This primarily adjusts the 'fingers' (StandardPosition[]) for visual display purposes.
+ * Detects the best barre candidate from finger positions.
  */
-export const getChordDisplayData = (originalChord: ChordDiagramProps): { finalChord: ChordDiagramProps; transportDisplay: number } => {
-    const { fingers, avoid, capo } = originalChord;
-    let finalChord: ChordDiagramProps;
+export const detectBarre = (fingers: StandardPosition[]): BarreInfo | null => {
+    if (!fingers || fingers.length === 0) return null;
 
-    // TransportDisplay is now based on capo or minimum fret
-    let transportDisplay = (capo || 0) + 1; // Default to 1-based capo position
+    let bestBarre: BarreInfo | null = null;
+    let maxStrings = 1;
 
-    const [minFret, maxFret] = findMinNonZeroNote(fingers, avoid || []); // Updated call
+    fingers.forEach(f => {
+        // A barre is defined by a finger crossing multiple strings (endString !== string)
+        const isBarre = f.endString !== undefined && f.endString !== f.string;
+        if (isBarre) {
+            const start = Math.min(f.string, f.endString!);
+            const end = Math.max(f.string, f.endString!);
+            const span = end - start + 1;
 
-    // If all notes are within the first 4 frets (and no capo), no transposition is needed for display
-    if (maxFret <= 4 && (capo || 0) === 0) {
-        finalChord = originalChord;
-        return { finalChord, transportDisplay: 1 }; // Display at position 1
-    }
-
-    // Determine actual transposition needed for display
-    // If capo is active, transposition starts from capo position
-    // Otherwise, it's relative to the lowest fretted note
-    const effectiveCapo = capo || 0;
-    const transpositionBase = effectiveCapo > 0 ? effectiveCapo : (minFret > 0 ? minFret - 1 : 0);
-
-    const newFingers = fingers.map(fingerPos => {
-        let newFret = fingerPos.fret;
-        if (newFret > 0) { // Only shift fretted notes
-            newFret = newFret - transpositionBase;
-            // Ensure fret doesn't go below 0 (open string)
-            if (newFret < 0) newFret = 0;
+            // Prioritize wider barres
+            if (span > maxStrings) {
+                maxStrings = span;
+                bestBarre = {
+                    fret: f.fret,
+                    finger: f.finger ?? 1,
+                    startString: start,
+                    endString: end
+                };
+            }
         }
-        return { ...fingerPos, fret: newFret };
     });
 
-    // Adjust transportDisplay based on the transposition applied
-    transportDisplay = (capo || 0) + (minFret > 0 ? minFret - 1 : 0) + 1;
-    if (capo && capo > 0) transportDisplay = capo + 1; // If capo, display starts from capo's position + 1
-
-    finalChord = { ...originalChord, fingers: newFingers, capo: effectiveCapo };
-    return { finalChord, transportDisplay };
+    return bestBarre;
 };
+
+export interface VisualChordState {
+    finalChord: ChordDiagramProps;
+    startFret: number;
+    barre: BarreInfo | null;
+    formattedName: string;
+    capoConfig: { isActive: boolean; fret: number; showNut: boolean };
+    transposeConfig: { isActive: boolean; fret: number; showNut: boolean };
+    visualStartFret: number; // The actual lowest fret number shown on the side
+}
+
+/**
+ * Prepares all visual data needed to draw a Short Chord diagram.
+ * Extracts logic (auto-transpose, barre, name) from the drawer class.
+ */
+export const prepareShortChordVisuals = (
+    chord: ChordDiagramProps,
+    numFrets: number,
+    globalCapo: number = 0,
+    forceTransportDisplay: number = 1
+): VisualChordState => {
+
+    // 1. Auto-Transpose Logic
+    let finalChord = { ...chord };
+    let startFret = forceTransportDisplay;
+
+    // Calculate frets stats
+    const frets = chord.fingers
+        .filter(f => f.fret > 0)
+        .map(f => f.fret);
+
+    const maxFret = frets.length > 0 ? Math.max(...frets) : 0;
+    const minFret = frets.length > 0 ? Math.min(...frets) : 0;
+
+    // Check overflow logic (same as was in ShortChord)
+    // If chords exceed the visible number of frets, we shift them.
+    if (frets.length > 0 && maxFret >= numFrets) {
+        // Auto-transpose trigger
+        startFret = minFret;
+
+        // Apply shift
+        const offset = startFret - 1;
+        finalChord = {
+            ...chord,
+            fingers: chord.fingers.map(f => ({
+                ...f,
+                fret: f.fret > 0 ? f.fret - offset : 0
+            }))
+        };
+    } else if (forceTransportDisplay > 1) {
+        // Manual override case (if provided via props)
+        const offset = forceTransportDisplay - 1;
+        finalChord = {
+            ...chord,
+            fingers: chord.fingers.map(f => ({
+                ...f,
+                fret: f.fret > 0 ? f.fret - offset : 0
+            }))
+        };
+    }
+
+    // 2. Barre Detection
+    const barre = detectBarre(finalChord.fingers);
+
+    // 3. Name Formatting
+    const formattedName = finalChord.chordName ||
+        (finalChord.chord ? getNome(finalChord.chord).replace(/#/g, "♯").replace(/b/g, "♭") : "");
+
+    // 4. Capo / Transpose Configs
+    const capoConfig = {
+        isActive: globalCapo > 0,
+        fret: globalCapo,
+        showNut: globalCapo === 0 // Show nut only if no global capo
+    };
+
+    const transposeConfig = {
+        isActive: startFret > 1,
+        fret: startFret,
+        showNut: startFret === 1 // If transposed, nut is hidden relative to the shift
+    };
+
+    console.log("transposeConfig", transposeConfig);
+
+    // Visual start fret for the indicator (the number drawn)
+    // Simply startFret, but we might want to align it with the top finger visually?
+    // The previous code calculated 'minVisualFret' from the shifted chord for ALIGNMENT.
+    // The NUMBER itself is `startFret`.
+
+    return {
+        finalChord,
+        startFret,
+        barre,
+        formattedName,
+        capoConfig,
+        transposeConfig,
+        visualStartFret: startFret
+    };
+};
+

@@ -352,14 +352,17 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
               key={deg}
               onClick={() => {
                 // Consolidate updates to avoid race conditions in undo/redo state
-                setColors(prev => ({
-                  ...prev,
-                  global: {
-                    ...prev.global,
-                    rotation: deg as 0 | 90 | 270,
-                    mirror: deg === 270
-                  }
-                }));
+                setColors((prev: any) => {
+                  const current = prev || DEFAULT_COLORS;
+                  return {
+                    ...current,
+                    global: {
+                      ...(current.global || {}),
+                      rotation: deg as 0 | 90 | 270,
+                      mirror: deg === 270
+                    }
+                  };
+                });
               }}
               className={`py-2 rounded-lg border text-[10px] font-black transition-all ${colors.global?.rotation === deg
                 ? 'bg-pink-500/10 border-pink-500/40 text-pink-400'

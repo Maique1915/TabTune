@@ -143,10 +143,10 @@ const Sidebar: React.FC<SidebarProps> = ({
     const [localBass, setLocalBass] = React.useState("Root");
     const [localExtensions, setLocalExtensions] = React.useState<string[]>([]);
 
-    // Reset barre selector when note changes
+    // Reset barre selector when note changes or active position changes
     React.useEffect(() => {
         setIsBarreSelectorOpen(false);
-    }, [editingNote?.id]);
+    }, [editingNote?.id, activePositionIndex]);
 
     // Sync local state when active measure changes
     React.useEffect(() => {

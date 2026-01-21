@@ -173,7 +173,7 @@ export interface FretboardTheme {
         mirror: boolean;
     };
     fretboard: {
-        neck: ElementStyle; // fretboardColor + shadow
+        neck: ElementStyle; // fretboardColor
         frets: { color: string };
         strings: { color: string; thickness: number }; // borderColor -> color
     };
@@ -183,6 +183,11 @@ export interface FretboardTheme {
         textColors: {
             name: string;
             number: string;
+        };
+    };
+    head: ElementStyle & {
+        textColors: {
+            name: string;
         };
     };
 }

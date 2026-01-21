@@ -204,9 +204,21 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer {
             const headstockHeight = (this._fretboardY - this._diagramY);
 
             // 2. Desenha o Header (faixa onde ficam as notas E A D G B E)
-            this._ctx.fillStyle = "#3a3a3e"; // Um tom levemente mais claro
+            // Use distinct head color from theme if available, otherwise default hardcoded or neck color
+            this._ctx.fillStyle = this._colors.head?.color || "#3a3a3e";
 
             const headStartY = this._diagramY + this._headstockYOffset;
+
+            // Shadow handling for headstock if enabled in theme
+            if (this._colors.head?.shadow?.enabled) {
+                this._ctx.shadowColor = this._colors.head.shadow.color || 'rgba(0,0,0,0.5)';
+                this._ctx.shadowBlur = (this._colors.head.shadow.blur ?? 10) * this._scaleFactor;
+                this._ctx.shadowOffsetX = (this._colors.head.shadow.offsetX ?? 0) * this._scaleFactor;
+                this._ctx.shadowOffsetY = (this._colors.head.shadow.offsetY ?? 0) * this._scaleFactor;
+            } else {
+                this._ctx.shadowColor = 'transparent';
+                this._ctx.shadowBlur = 0;
+            }
 
             this._safeRoundRect(
                 this._fretboardX,
@@ -216,6 +228,17 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer {
                 [this._neckRadius, this._neckRadius, 0, 0], // Arredonda só em cima
                 true
             );
+
+            // Turn off shadow
+            this._ctx.shadowColor = 'transparent';
+            this._ctx.shadowBlur = 0;
+
+            // Optional border for headstock
+            if (this._colors.head?.border?.width && this._colors.head.border.width > 0) {
+                this._ctx.lineWidth = this._colors.head.border.width * this._scaleFactor;
+                this._ctx.strokeStyle = this._colors.head.border.color || 'transparent';
+                this._ctx.stroke();
+            }
         }
 
         this._ctx.restore();
@@ -232,8 +255,8 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer {
         const translateY = (1 - easedProgress) * (-10 * this._scaleFactor);
         // const yOffset = this._capoFret > 0 ? (50 * this._scaleFactor) : 0;
 
-        const color = this._colors.global.primaryTextColor;
-        const fontSize = 40 * this._scaleFactor;
+        const color = this._colors.head?.textColors?.name || this._colors.global.primaryTextColor;
+        const fontSize = 30 * this._scaleFactor;
         const font = `bold ${fontSize}px sans-serif`;
 
         namesToDraw.forEach((name, i) => {
@@ -271,7 +294,7 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer {
         this._ctx.save();
         this.applyTransforms();
 
-        for (let i = 0; i <= this._numFrets; i++) {
+        for (let i = 0; i < this._numFrets; i++) {
             const y = this._fretboardY + i * this._realFretSpacing;
             const width = 2 * this._scaleFactor;
 
@@ -334,44 +357,76 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer {
         // User requested adjustment: + 27 + headstockYOffset
         const capoY = this._fretboardY - (capoHeight / 2) - (2 * this._scaleFactor) + 27 + this._headstockYOffset;
 
+        // Theme colors
+        const capoColor = this._colors.capo?.color || '#c0c0c0';
+        const borderColor = this._colors.capo?.border?.color || '#808080';
+        const borderWidth = (this._colors.capo?.border?.width || 1) * this._scaleFactor;
+        const textColor = this._colors.capo?.textColors?.name || '#2c2c2c';
+
         // Draw capo bar
-        this._ctx.fillStyle = '#c0c0c0';
-        this._ctx.strokeStyle = '#808080';
-        this._ctx.lineWidth = 1 * this._scaleFactor;
+        this._ctx.fillStyle = capoColor;
+        this._ctx.strokeStyle = borderColor;
+        this._ctx.lineWidth = borderWidth;
+
+        // Shadow handling
+        if (this._colors.capo?.shadow?.enabled) {
+            this._ctx.shadowColor = this._colors.capo.shadow.color || 'rgba(0,0,0,0.5)';
+            this._ctx.shadowBlur = (this._colors.capo.shadow.blur ?? 10) * this._scaleFactor;
+            this._ctx.shadowOffsetX = (this._colors.capo.shadow.offsetX ?? 0) * this._scaleFactor;
+            this._ctx.shadowOffsetY = (this._colors.capo.shadow.offsetY ?? 0) * this._scaleFactor;
+        } else {
+            this._ctx.shadowColor = 'transparent';
+            this._ctx.shadowBlur = 0;
+            this._ctx.shadowOffsetX = 0;
+            this._ctx.shadowOffsetY = 0;
+        }
 
         this._ctx.beginPath();
         this._safeRoundRect(this._fretboardX - 5 * this._scaleFactor, capoY, this._fretboardWidth + 10 * this._scaleFactor, capoHeight, 5 * this._scaleFactor);
         this._ctx.fill();
-        this._ctx.stroke();
 
-        // Draw highlight
-        this._ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        // Reset shadow for stroke and internal details to avoid "glow" on everything if not desired, 
+        // or keep it if the whole object casts shadow. Usually stroke follows shadow.
+        // But internal highlight/text shouldn't cast a shadow on the capo itself? 
+        // Actually canvas shadow applies to everything drawn. 
+        // We probably want the CAPO BODY to cast a shadow on the fretboard. 
+        // So we should turn off shadow after stroke.
+
+        this._ctx.shadowColor = 'transparent';
+        this._ctx.shadowBlur = 0;
+        this._ctx.shadowOffsetX = 0;
+        this._ctx.shadowOffsetY = 0;
+        // Only stroke if border width > 0
+        if (borderWidth > 0) {
+            this._ctx.stroke();
+        }
+
+        // Draw highlight (maybe optional or color derived? Keeping hardcoded for now or use border color with opacity?)
+        // The user specifically asked to use properties from STUDIO_PRESETS. 
+        // Using a simple highlight consistent with typical capo look, or perhaps I could use shadow properties if mapped.
+        // For now, let's keep the highlight subtle as white overlay, or remove if "custom" look is desired plain.
+        // Let's keep it but maybe make it conditional or subtle.
+        this._ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'; // Slightly more subtle
         this._ctx.fillRect(this._fretboardX - 4 * this._scaleFactor, capoY + 2 * this._scaleFactor, this._fretboardWidth + 8 * this._scaleFactor, 2 * this._scaleFactor);
 
         // Draw "CAPO" text distributed
         const text = "CAPO";
         const fontSize = 16 * this._scaleFactor;
         const font = `bold ${fontSize}px sans-serif`;
-        const color = '#2c2c2c';
 
         // Distribute C-A-P-O across the 4 middle string positions if enough strings, or evenly
         // Using string spacing for consistency with string names
         const centerY = capoY + capoHeight / 2;
 
         // Center index logic:
-        // C at -1.5 spacing from center
-        // A at -0.5 spacing
-        // P at +0.5 spacing
-        // O at +1.5 spacing
         const gridCenter = this._fretboardX + this._horizontalPadding + ((this._numStrings - 1) * this._stringSpacing) / 2;
         const offsets = [-1.5, -0.5, 0.5, 1.5];
 
         for (let i = 0; i < text.length; i++) {
             const char = text[i];
-            // If we have less than 4 strings (ukulele?), this might look wide, but usually fine.
             const x = gridCenter + (offsets[i] * this._stringSpacing);
             // Enable counterRotate to keep letters upright like string names
-            this._drawText(char, x, centerY, font, color, "center", "middle", true);
+            this._drawText(char, x, centerY, font, textColor, "center", "middle", true);
         }
 
         this._ctx.restore();
@@ -391,7 +446,8 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer {
 
         const text = this._capoFret.toString();
         const font = `bold ${32 * this._scaleFactor}px sans-serif`;
-        const color = this._colors.global.primaryTextColor;
+        // Use specialized capo.textColors.number if available, otherwise fallback to global text or capo name color
+        const color = this._colors.capo?.textColors?.number || this._colors.global.primaryTextColor;
 
         // Enable counterRotate so number stays upright
         this._drawText(text, x, y, font, color, "center", "middle", true);

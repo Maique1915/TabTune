@@ -53,6 +53,16 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
             number: "#FF8C42",
         },
     },
+    head: {
+        color: "#3a3a3e",
+        textColors: {
+            name: "#FF8C42",
+        },
+        border: {
+            color: "#3a3a3e",
+            width: 0
+        }
+    },
 };
 
 export const STUDIO_PRESETS = {
@@ -80,7 +90,6 @@ export const STUDIO_PRESETS = {
             chordName: {
                 color: "#f4f4f5",
                 opacity: 1,
-                shadow: { enabled: false, color: "transparent", blur: 0 },
                 stroke: { color: "transparent", width: 0 }
             },
 
@@ -91,21 +100,17 @@ export const STUDIO_PRESETS = {
                     color: "#200f0f",
                     width: 4,
                 },
-                shadow: {
-                    enabled: true,
-                    color: "#000000",
-                    hOffset: 0,
-                    vOffset: 0,
-                    blur: 0,
-                    spread: 0,
-                },
                 opacity: 0.3, // backgroundAlpha
             },
             capo: {
                 color: "#e4e4e7",
                 border: { color: "#a1a1aa", width: 1 },
-                shadow: { enabled: true, color: "rgba(0,0,0,0.2)" },
                 textColors: { name: "#333333ff", number: "#dddddd" }
+            },
+            head: {
+                color: "#f5f5f5",
+                textColors: { name: "#3b3b3b" },
+                border: { color: "#e4e4e7", width: 1 }
             }
         }
     },
@@ -125,21 +130,24 @@ export const STUDIO_PRESETS = {
             chordName: {
                 color: "#fb00ff",
                 opacity: 1,
-                shadow: { enabled: true, color: "#fb00ff", blur: 20 },
                 stroke: { color: "transparent", width: 0 }
             },
             fingers: {
                 color: "#fb00ff50",
                 textColor: "#fffdfdff",
                 border: { color: "#fb00ff", width: 4 },
-                shadow: { enabled: true, color: "#00ff9d80", hOffset: 0, vOffset: 0, blur: 0, spread: 0 },
                 opacity: 0.3
             },
             capo: {
                 color: "#180220",
                 border: { color: "#fb00ff", width: 1 },
-                shadow: { enabled: true, color: "#fb00ff" },
                 textColors: { name: "#00ff9d", number: "#00ff9d" }
+            },
+            head: {
+                color: "#180220",
+                textColors: { name: "#fb00ff" },
+                border: { color: "#fb00ff", width: 2 },
+                shadow: { enabled: true, color: "#fb00ff", blur: 10 }
             }
         }
     },
@@ -159,21 +167,23 @@ export const STUDIO_PRESETS = {
             chordName: {
                 color: "#60a5fa",
                 opacity: 1,
-                shadow: { enabled: true, color: "#60a5fa", blur: 15 },
                 stroke: { color: "transparent", width: 0 }
             },
             fingers: {
                 color: "#334155",
                 textColor: "#ffffff",
                 border: { color: "#60a5fa", width: 4 },
-                shadow: { enabled: true, color: "#3b82f660", hOffset: 0, vOffset: 0, blur: 0, spread: 0 },
                 opacity: 0.9
             },
             capo: {
                 color: "#1e293b",
                 border: { color: "#60a5fa", width: 1 },
-                shadow: { enabled: true, color: "#3b82f6aa" },
                 textColors: { name: "#d5e0eeff", number: "#a8c6eeff" }
+            },
+            head: {
+                color: "#0f172a",
+                textColors: { name: "#60a5fa" },
+                border: { color: "#1e293b", width: 1 }
             }
         }
     },
@@ -193,21 +203,24 @@ export const STUDIO_PRESETS = {
             chordName: {
                 color: "#ece5e3ff",
                 opacity: 0.9,
-                shadow: { enabled: false, color: "transparent", blur: 0 },
                 stroke: { color: "transparent", width: 0 }
             },
             fingers: {
                 color: "#5c4033",
                 textColor: "#efe6d5",
                 border: { color: "#3e2723", width: 4 },
-                shadow: { enabled: true, color: "#5c403350", hOffset: 0, vOffset: 0, blur: 0, spread: 0 },
                 opacity: 0.9
             },
             capo: {
                 color: "#5d4037",
                 border: { color: "#3e2723", width: 1 },
-                shadow: { enabled: true, color: "rgba(62, 39, 35, 0.4)" },
                 textColors: { name: "#ffffff", number: "#5c4033" }
+            },
+            head: {
+                color: "#d7ccc8",
+                textColors: { name: "#5c4033" },
+                border: { color: "#a1887f", width: 1 },
+                shadow: { enabled: true, color: "#5c403330", blur: 5 }
             }
         }
     }
