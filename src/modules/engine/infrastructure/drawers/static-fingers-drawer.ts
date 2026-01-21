@@ -1,10 +1,10 @@
 import type { ChordDiagramProps, BarreInfo, StandardPosition } from "@/modules/core/domain/types";
-import { ChordDrawerBase } from "@/modules/engine/infrastructure/drawers/chord-drawer-base";
+import { ChordDrawer } from "./ChordDrawer";
 import { easeInOutQuad, withCanvasTransformAtPoint, withCanvasTransformAround } from "../utils/animacao";
 import { getNome } from "@/modules/core/domain/chord-logic";
 
 interface DrawStaticFingersParams {
-  drawer: ChordDrawerBase;
+  drawer: ChordDrawer;
   currentDisplayChord: { finalChord: ChordDiagramProps; transportDisplay: number; };
   nextDisplayChord: { finalChord: ChordDiagramProps; transportDisplay: number; } | null;
   transitionProgress: number;
@@ -13,7 +13,7 @@ interface DrawStaticFingersParams {
 }
 
 /**
- * Detects the primary barre in a chord (Logic adapted from ChordDrawerBase)
+ * Detects the primary barre in a chord (Logic adapted from ShortNeckDrawer)
  */
 function detectBarre(fingers: StandardPosition[]): BarreInfo | null {
   if (!fingers || fingers.length === 0) return null;
@@ -54,11 +54,11 @@ export function drawStaticFingersAnimation(params: DrawStaticFingersParams) {
     const { width, height } = drawer.dimensions;
     ctx.clearRect(0, 0, width, height);
   } else {
-    drawer.clearCanvas();
+    drawer.clear();
   }
 
   // 2. Apply Centering (if any)
-  const centeringOffset = drawer.applyCentering();
+  // const centeringOffset = drawer.applyCentering();
 
   const currentFinalChord = currentDisplayChord.finalChord;
   const currentTransportDisplay = currentDisplayChord.transportDisplay;
@@ -70,8 +70,7 @@ export function drawStaticFingersAnimation(params: DrawStaticFingersParams) {
       currentFinalChord,
       currentTransportDisplay,
       buildProgress,
-      0,
-      { skipFretboard }
+      0
     );
   } else if (nextDisplayChord && transitionProgress > 0) {
     // Custom Transition Animation
@@ -94,11 +93,11 @@ export function drawStaticFingersAnimation(params: DrawStaticFingersParams) {
     drawer.drawChord(currentFinalChord, currentTransportDisplay, 0, { skipFretboard });
   }
 
-  drawer.removeCentering(centeringOffset);
+  // drawer.removeCentering(centeringOffset);
 }
 
 function drawTransition(
-  drawer: ChordDrawerBase,
+  drawer: ChordDrawer,
   current: { finalChord: ChordDiagramProps; transportDisplay: number; },
   next: { finalChord: ChordDiagramProps; transportDisplay: number; },
   progress: number,
@@ -128,7 +127,7 @@ function drawTransition(
   drawer.drawChordName(currentName, { opacity: 1 - eased }); // Reuse base drawer for consistent style if possible
   // Actually, drawChordName doesn't take Y. 
   // We will let the drawer handle static or implement custom.
-  // Let's rely on `ChordDrawerBase` helpers if possible, but `drawChordWithTransition` does specific text transforms.
+  // Let's rely on `ShortNeckDrawer` helpers if possible, but `drawChordWithTransition` does specific text transforms.
   // We'll implement custom text drawing here for control.
   ctx.restore();
 
@@ -233,19 +232,19 @@ function drawTransition(
       // Draw at interpolated pos
       withCanvasTransformAtPoint(ctx, { x, y, opacity: 1, scale: 1 }, () => {
         // Cast id to any to avoid TS union type issues if definition is strict
-        drawer.drawFingerAtPosition(id as any);
+        drawManualFinger(drawer, id as any);
       });
     } else if (c && !n) {
       // Fade Out
       const pos = getFingerVisualPos(drawer, c);
       withCanvasTransformAtPoint(ctx, { ...pos, opacity: 1 - eased, scale: 1 - (eased * 0.3) }, () => {
-        drawer.drawFingerAtPosition(id as any);
+        drawManualFinger(drawer, id as any);
       });
     } else if (!c && n) {
       // Fade In
       const pos = getFingerVisualPos(drawer, n);
       withCanvasTransformAtPoint(ctx, { ...pos, opacity: eased, scale: 0.7 + (eased * 0.3) }, () => {
-        drawer.drawFingerAtPosition(id as any);
+        drawManualFinger(drawer, id as any);
       });
     }
   });
@@ -274,18 +273,18 @@ function drawTransition(
 
 // --- HELPERS ---
 
-function getScreenX(drawer: ChordDrawerBase, stringNum: number): number {
+function getScreenX(drawer: ChordDrawer, stringNum: number): number {
   const visualIndex = drawer.numStrings - stringNum;
   return drawer.fretboardX + drawer.horizontalPadding + visualIndex * drawer.stringSpacing;
 }
 
-function getFingerVisualPos(drawer: ChordDrawerBase, pos: StandardPosition) {
+function getFingerVisualPos(drawer: ChordDrawer, pos: StandardPosition) {
   const fretY = drawer.fretboardY + (pos.fret - 0.5) * drawer.realFretSpacing;
   const stringX = getScreenX(drawer, pos.string);
   return { x: stringX, y: fretY };
 }
 
-function drawInterpolatedBarre(drawer: ChordDrawerBase, from: BarreInfo, to: BarreInfo, progress: number, getFin: (f: any) => number) {
+function drawInterpolatedBarre(drawer: ChordDrawer, from: BarreInfo, to: BarreInfo, progress: number, getFin: (f: any) => number) {
   const ctx = drawer.ctx;
 
   // Interpolate Logic
@@ -314,7 +313,7 @@ function drawInterpolatedBarre(drawer: ChordDrawerBase, from: BarreInfo, to: Bar
   const borderColor = drawer.colors.fingers.border?.color;
   const borderWidth = drawer.colors.fingers.border?.width || 0;
 
-  ctx.fillStyle = drawer.hexToRgba(color, opacity);
+  ctx.fillStyle = hexToRgba(color, opacity);
 
   const height = drawer.fingerRadius * 2;
   const radius = drawer.neckRadius; // Approximation
@@ -339,7 +338,7 @@ function drawInterpolatedBarre(drawer: ChordDrawerBase, from: BarreInfo, to: Bar
   ctx.restore();
 }
 
-function drawFadingBarre(drawer: ChordDrawerBase, barre: BarreInfo, opacityVal: number) {
+function drawFadingBarre(drawer: ChordDrawer, barre: BarreInfo, opacityVal: number) {
   const ctx = drawer.ctx;
   ctx.save();
   ctx.globalAlpha = opacityVal;
@@ -349,7 +348,7 @@ function drawFadingBarre(drawer: ChordDrawerBase, barre: BarreInfo, opacityVal: 
   ctx.restore();
 }
 
-function drawMorphBarreToFinger(drawer: ChordDrawerBase, barre: BarreInfo, finger: StandardPosition, progress: number) {
+function drawMorphBarreToFinger(drawer: ChordDrawer, barre: BarreInfo, finger: StandardPosition, progress: number) {
   // Morph Rect -> Circle
   // Just interpolate dimensions towards the finger's circle
   const ctx = drawer.ctx;
@@ -380,7 +379,7 @@ function drawMorphBarreToFinger(drawer: ChordDrawerBase, barre: BarreInfo, finge
   const color = drawer.colors.fingers.color;
   const opacity = drawer.colors.fingers.opacity ?? 1;
 
-  ctx.fillStyle = drawer.hexToRgba(color, opacity);
+  ctx.fillStyle = hexToRgba(color, opacity);
   const height = drawer.fingerRadius * 2;
 
   ctx.beginPath();
@@ -393,7 +392,7 @@ function drawMorphBarreToFinger(drawer: ChordDrawerBase, barre: BarreInfo, finge
   ctx.restore();
 }
 
-function drawMorphFingerToBarre(drawer: ChordDrawerBase, finger: StandardPosition, barre: BarreInfo, progress: number) {
+function drawMorphFingerToBarre(drawer: ChordDrawer, finger: StandardPosition, barre: BarreInfo, progress: number) {
   // Inverse of above
   // Interpolate FROM finger TO barre
   // Using logic similar to above:
@@ -419,7 +418,7 @@ function drawMorphFingerToBarre(drawer: ChordDrawerBase, finger: StandardPositio
   ctx.save();
   ctx.translate(curCenterX, curY);
 
-  ctx.fillStyle = drawer.hexToRgba(drawer.colors.fingers.color, drawer.colors.fingers.opacity ?? 1);
+  ctx.fillStyle = hexToRgba(drawer.colors.fingers.color, drawer.colors.fingers.opacity ?? 1);
   const height = drawer.fingerRadius * 2;
 
   ctx.beginPath();
@@ -430,7 +429,7 @@ function drawMorphFingerToBarre(drawer: ChordDrawerBase, finger: StandardPositio
   ctx.restore();
 }
 
-function drawFingerNumber(drawer: ChordDrawerBase, num: number | string) {
+function drawFingerNumber(drawer: ChordDrawer, num: number | string) {
   const ctx = drawer.ctx;
   ctx.fillStyle = drawer.colors.fingers.textColor || '#ffffff';
   // Simplified font
@@ -454,13 +453,13 @@ function drawFingerNumber(drawer: ChordDrawerBase, num: number | string) {
   ctx.restore();
 }
 
-function drawManualFinger(drawer: ChordDrawerBase, id: number) {
+function drawManualFinger(drawer: ChordDrawer, id: number) {
   const ctx = drawer.ctx;
   const radius = drawer.fingerRadius;
 
   ctx.beginPath();
   ctx.arc(0, 0, radius, 0, 2 * Math.PI);
-  ctx.fillStyle = drawer.hexToRgba(drawer.colors.fingers.color, drawer.colors.fingers.opacity ?? 1);
+  ctx.fillStyle = hexToRgba(drawer.colors.fingers.color, drawer.colors.fingers.opacity ?? 1);
   ctx.fill();
 
   if ((drawer.colors.fingers.border?.width || 0) > 0) {
@@ -470,4 +469,12 @@ function drawManualFinger(drawer: ChordDrawerBase, id: number) {
   }
 
   drawFingerNumber(drawer, id);
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  if (!hex || hex[0] !== '#') return hex;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }

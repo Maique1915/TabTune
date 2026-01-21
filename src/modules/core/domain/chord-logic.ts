@@ -1,4 +1,4 @@
-import type { Achord, ChordDiagramProps, Position, nutForm } from './types';
+import type { Achord, ChordDiagramProps, StandardPosition } from './types';
 
 export const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 export const complements = ['Major', 'm', '°'];
@@ -46,36 +46,31 @@ export const getBassNotes = (selectedScale: string): string[] => {
 };
 
 export const transpose = (chord: ChordDiagramProps, newAchord: Achord): ChordDiagramProps => {
-    let nut: nutForm = JSON.parse(JSON.stringify(chord.nut));
-
     // Calculate semitone shift from shape origin to target note
-    let shift = newAchord.note - chord.origin;
-    while (shift < 0) shift += 12;
-    shift = shift % 12;
+    let shift = newAchord.note - (chord.origin || 0); // Use 0 as default if origin is undefined
 
-    if (shift === 0) {
-        nut.vis = chord.nut?.vis || false;
-        nut.pos = chord.nut?.pos || 0;
-    } else {
-        nut.vis = true;
-        nut.pos = (chord.nut?.pos || 0) + shift;
-    }
+    // Ensure shift is within a 12-semitone range
+    shift = ((shift % 12) + 12) % 12;
 
-    const entries = Object.entries(chord.positions).map(([str, [fret, finger]]) => {
-        const stringNum = parseInt(str);
-        let newFret = fret;
-
-        // If it's a fretted note or an open string that's not avoided, shift it
-        if (fret > 0 || (!chord.avoid.includes(stringNum))) {
-            newFret = fret + shift;
+    const newFingers = chord.fingers.map(fingerPos => {
+        let newFret = fingerPos.fret;
+        // Only shift fretted notes (fret > 0)
+        if (newFret > 0) {
+            newFret = newFret + shift;
         }
-
-        return [str, [newFret, finger]] as [string, [number, number]];
+        return { ...fingerPos, fret: newFret };
     });
 
-    const position = Object.fromEntries(entries) as Position;
+    // Adjust capo if present and still relevant (this is more for visual adjustment now)
+    const newCapo = (chord.capo || 0) + shift;
 
-    return { ...chord, chord: newAchord, positions: position, nut: nut, transport: 0, stringNames: chord.stringNames };
+    return {
+        ...chord,
+        chord: newAchord,
+        fingers: newFingers,
+        capo: newCapo >= 0 ? newCapo : 0, // Capo cannot be negative
+        origin: newAchord.note // Update origin to new root note
+    };
 };
 
 export const getFilteredChords = (
@@ -111,9 +106,8 @@ export const getFilteredChords = (
                     transposableChords.push(chordItem);
                 }
             } else {
-                const interval = targetNoteIndex - chordItem.origin;
-                const newNoteIndex = (chordItem.chord.note + interval + 12) % 12;
-                const transposed = transpose(chordItem, { ...chordItem.chord, note: newNoteIndex, extension: chordItem.chord.extension, bass: chordItem.chord.bass });
+                const newAchord = { ...chordItem.chord, note: targetNoteIndex }; // Create new Achord with target note
+                const transposed = transpose(chordItem, newAchord); // Call transpose with the correct signature
                 transposableChords.push(transposed);
             }
         });
@@ -144,19 +138,15 @@ export const getFilteredChords = (
     return filtered;
 }
 
-const findMinNonZeroNote = (positions: Position, avoid: number[], nut?: nutForm): [number, number] => {
+const findMinNonZeroNote = (fingers: StandardPosition[], avoid: number[]): [number, number] => {
     let min = Infinity;
     let max = 0;
 
-    if (nut && nut.vis) {
-        min = nut.pos;
-        max = nut.pos;
-    } else {
-        min = 0;
-    }
+    fingers.forEach(fingerPos => {
+        const stringNumber = fingerPos.string;
+        const fret = fingerPos.fret;
 
-    Object.entries(positions).forEach(([str, [fret, _]]) => {
-        const stringNumber = parseInt(str);
+        // Only consider fretted notes (fret > 0) that are not in the 'avoid' list
         if (!avoid.includes(stringNumber) && fret > 0) {
             if (fret < min) {
                 min = fret;
@@ -172,35 +162,43 @@ const findMinNonZeroNote = (positions: Position, avoid: number[], nut?: nutForm)
 
 /**
  * Calculates the chord data adjusted for display, including transposition for higher frets.
+ * This primarily adjusts the 'fingers' (StandardPosition[]) for visual display purposes.
  */
 export const getChordDisplayData = (originalChord: ChordDiagramProps): { finalChord: ChordDiagramProps; transportDisplay: number } => {
-    const { positions, nut, avoid } = originalChord;
+    const { fingers, avoid, capo } = originalChord;
     let finalChord: ChordDiagramProps;
 
-    const baseTransportDisplay = originalChord.transport && originalChord.transport > 0 ? originalChord.transport : 1;
+    // TransportDisplay is now based on capo or minimum fret
+    let transportDisplay = (capo || 0) + 1; // Default to 1-based capo position
 
-    const [minFret, maxFret] = findMinNonZeroNote(positions, avoid || [], nut);
+    const [minFret, maxFret] = findMinNonZeroNote(fingers, avoid || []); // Updated call
 
-    if (maxFret <= 4 && (!nut || !nut.vis || nut.pos <= 4)) {
+    // If all notes are within the first 4 frets (and no capo), no transposition is needed for display
+    if (maxFret <= 4 && (capo || 0) === 0) {
         finalChord = originalChord;
-        return { finalChord, transportDisplay: baseTransportDisplay };
+        return { finalChord, transportDisplay: 1 }; // Display at position 1
     }
 
-    const transposition = (nut && nut.vis) ? nut.pos - 1 : minFret > 0 ? minFret - 1 : 0;
+    // Determine actual transposition needed for display
+    // If capo is active, transposition starts from capo position
+    // Otherwise, it's relative to the lowest fretted note
+    const effectiveCapo = capo || 0;
+    const transpositionBase = effectiveCapo > 0 ? effectiveCapo : (minFret > 0 ? minFret - 1 : 0);
 
-    const newPositions: Position = {};
-    for (const string in positions) {
-        const [fret, finger] = positions[string];
-        let newFret = fret > 0 ? fret - transposition : 0;
-        newPositions[string] = [newFret, finger];
-    }
+    const newFingers = fingers.map(fingerPos => {
+        let newFret = fingerPos.fret;
+        if (newFret > 0) { // Only shift fretted notes
+            newFret = newFret - transpositionBase;
+            // Ensure fret doesn't go below 0 (open string)
+            if (newFret < 0) newFret = 0;
+        }
+        return { ...fingerPos, fret: newFret };
+    });
 
-    let newNut = nut;
-    if (nut && nut.vis) {
-        const transposedPos = nut.pos > 0 ? nut.pos - transposition : 0;
-        newNut = { ...nut, pos: transposedPos };
-    }
+    // Adjust transportDisplay based on the transposition applied
+    transportDisplay = (capo || 0) + (minFret > 0 ? minFret - 1 : 0) + 1;
+    if (capo && capo > 0) transportDisplay = capo + 1; // If capo, display starts from capo's position + 1
 
-    finalChord = { ...originalChord, positions: newPositions, nut: newNut };
-    return { finalChord, transportDisplay: baseTransportDisplay + transposition };
+    finalChord = { ...originalChord, fingers: newFingers, capo: effectiveCapo };
+    return { finalChord, transportDisplay };
 };

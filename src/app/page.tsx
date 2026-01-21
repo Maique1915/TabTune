@@ -17,7 +17,7 @@ export default function LandingPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Chord Studio Card */}
-          <Link href="/studio" className="group">
+          <Link href="/chords" className="group">
             <div className="h-80 bg-neutral-900 border border-neutral-800 rounded-2xl p-8 flex flex-col items-center justify-center gap-6 transition-all duration-300 hover:border-blue-500/50 hover:bg-neutral-900/80 hover:scale-[1.02] hover:shadow-[0_0_50px_-12px_rgba(59,130,246,0.3)] cursor-pointer">
               <div className="w-24 h-24 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
                 <Music className="w-12 h-12 text-blue-500" />
@@ -26,36 +26,6 @@ export default function LandingPage() {
                 <h2 className="text-2xl font-bold mb-2 group-hover:text-blue-400 transition-colors">Animação de Acordes</h2>
                 <p className="text-neutral-500 group-hover:text-neutral-400">
                   Crie vídeos animados de diagramas de acordes e sequências.
-                </p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Tab Editor Card */}
-          <Link href="/tab-editor" className="group">
-            <div className="h-80 bg-neutral-900 border border-neutral-800 rounded-2xl p-8 flex flex-col items-center justify-center gap-6 transition-all duration-300 hover:border-emerald-500/50 hover:bg-neutral-900/80 hover:scale-[1.02] hover:shadow-[0_0_50px_-12px_rgba(16,185,129,0.3)] cursor-pointer">
-              <div className="w-24 h-24 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors">
-                <FileMusic className="w-12 h-12 text-emerald-500" />
-              </div>
-              <div className="text-center">
-                <h2 className="text-2xl font-bold mb-2 group-hover:text-emerald-400 transition-colors">Tablaturas e Partituras</h2>
-                <p className="text-neutral-500 group-hover:text-neutral-400">
-                  Edite tablaturas, crie cards ritmicos e exporte partituras.
-                </p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Fretboard Player Card */}
-          <Link href="/fretboard" className="group">
-            <div className="h-80 bg-neutral-900 border border-neutral-800 rounded-2xl p-8 flex flex-col items-center justify-center gap-6 transition-all duration-300 hover:border-purple-500/50 hover:bg-neutral-900/80 hover:scale-[1.02] hover:shadow-[0_0_50px_-12px_rgba(168,85,247,0.3)] cursor-pointer">
-              <div className="w-24 h-24 rounded-full bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
-                <Guitar className="w-12 h-12 text-purple-500" />
-              </div>
-              <div className="text-center">
-                <h2 className="text-2xl font-bold mb-2 group-hover:text-purple-400 transition-colors">Fretboard Player</h2>
-                <p className="text-neutral-500 group-hover:text-neutral-400">
-                  Visualizador dedicado para acompanhar músicas no braço do violão.
                 </p>
               </div>
             </div>

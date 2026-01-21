@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import './globals.css';
-import { Toaster } from "@/shared/components/ui/toaster"
-
 
 export const metadata: Metadata = {
   title: 'TabTune Animator',
@@ -33,7 +31,7 @@ export default function RootLayout({
 
         <div>
           {children}
-          <Toaster />
+
         </div>
       </body>
     </html>

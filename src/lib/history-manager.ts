@@ -1,6 +1,6 @@
 import { ChordDiagramProps, FretboardTheme, Achord } from "@/modules/core/domain/types";
 import { MeasureData, NoteData, Duration, GlobalSettings } from "@/modules/editor/domain/types";
-import { measuresToChords } from "@/lib/fretboard/converter";
+import { measuresToChords } from "@/lib/chords/converter";
 import { getNote, getComplement, getExtension, getBasse, notes, complements, extensions, basses } from "@/modules/core/domain/chord-logic";
 
 export interface FullHistoryState {
@@ -201,10 +201,8 @@ export function fretboardToHistory(measures: MeasureData[], settings: GlobalSett
                 }
             });
 
-            // Capture barre info if present (last one wins or first? usually consistent in a measure chord)
-            if (note.barre) {
-                barreData = note.barre;
-            }
+            // Barre information is now derived from positions in the current data model.
+            // Old barre property on NoteData is no longer supported.
         });
 
         // 2. Parse Chord Name to populate Achord
@@ -215,7 +213,7 @@ export function fretboardToHistory(measures: MeasureData[], settings: GlobalSett
         const chordData: ChordDiagramProps = {
             chord: achord,
             origin: achord.note,
-            positions: mergedPositions,
+            fingers: mergedPositions, // Corrected from positions to fingers
             avoid: [],
             stringNames: settings.tuning,
             chordName: chordName,
@@ -227,21 +225,7 @@ export function fretboardToHistory(measures: MeasureData[], settings: GlobalSett
             }
         };
 
-        // Map BarreData to nutForm
-        if (barreData) {
-            chordData.nut = {
-                vis: true,
-                pos: barreData.fret,
-                str: [barreData.startString, barreData.endString],
-                fin: barreData.finger || 1,
-                trn: 0
-            };
-        } else {
-            // Try to auto-detect if user didn't explicitly set it? 
-            // Ideally we trust the explicit data. If it wasn't there, we don't force it.
-            // But if we want to retain the visuals exactly, we rely on what was in note.barre.
-        }
-
+                // Legacy nutForm mapping removed. Barre information is now handled via StandardPosition's endString.
         history.push(chordData);
     });
 
@@ -294,39 +278,16 @@ export function historyToFretboard(history: ChordDiagramProps[]): MeasureData[] 
             manualChord: ext.manualChord,
         };
 
-        // Restore Barre from nut
-        if (chord.nut && chord.nut.vis) {
-            note.barre = {
-                fret: chord.nut.pos,
-                startString: chord.nut.str[0],
-                endString: chord.nut.str[1],
-                finger: chord.nut.fin
-            };
-        }
+        // Legacy barre restoration from nut removed. Barre information should be derived from positions.
 
-        // Populate positions
-        if (chord.positions) {
-            Object.entries(chord.positions).forEach(([strKey, pos]) => {
-                // pos is [fret, finger] or legacy [finger, string, fret]
-
-                let finger = 0;
-                let fret = 0;
-                let stringNum = parseInt(strKey);
-
-                if (pos.length === 3) {
-                    // Legacy: [finger, string, fret]
-                    finger = pos[0];
-                    fret = pos[2] || 0;
-                } else {
-                    // Standard: [fret, finger]
-                    fret = pos[0];
-                    finger = pos[1];
-                }
-
+        // Populate positions from fingers
+        if (chord.fingers) { // Changed from chord.positions to chord.fingers
+            chord.fingers.forEach(fingerPos => { // Iterating directly over StandardPosition
                 note.positions.push({
-                    finger: finger,
-                    string: stringNum,
-                    fret: fret
+                    finger: fingerPos.finger,
+                    string: fingerPos.string,
+                    fret: fingerPos.fret,
+                    endString: fingerPos.endString, // Include endString for barre
                 });
             });
         }
@@ -346,7 +307,7 @@ export function historyToFretboard(history: ChordDiagramProps[]): MeasureData[] 
 
 
 // --- Studio Import/Export ---
-import { TimelineState, TimelineTrack, TimelineClip, ClipType } from "@/modules/studio/domain/types";
+import { TimelineState, TimelineTrack, TimelineClip, ClipType } from "@/modules/chords/domain/types";
 
 
 /**

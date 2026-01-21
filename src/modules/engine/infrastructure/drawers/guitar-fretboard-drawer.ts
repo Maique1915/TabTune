@@ -1,6 +1,6 @@
-import { ChordDrawerBase } from "./chord-drawer-base";
+
 import type { FretboardTheme } from "@/modules/core/domain/types";
-import { FretboardDrawer } from "./fretboard-drawer";
+import { FretboardDrawer } from "./FretboardDrawer";
 import type { Position, ChordDiagramProps, TabEffect } from "@/modules/core/domain/types";
 import { notes, formatNoteName } from "@/modules/core/domain/chord-logic";
 
@@ -9,7 +9,7 @@ export interface GuitarFretboardDrawerOptions {
     height: number;
     numFrets?: number;
     numStrings?: number;
-    rotation?: 0 | 90 | 270;
+    rotation?: 0 | 90 | 180 | 270;
     mirror?: boolean;
     stringNames?: string[];
     tuningShift?: number;
@@ -155,7 +155,7 @@ export class GuitarFretboardDrawer {
     public drawHeadstock() {
         const ctx = this.ctx;
         ctx.save();
-        // No global transforms - headstock stays in original orientation
+        this.applyTransforms();
 
         // Headstock should be on the LEFT side of the fretboard (before the nut)
         // It should be vertical, matching the height of the fretboard
@@ -177,7 +177,7 @@ export class GuitarFretboardDrawer {
     public drawBoard() {
         const ctx = this.ctx;
         ctx.save();
-        // No global transforms - board stays in original orientation
+        this.applyTransforms();
 
         // 1. Draw Fretboard Background
         ctx.fillStyle = this.colors.fretboard.neck.color;
@@ -306,7 +306,7 @@ export class GuitarFretboardDrawer {
         const progress = options?.progress ?? 0; // 0 to 1
 
         this.ctx.save();
-        // No global transforms - only text elements will be rotated individually
+        this.applyTransforms();
 
         // Helper to draw a finger/note
         const drawFinger = (fret: number, visualIndex: number, finger: number | string, color: string, radiusScale: number = 1, alpha: number = 1, yOffset: number = 0, xOffset: number = 0) => {
@@ -425,7 +425,7 @@ export class GuitarFretboardDrawer {
 
         const ctx = this.ctx;
         ctx.save();
-        // No global transforms for strum animation
+        this.applyTransforms();
 
         // Visual swipe across strings
         // Down: Top string to Bottom string (0 -> 5)
@@ -660,8 +660,7 @@ export class GuitarFretboardDrawer {
         if (!name) return;
 
         this.ctx.save();
-        // No global transforms - chord name stays in original orientation
-        // The text is already positioned correctly without rotation for FULL NECK mode
+        this.applyTransforms();
 
         // Position: Top centered horizontally on the board width, 
         // Vertical Y: boardY - margin

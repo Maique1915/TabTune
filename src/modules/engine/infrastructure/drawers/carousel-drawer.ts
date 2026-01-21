@@ -1,9 +1,9 @@
 import type { ChordDiagramProps } from "@/modules/core/domain/types";
-import { ChordDrawerBase } from "@/modules/engine/infrastructure/drawers/chord-drawer-base";
+import { ChordDrawer } from "./ChordDrawer";
 import { easeInOutQuad } from "../utils/animacao";
 
 interface DrawCarouselParams {
-  drawer: ChordDrawerBase;
+  drawer: ChordDrawer;
   currentDisplayChord: { finalChord: ChordDiagramProps; transportDisplay: number; }; // Used for transition/focus details
   transitionProgress: number; // 0 to 1
   allChords: { finalChord: ChordDiagramProps; transportDisplay: number }[]; // Full list
@@ -15,7 +15,7 @@ export function drawCarouselAnimation(params: DrawCarouselParams) {
 
   if (!allChords || allChords.length === 0 || currentIndex < 0 || currentIndex >= allChords.length) return;
 
-  drawer.clearCanvas();
+  drawer.clear();
 
   const centerAndDraw = (finalChord: ChordDiagramProps, transportDisplay: number, offsetX: number = 0, opacity: number = 1.0) => {
     // Optimization: Don't draw if completely off-screen

@@ -1,133 +1,218 @@
 import React from 'react';
 import { ScoreStyle } from '@/modules/editor/domain/types';
+import { ChordDiagramColors } from '@/modules/core/presentation/context/app-context';
 
-export const PRESET_THEMES: Record<string, { label: string; style: ScoreStyle }> = {
+
+export const DEFAULT_COLORS: ChordDiagramColors = {
+    global: {
+        backgroundColor: "#000000",
+        primaryTextColor: "#FF8C42",
+        scale: 1.0,
+        rotation: 0,
+        mirror: false,
+    },
+    fretboard: {
+        neck: {
+            color: "#303135",
+            opacity: 1,
+        },
+        frets: {
+            color: "#000000",
+        },
+        strings: {
+            color: "#FFFFFF",
+            thickness: 3,
+        },
+    },
+    fingers: {
+        color: "#200f0f",
+        textColor: "#ffffff",
+        border: {
+            color: "#FFFFFF",
+            width: 4,
+        },
+        opacity: 0.3, // backgroundAlpha
+    },
+    chordName: {
+        color: "#ffffff",
+        textColor: "#ffffff", // Redundant but fits interface
+        opacity: 1,
+        stroke: {
+            color: "#000000",
+            width: 3,
+        },
+    },
+    capo: {
+        color: "rgba(100, 100, 110, 0.9)",
+        border: {
+            color: "rgba(0, 0, 0, 0.3)",
+            width: 1, // Added default width
+        },
+        textColors: {
+            name: "#ffffff",
+            number: "#FF8C42",
+        },
+    },
+};
+
+export const STUDIO_PRESETS = {
     default: {
         label: 'Default Dark',
-        style: {
-            clefs: { color: '#ff9823ff', opacity: 1 },
-            timeSignature: { color: '#ff9823ff', opacity: 1 },
-            notes: { color: '#ffffffff', opacity: 1 },
-            rests: { color: '#ffffffff', opacity: 0.8 },
-            tabNumbers: { color: '#ffffffff', opacity: 1 },
-            symbols: { color: '#ffffffff', opacity: 1 },
-            staffLines: { color: '#ffffffff', opacity: 0.4 },
-            chordName: {
-                color: '#22d3ee',
-                opacity: 1,
-                strokeColor: '#000000',
-                strokeWidth: 3
-            },
-            background: '#000000ff',
-            playheadColor: '#ffffffff',
-            activeNoteColor: '#ffffffff',
-            shadowIntensity: 10,
-            glowEffect: true,
-            scale: 1,
-            transitionType: 'snap'
-        }
+        style: DEFAULT_COLORS
     },
     classic: {
         label: 'Classic Light',
         style: {
-            clefs: { color: '#000000', opacity: 1 },
-            timeSignature: { color: '#000000', opacity: 1 },
-            notes: { color: '#111111', opacity: 1 },
-            rests: { color: '#111111', opacity: 1 },
-            tabNumbers: { color: '#111111', opacity: 1 },
-            symbols: { color: '#111111', opacity: 1 },
-            staffLines: { color: '#000000', opacity: 0.1 },
-            chordName: {
-                color: '#111111',
-                opacity: 1,
-                strokeColor: '#000000',
-                strokeWidth: 0
+            ...DEFAULT_COLORS,
+            global: {
+                ...DEFAULT_COLORS.global,
+                primaryTextColor: "#3b3b3bff",
+                backgroundColor: "#000000",
             },
-            background: '#fdfdfd',
-            playheadColor: '#2563eb',
-            activeNoteColor: '#ef4444',
-            shadowIntensity: 0,
-            glowEffect: false,
-            scale: 1,
-            transitionType: 'snap'
+            fretboard: {
+                neck: {
+                    color: "#f5f5f5",
+                    opacity: 1
+                },
+                frets: { color: "#474747ff" },
+                strings: { color: "#000000", thickness: 3 }
+            },
+            chordName: {
+                color: "#f4f4f5",
+                opacity: 1,
+                shadow: { enabled: false, color: "transparent", blur: 0 },
+                stroke: { color: "transparent", width: 0 }
+            },
+
+            fingers: {
+                color: "#200f0f",
+                textColor: "#200f0f",
+                border: {
+                    color: "#200f0f",
+                    width: 4,
+                },
+                shadow: {
+                    enabled: true,
+                    color: "#000000",
+                    hOffset: 0,
+                    vOffset: 0,
+                    blur: 0,
+                    spread: 0,
+                },
+                opacity: 0.3, // backgroundAlpha
+            },
+            capo: {
+                color: "#e4e4e7",
+                border: { color: "#a1a1aa", width: 1 },
+                shadow: { enabled: true, color: "rgba(0,0,0,0.2)" },
+                textColors: { name: "#333333ff", number: "#dddddd" }
+            }
         }
     },
     cyberpunk: {
         label: 'Cyberpunk',
         style: {
-            clefs: { color: '#fb00ff', opacity: 1 },
-            timeSignature: { color: '#fb00ff', opacity: 1 },
-            notes: { color: '#00ff9d', opacity: 1 },
-            rests: { color: '#ffffff', opacity: 0.8 },
-            tabNumbers: { color: '#ffffff', opacity: 1 },
-            symbols: { color: '#ffffffff', opacity: 1 },
-            staffLines: { color: '#ffffffff', opacity: 0.4 },
-            chordName: {
-                color: '#00ff9d',
-                opacity: 1,
-                strokeColor: '#000000',
-                strokeWidth: 3
+            ...DEFAULT_COLORS,
+            global: { ...DEFAULT_COLORS.global, primaryTextColor: "#ffffffff" },
+            fretboard: {
+                neck: {
+                    color: "#2d0036",
+                    opacity: 1
+                },
+                frets: { color: "#fb00ff50" },
+                strings: { color: "#fb00ff", thickness: 3 }
             },
-            background: '#020617',
-            playheadColor: '#3b82f6',
-            activeNoteColor: '#60a5fa',
-            shadowIntensity: 15,
-            glowEffect: true,
-            scale: 1,
-            transitionType: 'assemble'
+            chordName: {
+                color: "#fb00ff",
+                opacity: 1,
+                shadow: { enabled: true, color: "#fb00ff", blur: 20 },
+                stroke: { color: "transparent", width: 0 }
+            },
+            fingers: {
+                color: "#fb00ff50",
+                textColor: "#fffdfdff",
+                border: { color: "#fb00ff", width: 4 },
+                shadow: { enabled: true, color: "#00ff9d80", hOffset: 0, vOffset: 0, blur: 0, spread: 0 },
+                opacity: 0.3
+            },
+            capo: {
+                color: "#180220",
+                border: { color: "#fb00ff", width: 1 },
+                shadow: { enabled: true, color: "#fb00ff" },
+                textColors: { name: "#00ff9d", number: "#00ff9d" }
+            }
         }
     },
     midnight: {
         label: 'Midnight Blue',
         style: {
-            clefs: { color: '#3b82f6', opacity: 1 },
-            timeSignature: { color: '#3b82f6', opacity: 1 },
-            notes: { color: '#ffffff', opacity: 1 },
-            rests: { color: '#ffffff', opacity: 0.8 },
-            tabNumbers: { color: '#ffffff', opacity: 1 },
-            symbols: { color: '#3b82f6', opacity: 1 },
-            staffLines: { color: '#3b82f6', opacity: 0.4 },
-            chordName: {
-                color: '#60a5fa',
-                opacity: 1,
-                strokeColor: '#000000',
-                strokeWidth: 3
+            ...DEFAULT_COLORS,
+            global: { ...DEFAULT_COLORS.global, primaryTextColor: "#ffffffff" },
+            fretboard: {
+                neck: {
+                    color: "#0f172a",
+                    opacity: 1
+                },
+                frets: { color: "#334155" },
+                strings: { color: "#94a3b8", thickness: 3 }
             },
-            background: '#020617',
-            playheadColor: '#3b82f6',
-            activeNoteColor: '#60a5fa',
-            shadowIntensity: 10,
-            glowEffect: true,
-            scale: 1,
-            transitionType: 'assemble'
+            chordName: {
+                color: "#60a5fa",
+                opacity: 1,
+                shadow: { enabled: true, color: "#60a5fa", blur: 15 },
+                stroke: { color: "transparent", width: 0 }
+            },
+            fingers: {
+                color: "#334155",
+                textColor: "#ffffff",
+                border: { color: "#60a5fa", width: 4 },
+                shadow: { enabled: true, color: "#3b82f660", hOffset: 0, vOffset: 0, blur: 0, spread: 0 },
+                opacity: 0.9
+            },
+            capo: {
+                color: "#1e293b",
+                border: { color: "#60a5fa", width: 1 },
+                shadow: { enabled: true, color: "#3b82f6aa" },
+                textColors: { name: "#d5e0eeff", number: "#a8c6eeff" }
+            }
         }
     },
     vintage: {
         label: 'Vintage',
         style: {
-            clefs: { color: '#451a03', opacity: 1 },
-            timeSignature: { color: '#451a03', opacity: 1 },
-            notes: { color: '#451a03', opacity: 1 },
-            rests: { color: '#451a03', opacity: 1 },
-            tabNumbers: { color: '#451a03', opacity: 1 },
-            symbols: { color: '#78350f', opacity: 1 },
-            staffLines: { color: '#78350f', opacity: 0.2 },
-            chordName: {
-                color: '#451a03',
-                opacity: 1,
-                strokeColor: '#000000',
-                strokeWidth: 0
+            ...DEFAULT_COLORS,
+            global: { ...DEFAULT_COLORS.global, primaryTextColor: "#8b4513" },
+            fretboard: {
+                neck: {
+                    color: "#e6dcc8",
+                    opacity: 1
+                },
+                frets: { color: "#a68b6c" },
+                strings: { color: "#8b4513", thickness: 3 }
             },
-            background: '#f5f1e6',
-            playheadColor: '#b45309',
-            activeNoteColor: '#78350f',
-            shadowIntensity: 0,
-            glowEffect: false,
-            scale: 1,
-            transitionType: 'assemble'
+            chordName: {
+                color: "#ece5e3ff",
+                opacity: 0.9,
+                shadow: { enabled: false, color: "transparent", blur: 0 },
+                stroke: { color: "transparent", width: 0 }
+            },
+            fingers: {
+                color: "#5c4033",
+                textColor: "#efe6d5",
+                border: { color: "#3e2723", width: 4 },
+                shadow: { enabled: true, color: "#5c403350", hOffset: 0, vOffset: 0, blur: 0, spread: 0 },
+                opacity: 0.9
+            },
+            capo: {
+                color: "#5d4037",
+                border: { color: "#3e2723", width: 1 },
+                shadow: { enabled: true, color: "rgba(62, 39, 35, 0.4)" },
+                textColors: { name: "#ffffff", number: "#5c4033" }
+            }
         }
     }
 };
+
 
 export const DEFAULT_VEXTAB = `options space=20
 tabstave notation=true key=A time=4/4
