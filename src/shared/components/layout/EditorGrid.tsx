@@ -20,7 +20,7 @@ export function EditorGrid({
     className,
     topSectionClassName,
     bottomSectionClassName,
-    splitRatio = "65% 35%",
+    splitRatio = "70% 30%",
 }: EditorGridProps) {
     return (
         <main
@@ -30,7 +30,7 @@ export function EditorGrid({
             {/* Top Section: typically the Stage/Canvas */}
             <div className={cn("flex flex-col h-full overflow-hidden relative", topSectionClassName)}>
                 {floatingControls && (
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center justify-between p-1.5 rounded-2xl bg-black/40 backdrop-blur-md border border-white/5 shadow-2xl min-w-[300px] max-w-[90%] whitespace-nowrap">
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-fit">
                         {floatingControls}
                     </div>
                 )}

@@ -15,13 +15,22 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
         neck: {
             color: "#303135",
             opacity: 1,
+            shadow: { enabled: false, color: "rgba(0,0,0,0.5)", blur: 5 }
         },
         frets: {
             color: "#000000",
+            shadow: { enabled: false, color: "rgba(0,0,0,0.5)", blur: 3 }
         },
         strings: {
             color: "#FFFFFF",
             thickness: 3,
+            shadow: { enabled: false, color: "rgba(0,0,0,0.5)", blur: 3 }
+        },
+        board: {
+            inlays: {
+                color: "rgba(0, 0, 0, 0.35)",
+                shadow: { enabled: false, color: "rgba(0,0,0,0.5)", blur: 3 }
+            },
         },
     },
     fingers: {
@@ -32,14 +41,19 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
             width: 4,
         },
         opacity: 0.3, // backgroundAlpha
+        shadow: { enabled: true, color: "rgba(0,0,0,0.6)", blur: 8 }
     },
     chordName: {
         color: "#ffffff",
-        textColor: "#ffffff", // Redundant but fits interface
+        textColor: "#ffffff",
         opacity: 1,
+        shadow: {
+            color: "rgba(0,0,0,0.5)",
+            blur: 5,
+        },
         stroke: {
             color: "#000000",
-            width: 3,
+            width: 0,
         },
     },
     capo: {
@@ -52,6 +66,7 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
             name: "#ffffff",
             number: "#FF8C42",
         },
+        shadow: { enabled: false, color: "rgba(0,0,0,0.5)", blur: 5 }
     },
     head: {
         color: "#3a3a3e",
@@ -61,7 +76,8 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
         border: {
             color: "#3a3a3e",
             width: 0
-        }
+        },
+        shadow: { enabled: false, color: "rgba(0,0,0,0.5)", blur: 5 }
     },
 };
 

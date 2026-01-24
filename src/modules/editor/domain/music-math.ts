@@ -83,6 +83,13 @@ export function getNoteDurationValue(duration: string, isDotted: boolean): numbe
     return isDotted ? base * 1.5 : base;
 }
 
+export function getMsFromDuration(duration: string, isDotted: boolean, bpm: number): number {
+    const value = getNoteDurationValue(duration, isDotted);
+    // At BPM, one quarter note (0.25) is 60000/BPM ms.
+    // Thus, whole note (1.0) is (60000/BPM) * 4 ms.
+    return (60000 / bpm) * (value * 4);
+}
+
 export function getMeasureCapacity(timeSignature: string): number {
     const [num, den] = timeSignature.split('/').map(Number);
     if (!num || !den) return 1.0;

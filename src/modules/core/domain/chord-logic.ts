@@ -233,7 +233,7 @@ export const prepareShortChordVisuals = (
 
     // Check overflow logic (same as was in ShortChord)
     // If chords exceed the visible number of frets, we shift them.
-    if (frets.length > 0 && maxFret >= numFrets) {
+    if (frets.length > 0 && maxFret > numFrets) {
         // Auto-transpose trigger
         startFret = minFret;
 
@@ -262,8 +262,7 @@ export const prepareShortChordVisuals = (
     const barre = detectBarre(finalChord.fingers);
 
     // 3. Name Formatting
-    const formattedName = finalChord.chordName ||
-        (finalChord.chord ? getNome(finalChord.chord).replace(/#/g, "♯").replace(/b/g, "♭") : "");
+    const formattedName = formatNoteName(finalChord.chordName || "");
 
     // 4. Capo / Transpose Configs
     const capoConfig = {

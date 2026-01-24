@@ -174,8 +174,11 @@ export interface FretboardTheme {
     };
     fretboard: {
         neck: ElementStyle; // fretboardColor
-        frets: { color: string };
-        strings: { color: string; thickness: number }; // borderColor -> color
+        frets: ElementStyle & { thickness?: number };
+        strings: ElementStyle & { thickness: number }; // borderColor -> color
+        board?: {
+            inlays?: ElementStyle;
+        };
     };
     fingers: TextStyle; // color, border, shadow, textColor, opacity (backgroundAlpha)
     chordName: TextStyle; // color, opacity, shadow, stroke

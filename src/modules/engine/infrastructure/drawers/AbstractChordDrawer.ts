@@ -25,6 +25,7 @@ export abstract class AbstractChordDrawer extends BaseDrawer {
 
     protected _stringNamesY: number = 0;
     protected _globalCapo: number = 0;
+    protected _verticalPadding: number = 0;
 
     constructor(
         ctx: CanvasRenderingContext2D,
@@ -42,6 +43,10 @@ export abstract class AbstractChordDrawer extends BaseDrawer {
     public get barreWidth(): number { return this._baseBarreWidth * this._scaleFactor; }
     public get fingerRadius(): number { return this._baseFingerRadius * this._scaleFactor; }
     public get horizontalPadding(): number { return this._horizontalPadding * this._scaleFactor; }
+
+    public setRotation(rotation: number): void {
+        this._rotation = rotation;
+    }
 
     public setNumStrings(num: number): void {
         super.setNumStrings(num);
@@ -100,7 +105,7 @@ export abstract class AbstractChordDrawer extends BaseDrawer {
         this._diagramY = (CH / 2) - (localH / 2);
 
         // Na imagem, o Header (onde ficam os nomes E A D G B e) tem uma altura fixa
-        const headerHeight = 60 * this._scaleFactor;
+        const headerHeight = 75 * this._scaleFactor;
 
         // O Fretboard (madeira) começa logo abaixo do header
         this._fretboardX = this._diagramX;
@@ -110,8 +115,10 @@ export abstract class AbstractChordDrawer extends BaseDrawer {
 
         // Cálculo de espaçamento
         this._horizontalPadding = 30; // Recuo lateral para as cordas não encostarem na borda da madeira
-        const usableWidth = this._fretboardWidth - (this._horizontalPadding * 2 * this._scaleFactor);
-        this._stringSpacing = usableWidth / (Math.max(1, this._numStrings - 1));
+        const fretUsableWidth = this._fretboardWidth - (this._horizontalPadding * 2 * this._scaleFactor);
+        this._stringSpacing = fretUsableWidth / Math.max(1, this._numStrings - 1);
+
+        // Trastes ficam no eixo Y (vertical): espaçamento usa altura disponível
         this._realFretSpacing = this._fretboardHeight / this._numFrets;
 
         // Posicionamento do texto das notas (centralizado no header)
@@ -186,29 +193,24 @@ export abstract class AbstractChordDrawer extends BaseDrawer {
     }
 
     protected _getLabelPosition(type: 'name' | 'transpose'): { x: number; y: number } {
-        const scale = this._scaleFactor;
         const CW = this._dimensions.width;
         const CH = this._dimensions.height;
-        const rad = (this._rotation * Math.PI) / 180;
+        const centerX = CW / 2;
+        const centerY = CH / 2;
 
-        const baseCenterX = (CW / 2) - (this.diagramWidth / 2);
-        const carouselOffsetX = this._diagramX - baseCenterX;
-        const effectiveOffset = this._mirror ? -carouselOffsetX : carouselOffsetX;
+        const offsetN = 100 * this._scaleFactor;
+        const offsetT = 40 * this._scaleFactor;
+        const offset = type === 'name' ? offsetN : offsetT;
 
-        const cosR = Math.cos(rad);
-        const sinR = Math.sin(rad);
+        // Determine the visual height in screen space after rotation
+        // If 90 or 270 degrees, height becomes the original diagram's width
+        const isHorizontal = this._rotation % 180 !== 0;
+        const visualHeight = isHorizontal ? this.diagramWidth : this._diagramHeight;
 
-        const visualCenterX = (CW / 2) + (effectiveOffset * cosR);
-        const visualCenterY = (CH / 2) + (effectiveOffset * sinR);
-
-        const offsetT = 40 * scale;
-        const offsetN = 140 * scale;
-        const vHalfHeight = this._getVisualFretboardHalfHeight();
-
-        const baseY = visualCenterY - vHalfHeight;
-        const posY = (type === 'name' ? baseY - offsetN : baseY - offsetT);
-
-        return { x: visualCenterX, y: posY };
+        return {
+            x: centerX,
+            y: centerY - (visualHeight / 2) - offset
+        };
     }
 
     protected _updateFretboardCache(): void {
@@ -232,13 +234,6 @@ export abstract class AbstractChordDrawer extends BaseDrawer {
         cacheCtx.clearRect(0, 0, width, height);
 
         const originalCtx = this._ctx;
-        // ... (preserving original transforms save/restore logic is good practice even in abstract but implementation might vary)
-        // Actually, this logic is quite tied to drawing the fretboard. 
-        // If the subclasses use this cache method, it should stay. 
-        // But since subclasses implement `drawFretboard`, maybe they should implement caching too?
-        // The user said "use abstract only to calculate things".
-        // Caching involves creating a canvas and drawing to it. 
-        // I will leave it here as a utility, but subclasses invoke it.
         const originalFretboardX = this._fretboardX;
         const originalFretboardY = this._fretboardY;
         const originalDiagramX = this._diagramX;
@@ -255,9 +250,6 @@ export abstract class AbstractChordDrawer extends BaseDrawer {
         this._fretboardY += offsetY;
         this._stringNamesY += offsetY;
 
-        // IMPORTANT: The abstract class doesn't know HOW to draw fretboard anymore via `this.drawFretboard()` if I removed it?
-        // Ah, `fretboardDrawer.drawFretboard()` exists on the child property.
-        // Yes, the abstract class has `public abstract fretboardDrawer`.
         if (this.fretboardDrawer) {
             this.fretboardDrawer.setCtx(cacheCtx);
             this.fretboardDrawer.setDiagramX(this._diagramX);
@@ -276,5 +268,136 @@ export abstract class AbstractChordDrawer extends BaseDrawer {
             this.fretboardDrawer.setDiagramX(this._diagramX);
             this.fretboardDrawer.setDiagramY(this._diagramY);
         }
+    }
+
+    // ============ ANIMATION SUPPORT HELPERS ============
+
+    /**
+     * Calculates the local visual coordinates for a specific fret and string position.
+     * Takes into account the current layout (vertical/horizontal based on implementation).
+     * For AbstractChordDrawer (Vertical): X = String, Y = Fret.
+     */
+    /**
+     * Calculates the center (x, y) coordinates for a finger on a given fret and string.
+     * Default Implementation: Vertical Layout (X = String, Y = Fret)
+     */
+    public getFingerPosition(fret: number, string: number): { x: number, y: number } {
+        const visualStringIdx = this._numStrings - string;
+
+        // X = positions along strings (Columns)
+        const x = this._fretboardX + this.horizontalPadding + visualStringIdx * this._stringSpacing;
+
+        // Y = positions along frets (Rows) - Centered in the fret space
+        const y = this._fretboardY + (Math.max(0, fret) - 0.5) * this._realFretSpacing;
+
+        return { x, y };
+    }
+
+    /**
+     * Calculates the rect for a barre.
+     * Default Implementation: Vertical Layout (Barre is a horizontal pill)
+     */
+    public getBarreRect(fret: number, startString: number, endString: number): { x: number, y: number, width: number, height: number, radius: number } {
+        const p1 = this.getFingerPosition(fret, startString);
+        const p2 = this.getFingerPosition(fret, endString);
+
+        const leftX = Math.min(p1.x, p2.x) - this.fingerRadius;
+        const rightX = Math.max(p1.x, p2.x) + this.fingerRadius;
+
+        const width = rightX - leftX;
+        const height = this.fingerRadius * 2;
+        const centerX = leftX + width / 2;
+        const centerY = p1.y;
+
+        return { x: centerX, y: centerY, width, height, radius: this.neckRadius };
+    }
+
+    public drawRawFinger(x: number, y: number, fingerNum: number | string, color: string, opacity: number = 1, radiusScale: number = 1): void {
+        this._ctx.save();
+
+        // Apply Shadow for Finger Body
+        this.applyShadow(this._colors.fingers.shadow);
+
+        this._ctx.fillStyle = this.hexToRgba(color, (this._colors.fingers.opacity ?? 1) * opacity);
+
+        const radius = this.fingerRadius * radiusScale;
+
+        this._ctx.beginPath();
+        this._ctx.arc(x, y, radius, 0, Math.PI * 2);
+        this._ctx.fill();
+
+        const borderWidth = this._colors.fingers.border?.width ?? 0;
+        if (borderWidth > 0 && opacity > 0.3) {
+            this._ctx.strokeStyle = this.hexToRgba(this._colors.fingers.border?.color || '#FFFFFF', opacity);
+            this._ctx.lineWidth = 3 * this._scaleFactor;
+            this._ctx.stroke();
+        }
+
+        // RESET SHADOW for Text
+        this.applyShadow(undefined);
+
+        if (fingerNum !== 0 && fingerNum !== -1 && fingerNum !== 'T') {
+            this._ctx.fillStyle = this._colors.fingers.textColor || '#ffffff';
+            const fontSize = 35 * this._scaleFactor * radiusScale;
+            this._ctx.font = `bold ${fontSize}px sans-serif`;
+            this._ctx.textAlign = "center";
+            this._ctx.textBaseline = "middle";
+
+            this._ctx.save();
+            this._ctx.translate(x, y);
+            if (this._mirror) this._ctx.scale(-1, 1);
+            if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
+            this._ctx.fillText(String(fingerNum), 0, 0);
+            this._ctx.restore();
+        }
+        this._ctx.restore();
+    }
+
+    public drawRawBarre(x: number, y: number, width: number, height: number, fingerNum: number | string, color: string, opacity: number = 1): void {
+        this._ctx.save();
+
+        // Apply Shadow for Barre Body
+        this.applyShadow(this._colors.fingers.shadow);
+
+        this._ctx.fillStyle = this.hexToRgba(color, (this._colors.fingers.opacity ?? 1) * opacity);
+
+        const radius = this.neckRadius; // Match barre radius style
+
+        this._ctx.beginPath();
+        this._safeRoundRect(x - width / 2, y - height / 2, width, height, radius);
+        this._ctx.fill();
+
+        this._ctx.strokeStyle = this.hexToRgba(this._colors.fingers.border?.color || '#FFFFFF', opacity);
+        this._ctx.lineWidth = 3 * this._scaleFactor;
+        this._ctx.stroke();
+
+        // RESET SHADOW for Text
+        this.applyShadow(undefined);
+
+        // Finger Number
+        if (fingerNum !== 0 && fingerNum !== -1 && opacity > 0.3) {
+            this._ctx.fillStyle = this._colors.fingers.textColor || '#ffffff';
+            const fontSize = 35 * this._scaleFactor;
+            this._ctx.font = `bold ${fontSize}px sans-serif`;
+            this._ctx.textAlign = "center";
+            this._ctx.textBaseline = "middle";
+
+            this._ctx.save();
+            this._ctx.translate(x, y);
+            if (this._mirror) this._ctx.scale(-1, 1);
+            if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
+            this._ctx.fillText(String(fingerNum), 0, 0);
+            this._ctx.restore();
+        }
+
+        this._ctx.restore();
+    }
+
+    public drawTransposeIndicator(text: string | number, alignFret: number = 1): void {
+        // Default: No-op. Specialized drawers like ShortChord can override.
+    }
+
+    public drawTransposeIndicatorWithTransition(cTransport: number, nTransport: number, cAlignedFret: number, nAlignedFret: number, progress: number): void {
+        // Default: No-op.
     }
 }

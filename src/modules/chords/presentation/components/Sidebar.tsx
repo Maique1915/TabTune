@@ -3,14 +3,21 @@
 import React from 'react';
 import { Duration, NoteData, MeasureData, GlobalSettings } from '@/modules/editor/domain/types';
 import { FretboardTheme } from '@/modules/core/domain/types';
+import { extensions as extensionOrder } from '@/modules/core/domain/chord-logic';
 import { INSTRUMENTS } from '@/lib/instruments';
 import { VexFlowRhythmIcon } from './VexFlowRhythmIcon';
 import { GenericSidebar } from '@/shared/components/layout/GenericSidebar';
 import Link from 'next/link';
 import { Music, Settings2, Guitar, Home, ChevronDown, Minus, Plus } from 'lucide-react';
 import { useAppContext } from '@/modules/core/presentation/context/app-context';
-import { STUDIO_PRESETS } from '@/modules/chords/presentation/components/SettingsPanel';
-import { NOTE_NAMES } from '@/modules/editor/domain/music-math';
+import { NOTE_NAMES, getMsFromDuration } from '@/modules/editor/domain/music-math';
+import { FullNeckDrawer } from '@/modules/engine/infrastructure/drawers/FullNeck';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger
+} from '@/shared/components/ui/accordion';
 
 const calculateShiftedTuning = (baseTuning: string[], shift: number): string[] => {
     if (shift >= 0) return [...baseTuning]; // Fix names for Capo or Standard
@@ -96,6 +103,8 @@ interface SidebarProps {
     onTransposeMeasure?: (measureId: string, semitones: number) => void;
     onTransposeAll?: (semitones: number) => void;
     theme?: FretboardTheme;
+    isSequentialMode?: boolean;
+    onNoteDurationStatic?: (noteId: string, duration: Duration) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -129,8 +138,10 @@ const Sidebar: React.FC<SidebarProps> = ({
     onTransposeAll,
     theme,
     onInsert,
+    isSequentialMode = false,
+    onNoteDurationStatic,
 }) => {
-    const { setAnimationType, animationType } = useAppContext();
+    const { setAnimationType, animationType, selectedChords } = useAppContext();
 
     const [selectedIndices, setSelectedIndices] = React.useState<number[]>([]);
     const [selectedStrings, setSelectedStrings] = React.useState<number[]>([]);
@@ -291,11 +302,14 @@ const Sidebar: React.FC<SidebarProps> = ({
     ];
 
     const handleDurationClick = (code: Duration) => {
-        if (!!editingNote && onNoteRhythmChange) {
-            onNoteRhythmChange(code);
+        if (!!editingNote) {
+            if (isSequentialMode && onNoteDurationStatic) {
+                onNoteDurationStatic(editingNote.id, code);
+            } else if (onNoteRhythmChange) {
+                onNoteRhythmChange(code);
+            }
         } else {
             onSelectDuration(code);
-            // Also update measure default note if creating new? Not needed if unified selection works.
         }
     };
 
@@ -308,10 +322,17 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     const handleFretChange = (fret: number) => {
         if (!editingNote || activePositionIndex === undefined || activePositionIndex < 0) return;
-        const currentPos = editingNote.positions[activePositionIndex];
+        const note = editingNote as any;
+        const currentPos = note.positions[activePositionIndex];
         if (!currentPos) return;
 
-        const newPositions = [...editingNote.positions];
+        // Validation for Cinematic mode (max 24 frets including capo)
+        if (animationType === 'guitar-fretboard') {
+            const currentCapo = globalSettings?.capo || 0;
+            if (fret + currentCapo > 24) return;
+        }
+
+        const newPositions = [...note.positions];
         newPositions[activePositionIndex] = { ...currentPos, fret: fret };
 
         onUpdateNote?.({ positions: newPositions });
@@ -390,15 +411,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </Link>
             )}
         >
-            <div className="space-y-6">
+            <div className="space-y-3">
 
                 {/* Unified Tab Navigation */}
-                <div className="flex bg-zinc-950/40 p-1 rounded-xl border border-zinc-800/50">
+                <div className="flex bg-zinc-950/40 p-0.5 rounded-xl border border-zinc-800/50">
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveUnifiedTab(tab.id)}
-                            className={`flex-1 py-2 text-[9px] font-black rounded-lg transition-all flex flex-col items-center gap-1 ${activeUnifiedTab === tab.id
+                            className={`flex-1 py-1.5 text-[8px] font-black rounded-lg transition-all flex flex-col items-center gap-0.5 ${activeUnifiedTab === tab.id
                                 ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700'
                                 : 'text-zinc-600 hover:text-zinc-400'
                                 }`}
@@ -415,357 +436,331 @@ const Sidebar: React.FC<SidebarProps> = ({
 
                         {/* GLOBAL MODE: No Active Measure Selected */}
                         {!activeMeasure ? (
-                            <div className="space-y-6">
+                            <div className="space-y-6 px-1">
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Global Controls</label>
+                                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest px-1">Global Controls</label>
                                     </div>
 
-                                    {/* BPM Selector Removed */}
-
-                                    {/* Add Button */}
                                     <button
                                         onClick={() => onInsert?.(activeDuration || 'q')}
-                                        className="w-full py-4 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-xl font-black text-xs transition-colors flex items-center justify-center gap-2 group relative overflow-hidden"
+                                        className="w-full py-5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-2xl font-black text-xs transition-all duration-300 flex flex-col items-center justify-center gap-3 group relative overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.05)]"
                                     >
                                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                                        <Music className="w-4 h-4 relative z-10" />
-                                        <span className="relative z-10">ADD NOTE TO TIMELINE</span>
+                                        <div className="p-3 rounded-full bg-cyan-500/10 ring-1 ring-cyan-500/20 group-hover:scale-110 transition-transform duration-500">
+                                            <Music className="w-5 h-5 relative z-10" />
+                                        </div>
+                                        <span className="relative z-10 uppercase tracking-widest text-[10px]">Add to Timeline</span>
                                     </button>
                                 </div>
                             </div>
                         ) : (
                             /* CHORD MODE: Active Measure Selected */
-                            <div className="space-y-6">
-                                {/* Duration Selection (Modify Active) */}
+                            <div className="space-y-5 px-1 pb-4">
+                                {/* Theory-based Duration Grid */}
                                 <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-center justify-between px-1">
                                         <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Duration</label>
-                                        <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/30 text-[9px] font-black uppercase tracking-widest leading-none">
+                                        <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/30 text-[9px] font-bold uppercase tracking-widest leading-none">
                                             ACTIVE
                                         </span>
                                     </div>
 
-                                    <div className="space-y-1">
-                                        <div className="flex items-center space-x-2 bg-zinc-950/40 p-1.5 rounded-xl border border-zinc-800/60">
-                                            {/* Decrement */}
-                                            <button
-                                                onClick={() => {
-                                                    const current = editingNote?.customDurationMs ? editingNote.customDurationMs / 1000 : 2;
-                                                    const next = Math.max(2, current - 1);
-                                                    onUpdateNote?.({ customDurationMs: next * 1000 });
-                                                }}
-                                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-900 border border-zinc-800 hover:border-cyan-500/50 hover:text-cyan-400 text-zinc-500 transition-all active:scale-95"
-                                            >
-                                                <Minus className="w-4 h-4" />
-                                            </button>
-
-                                            {/* Input Display */}
-                                            <div className="flex-1 relative group flex items-center justify-center cursor-default">
-                                                <div className="font-black text-xl text-cyan-400">
-                                                    {editingNote?.customDurationMs ? editingNote.customDurationMs / 1000 : 2}
-                                                </div>
-                                                <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
-                                                    <span className="text-[9px] font-bold text-zinc-600 uppercase">SEC</span>
-                                                </div>
-                                            </div>
-
-                                            {/* Increment */}
-                                            <button
-                                                onClick={() => {
-                                                    const current = editingNote?.customDurationMs ? editingNote.customDurationMs / 1000 : 2;
-                                                    const next = Math.min(10, current + 1);
-                                                    onUpdateNote?.({ customDurationMs: next * 1000 });
-                                                }}
-                                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-900 border border-zinc-800 hover:border-cyan-500/50 hover:text-cyan-400 text-zinc-500 transition-all active:scale-95"
-                                            >
-                                                <Plus className="w-4 h-4" />
-                                            </button>
-                                        </div>
-
-                                        {/* Range Indicator / Slider (Optional visual) */}
-                                        <div className="px-1 pt-1">
-                                            <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-cyan-500/50 transition-all duration-300 ease-out"
-                                                    style={{ width: `${((editingNote?.customDurationMs ? editingNote.customDurationMs / 1000 : 2) - 2) / 8 * 100}%` }}
-                                                />
-                                            </div>
-                                            <div className="flex justify-between mt-1">
-                                                <span className="text-[7px] font-bold text-zinc-700">2s</span>
-                                                <span className="text-[7px] font-bold text-zinc-700">10s</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-
-                                <div className="h-px bg-zinc-800/50 w-full" />
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Chord Symbol</label>
-                                        {activeMeasure && (
-                                            <button
-                                                onClick={() => onUpdateMeasure?.(activeMeasure.id, { showChordName: !activeMeasure.showChordName })}
-                                                className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all border ${activeMeasure.showChordName !== false
-                                                    ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
-                                                    : 'bg-zinc-900/50 text-zinc-500 border-zinc-800/50 hover:bg-zinc-800/80'
-                                                    }`}
-                                            >
-                                                {activeMeasure.showChordName !== false ? 'VISIBLE' : 'HIDDEN'}
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-800/50 text-center space-y-3">
-                                        {/* Consolidated Name Input */}
-                                        <div className="space-y-1 text-left">
-                                            <label className="text-[8px] font-bold text-zinc-600 uppercase">Symbol</label>
-                                            <input
-                                                type="text"
-                                                value={activeMeasure?.chordName || ''}
-                                                onChange={(e) => {
-                                                    if (onUpdateMeasure && activeMeasure) {
-                                                        onUpdateMeasure(activeMeasure.id, { chordName: e.target.value });
-                                                    }
-                                                }}
-                                                className="w-full bg-zinc-900/50 border border-zinc-800/80 rounded-lg text-2xl font-black tracking-tight text-center py-3 text-cyan-400 focus:outline-none focus:border-cyan-500/50 transition-all placeholder-zinc-700 shadow-inner"
-                                                placeholder="Cmaj7..."
-                                                style={{ color: '#22d3ee' }}
-                                            />
-                                        </div>
-
-                                        {/* Root & Quality */}
-                                        <div className="space-y-4">
-                                            {/* Root Selector */}
-                                            <div className="space-y-2 col-span-2">
-                                                <label className="text-[9px] font-bold text-zinc-600 uppercase flex justify-between">
-                                                    <span>Root</span>
-                                                    <span className="text-zinc-500 font-normal">{localRoot}</span>
-                                                </label>
-
-                                                <div className="flex flex-col gap-2">
-                                                    {/* Natural Notes Row */}
-                                                    <div className="flex gap-1 justify-between">
-                                                        {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map((note) => {
-                                                            const currentBase = localRoot.replace(/[#b]/g, '');
-                                                            const isActive = currentBase === note;
-                                                            return (
-                                                                <button
-                                                                    key={note}
-                                                                    onClick={() => {
-                                                                        // Keep accidental if clicking SAME note? No, reset usually better or keep?
-                                                                        // User flow: Click A -> A. Click # -> A#.
-                                                                        // If I change to B, should it be B#? Usually no.
-                                                                        handleChordChange({ root: note });
-                                                                    }}
-                                                                    className={`
-                                                                        h-8 w-8 rounded-lg flex items-center justify-center text-xs font-black transition-all
-                                                                        ${isActive
-                                                                            ? 'bg-cyan-950 text-cyan-400 border border-cyan-500/50 shadow-[0_0_10px_rgba(34,211,238,0.2)]'
-                                                                            : 'bg-zinc-900/50 text-zinc-400 border border-zinc-800/50 hover:bg-zinc-800 hover:text-white'}
-                                                                    `}
-                                                                >
-                                                                    {note}
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-
-                                                    {/* Accidentals Row (Conditional or Always visible but disabled?) */}
-                                                    <div className="flex gap-2">
-                                                        {[{ label: 'Natural', val: '' }, { label: 'Sharp ♯', val: '#' }, { label: 'Flat ♭', val: 'b' }].map((acc) => {
-                                                            const currentBase = localRoot.replace(/[#b]/g, '') || 'C';
-                                                            const currentAcc = localRoot.includes('#') ? '#' : localRoot.includes('b') ? 'b' : '';
-                                                            const isAccActive = currentAcc === acc.val;
-
-                                                            return (
-                                                                <button
-                                                                    key={acc.label}
-                                                                    onClick={() => {
-                                                                        // Toggle logic not needed if we have explicit options, but user asked for "option to put sharp or flat"
-                                                                        // Let's make them explicit selection
-                                                                        if (acc.val === currentAcc) return; // Already set
-                                                                        handleChordChange({ root: currentBase + acc.val });
-                                                                    }}
-                                                                    className={`
-                                                                        flex-1 h-7 rounded-lg text-[9px] font-bold uppercase transition-all border
-                                                                        ${isAccActive
-                                                                            ? 'bg-zinc-800 text-white border-zinc-600'
-                                                                            : 'bg-zinc-950/30 text-zinc-600 border-zinc-900 hover:bg-zinc-900 hover:text-zinc-400'}
-                                                                    `}
-                                                                >
-                                                                    {acc.label}
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-
-
-                                        </div>
-
-                                        {/* Quality Row */}
-                                        <div className="space-y-1 text-left pt-2">
-                                            <label className="text-[9px] font-bold text-zinc-600 uppercase">Quality</label>
-                                            <div className="relative">
-                                                <select
-                                                    className="w-full bg-zinc-900/50 border border-zinc-800/50 rounded-xl px-3 py-2 text-xs font-bold text-zinc-300 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all appearance-none cursor-pointer"
-
-                                                    value={localQuality}
-                                                    onChange={(e) => handleChordChange({ quality: e.target.value })}
-                                                >
-                                                    <option value="">Major</option>
-                                                    <option value="m">Minor</option>
-                                                    <option value="°">Diminished</option>
-                                                    <option value="aug">Augmented</option>
-                                                    <option value="sus2">Sus2</option>
-                                                    <option value="sus4">Sus4</option>
-                                                </select>
-                                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-500 pointer-events-none" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Extensions Grid */}
-                                    <div className="space-y-2 pt-2 border-t border-zinc-800/50 text-left">
-                                        <label className="text-[9px] font-bold text-zinc-600 uppercase flex justify-between items-center">
-                                            <span>Extensions</span>
-                                            <span className="text-[10px] text-zinc-300 bg-zinc-800/50 px-2 py-0.5 rounded-lg border border-zinc-700/50 font-bold">
-                                                {currentPitch?.name.replace('#', '♯').replace('b', '♭')}
-                                                {currentPitch?.accidental?.replace('#', '♯').replace('b', '♭')}
-                                                {currentPitch?.octave}
-                                            </span>
-                                        </label>
-                                        <div className="flex flex-wrap gap-1.5 justify-center">
-                                            {[
-                                                { label: '5', value: '5' },
-                                                { label: '6', value: '6' },
-                                                { label: '7', value: '7' },
-                                                { label: '7+', value: '7+' },
-                                                { label: '9', value: '9' },
-                                                { label: '11', value: '11' },
-                                                { label: '13', value: '13' }
-                                            ].map(ext => {
-                                                const activeVariant = localExtensions.find(e => e.endsWith(ext.value) && (e === ext.value || e === `b${ext.value}` || e === `#${ext.value}`));
-                                                const isActive = !!activeVariant;
-                                                const currentModifier = activeVariant?.startsWith('b') ? 'b' : activeVariant?.startsWith('#') ? '#' : 'none';
-
-                                                if (isActive) {
-                                                    return (
-                                                        <div key={ext.value} className="flex items-center bg-cyan-500/10 border border-cyan-500/30 rounded overflow-hidden transition-all shadow-[0_0_10px_rgba(6,182,212,0.15)]">
-                                                            {/* Flat Modifier Toggle */}
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    const others = localExtensions.filter(e => e !== activeVariant);
-                                                                    const newExt = currentModifier === 'b' ? ext.value : `b${ext.value}`;
-                                                                    handleChordChange({ extensions: [...others, newExt] });
-                                                                }}
-                                                                className={`px-1.5 py-1 text-xs font-bold hover:bg-cyan-500/20 transition-colors border-r border-cyan-500/10 ${currentModifier === 'b' ? 'text-cyan-400' : 'text-zinc-600 hover:text-zinc-400'}`}
-                                                            >
-                                                                ♭
-                                                            </button>
-
-                                                            {/* Main Label (Toggle Off) */}
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    const newExts = localExtensions.filter(e => e !== activeVariant);
-                                                                    handleChordChange({ extensions: newExts });
-                                                                }}
-                                                                className="px-2 py-1 text-[9px] font-black text-cyan-400 hover:bg-cyan-500/20 transition-colors border-x border-cyan-500/10"
-                                                            >
-                                                                {ext.label}
-                                                            </button>
-
-                                                            {/* Sharp Modifier Toggle */}
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    const others = localExtensions.filter(e => e !== activeVariant);
-                                                                    const newExt = currentModifier === '#' ? ext.value : `#${ext.value}`;
-                                                                    handleChordChange({ extensions: [...others, newExt] });
-                                                                }}
-                                                                className={`px-1.5 py-1 text-xs font-bold hover:bg-cyan-500/20 transition-colors border-l border-cyan-500/10 ${currentModifier === '#' ? 'text-cyan-400' : 'text-zinc-600 hover:text-zinc-400'}`}
-                                                            >
-                                                                ♯
-                                                            </button>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                // Inactive State - Simple Button
-                                                return (
-                                                    <button
-                                                        key={ext.value}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            const others = localExtensions.filter(e => !e.endsWith(ext.value));
-                                                            handleChordChange({ extensions: [...others, ext.value] });
-                                                        }}
-                                                        className="px-2 py-1 bg-zinc-900/50 border border-zinc-800/50 rounded text-zinc-500 text-[9px] font-bold hover:bg-zinc-800 hover:text-zinc-300 transition-colors"
-                                                    >
-                                                        {ext.label}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Bass Note */}
-                                <div className="space-y-3 pt-2 border-t border-zinc-800/50">
-                                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Bass Note (Inversion)</label>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {['Root', ...['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'].map(r => `/${r}`)].map(label => {
-                                            const value = label === 'Root' ? 'Root' : label;
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {[
+                                            { label: 'Whole', code: 'w' as Duration },
+                                            { label: 'Half', code: 'h' as Duration },
+                                            { label: 'Quarter', code: 'q' as Duration },
+                                            { label: '8th', code: '8' as Duration },
+                                            { label: '16th', code: '16' as Duration },
+                                            { label: '32nd', code: '32' as Duration },
+                                        ].map((item) => {
+                                            const isActive = getDurationActive(item.code);
                                             return (
                                                 <button
-                                                    key={value}
-                                                    onClick={() => handleChordChange({ bass: value })}
-                                                    className={`px-2 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${localBass === value
-                                                        ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.15)]'
-                                                        : 'bg-zinc-900/40 border-zinc-800/60 text-zinc-500 hover:border-zinc-700 hover:text-zinc-400'
-                                                        }`}
+                                                    key={item.code}
+                                                    onClick={() => handleDurationClick(item.code)}
+                                                    className={`
+                                                        aspect-[5/6] rounded-2xl border flex flex-col items-center justify-center gap-2 transition-all duration-500 group/dur
+                                                        ${isActive
+                                                            ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.1)] ring-1 ring-cyan-500/20'
+                                                            : 'bg-zinc-950/40 border-zinc-800/60 text-zinc-600 hover:border-zinc-700 hover:bg-zinc-900/40'}
+                                                    `}
                                                 >
-                                                    {label.replace('#', '♯').replace('b', '♭')}
+                                                    <div className={`transition-transform duration-500 ${isActive ? 'scale-110' : 'group-hover/dur:scale-105'}`}>
+                                                        <VexFlowRhythmIcon
+                                                            duration={item.code}
+                                                            className="w-10 h-10"
+                                                            fillColor={isActive ? '#22d3ee' : '#3f3f46'}
+                                                        />
+                                                    </div>
+                                                    <span className={`text-[9px] font-black uppercase tracking-tighter ${isActive ? 'text-cyan-400' : 'text-zinc-600'}`}>
+                                                        {item.label}
+                                                    </span>
                                                 </button>
                                             );
                                         })}
                                     </div>
-                                </div>
 
-                                {/* Transpose Selected Chord */}
-                                <div className="space-y-3 pt-2 border-t border-zinc-800/50">
-                                    <div className="flex items-center justify-between">
-                                        <div className="text-[10px] font-black text-zinc-500 uppercase tracking-widest pl-1">
-                                            Transpose Chord
+                                    {/* BPM / Tempo Selector */}
+                                    <div className="space-y-3 pt-2">
+                                        <div className="flex items-center justify-between px-1">
+                                            <div className="flex flex-col">
+                                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none">Tempo</label>
+                                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-tight mt-1">Sync Animation</span>
+                                            </div>
+                                            <div className="px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20">
+                                                <span className="text-[11px] font-black text-cyan-400 leading-none">{globalSettings?.bpm || 120} BPM</span>
+                                            </div>
                                         </div>
-                                        <div className="text-[9px] font-bold text-orange-500/80 uppercase px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20">
-                                            Data Shift
+
+                                        <div className="flex items-center gap-2 bg-zinc-950/60 p-1.5 rounded-2xl border border-white/[0.03] shadow-inner">
+                                            <button
+                                                onClick={() => {
+                                                    const cur = globalSettings?.bpm || 120;
+                                                    onGlobalSettingsChange?.({ bpm: Math.max(20, cur - 5) });
+                                                }}
+                                                className="w-10 h-10 flex items-center justify-center rounded-[14px] bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 active:scale-95 transition-all shadow-lg"
+                                            >
+                                                <Minus className="w-4 h-4" />
+                                            </button>
+
+                                            <div className="flex-1 flex flex-col items-center">
+                                                <input
+                                                    type="number"
+                                                    value={globalSettings?.bpm || 120}
+                                                    onChange={(e) => {
+                                                        const val = parseInt(e.target.value);
+                                                        if (!isNaN(val)) onGlobalSettingsChange?.({ bpm: val });
+                                                    }}
+                                                    className="w-full bg-transparent text-center font-black text-xl text-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                />
+                                            </div>
+
+                                            <button
+                                                onClick={() => {
+                                                    const cur = globalSettings?.bpm || 120;
+                                                    onGlobalSettingsChange?.({ bpm: Math.min(300, cur + 5) });
+                                                }}
+                                                className="w-10 h-10 flex items-center justify-center rounded-[14px] bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 active:scale-95 transition-all shadow-lg"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => activeMeasure && onTransposeMeasure?.(activeMeasure.id, -1)}
-                                            className="w-10 h-8 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center font-bold"
-                                            title="Shift chord notes and name down 1 semitone"
-                                        >
-                                            -
-                                        </button>
-                                        <div className="flex-1 text-center font-bold text-zinc-300 bg-zinc-950/30 rounded-lg py-1.5 border border-zinc-800/50 text-[10px] uppercase">
-                                            Shift Notes + Name
+                                </div>
+
+                                <div className="h-px bg-zinc-800/30 w-full" />
+
+                                {/* Chord Editor - Unified Box & Accordion */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between px-1">
+                                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center flex-1">Symbol Preview</label>
+                                    </div>
+
+                                    {/* --- SYMBOL PREVIEW BOX --- */}
+                                    <div className="relative group overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-50" />
+                                        <div className="bg-black/60 p-6 rounded-[24px] border border-white/[0.05] text-center relative z-10 shadow-2xl backdrop-blur-sm">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <span className="text-4xl font-black text-cyan-400 drop-shadow-[0_0_20px_rgba(34,211,238,0.4)] tracking-tighter">
+                                                    {localRoot?.replace('#', '♯').replace('b', '♭')}
+                                                </span>
+                                                {localQuality && (
+                                                    <span className="text-2xl font-black text-cyan-500/80 transform translate-y-[-2px] tracking-tight">
+                                                        {localQuality}
+                                                    </span>
+                                                )}
+                                                {localExtensions && localExtensions.length > 0 && (
+                                                    <div className="flex flex-col items-start leading-[0.75] ml-1.5 pt-1">
+                                                        {localExtensions.slice().sort((a, b) => extensionOrder.indexOf(a) - extensionOrder.indexOf(b)).map((ext, i) => (
+                                                            <span key={i} className="text-[12px] font-black text-cyan-400/90 drop-shadow-sm">{ext.replace('#', '♯').replace('b', '♭')}</span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {localBass && localBass !== 'Root' && (
+                                                    <span className="text-2xl font-black text-cyan-600/60 ml-2 tracking-tighter">
+                                                        /{localBass.replace('#', '♯').replace('b', '♭')}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="mt-3 flex gap-2 justify-center">
+                                                {activeMeasure && (
+                                                    <button
+                                                        onClick={() => onUpdateMeasure?.(activeMeasure.id, { showChordName: !activeMeasure.showChordName })}
+                                                        className={`px-3 py-1 rounded-full text-[8px] font-black transition-all border uppercase tracking-[0.1em] ${activeMeasure.showChordName !== false
+                                                            ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
+                                                            : 'bg-zinc-900/80 text-zinc-600 border-zinc-800'
+                                                            }`}
+                                                    >
+                                                        {activeMeasure.showChordName !== false ? '• Symbol Visible' : '• Symbol Hidden'}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
-                                        <button
-                                            onClick={() => activeMeasure && onTransposeMeasure?.(activeMeasure.id, 1)}
-                                            className="w-10 h-8 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center font-bold"
-                                            title="Shift chord notes and name up 1 semitone"
-                                        >
-                                            +
-                                        </button>
+                                    </div>
+
+                                    {/* --- THEORY ACCORDION (Consolidated) --- */}
+                                    <Accordion type="single" collapsible defaultValue="chord-theory" className="w-full">
+                                        <AccordionItem value="chord-theory" className="border-none bg-zinc-950/40 rounded-2xl overflow-hidden px-4 border border-white/[0.02]">
+                                            <AccordionTrigger className="hover:no-underline py-4">
+                                                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Chord Theory</span>
+                                            </AccordionTrigger>
+                                            <AccordionContent className="pb-5 pt-0 space-y-6">
+                                                {/* ROOT SECTION */}
+                                                <div className="space-y-3">
+                                                    <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest px-0.5">Root & Tone</label>
+                                                    <div className="space-y-3">
+                                                        <div className="grid grid-cols-7 gap-1">
+                                                            {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map((note) => {
+                                                                const currentBase = localRoot.replace(/[#b]/g, '');
+                                                                const isActive = currentBase === note;
+                                                                return (
+                                                                    <button
+                                                                        key={note}
+                                                                        onClick={() => handleChordChange({ root: note })}
+                                                                        className={`
+                                                                            aspect-square rounded-lg flex items-center justify-center text-[10px] font-black transition-all
+                                                                            ${isActive
+                                                                                ? 'bg-cyan-500 text-black shadow-[0_0_12px_rgba(6,182,212,0.3)]'
+                                                                                : 'bg-zinc-900/40 text-zinc-500 hover:bg-zinc-800 hover:text-white'}
+                                                                        `}
+                                                                    >
+                                                                        {note}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+
+                                                        <div className="flex gap-2">
+                                                            {[{ label: 'Nat', val: '' }, { label: '♯', val: '#' }, { label: '♭', val: 'b' }].map((acc) => {
+                                                                const currentBase = localRoot.replace(/[#b]/g, '') || 'C';
+                                                                const currentAcc = localRoot.includes('#') ? '#' : localRoot.includes('b') ? 'b' : '';
+                                                                const isAccActive = currentAcc === acc.val;
+
+                                                                return (
+                                                                    <button
+                                                                        key={acc.label}
+                                                                        onClick={() => handleChordChange({ root: currentBase + acc.val })}
+                                                                        className={`
+                                                                            flex-1 h-8 rounded-xl text-[9px] font-black uppercase transition-all border
+                                                                            ${isAccActive
+                                                                                ? 'bg-zinc-800 text-cyan-400 border-cyan-500/30'
+                                                                                : 'bg-zinc-950/20 text-zinc-600 border-zinc-900/50 hover:bg-zinc-900'}
+                                                                        `}
+                                                                    >
+                                                                        {acc.label}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* QUALITY SECTION */}
+                                                <div className="space-y-2 border-t border-zinc-900/50 pt-4">
+                                                    <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest px-0.5">Quality</label>
+                                                    <div className="relative">
+                                                        <select
+                                                            className="w-full bg-zinc-900/40 border border-zinc-800/60 rounded-xl px-3 py-2 text-[10px] font-black text-zinc-300 focus:outline-none focus:border-cyan-500/50 transition-all appearance-none cursor-pointer"
+                                                            value={localQuality}
+                                                            onChange={(e) => handleChordChange({ quality: e.target.value })}
+                                                        >
+                                                            <option value="">Major</option>
+                                                            <option value="m">Minor</option>
+                                                            <option value="dim">Diminished</option>
+                                                            <option value="aug">Augmented</option>
+                                                            <option value="sus2">Sus2</option>
+                                                            <option value="sus4">Sus4</option>
+                                                            <option value="maj">Major 7th Style</option>
+                                                        </select>
+                                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600 pointer-events-none" />
+                                                    </div>
+                                                </div>
+
+                                                {/* EXTENSIONS SECTION */}
+                                                <div className="space-y-3 border-t border-zinc-900/50 pt-4">
+                                                    <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest px-0.5">Extensions</label>
+                                                    <div className="grid grid-cols-4 gap-1.5">
+                                                        {[
+                                                            { label: '5', value: '5' },
+                                                            { label: '6', value: '6' },
+                                                            { label: '7', value: '7' },
+                                                            { label: '7+', value: '7+' },
+                                                            { label: '9', value: '9' },
+                                                            { label: '11', value: '11' },
+                                                            { label: '13', value: '13' }
+                                                        ].map(ext => {
+                                                            const isActive = localExtensions.includes(ext.value);
+                                                            return (
+                                                                <button
+                                                                    key={ext.value}
+                                                                    onClick={() => {
+                                                                        const others = localExtensions.includes(ext.value)
+                                                                            ? localExtensions.filter(e => e !== ext.value)
+                                                                            : [...localExtensions, ext.value];
+                                                                        handleChordChange({ extensions: others });
+                                                                    }}
+                                                                    className={`
+                                                                        py-2 rounded-lg text-[9px] font-black border transition-all duration-300
+                                                                        ${isActive
+                                                                            ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.1)]'
+                                                                            : 'bg-zinc-900/20 border-zinc-800/80 text-zinc-500 hover:text-white'}
+                                                                    `}
+                                                                >
+                                                                    {ext.label}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+
+                                                {/* BASS SECTION */}
+                                                <div className="space-y-3 border-t border-zinc-900/50 pt-4">
+                                                    <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest px-0.5">Bass Inversion</label>
+                                                    <div className="grid grid-cols-4 gap-1.5">
+                                                        {['Root', ...['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'].map(r => `/${r}`)].map(label => {
+                                                            const value = label === 'Root' ? 'Root' : label;
+                                                            const isActive = localBass === value;
+                                                            return (
+                                                                <button
+                                                                    key={value}
+                                                                    onClick={() => handleChordChange({ bass: value })}
+                                                                    className={`
+                                                                        py-2 rounded-lg text-[9px] font-black border transition-all duration-300
+                                                                        ${isActive
+                                                                            ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400'
+                                                                            : 'bg-zinc-900/20 border-zinc-800/80 text-zinc-600 hover:text-white'}
+                                                                    `}
+                                                                >
+                                                                    {label === 'Root' ? 'Root' : label.replace('#', '♯').replace('b', '♭')}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    </Accordion>
+
+                                    {/* Tools Section */}
+                                    <div className="bg-zinc-950/40 rounded-3xl p-5 border border-white/[0.02] mt-4 shadow-xl">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Transpose Tool</span>
+                                            <span className="text-[9px] font-black text-orange-400 px-2 py-0.5 rounded-full bg-orange-400/10 border border-orange-400/20">DATA SHIFT</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => activeMeasure && onTransposeMeasure?.(activeMeasure.id, -1)}
+                                                className="w-12 h-10 flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all active:scale-95"
+                                            >-</button>
+                                            <div className="flex-1 text-center text-[10px] font-black text-zinc-400 bg-black/40 py-3 rounded-xl border border-white/[0.03] uppercase tracking-widest">1 Semitone</div>
+                                            <button
+                                                onClick={() => activeMeasure && onTransposeMeasure?.(activeMeasure.id, 1)}
+                                                className="w-12 h-10 flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all active:scale-95"
+                                            >+</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -848,12 +843,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                     <div className="grid grid-cols-6 gap-1.5">
                                                         {Array.from({ length: 24 }).map((_, i) => {
                                                             const fret = i + 1;
-                                                            const currentFret = parseInt(editingNote.positions[activePositionIndex]?.fret?.toString() || '0');
+                                                            const currentFret = parseInt((editingNote as any).positions[activePositionIndex]?.fret?.toString() || '0');
+                                                            const currentCapo = globalSettings?.capo || 0;
+                                                            const isOverLimit = animationType === 'guitar-fretboard' && (fret + currentCapo > 24);
+
                                                             return (
                                                                 <button
                                                                     key={fret}
+                                                                    disabled={isOverLimit}
                                                                     onClick={() => handleFretChange(fret)}
-                                                                    className={`h-7 rounded-md border font-black text-[10px] transition-all ${currentFret === fret ? 'shadow-[0_0_10px_rgba(255,255,255,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
+                                                                    className={`h-7 rounded-md border font-black text-[10px] transition-all ${isOverLimit ? 'opacity-20 cursor-not-allowed bg-zinc-950 border-transparent' : (currentFret === fret ? 'shadow-[0_0_10px_rgba(255,255,255,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300')}`}
                                                                     style={currentFret === fret ? {
                                                                         backgroundColor: theme?.fingers?.color || '#06b6d4',
                                                                         borderColor: theme?.fingers?.border?.color || '#22d3ee',
@@ -1139,7 +1138,27 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                 const current = globalSettings?.tuningShift || 0;
                                                 const instrument = INSTRUMENTS.find(i => i.id === (globalSettings?.instrumentId || 'violao'));
                                                 const baseTuning = instrument?.tunings[globalSettings?.tuningIndex || 0] || ["E", "A", "D", "G", "B", "e"];
-                                                const newShift = Math.min(12, current + 1);
+                                                const newShift = Math.min(24, current + 1);
+
+                                                // Validation for Cinematic mode (max 24 frets for any note + capo)
+                                                if (animationType === 'guitar-fretboard') {
+                                                    const newCapo = Math.max(0, newShift);
+
+                                                    // 1. Check current editing note if exists
+                                                    if (editingNote && (editingNote as any).positions) {
+                                                        const mockChord = { fingers: (editingNote as any).positions } as any;
+                                                        if (!FullNeckDrawer.validateFretLimit(mockChord, newCapo)) return;
+                                                    }
+
+                                                    // 2. Check all chords in timeline
+                                                    if (selectedChords && selectedChords.length > 0) {
+                                                        const allValid = selectedChords.every(c =>
+                                                            FullNeckDrawer.validateFretLimit(c.finalChord, newCapo)
+                                                        );
+                                                        if (!allValid) return;
+                                                    }
+                                                }
+
                                                 onGlobalSettingsChange?.({
                                                     tuningShift: newShift,
                                                     capo: Math.max(0, newShift), // capo is the shift value if positive

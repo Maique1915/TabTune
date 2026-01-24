@@ -94,25 +94,29 @@ const SETTING_GROUPS: SettingGroup[] = [
     icon: Sun,
     controls: [
       { type: 'color', label: 'Background', key: 'global.backgroundColor' },
-      { type: 'color', label: 'Primary Text', key: 'global.primaryTextColor' },
+      { type: 'slider', label: 'Global Scale', key: 'global.scale', min: 0.5, max: 2, step: 0.1 },
     ]
   },
   {
     id: 'fretboard',
-    label: 'Fretboard',
+    label: 'Fretboard & Strings',
     icon: Grid,
     controls: [
       { type: 'color', label: 'Neck Color', key: 'fretboard.neck.color' },
+      { type: 'toggle', label: 'Neck Shadow', key: 'fretboard.neck.shadow.enabled' },
+      { type: 'color', label: 'Neck Shadow Color', key: 'fretboard.neck.shadow.color' },
+
       { type: 'color', label: 'Frets Color', key: 'fretboard.frets.color' },
-    ]
-  },
-  {
-    id: 'strings',
-    label: 'Strings & Structure',
-    icon: Music,
-    controls: [
+      { type: 'toggle', label: 'Frets Shadow', key: 'fretboard.frets.shadow.enabled' },
+      { type: 'color', label: 'Frets Shadow Color', key: 'fretboard.frets.shadow.color' },
+
       { type: 'color', label: 'String Color', key: 'fretboard.strings.color' },
-      { type: 'number', label: 'String Thick.', key: 'fretboard.strings.thickness', min: 1, max: 10, step: 1 },
+      { type: 'toggle', label: 'String Shadow', key: 'fretboard.strings.shadow.enabled' },
+      { type: 'color', label: 'String Shadow Color', key: 'fretboard.strings.shadow.color' },
+
+      { type: 'color', label: 'Inlays Color', key: 'fretboard.board.inlays.color' },
+      { type: 'toggle', label: 'Inlays Shadow', key: 'fretboard.board.inlays.shadow.enabled' },
+      { type: 'color', label: 'Inlays Shadow Color', key: 'fretboard.board.inlays.shadow.color' },
     ]
   },
   {
@@ -124,6 +128,8 @@ const SETTING_GROUPS: SettingGroup[] = [
       { type: 'color', label: 'Text Color', key: 'fingers.textColor' },
       { type: 'color', label: 'Border Color', key: 'fingers.border.color' },
       { type: 'slider', label: 'BG Opacity', key: 'fingers.opacity', min: 0, max: 1, step: 0.1 },
+      { type: 'toggle', label: 'Body Shadow', key: 'fingers.shadow.enabled' },
+      { type: 'color', label: 'Shadow Color', key: 'fingers.shadow.color' },
     ]
   },
   {
@@ -135,7 +141,7 @@ const SETTING_GROUPS: SettingGroup[] = [
       { type: 'color', label: 'Border Color', key: 'capo.border.color' },
       { type: 'color', label: 'Name Text Color', key: 'capo.textColors.name' },
       { type: 'color', label: 'Number Color', key: 'capo.textColors.number' },
-      { type: 'toggle', label: 'Shadow', key: 'capo.shadow.enabled' },
+      { type: 'toggle', label: 'Body Shadow', key: 'capo.shadow.enabled' },
       { type: 'color', label: 'Shadow Color', key: 'capo.shadow.color' }
     ]
   },
@@ -146,10 +152,8 @@ const SETTING_GROUPS: SettingGroup[] = [
     controls: [
       { type: 'color', label: 'Chord Name', key: 'chordName.color' },
       { type: 'slider', label: 'Opacity', key: 'chordName.opacity', min: 0, max: 1, step: 0.1 },
+      { type: 'toggle', label: 'Text Shadow', key: 'chordName.shadow.enabled' },
       { type: 'color', label: 'Shadow Color', key: 'chordName.shadow.color' },
-      { type: 'number', label: 'Shadow Blur', key: 'chordName.shadow.blur', min: 0, max: 50 },
-      { type: 'color', label: 'Stroke Color', key: 'chordName.stroke.color' },
-      { type: 'number', label: 'Stroke Width', key: 'chordName.stroke.width', min: 0, max: 10 },
     ]
   }
 ];
@@ -171,9 +175,10 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
       const deepUpdate = (obj: any, path: string[], val: any): any => {
         if (path.length === 0) return val;
         const [head, ...tail] = path;
+        const safeObj = obj || {};
         return {
-          ...obj,
-          [head]: tail.length === 0 ? val : deepUpdate(obj[head] || {}, tail, val)
+          ...safeObj,
+          [head]: tail.length === 0 ? val : deepUpdate(safeObj[head] || {}, tail, val)
         };
       };
       return deepUpdate(prev, key.split('.'), value);
@@ -283,8 +288,8 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                           min={control.min}
                           max={control.max}
                           step={control.step}
-                          value={Number(currentValue)}
-                          onChange={(e) => handleColorChange(control.key, parseFloat(e.target.value))}
+                          value={Number(currentValue ?? 0)}
+                          onChange={(e) => handleColorChange(control.key, parseFloat(e.target.value) || 0)}
                           className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-pink-500 [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-pink-400 transition-all"
                         />
                       </div>
@@ -300,8 +305,8 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                           min={control.min}
                           max={control.max}
                           step={control.step || 1}
-                          value={Number(currentValue)}
-                          onChange={(e) => handleColorChange(control.key, parseFloat(e.target.value))}
+                          value={Number(currentValue ?? 0)}
+                          onChange={(e) => handleColorChange(control.key, parseFloat(e.target.value) || 0)}
                           className="w-16 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-300 font-mono focus:border-pink-500/50 outline-none text-right"
                         />
                       </div>
@@ -340,36 +345,38 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
 
       {/* Rotation Controls */}
       <div className="space-y-3 p-3 bg-zinc-950/30 rounded-lg border border-zinc-800/50 mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <RotateCcw className="w-3 h-3 text-zinc-500" />
-            <span className="text-[10px] font-semibold text-zinc-400">ROTATION</span>
-          </div>
-        </div>
         <div className="grid grid-cols-4 gap-2">
-          {[0, 90, 270].map((deg) => (
+          {(numFrets && numFrets <= 6 ? [
+            { label: '1ª', value: 0 },
+            { label: '2ª', value: 90 },
+            { label: '3ª', value: 270 }
+          ] : [
+            { label: '1ª', value: 0 },
+            { label: '2ª', value: 270 }
+          ]).map((option) => (
             <button
-              key={deg}
+              key={option.value}
               onClick={() => {
                 // Consolidate updates to avoid race conditions in undo/redo state
                 setColors((prev: any) => {
                   const current = prev || DEFAULT_COLORS;
+                  const isCinematic = numFrets && numFrets > 6;
                   return {
                     ...current,
                     global: {
                       ...(current.global || {}),
-                      rotation: deg as 0 | 90 | 270,
-                      mirror: deg === 270
+                      rotation: option.value as 0 | 90 | 180 | 270,
+                      mirror: option.value === 270
                     }
                   };
                 });
               }}
-              className={`py-2 rounded-lg border text-[10px] font-black transition-all ${colors.global?.rotation === deg
+              className={`py-2 rounded-lg border text-[10px] font-black transition-all ${colors.global?.rotation === option.value
                 ? 'bg-pink-500/10 border-pink-500/40 text-pink-400'
                 : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
                 }`}
             >
-              {deg}°
+              {option.label}
             </button>
           ))}
         </div>
@@ -383,7 +390,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
       <div className="space-y-3">
         <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Animation Type</span>
         <div className="grid grid-cols-1 gap-2">
-          {(!numFrets || numFrets === 5) && (
+          {numFrets && numFrets <= 6 && (
             <button
               onClick={() => {
                 console.log('Set animation to carousel');
@@ -403,44 +410,48 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
             </button>
           )}
 
-          <button
-            onClick={() => {
-              console.log('Set animation to static-fingers');
-              setAnimationType('static-fingers');
-            }}
-            className={`p-3 rounded-lg border text-left transition-all ${animationType === 'static-fingers'
-              ? 'bg-pink-500/10 border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.15)]'
-              : 'bg-zinc-900/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
-              }`}
-          >
-            <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${animationType === 'static-fingers' ? 'text-pink-400' : 'text-zinc-300'}`}>
-              Static Fretboard
-            </div>
-            <div className="text-[9px] opacity-70">
-              Only fingers move. Fretboard remains fixed.
-            </div>
-          </button>
+          {numFrets && numFrets <= 6 && (
+            <button
+              onClick={() => {
+                console.log('Set animation to static-fingers');
+                setAnimationType('static-fingers');
+              }}
+              className={`p-3 rounded-lg border text-left transition-all ${animationType === 'static-fingers'
+                ? 'bg-pink-500/10 border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.15)]'
+                : 'bg-zinc-900/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                }`}
+            >
+              <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${animationType === 'static-fingers' ? 'text-pink-400' : 'text-zinc-300'}`}>
+                Static Fretboard
+              </div>
+              <div className="text-[9px] opacity-70">
+                Only fingers move. Fretboard remains fixed.
+              </div>
+            </button>
+          )}
+
+          {numFrets && numFrets > 6 && (
+            <button
+              onClick={() => {
+                console.log('Set animation to guitar-fretboard');
+                setAnimationType('guitar-fretboard');
+              }}
+              className={`p-3 rounded-lg border text-left transition-all ${animationType === 'guitar-fretboard'
+                ? 'bg-pink-500/10 border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.15)]'
+                : 'bg-zinc-900/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                }`}
+            >
+              <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${animationType === 'guitar-fretboard' ? 'text-pink-400' : 'text-zinc-300'}`}>
+                Cinematic Fretboard
+              </div>
+              <div className="text-[9px] opacity-70">
+                Full horizontal neck with high-fidelity rendering.
+              </div>
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sun className="w-3 h-3 text-zinc-500" />
-            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Global Scale</span>
-          </div>
-          <span className="text-[10px] font-mono text-zinc-500">{colors.global?.scale}x</span>
-        </div>
-        <input
-          type="range"
-          min="0.5"
-          max="1.5"
-          step="0.1"
-          value={colors.global?.scale || 1}
-          onChange={(e) => handleColorChange('global.scale', parseFloat(e.target.value))}
-          className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-pink-500 [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-pink-400 transition-all"
-        />
-      </div>
     </div>
   );
 

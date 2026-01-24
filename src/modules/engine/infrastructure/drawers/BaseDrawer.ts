@@ -13,6 +13,7 @@ export abstract class BaseDrawer {
     protected _rotation: number = 0;
     protected _mirror: boolean = false;
     protected _skipGlobalTransform: boolean = false;
+    public isHorizontal: boolean = false;
 
     protected _numStrings: number = 6;
     protected _numFrets: number = 4;
@@ -123,7 +124,7 @@ export abstract class BaseDrawer {
         this.calculateDimensions();
     }
 
-    public setTransforms(rotation: 0 | 90 | 270, mirror: boolean): void {
+    public setTransforms(rotation: 0 | 90 | 180 | 270, mirror: boolean): void {
         this._rotation = rotation || 0;
         this._mirror = mirror || false;
     }
@@ -205,5 +206,22 @@ export abstract class BaseDrawer {
         }
         if (fill) this._ctx.fill();
         if (stroke) this._ctx.stroke();
+    }
+
+    /**
+     * Helper to apply shadow from style to context.
+     */
+    protected applyShadow(shadow?: { enabled?: boolean; color?: string; blur?: number; offsetX?: number; offsetY?: number }): void {
+        if (shadow?.enabled) {
+            this._ctx.shadowColor = shadow.color || "rgba(0,0,0,0.5)";
+            this._ctx.shadowBlur = (shadow.blur || 0) * this._scaleFactor;
+            this._ctx.shadowOffsetX = (shadow.offsetX || 0) * this._scaleFactor;
+            this._ctx.shadowOffsetY = (shadow.offsetY || 0) * this._scaleFactor;
+        } else {
+            this._ctx.shadowColor = "transparent";
+            this._ctx.shadowBlur = 0;
+            this._ctx.shadowOffsetX = 0;
+            this._ctx.shadowOffsetY = 0;
+        }
     }
 }

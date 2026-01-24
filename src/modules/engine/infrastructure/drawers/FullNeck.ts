@@ -1,19 +1,46 @@
 import { BaseDrawer } from "./BaseDrawer";
 import { FretboardDrawer } from "./FretboardDrawer";
-import type { FretboardTheme } from "@/modules/core/domain/types";
+import type { FretboardTheme, ChordDiagramProps } from "@/modules/core/domain/types";
 
 export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer {
-    // Specialized settings for full neck
+    /**
+     * Validates if a chord + capo configuration exceeds the 24-fret limit.
+     * Used by the UI to prevent increments that would push notes off the board.
+     */
+    public static validateFretLimit(chord: ChordDiagramProps, capo: number): boolean {
+        if (capo > 24) return false;
+
+        const frets = chord.fingers
+            .filter(f => f.fret > 0)
+            .map(f => f.fret + capo);
+
+        const maxFret = frets.length > 0 ? Math.max(...frets) : capo;
+        return maxFret <= 24;
+    }
+
+    // Properties specific to horizontal layout
+    protected _paddingX: number = 90;
+    protected _boardY: number = 0;
+    protected _stringMargin: number = 0;
+    protected _fretWidth: number = 0;
+
+    // Properties from interface kept for compatibility but usage changes
+    protected _neckRadius: number = 0;
+    protected _stringNamesY: number = 0;
     protected _showNut: boolean = true;
-    protected _showHeadBackground: boolean = true;
-    protected _headstockGap: number = 0;
+    protected _showHeadBackground: boolean = true; // Still used for headstock shape
+    public override isHorizontal: boolean = true;
+
+    // Capo properties
     protected _showCapo: boolean = false;
     protected _capoFret: number = 0;
     protected _hideCapoTitle: boolean = false;
 
-    // Properties inherited conceptually from old FretboardDrawer
-    protected _neckRadius: number = 0;
-    protected _stringNamesY: number = 0;
+    // Interface properties
+    protected _headstockGap: number = 10;
+
+    // Additional properties from GuitarFretboardDrawer logic
+    protected _tuningShift: number = 0;
 
     constructor(
         ctx: CanvasRenderingContext2D,
@@ -40,27 +67,16 @@ export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer {
     ) {
         super(ctx, colors, dimensions, scaleFactor);
 
-        this._diagramWidth = diagramSettings.diagramWidth;
-        this._diagramHeight = diagramSettings.diagramHeight;
-        this._diagramX = diagramSettings.diagramX;
-        this._diagramY = diagramSettings.diagramY;
+        // Initial setup from arguments, but we will recalculate in updateGeometry/calculateDimensions
         this._numStrings = diagramSettings.numStrings;
-        this._numFrets = diagramSettings.numFrets;
-        this._horizontalPadding = diagramSettings.horizontalPadding;
-        this._stringSpacing = diagramSettings.stringSpacing;
-        this._fretboardX = diagramSettings.fretboardX;
-        this._fretboardY = diagramSettings.fretboardY;
-        this._fretboardWidth = diagramSettings.fretboardWidth;
-        this._fretboardHeight = diagramSettings.fretboardHeight;
-        this._realFretSpacing = diagramSettings.realFretSpacing;
-        this._neckRadius = diagramSettings.neckRadius;
-        this._stringNamesY = diagramSettings.stringNamesY;
+        this._numFrets = diagramSettings.numFrets >= 12 ? diagramSettings.numFrets : 12; // Enforce min 12 for full neck?
+        this.calculateDimensions();
     }
 
     public calculateDimensions(): void {
         this.updateGeometry(
-            this._diagramWidth,
-            this._diagramHeight,
+            this._dimensions.width,
+            this._dimensions.height,
             this._numStrings,
             this._numFrets,
             this._scaleFactor
@@ -72,8 +88,6 @@ export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer {
         this._ctx.fillRect(0, 0, this._dimensions.width, this._dimensions.height);
     }
 
-    // Interface Methods Implementation
-
     public updateGeometry(
         width: number,
         height: number,
@@ -82,355 +96,355 @@ export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer {
         scaleFactor: number
     ): void {
         this._scaleFactor = scaleFactor;
-        this._diagramWidth = width;
-        this._diagramHeight = height;
-        this._fretboardWidth = width;
-        this._fretboardHeight = height;
-        this._fretboardX = 0;
-        this._fretboardY = 0;
-        this._stringSpacing = this._fretboardWidth / (numStrings - 1);
-        this._realFretSpacing = this._fretboardHeight / numFrets;
+        this._numStrings = numStrings;
+        this._numFrets = numFrets;
 
-        // Helpers for specific elements based on reference offsets
-        this._neckRadius = 24 * scaleFactor;
+        this._paddingX = 120 * scaleFactor;
+        const availableWidth = width - (this._paddingX * 2);
 
-        // String names Y position for FullNeck might need adjustment? 
-        // Original code had this logic in Base abstract class:
-        this._stringNamesY = this._fretboardY - (40 * scaleFactor);
+        // Frets along X
+        this._fretWidth = availableWidth / numFrets;
+        this._realFretSpacing = this._fretWidth; // Map to interface property
+        this._fretboardX = this._paddingX;
+
+        // Height Strategy: Constant Finger Size (from GuitarFretboardDrawer)
+        const referenceNumStrings = 6;
+        const referenceMaxHeight = 340 * scaleFactor;
+        const stringSpanRatio = 0.75;
+
+        const referenceStringSpan = referenceMaxHeight * stringSpanRatio;
+        const referenceGaps = referenceNumStrings - 1;
+        const constantStringSpacing = referenceStringSpan / referenceGaps;
+
+        this._stringSpacing = constantStringSpacing; // Map to interface property
+
+        const actualGaps = Math.max(1, numStrings - 1);
+        const actualStringSpan = constantStringSpacing * actualGaps;
+
+        const requiredHeight = actualStringSpan / stringSpanRatio;
+        this._fretboardHeight = requiredHeight;
+        this._fretboardWidth = availableWidth; // Visual width of the wood
+
+        const totalMargin = this._fretboardHeight - actualStringSpan;
+        this._stringMargin = totalMargin / 2;
+
+        // Center vertically in canvas
+        this._boardY = (height - this._fretboardHeight) / 2;
+        this._fretboardY = this._boardY; // Map to interface property
+        this._fretboardX = this._paddingX; // Map to interface property
+
+        this._neckRadius = 16 * scaleFactor; // Slightly less rounded for a premium look
     }
 
+    // Setters
     public setConditionalFlags(showNut: boolean, showHeadBackground: boolean): void {
         this._showNut = showNut;
         this._showHeadBackground = showHeadBackground;
     }
-
-    public setHeadstockGap(gap: number): void {
-        this._headstockGap = gap;
-    }
-
+    public setHeadstockGap(gap: number): void { this._headstockGap = gap; }
     public setCapo(show: boolean, fret: number = 0): void {
         this._showCapo = show;
         this._capoFret = fret;
     }
-
-    public setHideCapoTitle(hide: boolean): void {
-        this._hideCapoTitle = hide;
-    }
-
+    public setHideCapoTitle(hide: boolean): void { this._hideCapoTitle = hide; }
     public setStringNames(arg1: number | string[] | undefined, arg2?: string[]): void {
-        if (Array.isArray(arg1)) {
-            this._stringNames = arg1;
-        } else if (arg2) {
-            this._stringNames = arg2;
-        }
+        if (Array.isArray(arg1)) this._stringNames = arg1;
+        else if (arg2) this._stringNames = arg2;
     }
 
-    // Setters
-    public setDiagramX(diagramX: number): void {
-        this._diagramX = diagramX;
-        this._fretboardX = diagramX;
+    public get paddingX(): number { return this._paddingX; }
+    public get boardY(): number { return this._boardY; }
+    public get stringMargin(): number { return this._stringMargin; }
+    public get fretWidth(): number { return this._fretWidth; }
+    // Stub setters for compatibility if needed, though updateGeometry handles most
+    public setDiagramX(x: number) { this._diagramX = x; } // Unused in horizontal logic mostly
+    public setDiagramY(y: number) { this._diagramY = y; }
+    public setFretboardWidth(w: number) { this._fretboardWidth = w; }
+    public setFretboardHeight(h: number) { this._fretboardHeight = h; }
+    public setFretSpacing(s: number) { this._realFretSpacing = s; }
+    public setHorizontalPadding(p: number) { this._horizontalPadding = p; }
+    public setStringSpacing(s: number) { this._stringSpacing = s; }
+    public setNumStrings(n: number) {
+        this._numStrings = n;
+        this.calculateDimensions(); // Re-calc if changed
+    }
+    public setRotation(rotation: number): void {
+        this._rotation = rotation;
     }
 
-    public setDiagramY(diagramY: number): void {
-        this._diagramY = diagramY;
-        this._fretboardY = this._diagramY + (0 * this._scaleFactor); // FullNeck typically 0 header height offset from Base?
-        // Original FretboardDrawer Base had getHeaderHeight() returning 0. So 0.
-        this._stringNamesY = this._diagramY + (40 * this._scaleFactor);
-    }
+    // Override applyTransforms to ignore rotation for the body/geometry
+    protected applyTransforms(): void {
+        const centerX = this._dimensions.width / 2;
+        const centerY = this._dimensions.height / 2;
+        this._ctx.translate(centerX, centerY);
+        if (this._mirror) this._ctx.scale(-1, 1);
+        // Explicitly SKIP rotation: if (this._rotation) ...
+        this._ctx.translate(-centerX, -centerY);
 
-    public setFretboardWidth(width: number): void {
-        this._fretboardWidth = width;
-        this._diagramWidth = width;
+        // Center the Visual Assembly (Headstock + Neck) matching FullChord logic
+        const headstockOffset = 30 * this._scaleFactor;
+        this._ctx.translate(headstockOffset, 0);
     }
-
-    public setFretboardHeight(height: number): void {
-        this._fretboardHeight = height;
-        this._diagramHeight = height + (0 * this._scaleFactor); // Footer 0 in Base
-    }
-
-    public setFretSpacing(spacing: number): void {
-        this._realFretSpacing = spacing;
-    }
-
-    public setHorizontalPadding(padding: number): void {
-        this._horizontalPadding = Math.max(padding, 100);
-    }
-
-    public setStringSpacing(spacing: number): void {
-        this._stringSpacing = spacing;
-    }
-
-    public setNumStrings(num: number): void {
-        this._numStrings = num;
-    }
-
-    // Drawing
 
     public drawFretboard(): void {
         this.drawNeck();
-        this.drawStringNames(1);
+        this.drawHeadstock();
         this.drawFrets();
         this.drawStrings();
+        this.drawInlays();
+        this.drawStringNames();
+        // Capo if needed
+        if (this._showCapo) this.drawCapo();
     }
 
     public drawNeck(progress: number = 1): void {
         this._ctx.save();
-
-        if (progress < 1) {
-            this._ctx.globalAlpha = progress;
-        }
-
-        const easedProgress = this.easeInOutQuad(progress);
-        this._ctx.save();
         this.applyTransforms();
-        this._drawNeckBody(easedProgress);
-        this._ctx.restore();
 
-        this._ctx.save();
-        this.applyTransforms();
-        if (this._showCapo || this._capoFret > 0) {
-            this.drawCapo();
-        } else if (this._showNut) {
-            this.drawNut();
-        }
-        this._ctx.restore();
+        // Apply Shadow for Neck
+        this.applyShadow(this._colors.fretboard.neck.shadow);
+
+        // 1. Draw Fretboard Background - Dark Charcoal like in the image
+        this._ctx.fillStyle = this._colors.fretboard.neck.color || "#1a1a1c";
+        this._ctx.fillRect(this._fretboardX, this._boardY, this._fretboardWidth, this._fretboardHeight);
 
         this._ctx.restore();
     }
 
-    protected _drawNeckBody(easedProgress: number): void {
-        this._ctx.fillStyle = this._colors.fretboard.neck.color;
+    public drawHeadstock(): void {
+        const ctx = this._ctx;
+        ctx.save();
+        this.applyTransforms();
 
-        // Generic neck body
-        this._safeRoundRect(
-            this._fretboardX,
-            this._fretboardY,
-            this._fretboardWidth,
-            this._fretboardHeight * easedProgress,
-            this._neckRadius,
-            true,
-            false
-        );
+        const headstockWidth = 45 * this._scaleFactor;
+        const headstockGap = 2 * this._scaleFactor; // Minimal gap to look like a nut
+        const headstockX = this._paddingX - headstockWidth - headstockGap;
+        const headstockHeight = this._fretboardHeight;
+        const headstockY = this._boardY;
+        const radius = 10 * this._scaleFactor;
+
+        // Apply Shadow for Headstock
+        this.applyShadow(this._colors.head?.shadow);
+
+        // Nut/Headstock background
+        ctx.fillStyle = this._colors.head?.color || "#1e1e22";
+        ctx.beginPath();
+        if (typeof ctx.roundRect === 'function') {
+            ctx.roundRect(headstockX, headstockY, headstockWidth, headstockHeight, [radius, 0, 0, radius]);
+        } else {
+            ctx.rect(headstockX, headstockY, headstockWidth, headstockHeight);
+        }
+        ctx.fill();
+
+        // Optional border for headstock
+        if (this._colors.head?.border?.width && this._colors.head.border.width > 0) {
+            ctx.lineWidth = this._colors.head.border.width * this._scaleFactor;
+            ctx.strokeStyle = this._colors.head.border.color || 'transparent';
+            ctx.stroke();
+        }
+
+        ctx.restore();
     }
 
-    public drawNut(): void {
-        const nutHeight = 15 * this._scaleFactor;
-        const nutY = this._fretboardY - nutHeight;
-        const nutX = this._diagramX;
-        const nutWidth = this._diagramWidth;
-
+    public drawFrets(progress: number = 1): void {
         this._ctx.save();
-        this._ctx.fillStyle = this._colors.fretboard.frets.color || "#FFFFFF";
-        this._ctx.fillRect(nutX, nutY, nutWidth, nutHeight);
+        this.applyTransforms();
 
-        this._ctx.strokeStyle = "rgba(0,0,0,0.3)";
-        this._ctx.lineWidth = 1 * this._scaleFactor;
+        // Apply Shadow for Frets
+        this.applyShadow(this._colors.fretboard.frets.shadow);
+
+        // Standard frets
+        this._ctx.strokeStyle = this._colors.fretboard.frets.color || "rgba(255, 255, 255, 0.12)";
+        this._ctx.lineWidth = 1.5 * this._scaleFactor;
         this._ctx.beginPath();
-        this._ctx.moveTo(nutX, nutY + nutHeight);
-        this._ctx.lineTo(nutX + nutWidth, nutY + nutHeight);
-        this._ctx.stroke();
-        this._ctx.restore();
-    }
 
-    public drawCapo(): void {
-        if (!this._showCapo && this._capoFret === 0) return;
-
-        this._ctx.save();
-
-        const extension = 25 * this._scaleFactor;
-        const capoWidth = this._fretboardWidth + (extension * 2);
-        const capoX = this._diagramX + (this._diagramWidth - capoWidth) / 2;
-
-        let capoY = this._stringNamesY - (this._headstockGap / 2);
-        let capoHeight = 40 * this._scaleFactor;
-        let cornerRadius = 12 * this._scaleFactor;
-
-        this._ctx.shadowColor = "rgba(0,0,0,0.4)";
-        this._ctx.shadowBlur = 10;
-        this._ctx.shadowOffsetY = 3;
-
-        this._ctx.fillStyle = this._colors.capo.color;
-        this._safeRoundRect(capoX, capoY - capoHeight / 2, capoWidth, capoHeight, cornerRadius);
-
-        this._ctx.shadowBlur = 0;
-        this._ctx.shadowOffsetY = 0;
-        this._ctx.strokeStyle = "rgba(0,0,0,0.5)";
-        this._ctx.lineWidth = 2 * this._scaleFactor;
+        for (let i = 1; i <= this._numFrets; i++) {
+            const x = this._paddingX + i * this._fretWidth;
+            this._ctx.moveTo(x, this._boardY);
+            this._ctx.lineTo(x, this._boardY + this._fretboardHeight);
+        }
         this._ctx.stroke();
 
-        if (!this._hideCapoTitle || this._capoFret >= 1) {
-            const color = this._colors.capo.textColors?.name || "#FFFFFF";
-            const font = `bold ${24 * this._scaleFactor}px sans-serif`;
-            const text = this._capoFret >= 1 ? `${this._capoFret}` : "CAPO";
-            this._drawText(text, capoX + (capoWidth / 2), capoY, font, color);
+        // The Nut (Zero Fret) - Thicker and more prominent
+        if (this._showNut) {
+            this._ctx.strokeStyle = this._colors.fretboard.frets.color || "rgba(255, 255, 255, 0.4)";
+            this._ctx.lineWidth = 4 * this._scaleFactor;
+            this._ctx.beginPath();
+            this._ctx.moveTo(this._paddingX, this._boardY);
+            this._ctx.lineTo(this._paddingX, this._boardY + this._fretboardHeight);
+            this._ctx.stroke();
         }
 
         this._ctx.restore();
     }
 
     public drawStrings(progress: number = 1): void {
-        if (this._colors.fretboard.strings.thickness <= 0) return;
-
         this._ctx.save();
         this.applyTransforms();
 
-        const easedProgress = this.easeInOutQuad(progress);
-        const currentHeight = this._fretboardHeight * easedProgress;
-
-        const thickness = this._colors.fretboard.strings.thickness;
-        const color = this._colors.fretboard.strings.color;
+        // Apply Shadow for Strings
+        this.applyShadow(this._colors.fretboard.strings.shadow);
 
         for (let i = 0; i < this._numStrings; i++) {
-            const x = this._fretboardX + this._horizontalPadding + i * this._stringSpacing;
-            this._drawLine(x, this._fretboardY, x, this._fretboardY + currentHeight, color, thickness);
+            const y = this._boardY + this._stringMargin + (i * this._stringSpacing);
+            // Thick to thin string effect
+            const thickness = (1.2 + ((this._numStrings - 1 - i) * 0.4)) * this._scaleFactor;
+
+            this._ctx.beginPath();
+            this._ctx.lineWidth = thickness;
+            this._ctx.strokeStyle = this._colors.fretboard.strings.color || "rgba(255, 255, 255, 0.85)";
+            this._ctx.moveTo(this._paddingX, y);
+            this._ctx.lineTo(this._paddingX + this._fretboardWidth, y);
+            this._ctx.stroke();
         }
+
         this._ctx.restore();
     }
 
-    public drawFrets(progress: number = 1): void {
-        const easedProgress = this.easeInOutQuad(progress);
-        const numFretsTotal = this._numFrets + 1;
-        const fretsToDrawIndex = Math.floor(easedProgress * numFretsTotal);
-        const baseColor = this._colors.fretboard.frets.color;
-
+    public drawInlays(): void {
+        const inlayFrets = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24];
         this._ctx.save();
         this.applyTransforms();
 
-        for (let i = 0; i <= this._numFrets; i++) {
-            if (progress < 1 && i > fretsToDrawIndex) break;
+        // Apply Shadow for Inlays
+        this.applyShadow(this._colors.fretboard.board?.inlays?.shadow);
 
-            const y = this._fretboardY + i * this._realFretSpacing;
-            let width = this._colors.fingers.border?.width || 3;
+        // Discrete dots for inlays
+        this._ctx.fillStyle = this._colors.fretboard.board?.inlays?.color || "rgba(0, 0, 0, 0.35)";
 
-            if (i === 0 && this._showNut) {
-                width = width * 4;
+        inlayFrets.forEach(fret => {
+            if (fret > this._numFrets) return;
+            const x = this._paddingX + (fret - 0.5) * this._fretWidth;
+            const centerY = this._boardY + this._fretboardHeight / 2;
+            const radius = 12 * this._scaleFactor;
+
+            if (fret === 12 || fret === 24) {
+                // Double dots
+                const offset = this._stringSpacing * 1.0;
+                this._ctx.beginPath();
+                this._ctx.arc(x, centerY - offset, radius, 0, Math.PI * 2);
+                this._ctx.fill();
+                this._ctx.beginPath();
+                this._ctx.arc(x, centerY + offset, radius, 0, Math.PI * 2);
+                this._ctx.fill();
+            } else {
+                // Single dot
+                this._ctx.beginPath();
+                this._ctx.arc(x, centerY, radius, 0, Math.PI * 2);
+                this._ctx.fill();
             }
-
-            let alpha = 1;
-            let yOffset = 0;
-            if (progress < 1 && i === fretsToDrawIndex) {
-                const partial = (easedProgress * numFretsTotal) - fretsToDrawIndex;
-                alpha = partial;
-                yOffset = (1 - partial) * (-5 * this._scaleFactor);
-            }
-
-            this._ctx.save();
-            this._ctx.globalAlpha = alpha;
-            this._drawLine(this._fretboardX, y + yOffset, this._fretboardX + this._fretboardWidth, y + yOffset, baseColor, width);
-            this._ctx.restore();
-        }
-        this._ctx.restore();
-    }
-
-    public drawStringNames(progress: number = 1, customNames?: string[]): void {
-        const easedProgress = this.easeInOutQuad(progress);
-        const namesToDraw = customNames || this._stringNames;
-
-        this._ctx.save();
-        this.applyTransforms();
-        const translateY = (1 - easedProgress) * (-10 * this._scaleFactor);
-        const color = this._colors.global.primaryTextColor;
-        const fontSize = 40 * this._scaleFactor;
-        const font = `bold ${fontSize}px sans-serif`;
-
-        namesToDraw.forEach((name, i) => {
-            if (i >= this._numStrings) return;
-
-            const x = this._fretboardX + this._horizontalPadding + i * this._stringSpacing;
-            // Full implementation uses _headstockGap
-            const y = this._stringNamesY + translateY - this._headstockGap;
-
-            this._drawText(name, x, y, font, color);
         });
 
         this._ctx.restore();
     }
 
-    // Progressive Wrappers
-    public drawNeckProgressive(progress: number): void {
-        this.drawNeck(progress);
-    }
-
-    public drawStringsProgressive(progress: number): void {
-        this.drawStrings(progress);
-    }
-
-    public drawFretsProgressive(progress: number): void {
-        this.drawFrets(progress);
-    }
-
-    public drawAnimatedFretboard(phases: {
-        neckProgress: number;
-        stringNamesProgress: number;
-        stringsProgress: number;
-        fretsProgress: number;
-        nutProgress: number;
-    }): void {
-        if (phases.neckProgress > 0) {
-            this.drawNeckProgressive(phases.neckProgress);
-        }
-        if (phases.stringNamesProgress > 0) {
-            this.drawStringNames(phases.stringNamesProgress);
-        }
-        if (phases.fretsProgress > 0) {
-            this.drawFretsProgressive(phases.fretsProgress);
-        }
-        if (phases.stringsProgress > 0) {
-            this.drawStringsProgressive(phases.stringsProgress);
-        }
-    }
-
-    // Internal Helpers duplicate if needed
-    protected _drawLine(x1: number, y1: number, x2: number, y2: number, color: string, width: number): void {
+    public drawStringNames(progress?: number): void {
         this._ctx.save();
-        this._ctx.strokeStyle = color;
-        this._ctx.lineWidth = width;
+        this.applyTransforms();
+
+        this.applyShadow(undefined);
+
+        const headstockWidth = 45 * this._scaleFactor;
+        const headstockX = this._paddingX - headstockWidth - (2 * this._scaleFactor);
+        const centerX = headstockX + (headstockWidth / 2);
+
+        this._ctx.fillStyle = this._colors.head?.textColors?.name || "#ff9800";
+        this._ctx.font = `bold ${18 * this._scaleFactor}px "Inter", sans-serif`;
+        this._ctx.textAlign = "center";
+        this._ctx.textBaseline = "middle";
+
+        for (let i = 0; i < this._numStrings; i++) {
+            const name = this._stringNames[i] || "";
+            const y = this._boardY + this._stringMargin + (i * this._stringSpacing);
+
+            this._ctx.save();
+            this._ctx.translate(centerX, y);
+
+            // Counter-mirror text to keep it from being backwards
+            if (this._mirror) this._ctx.scale(-1, 1);
+
+            // Text should remain upright; since FullNeckDrawer skips rotation, 
+            // we don't need to counter-rotate here.
+
+            this._ctx.fillText(name, 0, 0);
+            this._ctx.restore();
+        }
+
+        this._ctx.restore();
+    }
+
+    public drawCapo(): void {
+        if (!this._showCapo && this._capoFret === 0) return;
+
+        const fret = this._capoFret;
+        if (fret <= 0 || fret > this._numFrets) return;
+
+        this._ctx.save();
+        this.applyTransforms();
+
+        const x = this._paddingX + (fret - 0.5) * this._fretWidth;
+        const overhang = this._stringSpacing * 0.4;
+        const rectY = this._boardY - overhang;
+        const rectHeight = this._fretboardHeight + (overhang * 2);
+
+        const width = this._fretWidth * 0.55;
+        const rectX = x - (width / 2);
+
+        // Apply Shadow for Capo Body
+        this.applyShadow(this._colors.capo?.shadow);
+
+        // Draw Capo Body
+        this._ctx.fillStyle = this._colors.capo?.color || "#2D2D2D";
         this._ctx.beginPath();
-        this._ctx.moveTo(x1, y1);
-        this._ctx.lineTo(x2, y2);
-        this._ctx.stroke();
-        this._ctx.restore();
-    }
-
-    protected _drawText(
-        text: string,
-        x: number,
-        y: number,
-        font: string,
-        color: string,
-        align: CanvasTextAlign = "center",
-        baseline: CanvasTextBaseline = "middle",
-        shadow: boolean = false
-    ): void {
-        this._ctx.save();
-        this._ctx.fillStyle = color;
-        this._ctx.font = font;
-        this._ctx.textAlign = align;
-        this._ctx.textBaseline = baseline;
-
-        if (shadow) {
-            this._ctx.shadowColor = "rgba(0,0,0,0.5)";
-            this._ctx.shadowBlur = 4;
-            this._ctx.shadowOffsetY = 1;
+        if (typeof this._ctx.roundRect === 'function') {
+            this._ctx.roundRect(rectX, rectY, width, rectHeight, 8 * this._scaleFactor);
+        } else {
+            this._ctx.rect(rectX, rectY, width, rectHeight);
         }
+        this._ctx.fill();
 
-        // Apply global transform (center pivot) then additional if needed?
-        // BaseDrawer applyTransforms handled global.
-        // FretboardDrawer's _drawText did _applyTransform(x,y).
-        // Here we just use what we have available.
-        // Since we are inside applyTransforms() scope when calling helpers usually, we should be careful.
-        // But drawStringNames calls applyTransforms() THEN loops and calls drawText.
-        // So global transform is active.
-        // However, FretboardDrawer's _drawText RE-applied transform? No, it used _applyTransform which was distinct.
-        // Let's implement local text transform logic here to match behavior.
+        this._ctx.strokeStyle = this._colors.capo?.border?.color || "#4A4A4A";
+        this._ctx.lineWidth = 2 * this._scaleFactor;
+        this._ctx.stroke();
 
-        this._ctx.save();
-        this._ctx.translate(x, y);
-        if (this._mirror) this._ctx.scale(-1, 1);
-        if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
-        this._ctx.fillText(text, 0, 0);
-        this._ctx.restore();
+        // RESET SHADOW for Text
+        this.applyShadow(undefined);
+
+        // Text
+        this._ctx.fillStyle = this._colors.capo?.textColors?.name || "#FFFFFF";
+        this._ctx.font = `900 ${width * 0.5}px "Inter", sans-serif`;
+        this._ctx.textAlign = "center";
+        this._ctx.textBaseline = "middle";
+
+        const segmentHeight = rectHeight / 4;
+        const letters = ["C", "A", "P", "O"];
+        letters.forEach((char, i) => {
+            const resultY = rectY + (i * segmentHeight) + (segmentHeight / 2);
+            if (i > 0) {
+                this._ctx.beginPath();
+                const lineY = rectY + (i * segmentHeight);
+                this._ctx.moveTo(rectX, lineY);
+                this._ctx.lineTo(rectX + width, lineY);
+                this._ctx.strokeStyle = "rgba(255,255,255,0.15)";
+                this._ctx.lineWidth = 2 * this._scaleFactor;
+                this._ctx.stroke();
+            }
+            this._ctx.fillText(char, x, resultY);
+        });
 
         this._ctx.restore();
     }
+
+    // Stub for animated - standard behavior
+    public drawAnimatedFretboard(phases: any) {
+        if (phases.neckProgress > 0) this.drawNeck(phases.neckProgress);
+    }
+
+    // Helpers
+    public drawNeckProgressive(p: number) { this.drawNeck(p); }
+    public drawStringsProgressive(p: number) { this.drawStrings(p); }
+    public drawFretsProgressive(p: number) { this.drawFrets(p); }
+    public drawNut() { /* Included in frets or skipped */ }
+
+    protected _drawNeckBody(p: number) { /* unused */ }
 }

@@ -182,6 +182,7 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer {
         this.applyTransforms();
 
         // Desenha a madeira (Neck)
+        this.applyShadow(this._colors.fretboard.neck.shadow);
         this._ctx.fillStyle = this._colors.fretboard.neck.color;
         this._safeRoundRect(
             this._fretboardX,
@@ -210,15 +211,7 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer {
             const headStartY = this._diagramY + this._headstockYOffset;
 
             // Shadow handling for headstock if enabled in theme
-            if (this._colors.head?.shadow?.enabled) {
-                this._ctx.shadowColor = this._colors.head.shadow.color || 'rgba(0,0,0,0.5)';
-                this._ctx.shadowBlur = (this._colors.head.shadow.blur ?? 10) * this._scaleFactor;
-                this._ctx.shadowOffsetX = (this._colors.head.shadow.offsetX ?? 0) * this._scaleFactor;
-                this._ctx.shadowOffsetY = (this._colors.head.shadow.offsetY ?? 0) * this._scaleFactor;
-            } else {
-                this._ctx.shadowColor = 'transparent';
-                this._ctx.shadowBlur = 0;
-            }
+            this.applyShadow(this._colors.head?.shadow);
 
             this._safeRoundRect(
                 this._fretboardX,
@@ -229,9 +222,8 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer {
                 true
             );
 
-            // Turn off shadow
-            this._ctx.shadowColor = 'transparent';
-            this._ctx.shadowBlur = 0;
+            // Turn off shadow for border
+            this.applyShadow(undefined);
 
             // Optional border for headstock
             if (this._colors.head?.border?.width && this._colors.head.border.width > 0) {
@@ -252,6 +244,7 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer {
 
         this._ctx.save();
         this.applyTransforms();
+        this.applyShadow(undefined);
         const translateY = (1 - easedProgress) * (-10 * this._scaleFactor);
         // const yOffset = this._capoFret > 0 ? (50 * this._scaleFactor) : 0;
 
@@ -277,8 +270,10 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer {
         this._ctx.save();
         this.applyTransforms();
 
+        this.applyShadow(this._colors.fretboard.strings.shadow);
+
         const currentHeight = this._fretboardHeight; // Full progress assumed for simple draw
-        const thickness = 2 * this._scaleFactor;
+        const thickness = (this._colors.fretboard.strings.thickness || 2) * this._scaleFactor;
         const color = this._colors.fretboard.strings.color;
 
         for (let i = 0; i < this._numStrings; i++) {
@@ -294,9 +289,16 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer {
         this._ctx.save();
         this.applyTransforms();
 
+        this.applyShadow(this._colors.fretboard.frets.shadow);
+
         for (let i = 0; i < this._numFrets; i++) {
+            console.log("drawFrets");
+            console.log("fret", i);
+            console.log("fretboardY", this._fretboardY);
+            console.log("realFretSpacing", this._realFretSpacing);
+            console.log("fretY", this._fretboardY + i * this._realFretSpacing);
             const y = this._fretboardY + i * this._realFretSpacing;
-            const width = 2 * this._scaleFactor;
+            const width = (this._colors.fretboard.frets.thickness || 2) * this._scaleFactor;
 
             this._drawLine(this._fretboardX, y, this._fretboardX + this._fretboardWidth, y, baseColor, width);
         }
@@ -353,9 +355,9 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer {
         this._ctx.save();
         this.applyTransforms();
 
-        const capoHeight = 35 * this._scaleFactor;
-        // User requested adjustment: + 27 + headstockYOffset
-        const capoY = this._fretboardY - (capoHeight / 2) - (2 * this._scaleFactor) + 27 + this._headstockYOffset;
+        const capoHeight = 45 * this._scaleFactor;
+        // Natural alignment with the nut at the top of the fretboard
+        const capoY = this._fretboardY - (capoHeight / 2) + 25 + this._headstockYOffset;
 
         // Theme colors
         const capoColor = this._colors.capo?.color || '#c0c0c0';
@@ -369,33 +371,13 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer {
         this._ctx.lineWidth = borderWidth;
 
         // Shadow handling
-        if (this._colors.capo?.shadow?.enabled) {
-            this._ctx.shadowColor = this._colors.capo.shadow.color || 'rgba(0,0,0,0.5)';
-            this._ctx.shadowBlur = (this._colors.capo.shadow.blur ?? 10) * this._scaleFactor;
-            this._ctx.shadowOffsetX = (this._colors.capo.shadow.offsetX ?? 0) * this._scaleFactor;
-            this._ctx.shadowOffsetY = (this._colors.capo.shadow.offsetY ?? 0) * this._scaleFactor;
-        } else {
-            this._ctx.shadowColor = 'transparent';
-            this._ctx.shadowBlur = 0;
-            this._ctx.shadowOffsetX = 0;
-            this._ctx.shadowOffsetY = 0;
-        }
+        this.applyShadow(this._colors.capo?.shadow);
 
         this._ctx.beginPath();
         this._safeRoundRect(this._fretboardX - 5 * this._scaleFactor, capoY, this._fretboardWidth + 10 * this._scaleFactor, capoHeight, 5 * this._scaleFactor);
         this._ctx.fill();
 
-        // Reset shadow for stroke and internal details to avoid "glow" on everything if not desired, 
-        // or keep it if the whole object casts shadow. Usually stroke follows shadow.
-        // But internal highlight/text shouldn't cast a shadow on the capo itself? 
-        // Actually canvas shadow applies to everything drawn. 
-        // We probably want the CAPO BODY to cast a shadow on the fretboard. 
-        // So we should turn off shadow after stroke.
-
-        this._ctx.shadowColor = 'transparent';
-        this._ctx.shadowBlur = 0;
-        this._ctx.shadowOffsetX = 0;
-        this._ctx.shadowOffsetY = 0;
+        this.applyShadow(undefined);
         // Only stroke if border width > 0
         if (borderWidth > 0) {
             this._ctx.stroke();
@@ -411,7 +393,7 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer {
 
         // Draw "CAPO" text distributed
         const text = "CAPO";
-        const fontSize = 16 * this._scaleFactor;
+        const fontSize = 24 * this._scaleFactor;
         const font = `bold ${fontSize}px sans-serif`;
 
         // Distribute C-A-P-O across the 4 middle string positions if enough strings, or evenly
@@ -436,15 +418,16 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer {
         if (this._capoFret <= 0) return;
         this._ctx.save();
         this.applyTransforms(); // Apply transforms so it moves with the neck
+        this.applyShadow(undefined);
 
         const capoHeight = 35 * this._scaleFactor;
         // User requested adjustment: + 27 + headstockYOffset
         const capoY = this._fretboardY - (capoHeight / 2) - (2 * this._scaleFactor) + 27 + this._headstockYOffset;
 
-        const x = this._fretboardX - 30 * this._scaleFactor;
+        const x = this._fretboardX - 40 * this._scaleFactor;
         const y = capoY + capoHeight / 2;
 
-        const text = this._capoFret.toString();
+        const text = `${this._capoFret.toString()}ª`;
         const font = `bold ${32 * this._scaleFactor}px sans-serif`;
         // Use specialized capo.textColors.number if available, otherwise fallback to global text or capo name color
         const color = this._colors.capo?.textColors?.number || this._colors.global.primaryTextColor;

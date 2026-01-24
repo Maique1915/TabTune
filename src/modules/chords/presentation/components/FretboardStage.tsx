@@ -7,11 +7,10 @@ import { useAppContext } from "@/modules/core/presentation/context/app-context";
 import { type ChordDrawer } from "@/modules/engine/infrastructure/drawers/ChordDrawer";
 import { ShortChord } from "@/modules/engine/infrastructure/drawers/ShortChord";
 import { FullChord } from "@/modules/engine/infrastructure/drawers/FullChord";
-import { GuitarFretboardDrawer } from "@/modules/engine/infrastructure/drawers/guitar-fretboard-drawer";
-import { ScoreDrawer } from "@/modules/engine/infrastructure/drawers/score-drawer";
+
 import { drawStaticFingersAnimation } from "@/modules/engine/infrastructure/drawers/static-fingers-drawer";
-import { drawGuitarFretboardAnimation } from "@/modules/engine/infrastructure/drawers/guitar-fretboard-animation";
 import { drawCarouselAnimation } from "@/modules/engine/infrastructure/drawers/carousel-drawer";
+import { extensions as extensionMap } from "@/modules/core/domain/chord-logic";
 
 import { TimelineState } from "@/modules/chords/domain/types";
 import { useCanvasRecorder, CanvasRecorderOptions } from "@/lib/shared/hooks/useCanvasRecorder";
@@ -85,7 +84,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
     capo = 0,
     tuningShift = 0,
     stringNames = ["E", "A", "D", "G", "B", "e"],
-    numFrets = 24,
+    numFrets: propNumFrets, // Default removed to allow inference
     colors: propsColors,
     animationType: propsAnimationType,
 }, ref) => {
@@ -133,17 +132,24 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         playbackSeekNonce,
         playbackSeekProgress,
     } = useAppContext();
+
+    // Derived values logic (Fixed)
     const colors = propsColors || contextColors || undefined;
     const animationType = propsAnimationType || contextAnimationType || 'guitar-fretboard';
+
+    // Determine effective numFrets
+    // If prop provided, use it. If not, default based on animationType.
+    // 'guitar-fretboard' implies Full Neck (24), 'static-fingers' usually Short (5).
+    const effectiveNumFrets = propNumFrets ?? (animationType === 'guitar-fretboard' ? 24 : 5);
+    const numFrets = effectiveNumFrets;
+
     const [isAnimating, setIsAnimating] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
 
     const isRenderCancelledRef = useRef(false);
     const prevActiveChordIndexRef = useRef<number | undefined>(undefined);
 
-    const guitarFretboardDrawerRef = useRef<GuitarFretboardDrawer | null>(null);
     const chordDrawerRef = useRef<ChordDrawer | null>(null);
-    const scoreDrawerRef = useRef<ScoreDrawer | null>(null);
 
     // Define Timing Helpers EARLY to avoid reference errors
     const minSegmentSec = 0.5; // Faster for fretboard?
@@ -164,7 +170,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         if (ctx) {
             // Se estamos usando animação de transição, limpamos de forma transparente
             // para mostrar o backgroundCanvas embaixo.
-            if (animationType === "static-fingers" || animationType === "dynamic-fingers") {
+            if (animationType === "static-fingers" || animationType === "dynamic-fingers" || animationType === "guitar-fretboard") {
                 ctx.clearRect(0, 0, width, height);
             } else {
                 ctx.fillStyle = colors.global?.backgroundColor || colors.cardColor || '#000000';
@@ -173,18 +179,15 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         }
 
         // 1. Draw Fretboard (or Chord Diagram)
-        if (animationType === "guitar-fretboard" && guitarFretboardDrawerRef.current) {
-            const drawer = guitarFretboardDrawerRef.current;
-            drawer.drawHeadstock();
-            drawer.drawBoard(); // Already cleared above
+        // 1. Draw Fretboard (or Chord Diagram)
+        if (animationType === "guitar-fretboard" && chordDrawerRef.current) {
+            const drawer = chordDrawerRef.current;
 
-            if (capo > 0) {
-                console.log('[FretboardStage] Drawing capo at fret:', capo);
-                drawer.drawCapo(capo);
-            }
-
+            // Draw Preview Chord if active
             if (previewChord) {
-                drawer.drawChord(previewChord, { opacity: 0.7, style: 'ghost' });
+                // Note: Opacity support not yet fully standard in ChordDrawer interface, using standard draw for now.
+                drawer.drawFretboard();
+                drawer.drawChord(previewChord, 0);
             }
 
             if (chords && chords.length > 0) {
@@ -193,8 +196,8 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                 if (currentChordData) {
                     if (transitionsEnabled) {
                         const nextChordData = (chordIndex < chords.length - 1) ? chords[chordIndex + 1] : null;
-                        drawGuitarFretboardAnimation({
-                            drawer,
+                        drawStaticFingersAnimation({
+                            drawer: drawer,
                             currentDisplayChord: { finalChord: currentChordData.finalChord, transportDisplay: currentChordData.transportDisplay },
                             nextDisplayChord: nextChordData ? { finalChord: nextChordData.finalChord, transportDisplay: nextChordData.transportDisplay } : null,
                             transitionProgress: state.transitionProgress,
@@ -202,10 +205,9 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                             skipFretboard: true
                         });
                     } else {
-                        drawer.drawChord(currentChordData.finalChord, {
-                            strumming: currentChordData.strumming,
-                            effects: currentChordData.effects,
-                            progress: state.chordProgress
+                        // Background already has the fretboard
+                        drawer.drawChord(currentChordData.finalChord, currentChordData.transportDisplay, 0, {
+                            skipFretboard: true
                         });
                     }
 
@@ -215,21 +217,34 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                         const hasNext = (chordIndex < chords.length - 1);
 
                         if (transitionsEnabled && tp > 0 && hasNext) {
-                            // Interpolate between current and next chord names
                             const nextChordData = chords[chordIndex + 1];
-                            const currentOpacity = 1 - tp;
-                            const nextOpacity = tp;
+                            const sameName = currentChordData.finalChord.chordName === nextChordData.finalChord.chordName;
 
-                            if (currentChordData.finalChord.showChordName !== false) {
-                                drawer.drawChordName(currentChordData.finalChord.chordName || "", { opacity: currentOpacity });
-                            }
-                            if (nextChordData && nextChordData.finalChord.showChordName !== false) {
-                                drawer.drawChordName(nextChordData.finalChord.chordName || "", { opacity: nextOpacity });
+                            if (sameName) {
+                                // Just draw once with full opacity
+                                if (currentChordData.finalChord.showChordName !== false) {
+                                    const exts = currentChordData.finalChord.chord?.extension ? currentChordData.finalChord.chord.extension.map(i => extensionMap[i]) : undefined;
+                                    drawer.drawChordName(currentChordData.finalChord.chordName || "", { opacity: 1, extensions: exts });
+                                }
+                            } else {
+                                // Interpolate between current and next chord names
+                                const currentOpacity = 1 - tp;
+                                const nextOpacity = tp;
+
+                                if (currentChordData.finalChord.showChordName !== false) {
+                                    const exts = currentChordData.finalChord.chord?.extension ? currentChordData.finalChord.chord.extension.map(i => extensionMap[i]) : undefined;
+                                    drawer.drawChordName(currentChordData.finalChord.chordName || "", { opacity: currentOpacity, extensions: exts });
+                                }
+                                if (nextChordData && nextChordData.finalChord.showChordName !== false) {
+                                    const exts = nextChordData.finalChord.chord?.extension ? nextChordData.finalChord.chord.extension.map(i => extensionMap[i]) : undefined;
+                                    drawer.drawChordName(nextChordData.finalChord.chordName || "", { opacity: nextOpacity, extensions: exts });
+                                }
                             }
                         } else {
                             // Static display
                             if (currentChordData.finalChord.showChordName !== false) {
-                                drawer.drawChordName(currentChordData.finalChord.chordName || "", { opacity: 1 });
+                                const exts = currentChordData.finalChord.chord?.extension ? currentChordData.finalChord.chord.extension.map(i => extensionMap[i]) : undefined;
+                                drawer.drawChordName(currentChordData.finalChord.chordName || "", { opacity: 1, extensions: exts });
                             }
                         }
                     }
@@ -298,20 +313,32 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                         const hasNext = (chordIndex < chords.length - 1);
 
                         if (transitionsEnabled && tp > 0 && hasNext) {
-                            // Interpolate
                             const nextChordData = chords[chordIndex + 1];
-                            const currentOpacity = 1 - tp;
-                            const nextOpacity = tp;
+                            const sameName = currentChordData.finalChord.chordName === nextChordData.finalChord.chordName;
 
-                            if (currentChordData.finalChord.showChordName !== false) {
-                                drawer.drawChordName(currentChordData.finalChord.chordName || "", { opacity: currentOpacity });
-                            }
-                            if (nextChordData && nextChordData.finalChord.showChordName !== false) {
-                                drawer.drawChordName(nextChordData.finalChord.chordName || "", { opacity: nextOpacity });
+                            if (sameName) {
+                                if (currentChordData.finalChord.showChordName !== false) {
+                                    const exts = currentChordData.finalChord.chord?.extension ? currentChordData.finalChord.chord.extension.map(i => extensionMap[i]) : undefined;
+                                    drawer.drawChordName(currentChordData.finalChord.chordName || "", { opacity: 1, extensions: exts });
+                                }
+                            } else {
+                                // Interpolate
+                                const currentOpacity = 1 - tp;
+                                const nextOpacity = tp;
+
+                                if (currentChordData.finalChord.showChordName !== false) {
+                                    const exts = currentChordData.finalChord.chord?.extension ? currentChordData.finalChord.chord.extension.map(i => extensionMap[i]) : undefined;
+                                    drawer.drawChordName(currentChordData.finalChord.chordName || "", { opacity: currentOpacity, extensions: exts });
+                                }
+                                if (nextChordData && nextChordData.finalChord.showChordName !== false) {
+                                    const exts = nextChordData.finalChord.chord?.extension ? nextChordData.finalChord.chord.extension.map(i => extensionMap[i]) : undefined;
+                                    drawer.drawChordName(nextChordData.finalChord.chordName || "", { opacity: nextOpacity, extensions: exts });
+                                }
                             }
                         } else {
                             if (currentChordData.finalChord.showChordName !== false) {
-                                drawer.drawChordName(currentChordData.finalChord.chordName || "", { opacity: 1 });
+                                const exts = currentChordData.finalChord.chord?.extension ? currentChordData.finalChord.chord.extension.map(i => extensionMap[i]) : undefined;
+                                drawer.drawChordName(currentChordData.finalChord.chordName || "", { opacity: 1, extensions: exts });
                             }
                         }
                     }
@@ -321,28 +348,20 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                 drawer.drawFingers(previewChord);
                 // ChordDrawerBase.drawFingers doesn't draw the name, so we draw it here.
                 if (showChordName && previewChord.chordName && previewChord.showChordName !== false) {
-                    drawer.drawChordName(previewChord.chordName);
+                    const exts = previewChord.chord?.extension ? previewChord.chord.extension.map(i => extensionMap[i]) : undefined;
+                    drawer.drawChordName(previewChord.chordName, { extensions: exts });
                 }
             } else {
                 drawer.drawFretboard();
             }
         }
 
-        // 2. Draw Score (Symbols) if available
-        if (timelineState && scoreDrawerRef.current) {
-            timelineState.tracks.forEach(track => {
-                if (track.type !== 'symbol') return;
-                const clip = track.clips.find(c => timeMs >= c.start && timeMs < c.start + c.duration);
-                if (clip && clip.type === 'symbol') {
-                    scoreDrawerRef.current?.draw(width, height, clip);
-                }
-            });
-        }
+        // 2. Score drawing removed as drawer was deleted
     }, [chords, height, timelineState, width, animationType, previewChord, showChordName, capo, buildEnabled, colors]);
 
     const drawAnimatedChord = useCallback(() => {
         if (!canvasRef.current) return;
-        if (!chordDrawerRef.current && !guitarFretboardDrawerRef.current) return;
+        if (!chordDrawerRef.current) return;
 
         console.log('[FretboardStage] drawAnimatedChord called');
         drawFrame(animationStateRef.current, playheadStateRef.current.t);
@@ -357,42 +376,37 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
     }, [chords, drawFrame, height, isRecording, onFrameCapture, width]);
 
     // Initialize Drawers
-
     useEffect(() => {
         if (!canvasRef.current) return;
         const ctx = canvasRef.current.getContext("2d");
         if (!ctx) return;
 
-        if (animationType === "guitar-fretboard") {
-            guitarFretboardDrawerRef.current = new GuitarFretboardDrawer(ctx, colors, {
-                width,
-                height,
-                numFrets: numFrets || 24,
-                numStrings: numStrings || 6,
-                rotation: colors.global?.rotation || 0,
-                mirror: colors.global?.mirror || false,
-                stringNames,
-                tuningShift
-            });
-            chordDrawerRef.current = null;
+        const isGuitarFretboard = animationType === "guitar-fretboard";
+        if (isGuitarFretboard) {
+            chordDrawerRef.current = new FullChord(ctx, colors, { width, height }, colors.fretboardScale || 1);
         } else {
-            const useFullNeck = (numFrets && numFrets > 12);
-            if (useFullNeck) {
-                chordDrawerRef.current = new FullChord(ctx, colors, { width, height }, colors.fretboardScale || 1);
-            } else {
-                chordDrawerRef.current = new ShortChord(ctx, colors, { width, height }, colors.fretboardScale || 1);
-            }
-            chordDrawerRef.current.setNumStrings(numStrings);
-            chordDrawerRef.current.setNumFrets(numFrets);
-            chordDrawerRef.current.setGlobalCapo(capo || 0);
-            chordDrawerRef.current.setStringNames(stringNames);
-            if (guitarFretboardDrawerRef.current) {
-                guitarFretboardDrawerRef.current.setTuning(stringNames, tuningShift);
-                guitarFretboardDrawerRef.current.setTransforms((colors.global?.rotation || 0) as any, colors.global?.mirror || false);
-            }
+            chordDrawerRef.current = new ShortChord(ctx, colors, { width, height }, colors.fretboardScale || 1);
         }
 
-        scoreDrawerRef.current = new ScoreDrawer(canvasRef.current);
+        chordDrawerRef.current.setNumStrings(numStrings);
+        chordDrawerRef.current.setNumFrets(numFrets);
+        chordDrawerRef.current.setGlobalCapo(capo || 0);
+        chordDrawerRef.current.setStringNames(stringNames);
+
+        // Handle Rotation
+        // GuitarFretboardDrawer was Horizontal (-90 deg equivalent for Vertical drawers).
+        // If in 'guitar-fretboard' mode and no specific rotation Set, default to Horizontal (-90).
+        // If user Provides rotation, use it.
+        let effectiveRotation = colors.global?.rotation || 0;
+        if (isGuitarFretboard && !colors.global?.rotation) {
+            effectiveRotation = 0;
+        }
+
+        chordDrawerRef.current.setTransforms(effectiveRotation as any, colors.global?.mirror || false);
+
+        // Legacy ref cleared
+
+        // scoreDrawerRef removed
 
         if (!isAnimating) {
             drawAnimatedChord();
@@ -415,10 +429,10 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         }
 
         // Draw static fretboard on background to decouple it from finger animations
-        if (animationType === 'static-fingers' || animationType === 'dynamic-fingers' || animationType === 'default' || !animationType) {
-            const useFullNeck = (numFrets && numFrets > 12);
+        if (animationType === 'static-fingers' || animationType === 'dynamic-fingers' || animationType === 'default' || !animationType || animationType === 'guitar-fretboard') {
+            const isGuitarFretboard = animationType === 'guitar-fretboard';
             let bgDrawer: ChordDrawer;
-            if (useFullNeck) {
+            if (isGuitarFretboard) {
                 bgDrawer = new FullChord(bgCtx, colors, { width, height }, colors.fretboardScale || 1);
             } else {
                 bgDrawer = new ShortChord(bgCtx, colors, { width, height }, colors.fretboardScale || 1);
@@ -781,10 +795,6 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                     style={{ zIndex: 1 }}
                 />
             </div>
-
-
-
-
         </>
     );
 });

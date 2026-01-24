@@ -2,9 +2,12 @@ import { AbstractChordDrawer } from "./AbstractChordDrawer"; // Will keep shared
 import { ShortNeckDrawer } from "./ShortNeck";
 import { FretboardDrawer } from "./FretboardDrawer";
 import type { FretboardTheme, ChordDiagramProps, BarreInfo } from "@/modules/core/domain/types";
-import { getNome, prepareShortChordVisuals } from "@/modules/core/domain/chord-logic";
+import { getNome, prepareShortChordVisuals, extensions as extensionMap } from "@/modules/core/domain/chord-logic";
 import { easeInOutQuad } from "../utils/animacao";
 import { ChordDrawer } from "./ChordDrawer";
+import { detectBarreFromChord } from "./utils/barre-detection";
+import { drawAvoidedStrings, AvoidedStringsContext } from "./utils/avoided-strings-utils";
+import { calculateLabelPosition } from "./utils/label-positioning";
 
 export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
     public fretboardDrawer: FretboardDrawer;
@@ -38,6 +41,7 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
         }, this._scaleFactor);
 
         this.fretboardDrawer.setTransforms(this._rotation as any, this._mirror);
+        this.fretboardDrawer.setSkipGlobalTransform(true);
     }
 
     // ============ LOGIC OVERRIDES ============
@@ -59,10 +63,9 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
         console.log(`[AutoTranspose] Frets: ${frets}, Max: ${maxFret}, NumFrets: ${this._numFrets}, Min: ${minFret}`);
 
         // 2. Check overflow
-        // If the highest fret exceeds or touches the limit of available frets (usually 5 for short neck),
+        // If the highest fret exceeds the limit of available frets (usually 5 for short neck),
         // we force auto-transposition to ensure chords near the bottom are normalized to the top.
-        // Changed to >= to catch chords that hit the very bottom edge too.
-        if (maxFret >= this._numFrets) {
+        if (maxFret > this._numFrets) {
             // "Lock to first fret": verify checks if any note passed the limit.
             // If yes, we set the transport display (the side number) to the lowest fret of the shape.
             // visualFret = actualFret - (minFret - 1).
@@ -89,26 +92,29 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
     ): void {
         this._ctx.save();
 
-        this._ctx.shadowColor = "rgba(0,0,0,0.5)";
-        this._ctx.shadowBlur = 5;
+        this.applyShadow(this._colors.fingers.shadow);
 
-        this._ctx.fillStyle = "#1a1a1a";
+        this._ctx.fillStyle = this.hexToRgba(this._colors.fingers.color || "#1a1a1a", this._colors.fingers.opacity ?? 1);
         this._ctx.beginPath();
 
         if (isBarre) {
-            this._ctx.roundRect(centerX - barreVisualWidth / 2, centerY - (this.barreWidth / 2), barreVisualWidth, this.barreWidth, this.neckRadius);
+            // In vertical mode: barre spans strings (width = barreVisualWidth), thickness is vertical (height = barreWidth)
+            const width = barreVisualWidth;
+            const height = this.barreWidth;
+            this._ctx.roundRect(centerX - width / 2, centerY - height / 2, width, height, this.neckRadius);
         } else {
             this._ctx.arc(centerX, centerY, this.fingerRadius, 0, Math.PI * 2);
         }
         this._ctx.fill();
+        this.applyShadow(undefined);
 
-        this._ctx.strokeStyle = "#ffffff";
-        this._ctx.lineWidth = 3 * this._scaleFactor;
+        this._ctx.strokeStyle = this._colors.fingers.border?.color || "#ffffff";
+        this._ctx.lineWidth = (this._colors.fingers.border?.width || 3) * this._scaleFactor;
         this._ctx.stroke();
 
         if (finger !== undefined && finger !== null && finger !== -2) {
-            this._ctx.fillStyle = "#ffffff";
-            const fontSize = 35 * this._scaleFactor;
+            this._ctx.fillStyle = this._colors.fingers.textColor || "#ffffff";
+            const fontSize = 30 * this._scaleFactor;
             this._ctx.font = `bold ${fontSize}px sans-serif`;
             this._ctx.textAlign = "center";
             this._ctx.textBaseline = "middle";
@@ -119,7 +125,10 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
             this._ctx.translate(centerX, centerY);
             if (this._mirror) this._ctx.scale(-1, 1);
             if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
-            this._ctx.fillText(displayText, 0, 0);
+
+            // Optical correction for baseline centering
+            const opticalCorrection = fontSize * 0.06;
+            this._ctx.fillText(displayText, 0, opticalCorrection);
             this._ctx.restore();
         }
 
@@ -131,7 +140,10 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
         isBarre: boolean,
         barreVisualWidth: number
     ): void {
-        this._ctx.fillStyle = this.hexToRgba(this._colors.fingers.color, this._colors.fingers.opacity ?? 1);
+        // Updated to match static style (#1a1a1a fill, white border, shadow)
+        this.applyShadow(this._colors.fingers.shadow);
+
+        this._ctx.fillStyle = this.hexToRgba(this._colors.fingers.color || "#1a1a1a", this._colors.fingers.opacity ?? 1);
         this._ctx.beginPath();
 
         if (isBarre) {
@@ -140,23 +152,21 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
                 -(this.barreWidth / 2),
                 barreVisualWidth,
                 this.barreWidth,
-                this.neckRadius * 2
+                this.neckRadius
             );
         } else {
             this._ctx.arc(0, 0, this.fingerRadius, 0, Math.PI * 2);
         }
         this._ctx.fill();
+        this.applyShadow(undefined);
 
-        const borderWidth = this._colors.fingers.border?.width ?? 0;
-        if (borderWidth > 0) {
-            this._ctx.strokeStyle = this._colors.fingers.border?.color || "#000000";
-            this._ctx.lineWidth = borderWidth;
-            this._ctx.stroke();
-        }
+        this._ctx.strokeStyle = this._colors.fingers.border?.color || "#ffffff";
+        this._ctx.lineWidth = (this._colors.fingers.border?.width || 3) * this._scaleFactor;
+        this._ctx.stroke();
 
         if (finger !== undefined && finger !== null && finger !== -2) {
             this._ctx.fillStyle = this._colors.fingers.textColor || "#ffffff";
-            const fontSize = 45 * this._scaleFactor;
+            const fontSize = 30 * this._scaleFactor;
             this._ctx.font = `bold ${fontSize}px sans-serif`;
             this._ctx.textAlign = "center";
             this._ctx.textBaseline = "middle";
@@ -166,7 +176,10 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
             this._ctx.save();
             if (this._mirror) this._ctx.scale(-1, 1);
             if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
-            this._ctx.fillText(displayText, 0, 0);
+
+            // Optical correction for baseline centering
+            const opticalCorrection = fontSize * 0.06;
+            this._ctx.fillText(displayText, 0, opticalCorrection);
             this._ctx.restore();
         }
     }
@@ -215,7 +228,7 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
 
     // ...
 
-    public drawChord(inputChord: ChordDiagramProps, inputTransportDisplay: number, offsetX: number = 0, options: { skipFretboard?: boolean } = {}): void {
+    public drawChord(inputChord: ChordDiagramProps, inputTransportDisplay: number, offsetX: number = 0, options: { skipFretboard?: boolean, skipChordName?: boolean } = {}): void {
         // Use external logic
         const visuals = prepareShortChordVisuals(
             inputChord,
@@ -228,7 +241,8 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
 
         this._applyChordSettings(finalChord);
 
-        if (finalChord.showChordName !== false) this.drawChordName(formattedName);
+        const rawExtensions = finalChord.chord?.extension ? finalChord.chord.extension.map(i => extensionMap[i]) : undefined;
+        if (finalChord.showChordName !== false && !options.skipChordName) this.drawChordName(formattedName, { extensions: rawExtensions });
 
         this._ctx.save();
         this.applyTransforms();
@@ -271,22 +285,23 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
 
     drawAvoidedStrings(avoid: number[] | undefined): void {
         if (!avoid) return;
-        this._ctx.fillStyle = this._colors.global.primaryTextColor;
-        const fontSize = 45 * this._scaleFactor;
-        this._ctx.font = `bold ${fontSize}px sans-serif`;
-        this._ctx.textAlign = "center";
-        this._ctx.textBaseline = "middle";
 
-        avoid.forEach(sNum => {
-            const x = this._fretboardX + this.horizontalPadding + (this._numStrings - sNum) * this._stringSpacing;
-            const y = this._fretboardY + this._fretboardHeight + this._realFretSpacing * 0.4;
-            this._ctx.save();
-            this._ctx.translate(x, y);
-            if (this._mirror) this._ctx.scale(-1, 1);
-            if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
-            this._ctx.fillText("x", 0, 0);
-            this._ctx.restore();
-        });
+        const context: AvoidedStringsContext = {
+            ctx: this._ctx,
+            fretboardX: this._fretboardX,
+            fretboardY: this._fretboardY,
+            fretboardHeight: this._fretboardHeight,
+            horizontalPadding: this.horizontalPadding,
+            stringSpacing: this._stringSpacing,
+            realFretSpacing: this._realFretSpacing,
+            numStrings: this._numStrings,
+            scaleFactor: this._scaleFactor,
+            textColor: this._colors.global.primaryTextColor,
+            mirror: this._mirror,
+            rotation: this._rotation
+        };
+
+        drawAvoidedStrings(context, avoid);
     }
 
     public drawTransposeIndicator(text: string | number, alignFret: number = 1): void {
@@ -297,9 +312,7 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
         const x = this._fretboardX - xOffsets;
 
         // Position: Vertically aligned with the center of the specific fret space (+ optical correction)
-        const opticalOffsetY = 15 * this._scaleFactor;
-        const y = this._fretboardY + (alignFret - 0.5) * this._realFretSpacing + opticalOffsetY;
-
+        const y = this._fretboardY + (alignFret - 0.5) * this._realFretSpacing;
         this._ctx.save();
 
         // Move to the target point
@@ -331,28 +344,27 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
 
     // Additional drawing methods (Name, Animations)
 
-    drawChordName(chordName: string, options?: { opacity?: number }): void {
+    drawChordName(chordName: string, options?: { opacity?: number, extensions?: string[] }): void {
         const themeOpacity = this._colors.chordName.opacity ?? 1;
         const transitionOpacity = options?.opacity ?? 1;
         const finalOpacity = themeOpacity * transitionOpacity;
+        if (finalOpacity <= 0 || !chordName) return;
 
-        this._ctx.fillStyle = this.hexToRgba(this._colors.chordName.color, finalOpacity);
+        const pos = this._getLabelPosition('name'); // Returns screen coords for center
 
-        const fontSize = 75 * this._scaleFactor;
-        this._ctx.font = `bold ${fontSize}px sans-serif`;
-        this._ctx.textAlign = "center";
-        this._ctx.textBaseline = "middle";
-
-        const pos = this._getLabelPosition('name');
-
-        this._ctx.save();
-        this._ctx.translate(pos.x, pos.y);
-        // Removed mirror scaling so text reads correctly
-        // if (this._mirror) this._ctx.scale(-1, 1);
-        // Removed rotation so text stays upright relative to screen
-        // if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
-        this._ctx.fillText(chordName, 0, 0);
-        this._ctx.restore();
+        // Use shared drawing logic. 
+        // Static view usually wants upright text (no mirror/rotation applied to text itself), 
+        // while positioning handled by _getLabelPosition.
+        this._drawTextWithTransform(
+            chordName,
+            finalOpacity,
+            1, // scale
+            0, // translateY
+            pos.x,
+            pos.y,
+            options?.extensions,
+            true // ignoreTransforms (keep upright)
+        );
     }
 
     // Animation Methods Implementation (Simplified Copy)
@@ -366,7 +378,7 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
         if (offsetX !== 0) this.calculateWithOffset(offsetX);
 
         const visuals = prepareShortChordVisuals(chord, this._numFrets, this._globalCapo, transportDisplay);
-        const { finalChord, startFret, barre, formattedName, transposeConfig } = visuals;
+        const { finalChord, startFret, formattedName, capoConfig, transposeConfig } = visuals;
 
         this._applyChordSettings(finalChord);
 
@@ -439,18 +451,20 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
         this._applyChordSettings(nVisuals.finalChord);
 
         const easedProgress = easeInOutQuad(originalProgress);
-        const namePos = this._getLabelPosition('name');
+        const namePos = this._getLabelPosition('name'); // Center coords
         const centerX = namePos.x;
         const centerY = namePos.y;
 
         // Chord Name Transition
         const scaleOut = 1 - (easedProgress * 0.2);
         const currentNameTranslateY = -easedProgress * (20 * this._scaleFactor);
-        this._drawTextWithTransform(cVisuals.formattedName, 1 - easedProgress, scaleOut, currentNameTranslateY, centerX, centerY);
+        const currentExts = cVisuals.finalChord.chord?.extension ? cVisuals.finalChord.chord.extension.map(i => extensionMap[i]) : undefined;
+        this._drawTextWithTransform(cVisuals.formattedName, 1 - easedProgress, scaleOut, currentNameTranslateY, centerX, centerY, currentExts, true);
 
         const scaleIn = 0.8 + (easedProgress * 0.2);
         const nextNameTranslateY = (1 - easedProgress) * (20 * this._scaleFactor);
-        this._drawTextWithTransform(nVisuals.formattedName, easedProgress, scaleIn, nextNameTranslateY, centerX, centerY);
+        const nextExts = nVisuals.finalChord.chord?.extension ? nVisuals.finalChord.chord.extension.map(i => extensionMap[i]) : undefined;
+        this._drawTextWithTransform(nVisuals.formattedName, easedProgress, scaleIn, nextNameTranslateY, centerX, centerY, nextExts, true);
 
         this._ctx.save();
         this.applyTransforms();
@@ -458,7 +472,6 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
         if (!this._fretboardCache) this._updateFretboardCache();
 
         if (!this._skipFretboard && !options.skipFretboard) {
-            // NOTE: `drawStringNames` implementation in `FretboardDrawer` might vary.
             this.fretboardDrawer.drawStringNames(easedProgress, nVisuals.finalChord.stringNames);
             this.fretboardDrawer.drawFretboard();
         }
@@ -493,7 +506,7 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
     }
 
     drawBarreWithTransition(cBarre: BarreInfo | null, nBarre: BarreInfo | null, cFingers: any[], nFingers: any[], progress: number): void {
-        const cDetected = this._detectBarre({ fingers: cFingers } as any);
+        const cDetected = detectBarreFromChord({ fingers: cFingers } as any);
         if (cDetected) {
             this._drawBarreShapeAtPosition(cDetected.finger ?? 1, (1 - progress) * this.barreWidth);
             this._ctx.save();
@@ -511,11 +524,19 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
     }
 
     drawTransposeIndicatorWithTransition(cTransport: number, nTransport: number, cAlignedFret: number, nAlignedFret: number, progress: number): void {
-        if (nTransport > 1) {
-            this._ctx.save();
-            this._ctx.globalAlpha = progress;
+        const eased = easeInOutQuad(progress);
+        if (cTransport === nTransport && nTransport > 1) {
             this.drawTransposeIndicator(nTransport, nAlignedFret);
-            this._ctx.restore();
+            return;
+        }
+
+        if (cTransport > 1 && nTransport > 1) {
+            this._ctx.save(); this._ctx.globalAlpha = 1 - eased; this.drawTransposeIndicator(cTransport, cAlignedFret); this._ctx.restore();
+            this._ctx.save(); this._ctx.globalAlpha = eased; this.drawTransposeIndicator(nTransport, nAlignedFret); this._ctx.restore();
+        } else if (nTransport > 1) {
+            this._ctx.save(); this._ctx.globalAlpha = eased; this.drawTransposeIndicator(nTransport, nAlignedFret); this._ctx.restore();
+        } else if (cTransport > 1) {
+            this._ctx.save(); this._ctx.globalAlpha = 1 - eased; this.drawTransposeIndicator(cTransport, cAlignedFret); this._ctx.restore();
         }
     }
 
@@ -526,26 +547,186 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
         scale: number,
         translateY: number,
         centerX: number,
-        centerY: number
+        centerY: number,
+        extensions?: string[],
+        ignoreTransforms: boolean = false
     ): void {
         if (opacity <= 0 || !text) return;
 
         this._ctx.save();
         this._ctx.translate(centerX, centerY);
 
-        if (this._mirror) this._ctx.scale(-1, 1);
-        if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
+        if (!ignoreTransforms) {
+            if (this._mirror) this._ctx.scale(-1, 1);
+            if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
+        }
 
         this._ctx.translate(0, translateY);
         this._ctx.scale(scale, scale);
 
-        const fontSize = 75 * this._scaleFactor;
-        this._ctx.font = `bold ${fontSize}px sans-serif`;
-        this._ctx.textAlign = "center";
-        this._ctx.textBaseline = "middle";
-        this._ctx.fillStyle = this.hexToRgba(this._colors.chordName.color, opacity);
-        this._ctx.fillText(text, 0, 0);
+        // 1. Parsing
+        // 1. Parsing
+        let displayBase = text;
+        const rawExtensions = extensions || [];
 
+        let extensionsToStack: string[] = [];
+
+        // Helper to formatting ext for regex matching against displayBase (which is pre-formatted)
+        const formatExtForMatch = (ext: string) => ext.replace(/#/g, "♯").replace(/b/g, "♭");
+
+        if (rawExtensions.length > 0) {
+            // Case A: Explicit extensions provided
+            extensionsToStack = rawExtensions.slice().sort((a, b) => extensionMap.indexOf(a) - extensionMap.indexOf(b));
+
+            // Clean base string from these extensions
+            extensionsToStack.forEach(ext => {
+                const formatted = formatExtForMatch(ext);
+                const esc = formatted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                displayBase = displayBase.replace(new RegExp(esc, 'g'), '');
+
+                // Also try cleaning raw/case-insensitive just in case
+                const escRaw = ext.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                displayBase = displayBase.replace(new RegExp(escRaw, 'gi'), '');
+            });
+        } else {
+            // Case B: Fallback Parsing
+            const foundExts: string[] = [];
+
+            // Local copy sorted by length desc for parsing safety
+            const extsToCheck = [...extensionMap].sort((a, b) => b.length - a.length);
+
+            extsToCheck.forEach(ext => {
+                let matched = false;
+
+                // 1. Try Unicode match
+                const formatted = formatExtForMatch(ext);
+                if (displayBase.includes(formatted)) {
+                    if (!matched) { foundExts.push(formatted); matched = true; }
+                    const esc = formatted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    displayBase = displayBase.replace(new RegExp(esc, 'g'), '');
+                }
+
+                // 2. Try Raw/Case-Insensitive match (e.g. B11 vs b11)
+                const escRaw = ext.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const rawRegex = new RegExp(escRaw, 'gi');
+                if (displayBase.match(rawRegex)) {
+                    // Found in ASCII/Case-variant form.
+                    // Push VALID FORMATTED version to stack for consistent look
+                    if (!matched) { foundExts.push(formatted); matched = true; }
+                    displayBase = displayBase.replace(rawRegex, '');
+                }
+            });
+
+            // Now re-sort them by musical order. 
+            const unformat = (s: string) => s.replace(/♯/g, "#").replace(/♭/g, "b");
+
+            extensionsToStack = foundExts.sort((a, b) => {
+                return extensionMap.indexOf(unformat(a)) - extensionMap.indexOf(unformat(b));
+            });
+        }
+
+        // Ensure stack items are formatted (Case A might have been ASCII)
+        extensionsToStack = extensionsToStack.map(formatExtForMatch);
+
+        // 2. Extract Bass (if any)
+        // Look for slash at the end of the string
+        let bass = "";
+        const bassMatch = displayBase.match(/(\/[A-G][♯♭#b]?)$/);
+        if (bassMatch) {
+            bass = bassMatch[1];
+            // Remove bass from displayBase
+            displayBase = displayBase.substring(0, displayBase.length - bass.length);
+        }
+
+        // Apply formatting (sharps/flats)
+        displayBase = displayBase.replace(/#/g, "♯").replace(/b/g, "♭");
+        bass = bass.replace(/#/g, "♯").replace(/b/g, "♭");
+
+        const match = displayBase.match(/^([A-G][♯♭]?)(.*)$/);
+        const root = match ? match[1] : displayBase;
+        const remainder = match ? match[2] : "";
+
+        // Sizes
+        const rootFontSize = 75 * this._scaleFactor;
+        const remainderFontSize = 75 * this._scaleFactor; // User requested SAME as root
+        const bassFontSize = 75 * this._scaleFactor;      // User requested SAME as root
+        const extensionFontSize = 35 * this._scaleFactor;
+
+        // Measures
+        this._ctx.font = `bold ${rootFontSize}px sans-serif`;
+        const rootWidth = this._ctx.measureText(root).width;
+
+        this._ctx.font = `bold ${remainderFontSize}px sans-serif`;
+        const remainderWidth = this._ctx.measureText(remainder).width;
+
+        this._ctx.font = `bold ${bassFontSize}px sans-serif`;
+        const bassWidth = this._ctx.measureText(bass).width;
+
+        // Calculate Stack Width
+        this._ctx.font = `bold ${extensionFontSize}px sans-serif`;
+        let maxStackWidth = 0;
+        extensionsToStack.forEach(ext => {
+            const w = this._ctx.measureText(ext).width;
+            if (w > maxStackWidth) maxStackWidth = w;
+        });
+
+        // Layout: [Root][Quality][Stack][Bass]
+        // Note: Bass at the END as per request "no fim o baixo /G"
+        // And Dm is D+m.
+
+        const totalWidth = rootWidth + remainderWidth + (extensionsToStack.length > 0 ? maxStackWidth + (5 * this._scaleFactor) : 0) + bassWidth;
+        const startX = -totalWidth / 2;
+
+        // Apply Shadow for Chord Name
+        this.applyShadow(this._colors.chordName.shadow);
+
+        this._ctx.fillStyle = this.hexToRgba(this._colors.chordName.color, opacity);
+        this._ctx.textAlign = "left";
+        this._ctx.textBaseline = "middle";
+
+        let currentX = startX;
+
+        // Draw Root
+        this._ctx.font = `bold ${rootFontSize}px sans-serif`;
+        this._ctx.fillText(root, currentX, 0);
+        currentX += rootWidth;
+
+        // Draw Remainder (Quality)
+        if (remainder) {
+            this._ctx.font = `bold ${remainderFontSize}px sans-serif`;
+            this._ctx.fillText(remainder, currentX, 0); // Aligned baseline with root
+            currentX += remainderWidth;
+        }
+
+        // Draw Stacked Extensions
+        if (extensionsToStack.length > 0) {
+            // Add small padding before stack
+            currentX += 5 * this._scaleFactor;
+
+            this._ctx.font = `bold ${extensionFontSize}px sans-serif`;
+            const lineHeight = extensionFontSize * 0.85;
+
+            const totalStackHeight = extensionsToStack.length * lineHeight;
+            let stackY = -(totalStackHeight / 2) + (lineHeight / 2);
+            stackY -= 5 * this._scaleFactor; // fine tune
+
+            const stackX = currentX; // Center stack or left align? Text is left aligned.
+
+            extensionsToStack.forEach((ext, i) => {
+                this._ctx.fillText(ext, stackX, stackY + (i * lineHeight));
+            });
+
+            currentX += maxStackWidth + (5 * this._scaleFactor); // space after stack
+        }
+
+        // Draw Bass
+        if (bass) {
+            this._ctx.font = `bold ${bassFontSize}px sans-serif`;
+            this._ctx.fillText(bass, currentX, 0);
+            currentX += bassWidth;
+        }
+
+        this.applyShadow(undefined);
         this._ctx.restore();
     }
 
@@ -568,9 +749,7 @@ export class ShortChord extends AbstractChordDrawer implements ChordDrawer {
         fromStringIndex: number,
         toStringIndex: number
     ): void {
-        // Optical correction to center vertically in fret space
-        const opticalOffsetY = 15 * this._scaleFactor;
-        const fretY = this._fretboardY + (fret - 0.5) * this._realFretSpacing + opticalOffsetY;
+        const fretY = this._fretboardY + (fret - 0.5) * this._realFretSpacing;
         const isBarre = fromStringIndex !== toStringIndex;
         let centerX: number;
         let barreVisualWidth: number = 0;

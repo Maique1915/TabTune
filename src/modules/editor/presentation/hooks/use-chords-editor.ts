@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import { MeasureData, GlobalSettings, ScoreStyle, DEFAULT_SCORE_STYLE, Duration, NoteData } from '@/modules/editor/domain/types';
 import { FretboardTheme } from '@/modules/core/domain/types';
 import { useUndoRedo } from '@/modules/editor/presentation/hooks/use-undo-redo';
-import { DEFAULT_COLORS } from '@/modules/core/presentation/context/app-context';
+import { DEFAULT_COLORS } from '@/modules/editor/presentation/constants';
 import {
     getNoteDurationValue,
     getMeasureCapacity,
@@ -41,7 +41,7 @@ export function useChordsEditor() {
             showClef: true,
             showTimeSig: true,
             notes: [
-                { id: generateId(), positions: [], duration: 'q', type: 'note', decorators: { dot: false }, accidental: 'none', customDurationMs: 2000 }
+                { id: generateId(), positions: [], duration: 'q', type: 'note', decorators: { dot: false }, accidental: 'none' }
             ]
         }],
         settings: {
@@ -329,8 +329,7 @@ export function useChordsEditor() {
                         decorators: { dot: false },
                         positions: [],
                         technique: '',
-                        isSlurred: false,
-                        customDurationMs: 2000 // Default to 2 seconds as requested
+                        isSlurred: false
                     }
                 ]
             };
@@ -461,6 +460,51 @@ export function useChordsEditor() {
                 currentMeasureIndex: measureIndex !== -1 ? measureIndex : prev.currentMeasureIndex,
                 selectedMeasureId: targetMeasureId || prev.selectedMeasureId
             };
+        });
+    };
+
+    /**
+     * Simple duration change for Chord Sequence mode.
+     * Does NOT add/remove rests to maintain measure duration.
+     */
+    const handleNoteDurationStatic = (noteId: string, newDuration: Duration) => {
+        setState((prev: FretboardEditorState) => {
+            const newMeasures = prev.measures.map((m: MeasureData) => ({
+                ...m,
+                notes: m.notes.map((n: NoteData) => {
+                    if (n.id === noteId) {
+                        return { ...n, duration: newDuration };
+                    }
+                    return n;
+                })
+            }));
+            return { ...prev, measures: newMeasures };
+        });
+    };
+
+    const handleRemoveNote = (noteId: string) => {
+        setState((prev: FretboardEditorState) => {
+            const newMeasures = prev.measures.map((m: MeasureData) => ({
+                ...m,
+                notes: m.notes.filter((n: NoteData) => n.id !== noteId)
+            }));
+            return { ...prev, measures: newMeasures };
+        });
+    };
+
+    const handleCopyNote = (noteId: string) => {
+        setState((prev: FretboardEditorState) => {
+            const newMeasures = prev.measures.map((m: MeasureData) => {
+                const noteIndex = m.notes.findIndex((n: NoteData) => n.id === noteId);
+                if (noteIndex === -1) return m;
+
+                const noteToCopy = m.notes[noteIndex];
+                const newNote = { ...noteToCopy, id: generateId() };
+                const newNotes = [...m.notes];
+                newNotes.splice(noteIndex + 1, 0, newNote);
+                return { ...m, notes: newNotes };
+            });
+            return { ...prev, measures: newMeasures };
         });
     };
 
@@ -773,6 +817,29 @@ export function useChordsEditor() {
             });
         },
 
+        // Reorder Notes within a Measure
+        handleReorderNotes: (measureId: string, fromIndex: number, toIndex: number) => {
+            setState((prev: FretboardEditorState) => {
+                const measureIndex = prev.measures.findIndex(m => m.id === measureId);
+                if (measureIndex === -1) return prev;
+
+                const newMeasures = [...prev.measures];
+                const newNotes = [...newMeasures[measureIndex].notes];
+                const [movedNote] = newNotes.splice(fromIndex, 1);
+                newNotes.splice(toIndex, 0, movedNote);
+
+                newMeasures[measureIndex] = {
+                    ...newMeasures[measureIndex],
+                    notes: newNotes
+                };
+
+                return {
+                    ...prev,
+                    measures: newMeasures
+                };
+            });
+        },
+
         // Copy Measure (duplicates and adds to end immediately)
         handleCopyMeasure: (measureId: string) => {
             setState((prev: FretboardEditorState) => {
@@ -821,6 +888,9 @@ export function useChordsEditor() {
 
         // Advanced Actions
         handleNoteRhythmChange,
+        handleNoteDurationStatic,
+        handleRemoveNote,
+        handleCopyNote,
         handlePitchChange,
         handleStringChange,
         handleAccidentalChange,
