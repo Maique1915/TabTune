@@ -90,6 +90,7 @@ export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer, Chord
         this.clear();
         this.drawNeck();
         this.drawFrets();
+        this.drawInlays(0, this._numFrets);
         this.drawStrings();
         this.drawStringNames(1);
         this.drawCapo();

@@ -301,5 +301,59 @@ export abstract class BaseDrawer {
         if (!avoid) return;
         avoid.forEach(s => this.drawAvoidedString(s));
     }
+
+    public drawInlays(startFret: number = 0, endFret: number = 24): void {
+        // Standard guitar inlay positions
+        const inlays = [3, 5, 7, 9, 12, 15, 17, 19, 21, 24];
+        const doubleInlays = [12, 24];
+
+        // Safe access to colors
+        const style = this._colors.fretboard.board?.inlays || { color: '#555555', opacity: 0.5, shadow: { enabled: false } };
+
+        // Don't draw if fully transparent
+        if ((style.opacity ?? 1) <= 0) return;
+
+        this._ctx.save();
+        this.applyTransforms();
+        this.applyShadow(style.shadow);
+
+        // Use hexToRgba helper or fallback
+        this._ctx.fillStyle = this.hexToRgba(style.color || '#555555', style.opacity ?? 0.5);
+
+        // Size of the dot
+        const radius = (this._baseFingerRadius * 0.5) * this._scaleFactor;
+
+        // Center string calculation (e.g. 3.5 for 6 strings)
+        const centerString = (this._numStrings + 1) / 2;
+
+        inlays.forEach(fret => {
+            // Check visibility range
+            if (fret < startFret || fret > endFret) return;
+
+            if (doubleInlays.includes(fret)) {
+                // Draw double dots
+                const spacing = 1.5; // String spacing units
+                const topString = Math.max(1, centerString - spacing);
+                const bottomString = Math.min(this._numStrings, centerString + spacing);
+
+                const p1 = this.getFingerCoords(fret, topString);
+                const p2 = this.getFingerCoords(fret, bottomString);
+
+                this._ctx.beginPath();
+                this._ctx.arc(p1.x, p1.y, radius, 0, Math.PI * 2);
+                this._ctx.arc(p2.x, p2.y, radius, 0, Math.PI * 2);
+                this._ctx.fill();
+
+            } else {
+                // Draw single dot
+                const p = this.getFingerCoords(fret, centerString);
+                this._ctx.beginPath();
+                this._ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+                this._ctx.fill();
+            }
+        });
+
+        this._ctx.restore();
+    }
 }
 

@@ -90,7 +90,7 @@ interface SettingGroup {
 const SETTING_GROUPS: SettingGroup[] = [
   {
     id: 'global',
-    label: 'Global',
+    label: 'Global & View',
     icon: Sun,
     controls: [
       { type: 'color', label: 'Background', key: 'global.backgroundColor' },
@@ -98,25 +98,45 @@ const SETTING_GROUPS: SettingGroup[] = [
     ]
   },
   {
-    id: 'fretboard',
-    label: 'Fretboard & Strings',
-    icon: Grid,
+    id: 'neck',
+    label: 'Neck & Headstock',
+    icon: Layers,
     controls: [
       { type: 'color', label: 'Neck Color', key: 'fretboard.neck.color' },
       { type: 'toggle', label: 'Neck Shadow', key: 'fretboard.neck.shadow.enabled' },
       { type: 'color', label: 'Neck Shadow Color', key: 'fretboard.neck.shadow.color' },
 
-      { type: 'color', label: 'Frets Color', key: 'fretboard.frets.color' },
-      { type: 'toggle', label: 'Frets Shadow', key: 'fretboard.frets.shadow.enabled' },
-      { type: 'color', label: 'Frets Shadow Color', key: 'fretboard.frets.shadow.color' },
-
-      { type: 'color', label: 'String Color', key: 'fretboard.strings.color' },
-      { type: 'toggle', label: 'String Shadow', key: 'fretboard.strings.shadow.enabled' },
-      { type: 'color', label: 'String Shadow Color', key: 'fretboard.strings.shadow.color' },
-
+      { type: 'color', label: 'Headstock Color', key: 'head.color' },
+      { type: 'color', label: 'Head Border', key: 'head.border.color' },
+      { type: 'number', label: 'Border Width', key: 'head.border.width', min: 0, max: 10 },
+      { type: 'toggle', label: 'Head Shadow', key: 'head.shadow.enabled' },
+    ]
+  },
+  {
+    id: 'inlays',
+    label: 'Inlays (Markers)',
+    icon: Music,
+    controls: [
       { type: 'color', label: 'Inlays Color', key: 'fretboard.board.inlays.color' },
+      { type: 'slider', label: 'Opacity', key: 'fretboard.board.inlays.opacity', min: 0, max: 1, step: 0.1 },
       { type: 'toggle', label: 'Inlays Shadow', key: 'fretboard.board.inlays.shadow.enabled' },
-      { type: 'color', label: 'Inlays Shadow Color', key: 'fretboard.board.inlays.shadow.color' },
+      { type: 'color', label: 'Shadow Color', key: 'fretboard.board.inlays.shadow.color' },
+    ]
+  },
+  {
+    id: 'strings_frets',
+    label: 'Strings & Frets',
+    icon: Grid,
+    controls: [
+      { type: 'color', label: 'Strings Color', key: 'fretboard.strings.color' },
+      { type: 'number', label: 'String Width', key: 'fretboard.strings.thickness', min: 1, max: 10 },
+      { type: 'toggle', label: 'String Shadow', key: 'fretboard.strings.shadow.enabled' },
+      { type: 'color', label: 'Shadow Color', key: 'fretboard.strings.shadow.color' },
+
+      { type: 'color', label: 'Frets Color', key: 'fretboard.frets.color' },
+      { type: 'number', label: 'Fret Width', key: 'fretboard.frets.thickness', min: 1, max: 10 },
+      { type: 'toggle', label: 'Frets Shadow', key: 'fretboard.frets.shadow.enabled' },
+      { type: 'color', label: 'Shadow Color', key: 'fretboard.frets.shadow.color' },
     ]
   },
   {
@@ -133,27 +153,16 @@ const SETTING_GROUPS: SettingGroup[] = [
     ]
   },
   {
-    id: 'capo',
-    label: 'Capo & Visuals',
-    icon: Target,
-    controls: [
-      { type: 'color', label: 'Capo Color', key: 'capo.color' },
-      { type: 'color', label: 'Border Color', key: 'capo.border.color' },
-      { type: 'color', label: 'Name Text Color', key: 'capo.textColors.name' },
-      { type: 'color', label: 'Number Color', key: 'capo.textColors.number' },
-      { type: 'toggle', label: 'Body Shadow', key: 'capo.shadow.enabled' },
-      { type: 'color', label: 'Shadow Color', key: 'capo.shadow.color' }
-    ]
-  },
-  {
-    id: 'text',
-    label: 'Typography',
+    id: 'labels',
+    label: 'Labels & Capo',
     icon: Type,
     controls: [
       { type: 'color', label: 'Chord Name', key: 'chordName.color' },
-      { type: 'slider', label: 'Opacity', key: 'chordName.opacity', min: 0, max: 1, step: 0.1 },
-      { type: 'toggle', label: 'Text Shadow', key: 'chordName.shadow.enabled' },
-      { type: 'color', label: 'Shadow Color', key: 'chordName.shadow.color' },
+      { type: 'slider', label: 'Name Opacity', key: 'chordName.opacity', min: 0, max: 1, step: 0.1 },
+
+      { type: 'color', label: 'Capo Color', key: 'capo.color' },
+      { type: 'color', label: 'Capo Text', key: 'capo.textColors.name' },
+      { type: 'toggle', label: 'Capo Shadow', key: 'capo.shadow.enabled' },
     ]
   }
 ];
@@ -370,8 +379,8 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                 });
               }}
               className={`py-2 rounded-lg border text-[10px] font-black transition-all ${colors.global?.rotation === option.rotation && !!colors.global?.mirror === option.mirror
-                  ? 'bg-pink-500/10 border-pink-500/40 text-pink-400'
-                  : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
+                ? 'bg-pink-500/10 border-pink-500/40 text-pink-400'
+                : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
                 }`}
             >
               {option.label}
