@@ -63,12 +63,18 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
             const durationValue = getNoteDurationValue(note.duration, !!note.decorators?.dot);
             const durationMs = note.customDurationMs || getMsFromDuration(note.duration, !!note.decorators?.dot, bpm);
 
-            const fingers: StandardPosition[] = note.positions.map(pos => ({
-                string: pos.string,
-                endString: pos.endString,
-                fret: pos.fret,
-                finger: pos.finger
-            }));
+            const fingers: StandardPosition[] = note.positions
+                .filter(pos => !pos.avoid)
+                .map(pos => ({
+                    string: pos.string,
+                    endString: pos.endString,
+                    fret: pos.fret,
+                    finger: pos.finger
+                }));
+
+            const avoid: number[] = note.positions
+                .filter(pos => pos.avoid)
+                .map(pos => pos.string);
 
             // Map Techniques to Effects
             const effects: TabEffect[] = [];
@@ -85,7 +91,7 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
                 chord: { note: 0, complement: 0, extension: [], bass: 0 },
                 origin: 0,
                 fingers: fingers,
-                avoid: [],
+                avoid: avoid,
                 stringNames: settings.tuning,
                 extends: {
                     duration: note.duration,

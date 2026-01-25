@@ -40,8 +40,12 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
             color: "#FFFFFF",
             width: 4,
         },
-        opacity: 0.3, // backgroundAlpha
-        shadow: { enabled: true, color: "rgba(0,0,0,0.6)", blur: 8 }
+        opacity: 0.9,
+        shadow: { enabled: true, color: "rgba(0,0,0,0.6)", blur: 8 },
+        radius: 22,
+        fontSize: 16,
+        barreWidth: 48,
+        barreFingerRadius: 22
     },
     chordName: {
         color: "#ffffff",
@@ -50,11 +54,14 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
         shadow: {
             color: "rgba(0,0,0,0.5)",
             blur: 5,
+            enabled: true
         },
         stroke: {
             color: "#000000",
             width: 0,
         },
+        fontSize: 35,
+        extSize: 24
     },
     capo: {
         color: "rgba(100, 100, 110, 0.9)",
@@ -67,6 +74,16 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
             number: "#FF8C42",
         },
         shadow: { enabled: false, color: "rgba(0,0,0,0.5)", blur: 5 }
+    },
+    avoid: {
+        color: "#ffffff",
+        lineWidth: 6,
+        size: 15,
+        opacity: 0.9,
+        border: {
+            color: "#000000",
+            width: 2
+        }
     },
     head: {
         color: "#3a3a3e",
@@ -92,41 +109,57 @@ export const STUDIO_PRESETS = {
             ...DEFAULT_COLORS,
             global: {
                 ...DEFAULT_COLORS.global,
-                primaryTextColor: "#3b3b3bff",
-                backgroundColor: "#000000",
+                primaryTextColor: "#1a1a1a",
+                backgroundColor: "#f8f9fa",
             },
             fretboard: {
                 neck: {
-                    color: "#f5f5f5",
-                    opacity: 1
+                    color: "#ffffff",
+                    opacity: 1,
+                    shadow: { enabled: true, color: "rgba(0,0,0,0.05)", blur: 10 }
                 },
-                frets: { color: "#474747ff" },
-                strings: { color: "#000000", thickness: 3 }
+                frets: { color: "#d1d5db" },
+                strings: { color: "#4b5563", thickness: 2.5 }
             },
             chordName: {
-                color: "#f4f4f5",
+                color: "#1a1a1a",
                 opacity: 1,
-                stroke: { color: "transparent", width: 0 }
+                stroke: { color: "transparent", width: 0 },
+                fontSize: 38,
+                extSize: 26,
+                shadow: { enabled: false, color: "rgba(0,0,0,0.1)", blur: 4 }
             },
 
             fingers: {
-                color: "#200f0f",
-                textColor: "#200f0f",
+                color: "#1e293b",
+                textColor: "#ffffff",
                 border: {
-                    color: "#200f0f",
-                    width: 4,
+                    color: "#334155",
+                    width: 2,
                 },
-                opacity: 0.3, // backgroundAlpha
+                opacity: 1,
+                radius: 24,
+                fontSize: 18,
+                barreWidth: 52,
+                barreFingerRadius: 24,
+                shadow: { enabled: true, color: "rgba(0,0,0,0.15)", blur: 6 }
             },
             capo: {
-                color: "#e4e4e7",
-                border: { color: "#a1a1aa", width: 1 },
-                textColors: { name: "#333333ff", number: "#dddddd" }
+                color: "#475569",
+                border: { color: "#1e293b", width: 1 },
+                textColors: { name: "#ffffff", number: "#94a3b8" }
             },
             head: {
-                color: "#f5f5f5",
-                textColors: { name: "#3b3b3b" },
-                border: { color: "#e4e4e7", width: 1 }
+                color: "#f1f5f9",
+                textColors: { name: "#1a1a1a" },
+                border: { color: "#e2e8f0", width: 1 }
+            },
+            avoid: {
+                color: "#ef4444",
+                lineWidth: 5,
+                size: 14,
+                opacity: 0.9,
+                border: { color: "#ffffff", width: 2 }
             }
         }
     },
@@ -146,13 +179,20 @@ export const STUDIO_PRESETS = {
             chordName: {
                 color: "#fb00ff",
                 opacity: 1,
-                stroke: { color: "transparent", width: 0 }
+                stroke: { color: "transparent", width: 0 },
+                fontSize: 35,
+                extSize: 24,
+                shadow: { enabled: true, color: "rgba(251,0,255,0.5)", blur: 10 }
             },
             fingers: {
                 color: "#fb00ff50",
                 textColor: "#fffdfdff",
                 border: { color: "#fb00ff", width: 4 },
-                opacity: 0.3
+                opacity: 0.9,
+                radius: 22,
+                fontSize: 16,
+                barreWidth: 48,
+                barreFingerRadius: 22
             },
             capo: {
                 color: "#180220",
@@ -164,6 +204,13 @@ export const STUDIO_PRESETS = {
                 textColors: { name: "#fb00ff" },
                 border: { color: "#fb00ff", width: 2 },
                 shadow: { enabled: true, color: "#fb00ff", blur: 10 }
+            },
+            avoid: {
+                color: "#fb00ff",
+                lineWidth: 6,
+                size: 15,
+                opacity: 0.9,
+                border: { color: "#000000", width: 2 }
             }
         }
     },
@@ -183,13 +230,20 @@ export const STUDIO_PRESETS = {
             chordName: {
                 color: "#60a5fa",
                 opacity: 1,
-                stroke: { color: "transparent", width: 0 }
+                stroke: { color: "transparent", width: 0 },
+                fontSize: 35,
+                extSize: 24,
+                shadow: { enabled: true, color: "rgba(0,0,0,0.5)", blur: 5 }
             },
             fingers: {
                 color: "#334155",
                 textColor: "#ffffff",
                 border: { color: "#60a5fa", width: 4 },
-                opacity: 0.9
+                opacity: 0.9,
+                radius: 22,
+                fontSize: 16,
+                barreWidth: 48,
+                barreFingerRadius: 22
             },
             capo: {
                 color: "#1e293b",
@@ -219,13 +273,20 @@ export const STUDIO_PRESETS = {
             chordName: {
                 color: "#ece5e3ff",
                 opacity: 0.9,
-                stroke: { color: "transparent", width: 0 }
+                stroke: { color: "transparent", width: 0 },
+                fontSize: 35,
+                extSize: 24,
+                shadow: { enabled: true, color: "rgba(0,0,0,0.2)", blur: 5 }
             },
             fingers: {
                 color: "#5c4033",
                 textColor: "#efe6d5",
                 border: { color: "#3e2723", width: 4 },
-                opacity: 0.9
+                opacity: 0.9,
+                radius: 22,
+                fontSize: 16,
+                barreWidth: 48,
+                barreFingerRadius: 22
             },
             capo: {
                 color: "#5d4037",

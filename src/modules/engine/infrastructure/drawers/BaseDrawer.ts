@@ -1,4 +1,7 @@
-import type { FretboardTheme } from "@/modules/core/domain/types";
+import type { FretboardTheme, ChordDiagramProps, FingersStyle } from "@/modules/core/domain/types";
+import { AvoidComponent } from "./components/AvoidComponent";
+import { GeometryProvider, GeometrySettings } from "./components/GeometryProvider";
+import { FingerComponent } from "./components/FingerComponent";
 
 /**
  * Base abstract class for all fretboard-related drawers.
@@ -33,20 +36,29 @@ export abstract class BaseDrawer {
     protected _horizontalPadding: number = 40;
     protected _stringNamesY: number = 0;
 
+    protected _geometry!: GeometryProvider; // Initialized by sub-classes
+
     // Constants and base values
     public static readonly BASE_WIDTH: number = 750;
 
     protected _baseNeckRadius: number = 24;
     protected _baseFingerRadius: number = 28;
+    protected _baseFontSize: number = 26;
     protected _baseBarreWidth: number = 56;
 
     protected _globalCapo: number = 0;
     protected _stringNames: string[] = ["E", "A", "D", "G", "B", "e"];
 
+    public getFingerCoords(fret: number, string: number) { return this._geometry.getFingerCoords(fret, string); }
+    public getBarreCoords(fret: number, startString: number, endString: number) {
+        return this._geometry.getBarreRect(fret, startString, endString) as any;
+    }
+    public validatePosition(fret: number, string: number): boolean { return this._geometry.validate(fret, string); }
+    public abstract getChordNameCoords(): { x: number; y: number };
 
-
-
-
+    public getPosition(fret: number, string: number): { x: number; y: number } {
+        return this.getFingerCoords(fret, string);
+    }
 
     constructor(
         ctx: CanvasRenderingContext2D,
@@ -64,14 +76,7 @@ export abstract class BaseDrawer {
 
     // ============ CORE INTERFACE ============
 
-    /**
-     * Subclasses must implement dimension calculation logic.
-     */
     public abstract calculateDimensions(): void;
-
-    /**
-     * Subclasses must implement canvas clearing logic.
-     */
     public abstract clear(): void;
 
     // ============ GETTERS ============
@@ -83,6 +88,9 @@ export abstract class BaseDrawer {
 
     public get rotation(): number { return this._rotation; }
     public get mirror(): boolean { return this._mirror; }
+    public get fingerRadius(): number { return this._baseFingerRadius * this._scaleFactor; }
+    public get barreWidth(): number { return this._baseBarreWidth * this._scaleFactor; }
+    public get neckRadius(): number { return this._baseNeckRadius * this._scaleFactor; }
 
     public get numStrings(): number { return this._numStrings; }
     public get numFrets(): number { return this._numFrets; }
@@ -101,6 +109,22 @@ export abstract class BaseDrawer {
     public get realFretSpacing(): number { return this._realFretSpacing; }
     public get horizontalPadding(): number { return this._horizontalPadding; }
     public get stringNamesY(): number { return this._stringNamesY; }
+
+    public transposeForDisplay(chord: ChordDiagramProps, transport: number): { finalChord: ChordDiagramProps, transportDisplay: number } {
+        if (transport <= 1) return { finalChord: chord, transportDisplay: transport };
+        return {
+            finalChord: {
+                ...chord,
+                fingers: chord.fingers.map(f => ({
+                    ...f,
+                    fret: f.fret > 0 ? f.fret - (transport - 1) : 0
+                }))
+            },
+            transportDisplay: transport
+        };
+    }
+
+    public getGeometry(): GeometryProvider { return this._geometry; }
 
     // ============ SHARED SETTERS ============
 
@@ -145,9 +169,6 @@ export abstract class BaseDrawer {
 
     // ============ SHARED UTILITIES ============
 
-    /**
-     * Converts HEX color and alpha to RGBA string.
-     */
     protected hexToRgba(hex: string, alpha: number): string {
         if (!hex || hex[0] !== '#') return hex;
         const r = parseInt(hex.slice(1, 3), 16);
@@ -156,16 +177,10 @@ export abstract class BaseDrawer {
         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
-    /**
-     * Cubic easing (easeInOutQuad).
-     */
     protected easeInOutQuad(t: number): number {
         return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
     }
 
-    /**
-     * Applies global rotation and mirror around canvas center.
-     */
     protected applyTransforms(): void {
         const centerX = this._dimensions.width / 2;
         const centerY = this._dimensions.height / 2;
@@ -182,9 +197,6 @@ export abstract class BaseDrawer {
         this._ctx.translate(-centerX, -centerY);
     }
 
-    /**
-     * Robust rounded rectangle helper with fallback.
-     */
     protected _safeRoundRect(
         x: number,
         y: number,
@@ -208,9 +220,6 @@ export abstract class BaseDrawer {
         if (stroke) this._ctx.stroke();
     }
 
-    /**
-     * Helper to apply shadow from style to context.
-     */
     protected applyShadow(shadow?: { enabled?: boolean; color?: string; blur?: number; offsetX?: number; offsetY?: number }): void {
         if (shadow?.enabled) {
             this._ctx.shadowColor = shadow.color || "rgba(0,0,0,0.5)";
@@ -224,4 +233,73 @@ export abstract class BaseDrawer {
             this._ctx.shadowOffsetY = 0;
         }
     }
+
+    /**
+     * UNIFIED DRAWING:
+     * We use FingerComponent even for static drawing to ensure visual consistency.
+     */
+    public drawFinger(fret: number, string: number, finger: number | string, color?: string, opacity: number = 1, transport: number = 1): void {
+        if (!this.validatePosition(fret, string)) return;
+
+        const style: FingersStyle = {
+            ...this._colors.fingers,
+            radius: this._baseFingerRadius,
+            fontSize: this._baseFontSize,
+            color: color || this._colors.fingers.color,
+            opacity: (this._colors.fingers.opacity ?? 1) * opacity
+        };
+
+        const comp = new FingerComponent(fret, string, finger, style, this._geometry, transport);
+        comp.setRotation(this._rotation, this._mirror, this._dimensions);
+        comp.update(1); // Ensure final static position
+        comp.draw(this._ctx);
+    }
+
+    public drawBarre(fret: number, startString: number, endString: number, finger: number | string, color?: string, opacity: number = 1, transport: number = 1): void {
+        if (!this.validatePosition(fret, startString) || !this.validatePosition(fret, endString)) return;
+
+        const style: FingersStyle = {
+            ...this._colors.fingers,
+            radius: this._baseFingerRadius,
+            fontSize: this._baseFontSize,
+            barreWidth: this._baseBarreWidth,
+            color: color || this._colors.fingers.color,
+            opacity: (this._colors.fingers.opacity ?? 1) * opacity
+        };
+
+        const comp = new FingerComponent(fret, startString, finger, style, this._geometry, transport, endString);
+        comp.setRotation(this._rotation, this._mirror, this._dimensions);
+        comp.update(1);
+        comp.draw(this._ctx);
+    }
+
+    /**
+     * DEPRECATED: use drawFinger or drawBarre
+     */
+    public drawRawFinger(x: number, y: number, fingerNum: number | string, color: string, opacity: number = 1, radiusScale: number = 1): void {
+        // Fallback for very raw drawing if still needed, but discouraged
+        this._ctx.save();
+        this.applyShadow(this._colors.fingers.shadow);
+        this._ctx.fillStyle = this.hexToRgba(color, (this._colors.fingers.opacity ?? 1) * opacity);
+        const radius = (this._baseFingerRadius * this._scaleFactor) * radiusScale;
+        this._ctx.beginPath();
+        this._ctx.arc(x, y, radius, 0, Math.PI * 2);
+        this._ctx.fill();
+        this.applyShadow(undefined);
+        this._ctx.strokeStyle = this._colors.fingers.border?.color || '#ffffff';
+        this._ctx.lineWidth = (this._colors.fingers.border?.width || 3) * this._scaleFactor;
+        this._ctx.stroke();
+        this._ctx.restore();
+    }
+
+    public drawAvoidedString(string: number): void {
+        const comp = new AvoidComponent(string, this._colors.avoid, this._geometry);
+        comp.draw(this._ctx);
+    }
+
+    public drawAvoidedStrings(avoid?: number[]): void {
+        if (!avoid) return;
+        avoid.forEach(s => this.drawAvoidedString(s));
+    }
 }
+

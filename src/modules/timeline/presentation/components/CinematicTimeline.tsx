@@ -5,7 +5,7 @@ import { MeasureData, NoteData, Duration } from '@/modules/editor/domain/types';
 import { getMsFromDuration, getMidiFromPosition, getPitchFromMidi } from '@/modules/editor/domain/music-math';
 import { Icons } from '@/modules/editor/presentation/constants';
 
-interface FretboardVisualEditorProps {
+interface CinematicTimelineProps {
     measures: MeasureData[];
     selectedNoteIds: string[];
     timeSignature: string;
@@ -31,10 +31,9 @@ interface FretboardVisualEditorProps {
     selectedMeasureId: string | null;
     totalDurationMs?: number;
     currentCursorMs?: number;
-    mode?: 'studio' | 'cinematic';
 }
 
-const ChordTimeline: React.FC<FretboardVisualEditorProps> = ({
+const CinematicTimeline: React.FC<CinematicTimelineProps> = ({
     measures,
     selectedNoteIds,
     bpm = 120,
@@ -151,7 +150,7 @@ const ChordTimeline: React.FC<FretboardVisualEditorProps> = ({
                 </div>
             </div>
 
-            {/* Horizontal Timeline Container */}
+            {/* Horizontal Timeline Container - CINEMATIC MODE */}
             <div className="flex-1 overflow-x-auto overflow-y-hidden px-12 py-10 custom-scrollbar relative">
                 <div className="flex flex-row gap-8 min-w-max h-full items-center">
                     {measures.map((measure, mIdx) => {
@@ -350,4 +349,4 @@ const ChordTimeline: React.FC<FretboardVisualEditorProps> = ({
     );
 };
 
-export default ChordTimeline;
+export default CinematicTimeline;

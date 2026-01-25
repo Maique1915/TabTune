@@ -48,17 +48,17 @@ export function calculateAvoidedStringY(context: AvoidedStringsContext): number 
 export function drawAvoidedStringMark(context: AvoidedStringsContext, x: number, y: number): void {
     context.ctx.save();
     context.ctx.translate(x, y);
-    
+
     if (context.mirror) context.ctx.scale(-1, 1);
     if (context.rotation) context.ctx.rotate((-context.rotation * Math.PI) / 180);
-    
+
     context.ctx.fillStyle = context.textColor;
     const fontSize = 45 * context.scaleFactor;
     context.ctx.font = `bold ${fontSize}px sans-serif`;
     context.ctx.textAlign = "center";
     context.ctx.textBaseline = "middle";
     context.ctx.fillText("x", 0, 0);
-    
+
     context.ctx.restore();
 }
 

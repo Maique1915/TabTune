@@ -31,10 +31,10 @@ export interface CanvasRecorderResult {
 }
 
 const QUALITY_SETTINGS = {
-    low: { crf: 28, preset: 'ultrafast', bitrate: 5000000, scale: 0.5 },    // 960x540
-    medium: { crf: 22, preset: 'fast', bitrate: 15000000, scale: 0.75 },   // 1440x810
-    high: { crf: 12, preset: 'veryfast', bitrate: 45000000, scale: 1 },    // 1920x1080
-    ultra: { crf: 0, preset: 'faster', bitrate: 100000000, scale: 2 },     // 3840x2160 (4K)
+    low: { crf: 28, preset: 'ultrafast', bitrate: 5000000, scale: 1 },
+    medium: { crf: 22, preset: 'fast', bitrate: 15000000, scale: 1.5 },
+    high: { crf: 12, preset: 'veryfast', bitrate: 45000000, scale: 2.4 },   // 1920px (1080p)
+    ultra: { crf: 0, preset: 'faster', bitrate: 100000000, scale: 4.8 },   // 3840px (4K) Lossless
 };
 
 /**
@@ -107,12 +107,8 @@ export function useCanvasRecorder(
         try {
             const qualityCfg = (QUALITY_SETTINGS as any)[quality];
             const scaleFactor = qualityCfg.scale;
-            const firstCanvas = container.querySelector('canvas');
-            const sourceWidth = firstCanvas ? firstCanvas.width : 1920;
-            const sourceHeight = firstCanvas ? firstCanvas.height : 1080;
-
-            const targetWidth = Math.round(sourceWidth * scaleFactor);
-            const targetHeight = Math.round(sourceHeight * scaleFactor);
+            const targetWidth = 800 * scaleFactor;
+            const targetHeight = 340 * scaleFactor;
 
             // Create Master Canvas
             if (!masterCanvasRef.current) {
@@ -162,7 +158,7 @@ export function useCanvasRecorder(
             const captureLoop = () => {
                 const canvases = container.querySelectorAll('canvas');
                 if (masterCtx && canvases.length > 0) {
-                    // Clear background every frame to prevent smearing/ghosting
+                    // Clear background every frame to prevent smearing
                     masterCtx.fillStyle = '#09090b';
                     masterCtx.fillRect(0, 0, targetWidth, targetHeight);
 
@@ -183,8 +179,8 @@ export function useCanvasRecorder(
     }, [canvasRef, fps, quality]);
 
     const stopRecording = useCallback(async (): Promise<Blob | null> => {
-        // Add a buffer delay to ensure final frames are captured and encoded
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Add a small buffer delay to ensure final frames are captured
+        await new Promise(resolve => setTimeout(resolve, 200));
 
         if (animationFrameRef.current) {
             cancelAnimationFrame(animationFrameRef.current);

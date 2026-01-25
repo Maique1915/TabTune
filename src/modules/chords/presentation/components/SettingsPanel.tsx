@@ -347,33 +347,31 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
       <div className="space-y-3 p-3 bg-zinc-950/30 rounded-lg border border-zinc-800/50 mb-3">
         <div className="grid grid-cols-4 gap-2">
           {(numFrets && numFrets <= 6 ? [
-            { label: '1ª', value: 0 },
-            { label: '2ª', value: 90 },
-            { label: '3ª', value: 270 }
+            { label: '1ª', rotation: 0 as const, mirror: false },
+            { label: '2ª', rotation: 90 as const, mirror: false },
+            { label: '3ª', rotation: 270 as const, mirror: true }
           ] : [
-            { label: '1ª', value: 0 },
-            { label: '2ª', value: 270 }
+            { label: '1ª', rotation: 0 as const, mirror: false },
+            { label: '2ª', rotation: 0 as const, mirror: true }
           ]).map((option) => (
             <button
-              key={option.value}
+              key={`${option.label}-${option.rotation}-${option.mirror}`}
               onClick={() => {
-                // Consolidate updates to avoid race conditions in undo/redo state
                 setColors((prev: any) => {
                   const current = prev || DEFAULT_COLORS;
-                  const isCinematic = numFrets && numFrets > 6;
                   return {
                     ...current,
                     global: {
                       ...(current.global || {}),
-                      rotation: option.value as 0 | 90 | 180 | 270,
-                      mirror: option.value === 270
+                      rotation: option.rotation,
+                      mirror: option.mirror
                     }
                   };
                 });
               }}
-              className={`py-2 rounded-lg border text-[10px] font-black transition-all ${colors.global?.rotation === option.value
-                ? 'bg-pink-500/10 border-pink-500/40 text-pink-400'
-                : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
+              className={`py-2 rounded-lg border text-[10px] font-black transition-all ${colors.global?.rotation === option.rotation && !!colors.global?.mirror === option.mirror
+                  ? 'bg-pink-500/10 border-pink-500/40 text-pink-400'
+                  : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
                 }`}
             >
               {option.label}

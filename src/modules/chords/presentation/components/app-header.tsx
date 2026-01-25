@@ -1,16 +1,17 @@
 "use client";
 
-import { Music, Settings, Menu } from 'lucide-react';
+import { Music, Settings, Menu, Upload, Download } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 
 interface HeaderProps {
   onMenuClick?: () => void;
   onSettingsClick?: () => void;
+  onImportHistory?: (file: File) => void;
+  onExportHistory?: () => void;
+  title?: string;
 }
 
-
-
-export function AppHeader({ onMenuClick, onSettingsClick, onImportHistory, onExportHistory, title }: HeaderProps & { onImportHistory?: (file: File) => void, onExportHistory?: () => void, title?: string }) {
+export function AppHeader({ onMenuClick, onSettingsClick, onImportHistory, onExportHistory, title }: HeaderProps) {
   return (
     <header className="flex justify-between items-center px-6 py-4 bg-zinc-950/40 backdrop-blur-md border-b border-zinc-800/50 shrink-0 z-20">
       <div className="flex items-center space-x-3">
@@ -23,6 +24,44 @@ export function AppHeader({ onMenuClick, onSettingsClick, onImportHistory, onExp
         </div>
       </div>
       <div className="flex items-center gap-3">
+        {onImportHistory && (
+          <>
+            <input
+              type="file"
+              id="import-history"
+              className="hidden"
+              accept=".json"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  onImportHistory(file);
+                  e.target.value = ''; // Reset to allow importing the same file again
+                }
+              }}
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => document.getElementById('import-history')?.click()}
+              className="w-9 h-9 rounded-xl bg-zinc-900/50 border border-zinc-800/50 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all"
+              title="Importar"
+            >
+              <Upload size={18} />
+            </Button>
+          </>
+        )}
+
+        {onExportHistory && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onExportHistory}
+            className="w-9 h-9 rounded-xl bg-zinc-900/50 border border-zinc-800/50 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all"
+            title="Exportar"
+          >
+            <Download size={18} />
+          </Button>
+        )}
 
         {onSettingsClick && (
           <Button
@@ -48,4 +87,5 @@ export function AppHeader({ onMenuClick, onSettingsClick, onImportHistory, onExp
     </header>
   );
 }
+
 

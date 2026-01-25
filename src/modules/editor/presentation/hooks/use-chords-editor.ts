@@ -203,19 +203,10 @@ export function useChordsEditor() {
             const targetIndex = prev.measures.findIndex((m: MeasureData) => m.id === id);
             const newIndex = (targetIndex !== -1 && !isSame) ? targetIndex : prev.currentMeasureIndex;
 
-            // Auto-select note if exists (Unified UI)
-            let noteIdToSelect = null;
-            if (newSelectedId && targetIndex !== -1) {
-                const m = prev.measures[targetIndex];
-                if (m.notes.length > 0) {
-                    noteIdToSelect = m.notes[0].id;
-                }
-            }
-
             return {
                 ...prev,
-                selectedNoteIds: noteIdToSelect ? [noteIdToSelect] : [],
-                editingNoteId: noteIdToSelect,
+                selectedNoteIds: [],
+                editingNoteId: null,
                 selectedMeasureId: newSelectedId,
                 currentMeasureIndex: newIndex
             };
@@ -593,6 +584,73 @@ export function useChordsEditor() {
         });
     };
 
+    const handleSetFingerForString = (idx: number, finger: number | string | undefined) => {
+        updateSelectedNotes(n => {
+            const newPositions = [...n.positions];
+            if (!newPositions[idx]) return {};
+
+            if (finger === 'X') {
+                newPositions[idx] = { ...newPositions[idx], avoid: true, finger: undefined };
+            } else {
+                newPositions[idx] = { ...newPositions[idx], avoid: false, finger: finger };
+            }
+            return { positions: newPositions };
+        });
+    };
+
+    const handleSetFretForString = (idx: number, fret: number) => {
+        updateSelectedNotes(n => {
+            const newPositions = [...n.positions];
+            if (!newPositions[idx]) return {};
+            newPositions[idx] = { ...newPositions[idx], fret, avoid: false };
+            return { positions: newPositions };
+        });
+    };
+
+    const handleSetStringForPosition = (idx: number, stringNum: number) => {
+        updateSelectedNotes(n => {
+            const newPositions = [...n.positions];
+            if (!newPositions[idx]) return {};
+            newPositions[idx] = { ...newPositions[idx], string: stringNum };
+            return { positions: newPositions };
+        });
+    };
+
+    const handleSelectStringAndAddIfMissing = (stringNum: number) => {
+        setState((prev: FretboardEditorState) => {
+            const editingNote = prev.editingNoteId
+                ? prev.measures.flatMap(m => m.notes).find(n => n.id === prev.editingNoteId)
+                : null;
+
+            if (!editingNote) return prev;
+
+            const existingIdx = editingNote.positions.findIndex(p => p.string === stringNum);
+            if (existingIdx !== -1) {
+                return { ...prev, activePositionIndex: existingIdx };
+            }
+
+            // Not found, add it
+            const newMeasures = prev.measures.map((m: MeasureData) => ({
+                ...m,
+                notes: m.notes.map((n: NoteData) => {
+                    if (n.id === prev.editingNoteId) {
+                        return {
+                            ...n,
+                            positions: [...n.positions, { fret: 0, string: stringNum }]
+                        };
+                    }
+                    return n;
+                })
+            }));
+
+            // Re-find to get new index
+            const updatedNote = newMeasures.flatMap(m => m.notes).find(n => n.id === prev.editingNoteId);
+            const newIdx = updatedNote ? updatedNote.positions.length - 1 : 0;
+
+            return { ...prev, measures: newMeasures, activePositionIndex: newIdx };
+        });
+    };
+
     const handleInsert = (code: string) => {
         if (code.startsWith('clef=')) {
             const clefValue = code.split('=')[1] as any;
@@ -688,29 +746,47 @@ export function useChordsEditor() {
 
             const measure = prev.measures[measureIndex];
 
-            // Check if transposing would put any note outside valid fret range (0-24)
-            const wouldGoOutOfBounds = measure.notes.some((note: NoteData) =>
+            // Determine selection mode:
+            // 1. If selectedNoteIds is not empty OR there is an editingNoteId, it's Selective Mode.
+            // 2. Otherwise, it's Global Mode (transposes everything).
+            const selectedInMeasure = measure.notes.filter(n => prev.selectedNoteIds.includes(n.id) || n.id === prev.editingNoteId);
+            const isSelectiveMode = selectedInMeasure.length > 0;
+            const targetNotes = isSelectiveMode ? selectedInMeasure : measure.notes;
+
+            // Bounds check for all notes that will be shifted
+            const wouldGoOutOfBounds = targetNotes.some((note: NoteData) =>
                 note.positions.some((pos: any) => {
+                    if (pos.avoid) return false; // Ignore avoided strings in bounds check
                     const newFret = pos.fret + semitones;
                     return newFret < 0 || newFret > 24;
                 })
             );
 
-            if (wouldGoOutOfBounds) return prev; // Don't allow
+            if (wouldGoOutOfBounds) return prev;
 
-            // Transpose all notes
-            const transposedNotes = measure.notes.map((note: NoteData) => ({
-                ...note,
-                positions: note.positions.map((pos: any) => ({
-                    ...pos,
-                    fret: pos.fret + semitones
-                })),
-                // Clear barre on transpose
-                barre: undefined
-            }));
+            const targetIds = targetNotes.map(n => n.id);
 
-            // Transpose chord name if it exists
-            const newChordName = transposeChordName(measure.chordName, semitones);
+            const transposedNotes = measure.notes.map((note: NoteData) => {
+                if (targetIds.includes(note.id)) {
+                    return {
+                        ...note,
+                        positions: note.positions.map((pos: any) => {
+                            if (pos.avoid) return pos; // Don't shift avoided strings
+                            return {
+                                ...pos,
+                                fret: pos.fret + semitones
+                            };
+                        }),
+                        barre: undefined
+                    };
+                }
+                return note;
+            });
+
+            // Transpose chord name ONLY in Global Mode
+            const newChordName = !isSelectiveMode
+                ? transposeChordName(measure.chordName, semitones)
+                : measure.chordName;
 
             const newMeasures = prev.measures.map((m: MeasureData, idx: number) =>
                 idx === measureIndex
@@ -731,6 +807,7 @@ export function useChordsEditor() {
             const wouldGoOutOfBounds = prev.measures.some((measure: MeasureData) =>
                 measure.notes.some((note: NoteData) =>
                     note.positions.some((pos: any) => {
+                        if (pos.avoid) return false;
                         const newFret = pos.fret + semitones;
                         return newFret < 0 || newFret > 24;
                     })
@@ -742,10 +819,13 @@ export function useChordsEditor() {
             const newMeasures = prev.measures.map((measure: MeasureData) => {
                 const transposedNotes = measure.notes.map((note: NoteData) => ({
                     ...note,
-                    positions: note.positions.map((pos: any) => ({
-                        ...pos,
-                        fret: pos.fret + semitones
-                    })),
+                    positions: note.positions.map((pos: any) => {
+                        if (pos.avoid) return pos;
+                        return {
+                            ...pos,
+                            fret: pos.fret + semitones
+                        };
+                    }),
                     barre: undefined
                 }));
 
@@ -898,6 +978,10 @@ export function useChordsEditor() {
         handleInsert,
         handleAddChordNote,
         handleRemoveChordNote,
+        handleSetFingerForString,
+        handleSetFretForString,
+        handleSetStringForPosition,
+        handleSelectStringAndAddIfMissing,
         handleToggleBarre,
         handleToggleBarreTo,
         handleTransposeMeasure,

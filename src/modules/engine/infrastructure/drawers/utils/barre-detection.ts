@@ -42,10 +42,14 @@ export function detectBarreFromFinger(fingers: StandardPosition[]): BarreInfo | 
 export function detectBarreFromChord(chord: ChordDiagramProps): BarreInfo | null {
     if (!chord.fingers || chord.fingers.length === 0) return null;
 
+    // First, check if any single finger object is already marked as a barre
+    const singleFingerBarre = detectBarreFromFinger(chord.fingers);
+    if (singleFingerBarre) return singleFingerBarre;
+
     let bestBarre: BarreInfo | null = null;
     let maxStrings = 1;
 
-    // Agrupa dedos por fret para detectar barres por fret (múltiplas cordas)
+    // Agrupa dedos por fret para detectar barres por fret (múltiplas notas no mesmo traste)
     const fingersByFret: Map<number, StandardPosition[]> = new Map();
 
     chord.fingers.forEach(f => {
@@ -57,7 +61,7 @@ export function detectBarreFromChord(chord: ChordDiagramProps): BarreInfo | null
         }
     });
 
-    // Encontra o fret com mais dedos (candidato mais forte para pestana)
+    // Encontra o fret com mais dedos
     fingersByFret.forEach((fingersAtFret, fret) => {
         if (fingersAtFret.length > maxStrings) {
             maxStrings = fingersAtFret.length;

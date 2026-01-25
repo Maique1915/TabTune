@@ -1,6 +1,11 @@
-import { BaseDrawer } from "./BaseDrawer";
+import type { FretboardTheme } from "@/modules/core/domain/types";
 
-export interface FretboardDrawer extends BaseDrawer {
+export interface FretboardDrawer {
+  readonly ctx: CanvasRenderingContext2D;
+  readonly colors: FretboardTheme;
+  readonly dimensions: { width: number; height: number };
+  readonly scaleFactor: number;
+
   // Core Drawing Methods
   drawFretboard(): void;
   drawNeck(progress?: number): void;
@@ -27,7 +32,12 @@ export interface FretboardDrawer extends BaseDrawer {
   setHideCapoTitle(hide: boolean): void;
 
   setStringNames(names: string[] | undefined): void;
-  setStringNames(index: number, names: string[]): void; // Overload support
+  setStringNames(index: number | string[] | undefined, names?: string[]): void; // Overload support
+
+  // Common State Accessors
+  readonly fingerRadius: number;
+  readonly barreWidth: number;
+  readonly neckRadius: number;
 
   // Geometry Updates
   updateGeometry(
@@ -46,4 +56,17 @@ export interface FretboardDrawer extends BaseDrawer {
   setHorizontalPadding(padding: number): void;
   setStringSpacing(spacing: number): void;
   setNumStrings(num: number): void;
+  setNumFrets(num: number): void;
+
+  calculateDimensions(): void;
+
+  // Position Calculation & Validation
+  getFingerCoords(fret: number, string: number): { x: number; y: number };
+  getBarreCoords(fret: number, startString: number, endString: number): { x: number; y: number; width: number; height: number; radius: number };
+  validatePosition(fret: number, string: number): boolean;
+  getChordNameCoords(): { x: number; y: number };
+
+  // Canvas
+  setCtx(ctx: CanvasRenderingContext2D): void;
+  clear(): void;
 }

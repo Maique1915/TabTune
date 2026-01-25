@@ -4,6 +4,7 @@ export interface StandardPosition {
     endString?: number; // 1-based end string (if different from 'string', it's a barre)
     fret: number;
     finger?: number | string; // 0 = unknown/open, 1-4 = fingers, T = thumb
+    avoid?: boolean;
 }
 
 export interface BarreData {
@@ -164,6 +165,27 @@ export interface TextStyle extends ElementStyle {
     textColor?: string; // For things that have background + text (like fingers)
 }
 
+export interface FingersStyle extends TextStyle {
+    radius: number;
+    fontSize: number;
+    barreWidth: number; // specialized for barres
+    barreFingerRadius: number; // specialized for barres
+}
+
+export interface CapoStyle extends ElementStyle {
+    textColor: string;
+}
+
+export interface ChordNameStyle extends TextStyle {
+    fontSize: number;
+    extSize: number;
+}
+
+export interface AvoidStyle extends ElementStyle {
+    size: number;
+    lineWidth: number;
+}
+
 export interface FretboardTheme {
     global: {
         backgroundColor: string; // was cardColor
@@ -180,14 +202,15 @@ export interface FretboardTheme {
             inlays?: ElementStyle;
         };
     };
-    fingers: TextStyle; // color, border, shadow, textColor, opacity (backgroundAlpha)
-    chordName: TextStyle; // color, opacity, shadow, stroke
+    fingers: FingersStyle; // color, border, shadow, textColor, opacity (backgroundAlpha)
+    chordName: ChordNameStyle; // color, opacity, shadow, stroke
     capo: ElementStyle & {
         textColors: {
             name: string;
             number: string;
         };
     };
+    avoid: AvoidStyle;
     head: ElementStyle & {
         textColors: {
             name: string;

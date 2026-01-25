@@ -2,8 +2,7 @@
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import Sidebar from "@/modules/chords/presentation/components/Sidebar";
-import { measuresToChords } from "@/lib/chords/converter";
-import ChordTimeline from "@/modules/timeline/presentation/components/ChordTimeline";
+import CinematicTimeline from "@/modules/timeline/presentation/components/CinematicTimeline";
 import { useAppContext } from "@/modules/core/presentation/context/app-context";
 import { FretboardStage, FretboardStageRef } from "@/modules/chords/presentation/components/FretboardStage";
 import { SettingsPanel } from "@/modules/chords/presentation/components/SettingsPanel";
@@ -19,6 +18,7 @@ import { Library, Settings, Guitar } from "lucide-react";
 import { TimelineControls } from "@/modules/timeline/presentation/components/TimelineControls";
 import { useChordsEditor } from "@/modules/editor/presentation/hooks/use-chords-editor";
 import { useTimelineSync } from "@/modules/timeline/presentation/hooks/use-timeline-sync";
+import { RenderDialog, RenderFormat, RenderQuality } from "@/modules/chords/presentation/components/RenderDialog";
 
 export function CinematicView() {
     const {
@@ -57,6 +57,10 @@ export function CinematicView() {
         handleRemoveChordNote,
         handleToggleBarre,
         handleToggleBarreTo,
+        handleSetFingerForString,
+        handleSetFretForString,
+        handleSetStringForPosition,
+        handleSelectStringAndAddIfMissing,
         handleToggleCollapse,
         handleReorderMeasures,
         handleReorderNotes,
@@ -99,6 +103,7 @@ export function CinematicView() {
     const videoCanvasRef = useRef<FretboardStageRef>(null);
     const [isAnimating, setIsAnimating] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
+    const [renderDialogOpen, setRenderDialogOpen] = useState(false);
 
     const handleAnimationStateChange = useCallback((animating: boolean, paused: boolean) => {
         setIsAnimating(animating);
@@ -161,11 +166,16 @@ export function CinematicView() {
     };
 
     const handleRenderVideo = async () => {
+        // Open the render dialog instead of directly rendering
+        setRenderDialogOpen(true);
+    };
+
+    const handleRenderWithOptions = async (format: RenderFormat, quality: RenderQuality) => {
         if (videoCanvasRef.current) {
             setIsRendering(true);
             setRenderProgress(0);
             try {
-                await videoCanvasRef.current.handleRender();
+                await videoCanvasRef.current.handleRender(format, quality);
                 if (!renderCancelRequested) setRenderProgress(100);
             } catch (error) {
                 console.error("Error rendering:", error);
@@ -306,6 +316,9 @@ export function CinematicView() {
                     onRemoveChordNote={handleRemoveChordNote}
                     onToggleBarre={handleToggleBarre}
                     onToggleBarreTo={handleToggleBarreTo}
+                    onSetFingerForString={handleSetFingerForString}
+                    onSetFretForString={handleSetFretForString}
+                    onSetStringForPosition={handleSetStringForPosition}
                     globalSettings={settings}
                     onGlobalSettingsChange={(newSettings: any) => setSettings(prev => ({ ...prev, ...newSettings }))}
                     onImportScore={() => { }}
@@ -343,7 +356,7 @@ export function CinematicView() {
                         </div>
                         <div className="mb-4 px-2">{floatingControls}</div>
                         <div className="h-64 overflow-hidden border-t border-white/10">
-                            <ChordTimeline {...visualEditorProps} mode="cinematic" />
+                            <CinematicTimeline {...visualEditorProps} />
                         </div>
                     </div>
                 </div>
@@ -373,11 +386,18 @@ export function CinematicView() {
                             />
                         </StageContainer>
                     }
-                    bottomSection={<ChordTimeline {...visualEditorProps} mode="cinematic" />}
+                    bottomSection={<CinematicTimeline {...visualEditorProps} />}
                     floatingControls={floatingControls}
                 />
             )}
             <RenderingProgressCard />
+            <RenderDialog
+                open={renderDialogOpen}
+                onOpenChange={setRenderDialogOpen}
+                onRender={handleRenderWithOptions}
+                isRendering={isRendering}
+                renderProgress={playbackProgress}
+            />
         </WorkspaceLayout>
     );
 }
