@@ -53,8 +53,6 @@ export class ShortNeckComponent {
     }
 
     private updateComponents() {
-        const settings = (this.geometry as any).settings;
-
         this.neck = new NeckComponent(
             NeckType.SHORT,
             {
@@ -67,12 +65,10 @@ export class ShortNeckComponent {
             this.geometry,
             {
                 showHeadBackground: true, // Configurable?
-                neckRadius: settings.neckRadius, // 35 * scale inherited implicitly or explicit? Use provider settings
-                headstockYOffset: settings.headstockYOffset,
-                diagramY: settings.boardY,
-                // stringNamesY needs to be calculated or passed? 
-                // In ShortNeck.ts, stringNamesY is passed to geometry settings.
-                stringNamesY: settings.stringNamesY
+                neckRadius: this.geometry.neckRadius, // 35 * scale inherited implicitly or explicit? Use provider settings
+                headstockYOffset: this.geometry.headstockYOffset,
+                diagramY: this.geometry.boardY,
+                stringNamesY: this.geometry.stringNamesY
             }
         );
 
@@ -95,7 +91,7 @@ export class ShortNeckComponent {
             },
             this.geometry,
             {
-                horizontalPadding: settings.paddingX
+                horizontalPadding: this.geometry.paddingX
             }
         );
 
@@ -108,9 +104,9 @@ export class ShortNeckComponent {
             },
             this.geometry,
             {
-                horizontalPadding: settings.paddingX,
-                stringNamesY: settings.stringNamesY,
-                headstockYOffset: settings.headstockYOffset
+                horizontalPadding: this.geometry.paddingX,
+                stringNamesY: this.geometry.stringNamesY,
+                headstockYOffset: this.geometry.headstockYOffset
             }
         );
     }

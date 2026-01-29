@@ -23,8 +23,10 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
     protected override _baseBarreWidth: number = 64;
     protected _capoComp: CapoComponent | null = null;
     protected _shortNeckComp!: ShortNeckComponent;
+    protected _transformationIndex: 1 | 2 | 3 = 1;
 
     protected _effectiveNumFrets: number = 0;
+    protected _capoPaddingY: number = 66;
 
     constructor(
         ctx: CanvasRenderingContext2D,
@@ -79,7 +81,7 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
             fretboardWidth: this._fretboardWidth,
             fretboardHeight: this._fretboardHeight,
             numStrings: this._numStrings,
-            numFrets: this._effectiveNumFrets, // Use effective
+            numFrets: this._effectiveNumFrets,
             stringSpacing: this._stringSpacing,
             realFretSpacing: this._realFretSpacing,
             paddingX: this._horizontalPadding,
@@ -90,7 +92,9 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
             fingerRadius: this._baseFingerRadius * this._scaleFactor,
             barreWidth: this._baseBarreWidth * this._scaleFactor,
             headstockYOffset: this._headstockYOffset,
-            stringNamesY: this._stringNamesY
+            stringNamesY: this._stringNamesY,
+            neckRadius: this._neckRadius,
+            capoPaddingY: this._capoPaddingY * this._scaleFactor
         };
     }
 
@@ -105,10 +109,9 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         const localW = baseWidth * this._scaleFactor;
         const localH = this._diagramHeight;
 
-        // Center vertically, accounting for capo visual extension (80px)
-        const capoOffset = this._capoFret > 0 ? 80 : 0;
+        // Stable diagram centering
         this._diagramX = (CW / 2) - (localW / 2);
-        this._diagramY = ((CH - localH) / 2) + (capoOffset / 2);
+        this._diagramY = (CH - localH) / 2;
 
         const headerHeight = 75 * this._scaleFactor;
 
@@ -119,18 +122,20 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
 
         this._horizontalPadding = 30 * this._scaleFactor;
         const fretUsableWidth = this._fretboardWidth - (this._horizontalPadding * 2);
-
         this._stringSpacing = fretUsableWidth / Math.max(1, this._numStrings - 1);
 
-        // Calculate effective frets based on capo presence
         this._effectiveNumFrets = this._numFrets;
         this._realFretSpacing = this._fretboardHeight / this._effectiveNumFrets;
 
         this._stringNamesY = this._diagramY + (headerHeight / 2);
         this._neckRadius = 35 * this._scaleFactor;
 
-        // Auto-adjust headstock gap if capo is present
-        this._headstockYOffset = this._capoFret > 0 ? -60 * this._scaleFactor : 0;
+        // Move headstock up if capo is present
+        if (this._capoFret > 0) {
+            this._headstockYOffset = -this._capoPaddingY * this._scaleFactor;
+        } else {
+            this._headstockYOffset = 0;
+        }
 
         if (this._geometry) {
             this._geometry.update(this._getGeometrySettings());
@@ -146,6 +151,19 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         }
     }
 
+    public override applyTransforms(): void {
+        // Explicitly handle the three transformation views
+        if (this._transformationIndex === 1) {
+            // Case 1: Vertical (Normal)
+            if (this._rotation !== 0 || this._mirror) {
+                super.applyTransforms();
+            }
+        } else {
+            // Case 2 & 3: Horizontal views
+            super.applyTransforms();
+        }
+    }
+
     public clear(): void {
         this._ctx.fillStyle = this._colors.global.backgroundColor || "#000000";
         this._ctx.fillRect(0, 0, this._dimensions.width, this._dimensions.height);
@@ -153,23 +171,30 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
 
     public setConditionalFlags(showNut: boolean, showHeadBackground: boolean): void {
         this._showHeadBackground = showHeadBackground;
-        // Should update component too if it respects this flag
-        // Current ShortNeckComponent implementation always passes showHeadBackground: true or defaults.
-        // We might need to expose a setter in component.
-        // For now, this property is used by `drawNeck` in original.
-        // But `drawNeck` now delegates.
-        // We need to update component!
-        // this._shortNeckComp.setConditionalFlags(...) // If exists
     }
 
     protected _headstockYOffset: number = 0;
 
     public setHeadstockGap(gap: number): void {
         this._headstockYOffset = gap;
-        this.calculateDimensions(); // Re-calc triggers component update
+        this.calculateDimensions();
     }
 
     protected _capoFret: number = 0;
+
+    public setTransforms(rotation: 0 | 90 | 180 | 270, mirror: boolean): void {
+        super.setTransforms(rotation, mirror);
+
+        if (rotation === 0 || rotation === 180) {
+            this._transformationIndex = 1;
+        } else if (rotation === 90) {
+            this._transformationIndex = 3;
+        } else if (rotation === 270) {
+            this._transformationIndex = 2;
+        }
+
+        this.calculateDimensions();
+    }
 
     public setCapo(show: boolean, fret: number): void {
         this._capoFret = show ? fret : 0;
@@ -194,12 +219,10 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         this.calculateDimensions();
     }
 
-    // Stub methods for ChordDrawer compatibility
     public setCanvasDimensions(dimensions: { width: number; height: number }): void {
         this.setDimensions(dimensions);
     }
 
-    // Properties setters
     public setDiagramX(diagramX: number): void {
         this._diagramX = diagramX;
         this.calculateDimensions();
@@ -237,7 +260,7 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         this._horizontalPadding = padding;
         this.calculateDimensions();
     }
-    // Support flexible signature to match ChordDrawer calls [index, names] or [names]
+
     public setStringNames(arg1: number | string[] | undefined, arg2?: string[]): void {
         if (Array.isArray(arg1)) {
             this._stringNames = arg1;
@@ -255,7 +278,7 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
     }
 
     public getChordNameCoords(): { x: number; y: number } {
-        const visualHeight = this._fretboardHeight + (75 * this._scaleFactor); // Including header
+        const visualHeight = this._fretboardHeight + (75 * this._scaleFactor);
         const offsetN = 100 * this._scaleFactor;
 
         return {
@@ -264,29 +287,18 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         };
     }
 
-    public transposeForDisplay(chord: ChordDiagramProps, transportDisplay: number): { finalChord: ChordDiagramProps, transportDisplay: number } {
-        let finalChord = { ...chord };
-        let effectiveTransport = transportDisplay;
-
-        // Auto-transpose for ShortNeck if no transport is provided and fingers are high
-        effectiveTransport = FingerComponent.calculateEffectiveTransport(chord.fingers, this._numFrets, transportDisplay);
+    public override transposeForDisplay(chord: ChordDiagramProps, transportDisplay: number): { finalChord: ChordDiagramProps; transportDisplay: number } {
+        let finalChord = chord;
+        const effectiveTransport = transportDisplay;
 
         if (effectiveTransport > 1) {
-            // IDEMPOTENCY CHECK:
-            // If any finger (with fret > 0) would result in a negative visual fret,
-            // it means the input chord's fingers are PROBABLY already transposed.
-            // We only apply transposition if all visual frets remain >= 0.
-            const wouldHaveNegativeFrets = chord.fingers.some(f => f.fret > 0 && (f.fret - (effectiveTransport - 1)) < 0);
-
-            if (!wouldHaveNegativeFrets) {
-                finalChord = {
-                    ...chord,
-                    fingers: chord.fingers.map(f => ({
-                        ...f,
-                        fret: f.fret > 0 ? f.fret - (effectiveTransport - 1) : 0
-                    }))
-                };
-            }
+            finalChord = {
+                ...chord,
+                fingers: chord.fingers.map(f => ({
+                    ...f,
+                    fret: f.fret > 0 ? f.fret - (effectiveTransport - 1) : 0
+                }))
+            };
         }
         return { finalChord, transportDisplay: effectiveTransport };
     }
@@ -298,19 +310,16 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         this.drawStringNames(1);
         this.drawFrets();
         this.drawStrings();
-        this.drawCapo();
+        if (this._capoFret > 0) {
+            this.drawCapo(this._capoFret);
+        }
     }
 
     public drawNeck(progress: number = 1): void {
-        this._ctx.save();
-        this.applyTransforms();
         this._shortNeckComp.draw(this._ctx, { neckProgress: progress }, this._rotation, this._mirror);
-        this._ctx.restore();
     }
 
     public drawStringNames(progress: number = 1, customNames?: string[]): void {
-        this._ctx.save();
-        this.applyTransforms();
         if (customNames) {
             this._shortNeckComp.setStringNames(customNames);
             this._shortNeckComp.draw(this._ctx, { stringNamesProgress: progress }, this._rotation, this._mirror);
@@ -318,33 +327,26 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         } else {
             this._shortNeckComp.draw(this._ctx, { stringNamesProgress: progress }, this._rotation, this._mirror);
         }
-        this._ctx.restore();
     }
 
     public drawStrings(): void {
-        this._ctx.save();
-        this.applyTransforms();
         this._shortNeckComp.draw(this._ctx, { stringsProgress: 1 }, this._rotation, this._mirror);
-        this._ctx.restore();
     }
 
     public drawFrets(): void {
-        this._ctx.save();
-        this.applyTransforms();
         this._shortNeckComp.draw(this._ctx, { fretsProgress: 1 }, this._rotation, this._mirror);
-        this._ctx.restore();
     }
 
-    // Progressive Wrappers
+    public drawCapo(capoFret: number): void {
+        this._shortNeckComp.drawCapo(this._ctx, capoFret, this._rotation, this._mirror);
+    }
+
     public drawNeckProgressive(progress: number): void {
         this.drawNeck(progress);
     }
 
     public drawStringsProgressive(progress: number): void {
-        this._ctx.save();
-        this.applyTransforms();
         this._shortNeckComp.draw(this._ctx, { stringsProgress: progress }, this._rotation, this._mirror);
-        this._ctx.restore();
     }
 
     public drawFretsProgressive(progress: number): void {
@@ -358,47 +360,34 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         fretsProgress: number;
         nutProgress?: number;
     }): void {
-        if (phases.neckProgress > 0) {
-            this.drawNeckProgressive(phases.neckProgress);
-        }
-        if (phases.stringNamesProgress > 0) {
-            this.drawStringNames(phases.stringNamesProgress);
-        }
-        if (phases.fretsProgress > 0) {
-            this.drawFretsProgressive(phases.fretsProgress);
-        }
-        if (phases.stringsProgress > 0) {
-            this.drawStringsProgressive(phases.stringsProgress);
-        }
+        if (phases.neckProgress > 0) this.drawNeckProgressive(phases.neckProgress);
+        if (phases.stringNamesProgress > 0) this.drawStringNames(phases.stringNamesProgress);
+        if (phases.fretsProgress > 0) this.drawFretsProgressive(phases.fretsProgress);
+        if (phases.stringsProgress > 0) this.drawStringsProgressive(phases.stringsProgress);
     }
 
-
-
-    private drawCapo(): void {
-        this._ctx.save();
-        this.applyTransforms();
-        this._shortNeckComp.drawCapo(this._ctx, this._capoFret, this._rotation, this._mirror);
-        this._ctx.restore();
-    }
-
-
-
-    // ChordDrawer interface stubs
     public drawChord(chord: ChordDiagramProps, transportDisplay: number, offsetX?: number, options?: any): void {
-        // Handle optional arguments overloading if needed, but matching interface is better
-        // The interface defines: drawChord(chord, transport, offsetX?, options?)
-
         let opts = options;
         if (typeof offsetX === 'object' && offsetX !== null && options === undefined) {
-            // If called as (chord, transport, options), shift args
             opts = offsetX;
+        }
+
+        const { finalChord, transportDisplay: effectiveTransport } = this.transposeForDisplay(chord, transportDisplay);
+        this._ctx.save();
+
+        // CONDITIONAL FOR EACH TRANSFORMATION
+        if (this._transformationIndex === 1) {
+            if (this._rotation !== 0 || this._mirror) {
+                this.applyTransforms();
+            }
+        } else {
+            this.applyTransforms();
         }
 
         if (!opts?.skipFretboard) {
             this.drawFretboard();
         }
 
-        const { finalChord, transportDisplay: effectiveTransport } = this.transposeForDisplay(chord, transportDisplay);
         this.drawFingers(finalChord);
 
         const curFingers = finalChord.fingers || [];
@@ -415,10 +404,13 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         this.drawTransposeIndicator(effectiveTransport, getMinFret(curFingers));
         this.drawAvoidedStrings(chord.avoid);
 
+        this._ctx.restore();
+
         if (finalChord.chordName && !opts?.skipChordName) {
             this.drawChordName(finalChord.chordName);
         }
     }
+
     public drawTransposeIndicator(transportDisplay: number, alignFret?: number): void {
         if (transportDisplay <= 1) return;
 
@@ -474,12 +466,6 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
             this._scaleFactor
         );
 
-        // Ensure context is clean of transforms for absolute positioning if needed, 
-        // or apply transforms if getChordNameCoords expects it.
-        // BaseDrawer getChordNameCoords returns center coordinates.
-        // ChordNameComponent expects absolute coordinates if we don't translate.
-        // ShortNeck.drawChordName previously did NOT apply transforms.
-
         component.draw(this._ctx);
     }
 
@@ -499,12 +485,40 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         });
     }
 
+    public drawBarre(fret: number, startString: number, endString: number, finger: number | string, color?: string, opacity: number = 1, transport: number = 1): void {
+        const style = {
+            ...this._colors.fingers,
+            radius: this._baseFingerRadius,
+            fontSize: this._baseFontSize,
+            barreWidth: this._baseBarreWidth,
+            color: color || this._colors.fingers.color,
+            opacity: (this._colors.fingers.opacity ?? 1) * opacity
+        };
+        const comp = new FingerComponent(fret, startString, finger, style, this._geometry, transport, endString);
+        comp.setRotation(this._rotation, this._mirror, this._dimensions);
+        comp.update(1);
+        comp.draw(this._ctx);
+    }
+
+    public drawFinger(fret: number, string: number, finger: number | string, color?: string, opacity: number = 1, transport: number = 1): void {
+        const style = {
+            ...this._colors.fingers,
+            radius: this._baseFingerRadius,
+            fontSize: this._baseFontSize,
+            color: color || this._colors.fingers.color,
+            opacity: (this._colors.fingers.opacity ?? 1) * opacity
+        };
+        const comp = new FingerComponent(fret, string, finger, style, this._geometry, transport);
+        comp.setRotation(this._rotation, this._mirror, this._dimensions);
+        comp.update(1);
+        comp.draw(this._ctx);
+    }
+
     public calculateWithOffset(offsetX: number): void { }
     public drawChordWithBuildAnimation(chord: ChordDiagramProps, transportDisplay: number, progress: number, offsetX?: number): void {
         this.drawChord(chord, transportDisplay, { ...arguments[3], buildProgress: progress });
     }
     public drawChordWithTransition(current: ChordDiagramProps, cTrans: number, next: ChordDiagramProps, nTrans: number, progress: number, offsetX?: number, options?: any): void {
-        // Simple transition implementation for fallback
         if (progress < 0.5) {
             this.drawChord(current, cTrans, { ...options, opacity: 1 - progress * 2 });
         } else {

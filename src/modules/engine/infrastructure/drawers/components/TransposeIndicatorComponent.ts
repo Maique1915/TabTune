@@ -96,15 +96,7 @@ export class TransposeIndicatorComponent implements IFretboardComponent {
 
         ctx.save();
 
-        // Apply global transform if dimensions are available
-        if (this.canvasDimensions && (this.rotation || this.mirror)) {
-            const cx = this.canvasDimensions.width / 2;
-            const cy = this.canvasDimensions.height / 2;
-            ctx.translate(cx, cy);
-            if (this.rotation) ctx.rotate((this.rotation * Math.PI) / 180);
-            if (this.mirror) ctx.scale(-1, 1);
-            ctx.translate(-cx, -cy);
-        }
+        // Note: Global transformation is now applied by the Drawer
 
         ctx.globalAlpha = this.vOpacity;
 

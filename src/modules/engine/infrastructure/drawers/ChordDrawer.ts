@@ -35,6 +35,7 @@ export interface ChordDrawer {
   setNumFrets(num: number): void;
   setTransforms(rotation: 0 | 90 | 180 | 270, mirror: boolean): void;
   calculateDimensions(): void;
+  applyTransforms(): void;
   clear(): void;
 }
 

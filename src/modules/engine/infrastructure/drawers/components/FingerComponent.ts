@@ -207,15 +207,8 @@ export class FingerComponent implements IFretboardComponent {
 
         ctx.save();
 
-        // Apply global transform if dimensions are available
-        if (this.canvasDimensions && (this.rotation || this.mirror)) {
-            const cx = this.canvasDimensions.width / 2;
-            const cy = this.canvasDimensions.height / 2;
-            ctx.translate(cx, cy);
-            if (this.rotation) ctx.rotate((this.rotation * Math.PI) / 180);
-            if (this.mirror) ctx.scale(-1, 1);
-            ctx.translate(-cx, -cy);
-        }
+        // Note: Global transformation (Rotation/Mirror) is now applied by the Drawer/Animator
+        // to ensure perfect alignment with the neck. Component only handles label uprighting.
 
         // Global Alpha handles visibility transitions (fade in/out), NOT stylistic opacity
         // Multiply with existing alpha to support nested transparency (e.g. from Carousel)
@@ -286,10 +279,9 @@ export class FingerComponent implements IFretboardComponent {
             ctx.save();
             ctx.translate(centerX, centerY);
 
+            // Counter the global transforms applied by the drawer to keep label upright
             if (this.mirror) ctx.scale(-1, 1);
-
-            const rot = this.rotation || 0;
-            ctx.rotate((-rot * Math.PI) / 180);
+            if (this.rotation) ctx.rotate((-this.rotation * Math.PI) / 180);
 
             ctx.fillText(this.vLabel.toString(), 0, 0);
             ctx.restore();

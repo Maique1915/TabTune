@@ -18,6 +18,8 @@ export interface GeometrySettings {
     barreWidth: number;
     headstockYOffset?: number;
     stringNamesY?: number;
+    capoPaddingY?: number;
+    neckRadius?: number;
 }
 
 /**
@@ -59,7 +61,22 @@ export class GeometryProvider {
         const bWidth = barreWidth || this.settings.barreWidth;
         const fRadius = fingerRadius || this.settings.fingerRadius;
 
-        if (this.settings.neckType === NeckType.FULL) {
+        const isHorizontalInCoords = Math.abs(p1.y - p2.y) < 1;
+
+        if (isHorizontalInCoords) {
+            // Barre is horizontal in coordinate system (spans across strings in SHORT neck)
+            const leftX = Math.min(p1.x, p2.x);
+            const rightX = Math.max(p1.x, p2.x);
+            const spanWidth = Math.abs(rightX - leftX) + (fRadius * 2);
+
+            return {
+                x: leftX - fRadius,
+                y: p1.y - bWidth / 2,
+                width: spanWidth,
+                height: bWidth
+            };
+        } else {
+            // Barre is vertical in coordinate system (spans across strings in FULL neck)
             const topY = Math.min(p1.y, p2.y) - fRadius;
             const bottomY = Math.max(p1.y, p2.y) + fRadius;
             const height = bottomY - topY;
@@ -68,18 +85,6 @@ export class GeometryProvider {
                 y: topY,
                 width: bWidth,
                 height: height
-            };
-        } else {
-            // Vertical - Barre is a horizontal bar across strings
-            const leftX = Math.min(p1.x, p2.x);
-            const rightX = Math.max(p1.x, p2.x);
-            const width = Math.abs(rightX - leftX) + (fRadius * 2);
-
-            return {
-                x: leftX - fRadius,
-                y: p1.y - bWidth / 2,
-                width: width,
-                height: bWidth
             };
         }
     }
@@ -100,8 +105,14 @@ export class GeometryProvider {
     public get fretboardX(): number { return this.settings.fretboardX; }
     public get fretboardY(): number { return this.settings.fretboardY; }
     public get fretboardWidth(): number { return this.settings.fretboardWidth; }
+    public get fretboardHeight(): number { return this.settings.fretboardHeight; }
     public get realFretSpacing(): number { return this.settings.realFretSpacing; }
     public get headstockYOffset(): number { return this.settings.headstockYOffset || 0; }
     public get paddingX(): number { return this.settings.paddingX; }
     public get stringSpacing(): number { return this.settings.stringSpacing; }
+    public get capoPaddingY(): number | undefined { return this.settings.capoPaddingY; }
+    public get neckRadius(): number | undefined { return this.settings.neckRadius; }
+    public get boardY(): number { return this.settings.boardY; }
+    public get stringMargin(): number { return this.settings.stringMargin; }
+    public get stringNamesY(): number | undefined { return this.settings.stringNamesY; }
 }

@@ -55,6 +55,9 @@ export class ShortFingersAnimation implements FingersAnimationDrawer {
         if (nextDisplayChord && transitionProgress > 0) {
             const eased = easeInOutQuad(transitionProgress);
 
+            ctx.save();
+            drawer.applyTransforms();
+
             // Draw Barre (Historically separate, but now barre might be inside fingerComponents if unified)
             if (this.barreComponent) {
                 this.barreComponent.update(eased);
@@ -78,6 +81,8 @@ export class ShortFingersAnimation implements FingersAnimationDrawer {
                 avoid.update(eased);
                 avoid.draw(ctx);
             });
+
+            ctx.restore();
         } else {
             drawer.drawChord(currentFinalChord, currentTransportDisplay, 0, { skipFretboard });
         }
@@ -236,7 +241,7 @@ export class ShortFingersAnimation implements FingersAnimationDrawer {
                 // Check if this finger becomes a Barre in next chord
                 if (nxtA.barre && nxtA.barre.finger === curF.finger) {
                     // TRANSFORM into barre
-                    comp.setTarget(nxtA.barre.fret, nxtA.barre.startString, 1, nxtA.barre.finger, 1, nxtA.barre.endString);
+                    comp.setTarget(nxtA.barre.fret, nxtA.barre.startString, 1, nxtA.barre.finger ?? 1, 1, nxtA.barre.endString);
                 } else {
                     // Fade out
                     comp.setTarget(curF.fret, curF.string, 0, curF.finger ?? 1, 1);

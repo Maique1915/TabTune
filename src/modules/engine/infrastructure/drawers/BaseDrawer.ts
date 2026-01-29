@@ -181,7 +181,7 @@ export abstract class BaseDrawer {
         return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
     }
 
-    protected applyTransforms(): void {
+    public applyTransforms(): void {
         const centerX = this._dimensions.width / 2;
         const centerY = this._dimensions.height / 2;
 

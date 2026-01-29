@@ -13,6 +13,7 @@ export class CapoComponent implements IFretboardComponent {
     private tFret: number;
     private sOpacity: number;
     private tOpacity: number;
+    private paddingCapo: number;
 
     // Visuals
     private vFret: number = 0;
@@ -37,6 +38,8 @@ export class CapoComponent implements IFretboardComponent {
         this.geometry = geometry;
         this.options = options;
         this.sOpacity = this.tOpacity = style.opacity ?? 1;
+        this.paddingCapo = this.geometry.capoPaddingY ?? 66 * geometry.scaleFactor;
+
 
         this.validate();
         this.syncVisuals(0);
@@ -95,7 +98,8 @@ export class CapoComponent implements IFretboardComponent {
         const fretboardWidth = this.geometry.fretboardWidth;
 
         const capoHeight = 35 * scaleFactor;
-        const capoY = fretboardY - (capoHeight / 2) - (2 * scaleFactor) + 32 + headstockYOffset;
+        const capoY = fretboardY - (capoHeight / 2) - (2 * scaleFactor) + 32;
+
 
         // Theme colors
         const capoColor = this.style.color || '#c0c0c0';
@@ -129,9 +133,9 @@ export class CapoComponent implements IFretboardComponent {
 
         ctx.beginPath();
         if (typeof (ctx as any).roundRect === 'function') {
-            (ctx as any).roundRect(fretboardX - 5 * scaleFactor, capoY - 7, fretboardWidth + 10 * scaleFactor, capoHeight, 5 * scaleFactor);
+            (ctx as any).roundRect(fretboardX - 5 * scaleFactor, capoY - this.paddingCapo, fretboardWidth + 10 * scaleFactor, capoHeight, 5 * scaleFactor);
         } else {
-            ctx.rect(fretboardX - 5 * scaleFactor, capoY - 7, fretboardWidth + 10 * scaleFactor, capoHeight);
+            ctx.rect(fretboardX - 5 * scaleFactor, capoY - this.paddingCapo, fretboardWidth + 10 * scaleFactor, capoHeight);
         }
         ctx.fill();
 
@@ -145,11 +149,11 @@ export class CapoComponent implements IFretboardComponent {
         }
 
         ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.fillRect(fretboardX - 4 * scaleFactor, capoY - 7 + 2 * scaleFactor, fretboardWidth + 8 * scaleFactor, 2 * scaleFactor);
+        ctx.fillRect(fretboardX - 4 * scaleFactor, capoY - this.paddingCapo + 2 * scaleFactor, fretboardWidth + 8 * scaleFactor, 2 * scaleFactor);
 
         // Draw "CAPO" aligned center
         const centerX = fretboardX + fretboardWidth / 2;
-        const centerY = capoY - 7 + capoHeight / 2;
+        const centerY = capoY - this.paddingCapo + capoHeight / 2;
         const fontSize = 16 * scaleFactor;
         const font = `bold ${fontSize}px sans-serif`;
 
@@ -201,7 +205,8 @@ export class CapoComponent implements IFretboardComponent {
     }
 
     private pseudoNeck(ctx: CanvasRenderingContext2D, fretboardX: number, capoY: number, fretboardWidth: number, capoHeight: number, scaleFactor: number): void {
-        const startY = capoY - 7;
+        ctx.save();
+        const startY = capoY - this.paddingCapo;
         const width = fretboardWidth + 10 * scaleFactor;
         const left = fretboardX - 5 * scaleFactor;
         const wallHeight = 40 * scaleFactor;
@@ -252,7 +257,7 @@ export class CapoComponent implements IFretboardComponent {
         // Counter-rotate logic to keep text upright
         ctx.translate(x, y);
         if (this.mirror) ctx.scale(-1, 1);
-        // if (this.rotation) ctx.rotate((-this.rotation * Math.PI) / 180);
+        if (this.rotation) ctx.rotate((-this.rotation * Math.PI) / 180);
 
         ctx.fillText(text, 0, 0);
         ctx.restore();
@@ -322,7 +327,7 @@ export class CapoComponent implements IFretboardComponent {
             const fretboardY = this.geometry.fretboardY;
             const headstockYOffset = this.geometry.headstockYOffset;
             const capoHeight = 35 * scaleFactor;
-            const capoY = fretboardY - (capoHeight / 2) - (2 * scaleFactor) + 27 + headstockYOffset;
+            const capoY = fretboardY - (capoHeight / 2) - (2 * scaleFactor) + 27;
 
             return {
                 x: fretboardX - 5 * scaleFactor,
