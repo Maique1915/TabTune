@@ -222,6 +222,7 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
     }
     public setNumFrets(num: number): void {
         this._numFrets = num;
+        this._effectiveNumFrets = num;
         this.calculateDimensions();
     }
     public setStringSpacing(spacing: number): void {

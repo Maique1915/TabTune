@@ -19,7 +19,7 @@ export abstract class BaseDrawer {
     public isHorizontal: boolean = false;
 
     protected _numStrings: number = 6;
-    protected _numFrets: number = 4;
+    protected _numFrets: number = 5;
 
     protected _diagramWidth: number = 0;
     protected _diagramHeight: number = 0;

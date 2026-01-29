@@ -102,6 +102,44 @@
         "durationMs": 2000,
         "measureId": "09mcfn1xo"
       }
+    },
+    {
+      "chord": {
+        "note": 0,
+        "complement": 0,
+        "extension": [],
+        "bass": 0
+      },
+      "origin": 0,
+      "fingers": {
+        "2": [
+          1,
+          1
+        ],
+        "4": [
+          3,
+          2
+        ],
+        "5": [
+          4,
+          3
+        ]
+      },
+      "avoid": [],
+      "stringNames": [
+        "E",
+        "A",
+        "D",
+        "G",
+        "B",
+        "e"
+      ],
+      "chordName": "",
+      "capo": 0,
+      "extends": {
+        "durationMs": 2000,
+        "measureId": "0f6pp3eec"
+      }
     }
   ],
   "measures": [
@@ -191,6 +229,44 @@
         }
       ],
       "chordName": ""
+    },
+    {
+      "id": "0f6pp3eec",
+      "isCollapsed": false,
+      "showClef": false,
+      "showTimeSig": false,
+      "notes": [
+        {
+          "id": "qabqnm7bz",
+          "duration": "q",
+          "type": "note",
+          "decorators": {
+            "dot": false
+          },
+          "positions": [
+            {
+              "fret": 4,
+              "string": 5,
+              "avoid": false,
+              "finger": 3
+            },
+            {
+              "fret": 3,
+              "string": 4,
+              "avoid": false,
+              "finger": 2
+            },
+            {
+              "fret": 1,
+              "string": 2,
+              "avoid": false,
+              "finger": 1
+            }
+          ],
+          "technique": "",
+          "isSlurred": false
+        }
+      ]
     }
   ],
   "settings": {

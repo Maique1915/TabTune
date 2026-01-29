@@ -157,6 +157,9 @@ export class FingerComponent implements IFretboardComponent {
         } else {
             const coords = this.geometry.getFingerCoords(curF, curS1);
             const r = (this.style.radius || 28) * this.geometry.scaleFactor * this.vScale;
+
+            // In SHORT neck, we represent fingers as square-shaped rounded rects if they might become barres
+            // To be safe and smooth, we'll use a rect of size 2r x 2r
             this.vRect = {
                 x: coords.x - r,
                 y: coords.y - r,
@@ -231,8 +234,9 @@ export class FingerComponent implements IFretboardComponent {
         }
 
         ctx.beginPath();
-        if (this.isBarre) {
-            const thickness = this.geometry.neckType === NeckType.FULL ? this.vRect.width : this.vRect.height;
+        // UNIFIED SHAPE: In SHORT neck, always use rounded rect for smooth transitions
+        if (this.geometry.neckType === NeckType.SHORT) {
+            const thickness = Math.min(this.vRect.width, this.vRect.height);
             const cornerRadius = thickness / 2;
             if (typeof (ctx as any).roundRect === 'function') {
                 (ctx as any).roundRect(this.vRect.x, this.vRect.y, this.vRect.width, this.vRect.height, cornerRadius);
@@ -240,9 +244,20 @@ export class FingerComponent implements IFretboardComponent {
                 ctx.rect(this.vRect.x, this.vRect.y, this.vRect.width, this.vRect.height);
             }
         } else {
-            const centerX = this.vRect.x + this.vRect.width / 2;
-            const centerY = this.vRect.y + this.vRect.height / 2;
-            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            // FULL Neck still uses hard switch for performance/looks if needed, 
+            // but we could unify here too if transitions are added to FULL.
+            if (this.isBarre) {
+                const cornerRadius = this.vRect.width / 2;
+                if (typeof (ctx as any).roundRect === 'function') {
+                    (ctx as any).roundRect(this.vRect.x, this.vRect.y, this.vRect.width, this.vRect.height, cornerRadius);
+                } else {
+                    ctx.rect(this.vRect.x, this.vRect.y, this.vRect.width, this.vRect.height);
+                }
+            } else {
+                const centerX = this.vRect.x + this.vRect.width / 2;
+                const centerY = this.vRect.y + this.vRect.height / 2;
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            }
         }
 
         // Apply BG Opacity ONLY to the fill

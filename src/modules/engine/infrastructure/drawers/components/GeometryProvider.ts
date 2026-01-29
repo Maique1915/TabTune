@@ -17,6 +17,7 @@ export interface GeometrySettings {
     fingerRadius: number;
     barreWidth: number;
     headstockYOffset?: number;
+    stringNamesY?: number;
 }
 
 /**
