@@ -7,7 +7,7 @@ export interface FretboardDrawer {
   readonly scaleFactor: number;
 
   // Core Drawing Methods
-  drawFretboard(): void;
+  drawFretboard(transport?: number): void;
   drawNeck(progress?: number): void;
   drawStrings(progress?: number): void;
   drawFrets(progress?: number): void;

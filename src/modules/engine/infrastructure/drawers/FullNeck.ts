@@ -9,6 +9,7 @@ import { detectBarreFromChord as detectBarre } from "./utils/barre-detection";
 import { NeckType } from "./components/NeckType";
 import { FullNeckComponent } from "./components/FullNeckComponent";
 import { ChordNameComponent } from "./components/ChordNameComponent";
+import { transposeStringNames } from "./utils/tuning-utils";
 
 export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer, ChordDrawer {
     protected _boardY: number = 0;
@@ -16,6 +17,7 @@ export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer, Chord
     protected _showHeadBackground: boolean = true;
     protected _headstockWidth: number = 0;
     protected _fullNeckComp!: FullNeckComponent;
+    protected _baseStringNames: string[] = ["E", "A", "D", "G", "B", "e"];
 
     constructor(
         ctx: CanvasRenderingContext2D,
@@ -96,15 +98,18 @@ export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer, Chord
         this._ctx.fillRect(0, 0, this._dimensions.width, this._dimensions.height);
     }
 
-    public drawFretboard(): void {
+    public drawFretboard(transport: number = 1): void {
         this.clear();
         this._ctx.save();
         this.applyTransforms();
         this._fullNeckComp.draw(this._ctx);
-        // Draw Capo separately or included? FullNeckComponent includes drawCapo method but draw() doesn't call it unless I added it?
-        // My FullNeckComponent implementation definitely has drawCapo but draw() does NOT call it.
-        // So I must call it explicitly.
-        this._fullNeckComp.drawCapo(this._ctx, this._globalCapo);
+
+        // For FULL neck, we only draw Capo if it's positive.
+        // If it's positive, it moves UP the neck.
+        if (this._globalCapo > 0) {
+            this._fullNeckComp.drawCapo(this._ctx, this._globalCapo, 1); // Draw at absolute fret
+        }
+
         this._ctx.restore();
     }
 
@@ -128,15 +133,16 @@ export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer, Chord
         // Stub: logic moved.
     }
 
-    private drawCapo(): void {
+    private drawCapo(transport: number = 1): void {
         this._ctx.save();
         this.applyTransforms();
-        this._fullNeckComp.drawCapo(this._ctx, this._globalCapo);
+        const capoTransport = transport + (this._globalCapo > 0 ? this._globalCapo : 0);
+        this._fullNeckComp.drawCapo(this._ctx, this._globalCapo, capoTransport);
         this._ctx.restore();
     }
 
     public drawChord(chord: ChordDiagramProps, transport: number, offsetX?: number, options?: any): void {
-        if (!options?.skipFretboard) this.drawFretboard();
+        if (!options?.skipFretboard) this.drawFretboard(transport);
         const { finalChord } = this.transposeForDisplay(chord, transport);
         this.drawFingers(finalChord);
         this.drawAvoidedStrings(chord.avoid);
@@ -184,18 +190,71 @@ export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer, Chord
     public validatePosition(fret: number, string: number): boolean { return this._geometry.validate(fret, string); }
     public getChordNameCoords() { return { x: this._dimensions.width / 2, y: this._fretboardY - 100 * this._scaleFactor }; }
 
-    public transposeForDisplay(chord: ChordDiagramProps, transport: number) {
-        if (transport <= 1) return { finalChord: chord, transportDisplay: transport };
+    public override transposeForDisplay(chord: ChordDiagramProps, transport: number): { finalChord: ChordDiagramProps, transportDisplay: number } {
+        // For Full Neck:
+        // 1. Capo (positive) -> Shift fingers FORWARD.
+        // 2. Down (negative) -> No finger shift (handled by string names).
+        // 3. Transport -> Standard shifting.
+
+        const capoShift = this._globalCapo > 0 ? this._globalCapo : 0;
+        const totalShift = (transport - 1) + capoShift;
+
+        if (totalShift === 0) return { finalChord: chord, transportDisplay: transport };
+
         return {
-            finalChord: { ...chord, fingers: chord.fingers.map(f => ({ ...f, fret: f.fret > 0 ? f.fret - (transport - 1) : 0 })) },
+            finalChord: {
+                ...chord,
+                fingers: chord.fingers.map(f => ({
+                    ...f,
+                    fret: f.fret > 0 ? f.fret + totalShift : 0
+                }))
+            },
             transportDisplay: transport
         };
     }
 
-    public setGlobalCapo(capo: number) { this._globalCapo = capo; }
+    public setGlobalCapo(capo: number) {
+        this._globalCapo = capo;
+
+        // Update string names if it's a DOWN logic (negative)
+        if (capo < 0) {
+            const transposed = transposeStringNames(this._baseStringNames, capo);
+            this.setStringNames(transposed);
+        } else {
+            // Restore base names if we go back to Standard or Capo
+            this.setStringNames(this._baseStringNames);
+        }
+
+        this.calculateDimensions();
+    }
+
+    public setColors(colors: FretboardTheme): void {
+        super.setColors(colors);
+        this.calculateDimensions();
+    }
+
+    public setTransforms(rotation: 0 | 90 | 180 | 270, mirror: boolean): void {
+        super.setTransforms(rotation, mirror);
+        this.calculateDimensions();
+    }
     public setStringNames(names: string[] | number | undefined, arg2?: string[]) {
-        if (Array.isArray(names)) this._stringNames = names;
-        else if (arg2) this._stringNames = arg2;
+        if (Array.isArray(names)) {
+            this._stringNames = names;
+            // Also update base if it's a direct set and not a shift
+            if (this._globalCapo >= 0) {
+                this._baseStringNames = [...names];
+            }
+        }
+        else if (arg2) {
+            this._stringNames = arg2;
+            if (this._globalCapo >= 0) {
+                this._baseStringNames = [...arg2];
+            }
+        }
+
+        if (this._fullNeckComp) {
+            this._fullNeckComp.setStringNames(this._stringNames);
+        }
     }
     public calculateWithOffset(offsetX: number): void { }
     public drawChordWithBuildAnimation(chord: ChordDiagramProps, transport: number, progress: number): void { }

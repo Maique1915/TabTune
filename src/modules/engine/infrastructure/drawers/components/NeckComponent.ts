@@ -40,6 +40,7 @@ export class NeckComponent implements IFretboardComponent {
     // For SHORT neck
     private diagramY?: number;
     private stringNamesY?: number;
+    private headWidth?: number;
 
     constructor(
         neckType: NeckType,
@@ -51,6 +52,7 @@ export class NeckComponent implements IFretboardComponent {
             headstockYOffset?: number;
             diagramY?: number;
             stringNamesY?: number;
+            headWidth?: number;
         } = {}
     ) {
         this.neckType = neckType;
@@ -61,6 +63,7 @@ export class NeckComponent implements IFretboardComponent {
         this.headstockYOffset = options.headstockYOffset ?? 0;
         this.diagramY = options.diagramY;
         this.stringNamesY = options.stringNamesY;
+        this.headWidth = options.headWidth;
     }
 
     public validate(): boolean {
@@ -113,7 +116,8 @@ export class NeckComponent implements IFretboardComponent {
     private drawFullHeadstock(ctx: CanvasRenderingContext2D, fretboardX: number, boardY: number, fretboardHeight: number, scaleFactor: number): void {
         ctx.save();
 
-        const headWidth = 45 * scaleFactor;
+        // For FULL neck, use provided headWidth if possible, else fallback to consistent 45
+        const headWidth = this.headWidth ?? (this.geometry.realFretSpacing || 45 * scaleFactor);
         const headX = fretboardX - headWidth - 2 * scaleFactor;
 
         // Apply shadow
@@ -134,6 +138,13 @@ export class NeckComponent implements IFretboardComponent {
         }
 
         ctx.fill();
+
+        // Optional border for head
+        if (this.style.headBorder && this.style.headBorder.width > 0) {
+            ctx.lineWidth = this.style.headBorder.width * scaleFactor;
+            ctx.strokeStyle = this.style.headBorder.color;
+            ctx.stroke();
+        }
 
         ctx.restore();
     }

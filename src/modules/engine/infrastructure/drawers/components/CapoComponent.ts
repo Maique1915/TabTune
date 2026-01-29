@@ -7,6 +7,7 @@ export class CapoComponent implements IFretboardComponent {
     private fret: number;
     private style: CapoStyle;
     private geometry: GeometryProvider;
+    private transport: number = 1;
 
     // Animation states
     private sFret: number;
@@ -14,10 +15,15 @@ export class CapoComponent implements IFretboardComponent {
     private sOpacity: number;
     private tOpacity: number;
     private paddingCapo: number;
+    private sScale: number = 1;
+    private tScale: number = 1;
+    private sTransport: number = 1;
+    private tTransport: number = 1;
 
     // Visuals
     private vFret: number = 0;
     private vOpacity: number = 1;
+    private vScale: number = 1;
 
     private options?: {
         neckAppearance?: { backgroundColor: string; stringColor: string };
@@ -31,42 +37,64 @@ export class CapoComponent implements IFretboardComponent {
         options?: {
             neckAppearance?: { backgroundColor: string; stringColor: string };
             displayFret?: number;
+            transport?: number;
         }
     ) {
         this.fret = this.sFret = this.tFret = fret;
         this.style = style;
         this.geometry = geometry;
         this.options = options;
+        this.transport = this.sTransport = this.tTransport = options?.transport ?? 1;
         this.sOpacity = this.tOpacity = style.opacity ?? 1;
         this.paddingCapo = this.geometry.capoPaddingY ?? 66 * geometry.scaleFactor;
-
 
         this.validate();
         this.syncVisuals(0);
     }
 
-    public setTarget(fret: number, opacity: number): void {
+    public setTarget(fret: number, opacity: number, transport: number = 1, scale: number = 1): void {
         this.sFret = this.fret;
         this.sOpacity = this.vOpacity;
+        this.sScale = this.vScale;
+        this.sTransport = this.transport;
+
         this.tFret = fret;
         this.tOpacity = opacity;
+        this.tScale = scale;
+        this.tTransport = transport;
+
+        this.syncVisuals(0);
     }
 
     public validate(): boolean {
         // Allow fret 0 explicitly for visual Capo at Nut
-        if (this.tFret < 0 || !this.geometry.validate(Math.max(1, this.tFret), 1)) {
-            console.warn(`[CapoComponent] Invalid position: fret ${this.tFret}`);
+        if (this.tFret < 0 || (this.tFret > 0 && !this.geometry.validate(this.tFret, 1))) {
             return false;
         }
         return true;
     }
 
     private syncVisuals(progress: number): void {
-        this.vFret = this.sFret + (this.tFret - this.sFret) * progress;
+        const getVisualFret = (fret: number, transport: number) => {
+            // If transport > 1, it means we are in a transposing view (ShortNeck)
+            // For FullNeck, we now pass transport=1 to keep absolute position.
+            if (transport > 1 && fret > 0) {
+                return fret - (transport - 1);
+            }
+            return fret;
+        };
+
+        const vFretStart = getVisualFret(this.sFret, this.sTransport);
+        const vFretTarget = getVisualFret(this.tFret, this.tTransport);
+
+        this.vFret = vFretStart + (vFretTarget - vFretStart) * progress;
         this.vOpacity = this.sOpacity + (this.tOpacity - this.sOpacity) * progress;
+        this.vScale = this.sScale + (this.tScale - this.sScale) * progress;
 
         if (progress >= 1) {
             this.fret = this.tFret;
+            this.transport = this.tTransport;
+            this.vScale = this.tScale;
         }
     }
 
@@ -299,7 +327,19 @@ export class CapoComponent implements IFretboardComponent {
         const letters = ["C", "A", "P", "O"];
         const segmentHeight = rectH / 4;
         letters.forEach((char, i) => {
-            ctx.fillText(char, p1.x, rectY + (i * segmentHeight) + (segmentHeight / 2));
+            const charX = p1.x;
+            const charY = rectY + (i * segmentHeight) + (segmentHeight / 2);
+
+            if (this.rotation !== 0 || this.mirror) {
+                ctx.save();
+                ctx.translate(charX, charY);
+                if (this.mirror) ctx.scale(-1, 1);
+                if (this.rotation !== 0) ctx.rotate((-this.rotation * Math.PI) / 180);
+                ctx.fillText(char, 0, 0);
+                ctx.restore();
+            } else {
+                ctx.fillText(char, charX, charY);
+            }
         });
 
         ctx.restore();

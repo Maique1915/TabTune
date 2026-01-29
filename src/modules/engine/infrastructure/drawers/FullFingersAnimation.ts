@@ -15,14 +15,18 @@ import { NeckType } from "./components/NeckType";
 export class FullFingersAnimation implements FingersAnimationDrawer {
     private fingerComponents: FingerComponent[] = [];
     private barreComponent: FingerComponent | null = null;
-    private capoComponent: CapoComponent | null = null;
     private avoidComponents: AvoidComponent[] = [];
     private lastChordId: string = "";
 
     public draw(params: FingersAnimationParams): void {
-        const { drawer, currentDisplayChord, nextDisplayChord, transitionProgress, buildProgress, skipFretboard } = params;
-        if (!currentDisplayChord) return;
+        const { drawer, currentDisplayChord, nextDisplayChord, transitionProgress, buildProgress, skipFretboard, allChords, currentIndex } = params;
 
+        if (allChords && currentIndex !== undefined) {
+            this.drawCarousel(params);
+            return;
+        }
+
+        if (!currentDisplayChord) return;
         const ctx = drawer.ctx;
         const geometry = (drawer as any).getGeometry?.();
 
@@ -30,117 +34,120 @@ export class FullFingersAnimation implements FingersAnimationDrawer {
             drawer.clear();
         }
 
+        const currentFinalChord = currentDisplayChord.finalChord;
+        const currentTransportDisplay = currentDisplayChord.transportDisplay;
+
         if (buildProgress !== undefined && buildProgress < 1) {
-            // Static build fallback
-            drawer.drawChord(currentDisplayChord.finalChord, currentDisplayChord.transportDisplay, 0, { skipFretboard });
+            drawer.drawChord(currentFinalChord, currentTransportDisplay, 0, { skipFretboard });
             return;
         }
 
         if (!geometry) {
-            // Fallback for missing geometry
-            drawer.drawChord(currentDisplayChord.finalChord, currentDisplayChord.transportDisplay, 0, { skipFretboard });
+            drawer.drawChord(currentFinalChord, currentTransportDisplay, 0, { skipFretboard });
             return;
         }
 
-        // Prepare components
         this.ensureComponents(drawer, currentDisplayChord, nextDisplayChord || currentDisplayChord, geometry);
 
-        // Apply global transforms to components
-        const dims = drawer.dimensions;
-        const rot = (drawer as any).rotation;
-        const mir = (drawer as any).mirror;
+        ctx.save();
+        if (!skipFretboard) drawer.drawFretboard(currentDisplayChord.transportDisplay);
+        drawer.applyTransforms();
 
-        if (this.barreComponent) this.barreComponent.setRotation(rot, mir, dims);
-        this.fingerComponents.forEach(f => f.setRotation(rot, mir, dims));
+        const eased = transitionProgress > 0 ? easeInOutQuad(transitionProgress) : 0;
 
+        if (this.barreComponent) {
+            this.barreComponent.update(eased);
+            this.barreComponent.draw(ctx);
+        }
 
-        // Orchestrate State Changes
-        if (nextDisplayChord && transitionProgress > 0) {
+        this.fingerComponents.forEach(f => {
+            f.update(eased);
+            f.draw(ctx);
+        });
+
+        this.avoidComponents.forEach(avoid => {
+            avoid.update(eased);
+            avoid.draw(ctx);
+        });
+
+        ctx.restore();
+    }
+
+    private drawCarousel(params: FingersAnimationParams): void {
+        const { drawer, transitionProgress, allChords, currentIndex } = params;
+        if (!allChords || allChords.length === 0 || currentIndex === undefined) return;
+
+        const ctx = drawer.ctx;
+        const diagramWidth = (drawer as any)._diagramWidth || drawer.dimensions.width;
+        const spacing = diagramWidth * 1.4;
+        const easedProgress = easeInOutQuad(transitionProgress);
+        const baseShift = -easedProgress * spacing;
+
+        const ACTIVE_OPACITY = 1.0;
+        const INACTIVE_OPACITY = 0.4;
+
+        drawer.clear();
+
+        const drawItem = (chord: ChordDiagramProps, transport: number, offset: number, opacity: number) => {
+            const threshold = (drawer.dimensions.width / 2) + diagramWidth;
+            if (offset < -threshold || offset > threshold) return;
 
             ctx.save();
-            if (!skipFretboard) drawer.drawFretboard();
-
-            const eased = easeInOutQuad(transitionProgress);
-
-            // Update & Draw Barre
-            if (this.barreComponent) {
-                this.barreComponent.update(eased);
-                this.barreComponent.draw(ctx);
-            }
-
-            // Update & Draw Capo
-            if (this.capoComponent) {
-                this.capoComponent.update(eased);
-                this.capoComponent.draw(ctx);
-            }
-
-            // Update & Draw Fingers
-            this.fingerComponents.forEach(f => {
-                f.update(eased);
-                f.draw(ctx);
-            });
-
-            // Update & Draw Avoids
-            this.avoidComponents.forEach(avoid => {
-                avoid.update(eased);
-                avoid.draw(ctx);
-            });
-
+            ctx.translate(offset, 0);
+            ctx.globalAlpha = opacity;
+            drawer.drawChord(chord, transport, 0);
             ctx.restore();
-        } else {
-            // Static Draw - Using components for consistency
-            ctx.save();
-            if (!skipFretboard) drawer.drawFretboard();
+        };
 
-            if (this.barreComponent) {
-                this.barreComponent.update(1);
-                this.barreComponent.draw(ctx);
+        // Right side (Next + Current)
+        for (let i = currentIndex; i < allChords.length; i++) {
+            const relIndex = i - currentIndex;
+            const offset = (relIndex * spacing) + baseShift;
+
+            let opacity = INACTIVE_OPACITY;
+            if (i === currentIndex) {
+                opacity = ACTIVE_OPACITY + (INACTIVE_OPACITY - ACTIVE_OPACITY) * easedProgress;
+            } else if (i === currentIndex + 1) {
+                opacity = INACTIVE_OPACITY + (ACTIVE_OPACITY - INACTIVE_OPACITY) * easedProgress;
             }
 
-            if (this.capoComponent) {
-                this.capoComponent.update(1);
-                this.capoComponent.draw(ctx);
-            }
+            drawItem(allChords[i].finalChord, allChords[i].transportDisplay, offset, opacity);
+        }
 
-            this.fingerComponents.forEach(f => {
-                f.update(1);
-                f.draw(ctx);
-            });
-
-            this.avoidComponents.forEach(avoid => {
-                avoid.update(1);
-                avoid.draw(ctx);
-            });
-
-            ctx.restore();
+        // Left side (Previous)
+        for (let i = currentIndex - 1; i >= 0; i--) {
+            const relIndex = i - currentIndex;
+            const offset = (relIndex * spacing) + baseShift;
+            drawItem(allChords[i].finalChord, allChords[i].transportDisplay, offset, INACTIVE_OPACITY);
         }
     }
 
     private ensureComponents(drawer: any, current: any, next: any, geometry: any): void {
         const nextId = (next.finalChord.chordName || "") + JSON.stringify(next.finalChord.fingers) + next.transportDisplay;
         const curId = (current.finalChord.chordName || "") + JSON.stringify(current.finalChord.fingers) + current.transportDisplay;
-
-        // Include geometry in ID
         const geometryId = `${drawer.fretboardX}_${drawer.fretboardWidth}_${drawer.scaleFactor}`;
         const transitionId = `${curId}_to_${nextId}_geo_${geometryId}`;
 
-        console.log('[FullFingersAnimation] Checking transition:', {
-            lastChordId: this.lastChordId,
-            transitionId,
-            curFingers: current.finalChord.fingers,
-            nxtFingers: next.finalChord.fingers
-        });
+        if (this.lastChordId === transitionId) return;
 
-        if (this.lastChordId === transitionId) return; // Already setup for this specific transition
+        const curT = FingerComponent.calculateEffectiveTransport(current.finalChord.fingers, drawer.numFrets, current.transportDisplay);
+        const nxtT = FingerComponent.calculateEffectiveTransport(next.finalChord.fingers, drawer.numFrets, next.transportDisplay);
+        const curV = drawer.transposeForDisplay(current.finalChord, curT).finalChord;
+        const nxtV = drawer.transposeForDisplay(next.finalChord, nxtT).finalChord;
 
-        const curF = current.finalChord.fingers;
-        const nxtF = next.finalChord.fingers;
+        this.fingerComponents = [];
+        this.barreComponent = null;
 
-        const curB = detectBarreFromChord({ fingers: curF } as any);
-        const nxtB = detectBarreFromChord({ fingers: nxtF } as any);
+        const derivedStyle = {
+            ...drawer.colors.fingers,
+            radius: drawer.fingerRadius / drawer.scaleFactor,
+            barreWidth: drawer.barreWidth / drawer.scaleFactor,
+            fontSize: (drawer as any)._baseFontSize || drawer.colors.fingers.fontSize || 35
+        };
 
-        const buildLoose = (fingers: StandardPosition[], barre: BarreInfo | null) => {
-            const loose = fingers.filter(f => {
+        const getActors = (chord: ChordDiagramProps) => {
+            const barre = detectBarreFromChord(chord);
+            const loose = chord.fingers.filter(f => {
                 if (f.fret <= 0) return false;
                 if (barre && f.fret === barre.fret) {
                     const sMin = Math.min(barre.startString, barre.endString);
@@ -149,103 +156,76 @@ export class FullFingersAnimation implements FingersAnimationDrawer {
                 }
                 return true;
             });
-            return loose.sort((a, b) => getFinNum(a.finger) - getFinNum(b.finger));
+            return { barre, loose };
         };
 
-        const cL = buildLoose(curF, curB);
-        const nL = buildLoose(nxtF, nxtB);
+        const curA = getActors(curV);
+        const nxtA = getActors(nxtV);
+        const componentsMap = new Map<number | string, FingerComponent>();
 
-        const curT = current.transportDisplay || 1;
-        const nxtT = next.transportDisplay || 1;
+        const curBarre = curA.barre;
+        const nxtBarre = nxtA.barre;
 
-        // 1. Setup Barre
-        if (curB || nxtB) {
-            if (!this.barreComponent && curB) {
-                this.barreComponent = new FingerComponent(curB.fret, curB.startString, curB.finger ?? 1, drawer.colors.fingers, geometry, curT, curB.endString);
-            } else if (!this.barreComponent && nxtB) {
-                this.barreComponent = new FingerComponent(nxtB.fret, nxtB.startString, nxtB.finger ?? 1, { ...drawer.colors.fingers, opacity: 0 }, geometry, nxtT, nxtB.endString);
+        // 1. Barre logic
+        if (curBarre || nxtBarre) {
+            const fingerId = curBarre?.finger ?? nxtBarre?.finger ?? 1;
+            const initB = curBarre || nxtBarre;
+            this.barreComponent = new FingerComponent(initB!.fret, initB!.startString, fingerId, derivedStyle, geometry, 1, initB!.endString);
+
+            if (curBarre && nxtBarre) {
+                this.barreComponent.setTarget(nxtBarre.fret, nxtBarre.startString, 1, fingerId, 1, nxtBarre.endString);
+            } else if (!curBarre && nxtBarre) {
+                (this.barreComponent as any).sOpacity = 0;
+                (this.barreComponent as any).vOpacity = 0;
+                this.barreComponent.setTarget(nxtBarre.fret, nxtBarre.startString, 1, fingerId, 1, nxtBarre.endString);
+            } else if (curBarre) {
+                const nextLooseWithSameId = nxtA.loose.find(f => f.finger === fingerId);
+                if (nextLooseWithSameId) this.barreComponent.setTarget(nextLooseWithSameId.fret, nextLooseWithSameId.string, 1, fingerId, 1, undefined);
+                else this.barreComponent.setTarget(curBarre.fret, curBarre.startString, 0, fingerId, 1, curBarre.endString);
             }
-
-            if (this.barreComponent) {
-                const tF = nxtB ? nxtB.fret : (curB ? curB.fret : 0);
-                const tS = nxtB ? nxtB.startString : (curB ? curB.startString : 0);
-                const tE = nxtB ? nxtB.endString : (curB ? curB.endString : 0);
-                const tO = nxtB ? 1 : 0; // Fix: Opacity target based on existence of next
-                this.barreComponent.setTarget(tF, tS, tO, nxtB?.finger ?? curB?.finger ?? 1, nxtT, tE);
-            }
-        } else {
-            this.barreComponent = null;
+            this.barreComponent.setRotation(drawer.rotation, drawer.mirror, drawer.dimensions);
+            componentsMap.set(fingerId, this.barreComponent);
         }
 
-        // 2. Setup Fingers (ID-based matching for Zoom transitions)
-        this.fingerComponents = [];
-
-        const curMap = new Map<number, any>();
-        cL.forEach(f => curMap.set(getFinNum(f.finger), f));
-
-        const nxtMap = new Map<number, any>();
-        nL.forEach(f => nxtMap.set(getFinNum(f.finger), f));
-
-        const allIds = new Set([...curMap.keys(), ...nxtMap.keys()]);
-
-        allIds.forEach(id => {
-            const cur = curMap.get(id);
-            const nxt = nxtMap.get(id);
-
-            let fComp: FingerComponent;
-
-            if (cur && nxt) {
-                // Move: Transition position
-                fComp = new FingerComponent(cur.fret, cur.string, cur.finger ?? 1, drawer.colors.fingers, geometry, curT);
-                fComp.setTarget(nxt.fret, nxt.string, 1, nxt.finger ?? 1, nxtT, undefined, 1);
-            } else if (cur && !nxt) {
-                // Disappear: Zoom Out (Scale 1 -> 0)
-                fComp = new FingerComponent(cur.fret, cur.string, cur.finger ?? 1, drawer.colors.fingers, geometry, curT);
-                fComp.setTarget(cur.fret, cur.string, 0, cur.finger ?? 1, nxtT, undefined, 0); // Opacity 0 + Scale 0
-            } else if (!cur && nxt) {
-                // Appear: Zoom In (Scale 0 -> 1)
-                fComp = new FingerComponent(nxt.fret, nxt.string, nxt.finger ?? 1, drawer.colors.fingers, geometry, nxtT);
-                fComp.setScale(0); // Initialize at scale 0
-                fComp.setTarget(nxt.fret, nxt.string, 1, nxt.finger ?? 1, nxtT, undefined, 1);
+        // 2. Loose fingers logic
+        const usedNxtLoose = new Set<number>();
+        curA.loose.forEach(curF => {
+            if (componentsMap.has(curF.finger ?? 'none')) return;
+            const nxtFIdx = nxtA.loose.findIndex((f, idx) => !usedNxtLoose.has(idx) && f.finger === curF.finger && f.finger !== undefined && f.finger !== 0);
+            const comp = new FingerComponent(curF.fret, curF.string, curF.finger ?? 1, derivedStyle, geometry, 1);
+            if (nxtFIdx !== -1) {
+                const nxtF = nxtA.loose[nxtFIdx];
+                comp.setTarget(nxtF.fret, nxtF.string, 1, nxtF.finger ?? 1, 1);
+                usedNxtLoose.add(nxtFIdx);
             } else {
-                return;
+                if (nxtBarre && nxtBarre.finger === curF.finger) comp.setTarget(nxtBarre.fret, nxtBarre.startString, 1, nxtBarre.finger ?? 1, 1, nxtBarre.endString);
+                else comp.setTarget(curF.fret, curF.string, 0, curF.finger ?? 1, 1);
             }
-            this.fingerComponents.push(fComp);
+            comp.setRotation(drawer.rotation, drawer.mirror, drawer.dimensions);
+            this.fingerComponents.push(comp);
+            if (curF.finger) componentsMap.set(curF.finger, comp);
         });
 
-        // 3. Setup Capo
-        const curCapo = (drawer as any)._globalCapo || 0;
-        if (curCapo > 0) {
-            if (!this.capoComponent) {
-                const style: CapoStyle = {
-                    color: drawer.colors.capo?.color || "#2D2D2D",
-                    border: drawer.colors.capo?.border || { color: "#4A4A4A", width: 1 },
-                    textColor: drawer.colors.capo?.textColors?.name || "#FFFFFF",
-                    opacity: 1
-                };
-                this.capoComponent = new CapoComponent(curCapo, style, geometry);
-            }
-            this.capoComponent.setTarget(curCapo, 1);
-        } else {
-            this.capoComponent = null;
-        }
+        nxtA.loose.forEach((nxtF, idx) => {
+            if (usedNxtLoose.has(idx)) return;
+            if (componentsMap.has(nxtF.finger ?? 'none')) return;
+            const comp = new FingerComponent(nxtF.fret, nxtF.string, nxtF.finger ?? 1, derivedStyle, geometry, 1);
+            (comp as any).sOpacity = 0;
+            (comp as any).vOpacity = 0;
+            comp.setTarget(nxtF.fret, nxtF.string, 1, nxtF.finger ?? 1, 1);
+            comp.setRotation(drawer.rotation, drawer.mirror, drawer.dimensions);
+            this.fingerComponents.push(comp);
+        });
 
         // 4. Setup Avoids
         this.avoidComponents = [];
         const curAvoid = current.finalChord.avoid || [];
         const nxtAvoid = next.finalChord.avoid || [];
-
-        const curSet = new Set(curAvoid as number[]);
-        const nxtSet = new Set(nxtAvoid as number[]);
-        const allStrings = new Set([...curSet, ...nxtSet]);
-
-        allStrings.forEach(stringNum => {
-            const isCur = curSet.has(stringNum);
-            const isNxt = nxtSet.has(stringNum);
-
+        const allStrings = new Set([...(curAvoid as number[]), ...(nxtAvoid as number[])]);
+        allStrings.forEach(s => {
             const style = drawer.colors.avoid;
-            const comp = new AvoidComponent(stringNum, { ...style, opacity: isCur ? 1 : 0 }, geometry);
-            comp.setTargetOpacity(isNxt ? 1 : 0);
+            const comp = new AvoidComponent(s, { ...style, opacity: (curAvoid as number[]).includes(s) ? 1 : 0 }, geometry);
+            comp.setTargetOpacity((nxtAvoid as number[]).includes(s) ? 1 : 0);
             this.avoidComponents.push(comp);
         });
 

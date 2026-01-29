@@ -79,8 +79,8 @@ export class StringNamesComponent implements IFretboardComponent {
         const numStrings = settings.numStrings;
         const scaleFactor = settings.scaleFactor;
 
-        const headWidth = this.headWidth ?? (45 * scaleFactor);
-        const centerX = fretboardX - headWidth / 2 - 2 * scaleFactor;
+        const headWidth = this.headWidth ?? (this.geometry.realFretSpacing || 45 * scaleFactor);
+        const centerX = fretboardX - headWidth / 2 - 5 * scaleFactor;
 
         ctx.save();
         ctx.fillStyle = this.style.color;
@@ -91,8 +91,20 @@ export class StringNamesComponent implements IFretboardComponent {
         for (let i = 0; i < numStrings; i++) {
             const y = boardY + stringMargin + i * stringSpacing;
             const name = this.stringNames[i] || "";
-            // Adjust for visual centering (textBaseline middle is sometimes 'high')
-            ctx.fillText(name, centerX, y + 2 * scaleFactor);
+            const textY = y + 4 * scaleFactor;
+
+            if (this.rotation !== 0 || this.mirror) {
+                // Counter-rotate logic to keep text upright and un-mirrored
+                ctx.save();
+                ctx.translate(centerX, textY);
+                if (this.mirror) ctx.scale(-1, 1);
+                if (this.rotation !== 0) ctx.rotate((-this.rotation * Math.PI) / 180);
+
+                ctx.fillText(name, 0, 0);
+                ctx.restore();
+            } else {
+                ctx.fillText(name, centerX, textY);
+            }
         }
 
         ctx.restore();

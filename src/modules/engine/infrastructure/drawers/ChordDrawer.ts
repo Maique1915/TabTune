@@ -15,7 +15,7 @@ export interface ChordDrawer {
   drawBarre(fret: number, startString: number, endString: number, finger: number | string, color?: string, opacity?: number, transport?: number): void;
   drawFingers(chord: ChordDiagramProps): void;
   drawChordName(chordName: string, options?: { opacity?: number, extensions?: string[] }): void;
-  drawFretboard(): void;
+  drawFretboard(transport?: number): void;
   setGlobalCapo(capo: number): void;
   setStringNames(names: string[] | number | undefined, arg2?: string[]): void;
   calculateWithOffset(offsetX: number): void;

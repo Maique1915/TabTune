@@ -62,6 +62,7 @@ export class FullNeckComponent {
             {
                 showHeadBackground: true,
                 neckRadius: settings.neckRadius, // 16 * scale inherited
+                headWidth: settings.realFretSpacing
             }
         );
 
@@ -101,6 +102,10 @@ export class FullNeckComponent {
                 headWidth: settings.realFretSpacing // Headstock width logic from FullNeck.ts
             }
         );
+
+        const rotation = this.theme.global.rotation || 0;
+        const mirror = this.theme.global.mirror || false;
+        this.stringNames.setRotation(rotation, mirror);
     }
 
     public setStringNames(names: string[]) {
@@ -146,14 +151,20 @@ export class FullNeckComponent {
         ctx.restore();
     }
 
-    public drawCapo(ctx: CanvasRenderingContext2D, globalCapo: number) {
+    public drawCapo(ctx: CanvasRenderingContext2D, globalCapo: number, transport: number = 1) {
         if (globalCapo <= 0) return;
-        new CapoComponent(globalCapo, {
+        const capo = new CapoComponent(globalCapo, {
             color: this.theme.capo?.color || '#c0c0c0',
             border: this.theme.capo?.border || { color: '#808080', width: 2 },
             textColor: this.theme.capo?.textColors?.name || '#2c2c2c',
             opacity: 1
-        }, this.geometry).draw(ctx);
+        }, this.geometry, { transport });
+
+        const rotation = this.theme.global.rotation || 0;
+        const mirror = this.theme.global.mirror || false;
+        capo.setRotation(rotation, mirror);
+
+        capo.draw(ctx);
     }
 
     private drawInlays(ctx: CanvasRenderingContext2D) {
@@ -168,7 +179,6 @@ export class FullNeckComponent {
         // Shadow?
 
         const scaleFactor = (this.geometry as any).settings.scaleFactor; // Access internal settings if public?
-        // GeometryProvider doesn't expose settings publicly by type, but currently it is accessible or we used it in updateComponents via 'as any'.
 
         const radius = (28 * 0.5) * scaleFactor; // 28 is baseFingerRadius
         const numStrings = (this.geometry as any).settings.numStrings;

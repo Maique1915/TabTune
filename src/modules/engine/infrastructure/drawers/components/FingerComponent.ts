@@ -128,7 +128,7 @@ export class FingerComponent implements IFretboardComponent {
         const isShort = this.geometry.neckType === NeckType.SHORT;
 
         const getVisualFret = (fret: number, transport: number) => {
-            if (isShort && fret > 0 && transport > 1) {
+            if (fret > 0 && transport > 1) {
                 return fret - (transport - 1);
             }
             return fret;

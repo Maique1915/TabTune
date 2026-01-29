@@ -305,7 +305,7 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
 
     // Drawing Methods
 
-    public drawFretboard(): void {
+    public drawFretboard(transport: number = 1): void {
         this.drawNeck();
         this.drawStringNames(1);
         this.drawFrets();
