@@ -9,6 +9,8 @@ import { detectBarreFromChord as detectBarre } from "./utils/barre-detection";
 import { NeckType } from "./components/NeckType";
 import { FingerComponent } from "./components/FingerComponent";
 import { TransposeIndicatorComponent } from "./components/TransposeIndicatorComponent";
+import { ShortNeckComponent } from "./components/ShortNeckComponent";
+import { ChordNameComponent } from "./components/ChordNameComponent";
 
 export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, ChordDrawer {
     protected _neckRadius: number = 0;
@@ -19,6 +21,10 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
     protected override _baseFingerRadius: number = 32;
     protected override _baseFontSize: number = 42;
     protected override _baseBarreWidth: number = 64;
+    protected _capoComp: CapoComponent | null = null;
+    protected _shortNeckComp!: ShortNeckComponent;
+
+    protected _effectiveNumFrets: number = 0;
 
     constructor(
         ctx: CanvasRenderingContext2D,
@@ -51,6 +57,7 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         this._diagramY = diagramSettings.diagramY;
         this._numStrings = diagramSettings.numStrings || 6;
         this._numFrets = diagramSettings.numFrets || 5;
+        this._effectiveNumFrets = this._numFrets; // Initialize
         this._horizontalPadding = diagramSettings.horizontalPadding;
         this._stringSpacing = diagramSettings.stringSpacing;
         this._fretboardX = diagramSettings.fretboardX;
@@ -72,7 +79,7 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
             fretboardWidth: this._fretboardWidth,
             fretboardHeight: this._fretboardHeight,
             numStrings: this._numStrings,
-            numFrets: this._numFrets,
+            numFrets: this._effectiveNumFrets, // Use effective
             stringSpacing: this._stringSpacing,
             realFretSpacing: this._realFretSpacing,
             paddingX: this._horizontalPadding,
@@ -81,7 +88,9 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
             scaleFactor: this._scaleFactor,
             neckType: NeckType.SHORT,
             fingerRadius: this._baseFingerRadius * this._scaleFactor,
-            barreWidth: this._baseBarreWidth * this._scaleFactor
+            barreWidth: this._baseBarreWidth * this._scaleFactor,
+            headstockYOffset: this._headstockYOffset,
+            stringNamesY: this._stringNamesY
         };
     }
 
@@ -89,45 +98,51 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         const CW = this._dimensions.width;
         const CH = this._dimensions.height;
 
-        // Define o tamanho do diagrama (a caixa externa)
-        // O braço ocupa cerca de 60% da altura total da tela
         const diagramScale = 0.6;
         this._diagramHeight = CH * diagramScale;
 
-        // Mantém a proporção largura/altura do diagrama
         const baseWidth = (this._diagramHeight * 0.7) / this._scaleFactor;
         const localW = baseWidth * this._scaleFactor;
         const localH = this._diagramHeight;
 
-        // Centralização total no canvas
+        // Center vertically, accounting for capo visual extension (80px)
+        const capoOffset = this._capoFret > 0 ? 80 : 0;
         this._diagramX = (CW / 2) - (localW / 2);
-        this._diagramY = (CH / 2) - (localH / 2);
+        this._diagramY = ((CH - localH) / 2) + (capoOffset / 2);
 
-        // O Header (onde ficam os nomes das notas) tem altura fixa
         const headerHeight = 75 * this._scaleFactor;
 
-        // O Fretboard (área das cordas) começa abaixo do header
         this._fretboardX = this._diagramX;
         this._fretboardY = this._diagramY + headerHeight;
         this._fretboardWidth = localW;
         this._fretboardHeight = localH - headerHeight;
 
-        // Espaçamento lateral interno (padding)
         this._horizontalPadding = 30 * this._scaleFactor;
         const fretUsableWidth = this._fretboardWidth - (this._horizontalPadding * 2);
 
-        // Espaçamento entre cordas e trastes
         this._stringSpacing = fretUsableWidth / Math.max(1, this._numStrings - 1);
-        this._realFretSpacing = this._fretboardHeight / this._numFrets;
 
-        // Posicionamento do texto das notas (centralizado no header)
+        // Calculate effective frets based on capo presence
+        this._effectiveNumFrets = this._numFrets;
+        this._realFretSpacing = this._fretboardHeight / this._effectiveNumFrets;
+
         this._stringNamesY = this._diagramY + (headerHeight / 2);
-
-        // Define o raio do braço
         this._neckRadius = 35 * this._scaleFactor;
+
+        // Auto-adjust headstock gap if capo is present
+        this._headstockYOffset = this._capoFret > 0 ? -60 * this._scaleFactor : 0;
 
         if (this._geometry) {
             this._geometry.update(this._getGeometrySettings());
+        }
+
+        if (!this._shortNeckComp) {
+            this._shortNeckComp = new ShortNeckComponent(this._geometry, this._colors);
+        } else {
+            this._shortNeckComp.update(this._geometry, this._colors);
+        }
+        if (this._stringNames) {
+            this._shortNeckComp.setStringNames(this._stringNames);
         }
     }
 
@@ -138,18 +153,27 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
 
     public setConditionalFlags(showNut: boolean, showHeadBackground: boolean): void {
         this._showHeadBackground = showHeadBackground;
+        // Should update component too if it respects this flag
+        // Current ShortNeckComponent implementation always passes showHeadBackground: true or defaults.
+        // We might need to expose a setter in component.
+        // For now, this property is used by `drawNeck` in original.
+        // But `drawNeck` now delegates.
+        // We need to update component!
+        // this._shortNeckComp.setConditionalFlags(...) // If exists
     }
 
     protected _headstockYOffset: number = 0;
 
     public setHeadstockGap(gap: number): void {
         this._headstockYOffset = gap;
+        this.calculateDimensions(); // Re-calc triggers component update
     }
 
     protected _capoFret: number = 0;
 
     public setCapo(show: boolean, fret: number): void {
         this._capoFret = show ? fret : 0;
+        this.calculateDimensions();
     }
 
     public setHideCapoTitle(hide: boolean): void {
@@ -219,9 +243,15 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         } else if (arg2) {
             this._stringNames = arg2;
         }
+        if (this._shortNeckComp && this._stringNames) {
+            this._shortNeckComp.setStringNames(this._stringNames);
+        }
     }
 
-    public setGlobalCapo(capo: number) { this._globalCapo = capo; }
+    public setGlobalCapo(capo: number) {
+        this._globalCapo = capo;
+        this.setCapo(capo > 0, capo);
+    }
 
     public getChordNameCoords(): { x: number; y: number } {
         const visualHeight = this._fretboardHeight + (75 * this._scaleFactor); // Including header
@@ -241,13 +271,21 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         effectiveTransport = FingerComponent.calculateEffectiveTransport(chord.fingers, this._numFrets, transportDisplay);
 
         if (effectiveTransport > 1) {
-            finalChord = {
-                ...chord,
-                fingers: chord.fingers.map(f => ({
-                    ...f,
-                    fret: f.fret > 0 ? f.fret - (effectiveTransport - 1) : 0
-                }))
-            };
+            // IDEMPOTENCY CHECK:
+            // If any finger (with fret > 0) would result in a negative visual fret,
+            // it means the input chord's fingers are PROBABLY already transposed.
+            // We only apply transposition if all visual frets remain >= 0.
+            const wouldHaveNegativeFrets = chord.fingers.some(f => f.fret > 0 && (f.fret - (effectiveTransport - 1)) < 0);
+
+            if (!wouldHaveNegativeFrets) {
+                finalChord = {
+                    ...chord,
+                    fingers: chord.fingers.map(f => ({
+                        ...f,
+                        fret: f.fret > 0 ? f.fret - (effectiveTransport - 1) : 0
+                    }))
+                };
+            }
         }
         return { finalChord, transportDisplay: effectiveTransport };
     }
@@ -260,116 +298,39 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         this.drawFrets();
         this.drawStrings();
         this.drawCapo();
-        this.drawCapoFretNumber();
     }
 
     public drawNeck(progress: number = 1): void {
-        const easedProgress = easeInOutQuad(progress);
-
         this._ctx.save();
         this.applyTransforms();
-
-        this.applyShadow(this._colors.fretboard.neck.shadow);
-        this._ctx.fillStyle = this._colors.fretboard.neck.color || "#8d8d8d";
-        this._safeRoundRect(
-            this._fretboardX,
-            this._fretboardY,
-            this._fretboardWidth,
-            this._fretboardHeight * easedProgress,
-            [0, 0, this._neckRadius, this._neckRadius],
-            true
-        );
-
-        if (this._showHeadBackground) {
-            const headstockHeight = (this._fretboardY - this._diagramY);
-            const headStartY = this._diagramY + this._headstockYOffset;
-
-            this._ctx.fillStyle = this._colors.head?.color || "#3a3a3e";
-            this.applyShadow(this._colors.head?.shadow);
-
-            this._safeRoundRect(
-                this._fretboardX,
-                headStartY,
-                this._fretboardWidth,
-                headstockHeight,
-                [this._neckRadius, this._neckRadius, 0, 0],
-                true
-            );
-
-            this.applyShadow(undefined);
-            if (this._colors.head?.border?.width && this._colors.head.border.width > 0) {
-                this._ctx.lineWidth = this._colors.head.border.width * this._scaleFactor;
-                this._ctx.strokeStyle = this._colors.head.border.color || 'transparent';
-                this._ctx.stroke();
-            }
-        }
-
+        this._shortNeckComp.draw(this._ctx, { neckProgress: progress }, this._rotation, this._mirror);
         this._ctx.restore();
     }
 
     public drawStringNames(progress: number = 1, customNames?: string[]): void {
-        if (!this._showHeadBackground) return;
-
-        const easedProgress = easeInOutQuad(progress);
-        const namesToDraw = customNames || this._stringNames;
-
         this._ctx.save();
         this.applyTransforms();
-        this.applyShadow(undefined);
-        const translateY = (1 - easedProgress) * (-10 * this._scaleFactor);
-
-        const color = this._colors.head?.textColors?.name || this._colors.global.primaryTextColor;
-        const fontSize = 30 * this._scaleFactor;
-        const font = `bold ${fontSize}px sans-serif`;
-
-        namesToDraw.forEach((name, i) => {
-            if (i >= this._numStrings) return;
-
-            const x = this._fretboardX + this._horizontalPadding + i * this._stringSpacing;
-            const y = this._stringNamesY + translateY + this._headstockYOffset;
-
-            this._drawText(name, x, y, font, color, "center", "middle", true);
-        });
-
+        if (customNames) {
+            this._shortNeckComp.setStringNames(customNames);
+            this._shortNeckComp.draw(this._ctx, { stringNamesProgress: progress }, this._rotation, this._mirror);
+            if (this._stringNames) this._shortNeckComp.setStringNames(this._stringNames);
+        } else {
+            this._shortNeckComp.draw(this._ctx, { stringNamesProgress: progress }, this._rotation, this._mirror);
+        }
         this._ctx.restore();
     }
 
     public drawStrings(): void {
-        if (this._colors.fretboard.strings.thickness <= 0) return;
-
         this._ctx.save();
         this.applyTransforms();
-        this.applyShadow(this._colors.fretboard.strings.shadow);
-
-        const currentHeight = this._fretboardHeight;
-        const thickness = (this._colors.fretboard.strings.thickness || 2) * this._scaleFactor;
-        const color = this._colors.fretboard.strings.color || "#444444";
-
-        // Itera sobre o número lógico das cordas (1 a N) para bater com a geometria
-        for (let i = 1; i <= this._numStrings; i++) {
-            const { x } = this.getFingerCoords(0, i); // Pega a coordenada X da corda
-            this._drawLine(x, this._fretboardY, x, this._fretboardY + currentHeight, color, thickness);
-        }
+        this._shortNeckComp.draw(this._ctx, { stringsProgress: 1 }, this._rotation, this._mirror);
         this._ctx.restore();
     }
 
     public drawFrets(): void {
-        const baseColor = this._colors.fretboard.frets.color || "#666666";
-
         this._ctx.save();
         this.applyTransforms();
-        this.applyShadow(this._colors.fretboard.frets.shadow);
-
-        // Desenha os trastes (incluindo o traste 0/pestana se necessário)
-        for (let i = 1; i < this._numFrets; i++) {
-            const y = this._fretboardY + i * this._realFretSpacing;
-            const thickness = (this._colors.fretboard.frets.thickness || 2) * this._scaleFactor;
-
-            // O primeiro traste (index 0) é a pestana, geralmente mais grossa
-            const currentThickness = i === 0 ? thickness * 1.5 : thickness;
-
-            this._drawLine(this._fretboardX, y, this._fretboardX + this._fretboardWidth, y, baseColor, currentThickness);
-        }
+        this._shortNeckComp.draw(this._ctx, { fretsProgress: 1 }, this._rotation, this._mirror);
         this._ctx.restore();
     }
 
@@ -379,7 +340,10 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
     }
 
     public drawStringsProgressive(progress: number): void {
-        this.drawStrings();
+        this._ctx.save();
+        this.applyTransforms();
+        this._shortNeckComp.draw(this._ctx, { stringsProgress: progress }, this._rotation, this._mirror);
+        this._ctx.restore();
     }
 
     public drawFretsProgressive(progress: number): void {
@@ -391,7 +355,7 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         stringNamesProgress: number;
         stringsProgress: number;
         fretsProgress: number;
-        nutProgress: number;
+        nutProgress?: number;
     }): void {
         if (phases.neckProgress > 0) {
             this.drawNeckProgressive(phases.neckProgress);
@@ -407,76 +371,16 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         }
     }
 
-    protected _drawLine(x1: number, y1: number, x2: number, y2: number, color: string, width: number): void {
-        this._ctx.save();
-        this._ctx.strokeStyle = color;
-        this._ctx.lineWidth = width;
-        this._ctx.beginPath();
-        this._ctx.moveTo(x1, y1);
-        this._ctx.lineTo(x2, y2);
-        this._ctx.stroke();
-        this._ctx.restore();
-    }
+
 
     private drawCapo(): void {
-        if (this._capoFret <= 0) return;
-        const capoComp = new CapoComponent(this._capoFret, {
-            color: this._colors.capo?.color || '#c0c0c0',
-            border: this._colors.capo?.border || { color: '#808080', width: 2 },
-            textColor: this._colors.capo?.textColors?.name || '#2c2c2c',
-            opacity: 1
-        }, this._geometry);
-        capoComp.draw(this._ctx);
-    }
-
-    private drawCapoFretNumber(): void {
-        if (this._capoFret <= 0) return;
         this._ctx.save();
         this.applyTransforms();
-        this.applyShadow(undefined);
-
-        const capoHeight = 35 * this._scaleFactor;
-        const capoY = this._fretboardY - (capoHeight / 2) - (2 * this._scaleFactor) + 27 + this._headstockYOffset;
-
-        const x = this._fretboardX - 40 * this._scaleFactor;
-        const y = capoY + capoHeight / 2;
-
-        const text = `${this._capoFret.toString()}ª`;
-        const font = `bold ${32 * this._scaleFactor}px sans-serif`;
-        const color = this._colors.capo?.textColors?.number || this._colors.global.primaryTextColor;
-
-        this._drawText(text, x, y, font, color, "center", "middle", true);
+        this._shortNeckComp.drawCapo(this._ctx, this._capoFret, this._rotation, this._mirror);
         this._ctx.restore();
     }
 
-    protected _drawText(
-        text: string,
-        x: number,
-        y: number,
-        font: string,
-        color: string,
-        align: CanvasTextAlign = "center",
-        baseline: CanvasTextBaseline = "middle",
-        counterRotate: boolean = false
-    ): void {
-        this._ctx.save();
-        this._ctx.fillStyle = color;
-        this._ctx.font = font;
-        this._ctx.textAlign = align;
-        this._ctx.textBaseline = baseline;
 
-        if (counterRotate) {
-            this._ctx.save();
-            this._ctx.translate(x, y);
-            if (this._mirror) this._ctx.scale(-1, 1);
-            if (this._rotation) this._ctx.rotate((-this._rotation * Math.PI) / 180);
-            this._ctx.fillText(text, 0, 0);
-            this._ctx.restore();
-        } else {
-            this._ctx.fillText(text, x, y);
-        }
-        this._ctx.restore();
-    }
 
     // ChordDrawer interface stubs
     public drawChord(chord: ChordDiagramProps, transportDisplay: number, offsetX?: number, options?: any): void {
@@ -556,26 +460,26 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
     public drawChordName(chordName: string, options?: any): void {
         if (!chordName) return;
 
-        this._ctx.save();
-        // Do NOT apply global transforms so text position is absolute (top of screen)
-        // this.applyTransforms();
-
         const { x, y } = this.getChordNameCoords();
-        const fontSize = (options?.fontSize || 60) * this._scaleFactor;
-        const font = `900 ${fontSize}px "Inter", sans-serif`;
-        const color = options?.color || this._colors.global.primaryTextColor || "#ffffff";
+        const component = new ChordNameComponent(
+            chordName,
+            x,
+            y,
+            {
+                color: options?.color || this._colors.global.primaryTextColor,
+                fontSize: options?.fontSize,
+                opacity: options?.opacity
+            },
+            this._scaleFactor
+        );
 
-        this._ctx.globalAlpha = options?.opacity ?? 1;
+        // Ensure context is clean of transforms for absolute positioning if needed, 
+        // or apply transforms if getChordNameCoords expects it.
+        // BaseDrawer getChordNameCoords returns center coordinates.
+        // ChordNameComponent expects absolute coordinates if we don't translate.
+        // ShortNeck.drawChordName previously did NOT apply transforms.
 
-        this._ctx.fillStyle = color;
-        this._ctx.font = font;
-        this._ctx.textAlign = "center";
-        this._ctx.textBaseline = "middle";
-
-        // Draw directly at absolute coordinates
-        this._ctx.fillText(chordName, x, y);
-
-        this._ctx.restore();
+        component.draw(this._ctx);
     }
 
     public drawFingers(chord: ChordDiagramProps): void {

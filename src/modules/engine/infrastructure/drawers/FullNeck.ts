@@ -7,12 +7,15 @@ import { CapoComponent } from "./components/CapoComponent";
 import { ChordDrawer } from "./ChordDrawer";
 import { detectBarreFromChord as detectBarre } from "./utils/barre-detection";
 import { NeckType } from "./components/NeckType";
+import { FullNeckComponent } from "./components/FullNeckComponent";
+import { ChordNameComponent } from "./components/ChordNameComponent";
 
 export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer, ChordDrawer {
     protected _boardY: number = 0;
     protected _stringMargin: number = 0;
     protected _showHeadBackground: boolean = true;
     protected _headstockWidth: number = 0;
+    protected _fullNeckComp!: FullNeckComponent;
 
     constructor(
         ctx: CanvasRenderingContext2D,
@@ -71,6 +74,13 @@ export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer, Chord
         this._boardY = this._fretboardY;
 
         if (this._geometry) this._geometry.update(this._getGeometrySettings());
+
+        if (!this._fullNeckComp) {
+            this._fullNeckComp = new FullNeckComponent(this._geometry, this._colors);
+        } else {
+            this._fullNeckComp.update(this._geometry, this._colors);
+        }
+        if (this._stringNames) this._fullNeckComp.setStringNames(this._stringNames);
     }
 
     public updateGeometry(w: number, h: number, ns: number, nf: number, sf: number): void {
@@ -88,139 +98,40 @@ export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer, Chord
 
     public drawFretboard(): void {
         this.clear();
-        this.drawNeck();
-        this.drawFrets();
-        this.drawInlays(0, this._numFrets);
-        this.drawStrings();
-        this.drawStringNames(1);
-        this.drawCapo();
+        this._ctx.save();
+        this.applyTransforms();
+        this._fullNeckComp.draw(this._ctx);
+        // Draw Capo separately or included? FullNeckComponent includes drawCapo method but draw() doesn't call it unless I added it?
+        // My FullNeckComponent implementation definitely has drawCapo but draw() does NOT call it.
+        // So I must call it explicitly.
+        this._fullNeckComp.drawCapo(this._ctx, this._globalCapo);
+        this._ctx.restore();
     }
 
     public drawNeck(progress: number = 1): void {
-        this._ctx.save();
-        this.applyTransforms();
-
-        const radius = 20 * this._scaleFactor;
-
-        // Draw Headstock
-        if (this._showHeadBackground) {
-            this._ctx.save();
-            this.applyShadow(this._colors.head?.shadow);
-            this._ctx.fillStyle = this._colors.head?.color || "#3a3a3e";
-
-            const headX = this._fretboardX - this._headstockWidth;
-
-            // Rounded corners on the left [TL, TR, BR, BL] -> [radius, 0, 0, radius]
-            this._safeRoundRect(
-                headX,
-                this._fretboardY,
-                this._headstockWidth,
-                this._fretboardHeight,
-                [radius, 0, 0, radius], // Left side rounded
-                true
-            );
-
-            // Border
-            if (this._colors.head?.border?.width && this._colors.head.border.width > 0) {
-                this.applyShadow(undefined); // Remove shadow for border to avoid artifact
-                this._ctx.lineWidth = this._colors.head.border.width * this._scaleFactor;
-                this._ctx.strokeStyle = this._colors.head.border.color || 'transparent';
-                this._ctx.stroke();
-            }
-            this._ctx.restore();
-        }
-
-        // Draw Fretboard Neck
-        this.applyShadow(this._colors.fretboard.neck.shadow);
-        this._ctx.fillStyle = this._colors.fretboard.neck.color || "#1a1a1a";
-
-        // Flat on left to join with headstock: [0, radius, radius, 0]
-        const neckRadii = this._showHeadBackground ? [0, radius, radius, 0] : radius;
-
-        this._safeRoundRect(
-            this._fretboardX,
-            this._fretboardY,
-            this._fretboardWidth,
-            this._fretboardHeight,
-            neckRadii
-        );
-
-        this._ctx.restore();
+        // Stub: logic moved to Main Component. Use drawFretboard for full redraw.
     }
 
     public drawFrets(): void {
-        this._ctx.save();
-        this.applyTransforms();
-        const color = this._colors.fretboard.frets.color || "#555555";
-        const thickness = (this._colors.fretboard.frets.thickness || 3) * this._scaleFactor;
-        for (let i = 0; i < this._numFrets; i++) {
-            const x = this._fretboardX + i * this._realFretSpacing;
-            this._drawLine(x, this._fretboardY, x, this._fretboardY + this._fretboardHeight, color, thickness);
-        }
-        this._ctx.restore();
+        // Stub: logic moved.
     }
 
     public drawStrings(): void {
-        this._ctx.save();
-        this.applyTransforms();
-        const color = this._colors.fretboard.strings.color || "#cccccc";
-        const thickness = (this._colors.fretboard.strings.thickness || 2) * this._scaleFactor;
-        for (let i = 1; i <= this._numStrings; i++) {
-            const { y } = this.getFingerCoords(0, i);
-            this._drawLine(this._fretboardX, y, this._fretboardX + this._fretboardWidth, y, color, thickness);
-        }
-        this._ctx.restore();
+        // Stub: logic moved.
+    }
+
+    public drawInlays(start: number, end: number): void {
+        // Stub: logic moved.
     }
 
     public drawStringNames(arg: number | string[] | undefined, arg2?: string[]): void {
-        if (Array.isArray(arg)) this._stringNames = arg;
-        else if (arg2) this._stringNames = arg2;
-        this._ctx.save();
-        this.applyTransforms();
-        const fontSize = 24 * this._scaleFactor;
-        this._ctx.font = `bold ${fontSize}px sans-serif`;
-        this._ctx.fillStyle = this._colors.global.primaryTextColor || "#ffffff";
-        this._ctx.textAlign = "center";
-        this._ctx.textBaseline = "middle";
-
-        // Calculate X position: Center of headstock if shown, else slight offset
-        const xOffset = this._showHeadBackground ? (this._headstockWidth / 2) : (20 * this._scaleFactor);
-        const baseX = this._fretboardX - xOffset;
-
-        for (let i = 1; i <= this._numStrings; i++) {
-            const { y } = this.getFingerCoords(0, i);
-            const name = this._stringNames[this._numStrings - i] || "";
-
-            this._ctx.save();
-            this._ctx.translate(baseX, y);
-            if (this._mirror) {
-                this._ctx.scale(-1, 1);
-                // Center align works for mirror too if we just flip scale at the point
-            }
-            this._ctx.fillText(name, 0, 0);
-            this._ctx.restore();
-        }
-        this._ctx.restore();
+        // Stub: logic moved.
     }
 
     private drawCapo(): void {
-        if (this._globalCapo <= 0) return;
-        new CapoComponent(this._globalCapo, {
-            color: this._colors.capo?.color || '#c0c0c0',
-            border: this._colors.capo?.border || { color: '#808080', width: 2 },
-            textColor: this._colors.capo?.textColors?.name || '#2c2c2c',
-            opacity: 1
-        }, this._geometry).draw(this._ctx);
-    }
-
-    protected _drawLine(x1: number, y1: number, x2: number, y2: number, color: string, width: number): void {
         this._ctx.save();
-        this._ctx.beginPath();
-        this._ctx.strokeStyle = color;
-        this._ctx.lineWidth = width;
-        this._ctx.moveTo(x1, y1);
-        this._ctx.lineTo(x2, y2);
-        this._ctx.stroke();
+        this.applyTransforms();
+        this._fullNeckComp.drawCapo(this._ctx, this._globalCapo);
         this._ctx.restore();
     }
 
@@ -233,22 +144,25 @@ export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer, Chord
     }
 
     public drawChordName(name: string, options?: any): void {
+        const component = new ChordNameComponent(
+            name,
+            this._dimensions.width / 2,
+            this._fretboardY - 60 * this._scaleFactor,
+            {
+                color: options?.color || this.colors.global.primaryTextColor,
+                fontSize: 48,
+                opacity: options?.opacity
+            },
+            this._scaleFactor
+        );
+
         this._ctx.save();
         this.applyTransforms();
-        const fontSize = 48 * this._scaleFactor;
-        this._ctx.font = `900 ${fontSize}px "Inter", sans-serif`;
-        this._ctx.fillStyle = this._colors.global.primaryTextColor || "#ffffff";
-        this._ctx.textAlign = "center";
-        this._ctx.globalAlpha = options?.opacity ?? 1;
-        const x = this._dimensions.width / 2;
-        const y = this._fretboardY - 60 * this._scaleFactor;
+        // ChordNameComponent draws at x,y given. getChordNameCoords for FullNeck was centered?
+        // FullNeck uses _dimensions.width/2 and _fretboardY - offset.
+        // And it applies transforms `this.applyTransforms()`.
 
-        this._ctx.save();
-        this._ctx.translate(x, y);
-        if (this._mirror) this._ctx.scale(-1, 1);
-        this._ctx.fillText(name, 0, 0);
-        this._ctx.restore();
-
+        component.draw(this._ctx);
         this._ctx.restore();
     }
 

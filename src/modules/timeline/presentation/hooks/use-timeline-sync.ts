@@ -25,7 +25,16 @@ export function useTimelineSync({
     playbackProgress,
     playbackTotalDurationMs
 }: TimelineSyncProps) {
-    const chords = useMemo(() => measuresToChords(measures, settings), [measures, settings]);
+    // Use a stable reference for chords by stringifying measures
+    const measuresKey = useMemo(() => JSON.stringify(measures.map(m => ({
+        id: m.id,
+        notes: m.notes.map(n => ({ id: n.id, positions: n.positions }))
+    }))), [measures]);
+
+    const chords = useMemo(() => {
+        console.log('[useTimelineSync] Recalculating chords');
+        return measuresToChords(measures, settings);
+    }, [measuresKey, settings]);
 
     const activeChordIndex = useMemo(() => {
         if (!activeMeasure || chords.length === 0) return 0;
@@ -47,7 +56,17 @@ export function useTimelineSync({
             if (maxIndex !== -1) offset = maxIndex;
         }
 
-        return prevChordsCount + offset;
+        const result = prevChordsCount + offset;
+        console.log('[useTimelineSync] activeChordIndex calculation:', {
+            currentMeasureIndex,
+            prevChordsCount,
+            editingNoteId,
+            selectedNoteIds,
+            offset,
+            result,
+            totalChords: chords.length
+        });
+        return result;
     }, [activeMeasure, currentMeasureIndex, measures, settings, chords, editingNoteId, selectedNoteIds]);
 
     const totalDurationMs = useMemo(() => {

@@ -94,7 +94,7 @@ const SETTING_GROUPS: SettingGroup[] = [
     icon: Sun,
     controls: [
       { type: 'color', label: 'Background', key: 'global.backgroundColor' },
-      { type: 'slider', label: 'Global Scale', key: 'global.scale', min: 0.5, max: 2, step: 0.1 },
+      { type: 'slider', label: 'Global Scale', key: 'global.scale', min: 0.7, max: 1.1, step: 0.1 },
     ]
   },
   {
@@ -108,8 +108,8 @@ const SETTING_GROUPS: SettingGroup[] = [
 
       { type: 'color', label: 'Headstock Color', key: 'head.color' },
       { type: 'color', label: 'Head Border', key: 'head.border.color' },
-      { type: 'number', label: 'Border Width', key: 'head.border.width', min: 0, max: 10 },
       { type: 'toggle', label: 'Head Shadow', key: 'head.shadow.enabled' },
+      { type: 'color', label: 'Head Shadow Color', key: 'head.shadow.color' },
     ]
   },
   {
@@ -129,12 +129,10 @@ const SETTING_GROUPS: SettingGroup[] = [
     icon: Grid,
     controls: [
       { type: 'color', label: 'Strings Color', key: 'fretboard.strings.color' },
-      { type: 'number', label: 'String Width', key: 'fretboard.strings.thickness', min: 1, max: 10 },
       { type: 'toggle', label: 'String Shadow', key: 'fretboard.strings.shadow.enabled' },
       { type: 'color', label: 'Shadow Color', key: 'fretboard.strings.shadow.color' },
 
       { type: 'color', label: 'Frets Color', key: 'fretboard.frets.color' },
-      { type: 'number', label: 'Fret Width', key: 'fretboard.frets.thickness', min: 1, max: 10 },
       { type: 'toggle', label: 'Frets Shadow', key: 'fretboard.frets.shadow.enabled' },
       { type: 'color', label: 'Shadow Color', key: 'fretboard.frets.shadow.color' },
     ]

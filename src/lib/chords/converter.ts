@@ -120,13 +120,28 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
             // A transposição de altura de som (pitch) deve ser lidada pelo AudioEngine separadamente, se necessário.
             const shiftedFingers = fingers; // Mantém os dedos originais
 
+            // Deep clone to prevent reference sharing
+            const clonedFingers = shiftedFingers.map(f => ({ ...f }));
+            const clonedAvoid = [...avoid];
+            const clonedExtends = chordData.extends ? { ...chordData.extends } : undefined;
+
             result.push({
-                chord: chordData,
-                finalChord: { ...chordData, fingers: shiftedFingers },
+                chord: {
+                    ...chordData,
+                    fingers: fingers.map(f => ({ ...f })),
+                    avoid: [...avoid],
+                    extends: clonedExtends
+                },
+                finalChord: {
+                    ...chordData,
+                    fingers: clonedFingers,
+                    avoid: clonedAvoid,
+                    extends: clonedExtends ? { ...clonedExtends } : undefined
+                },
                 duration: durationMs,
                 transportDisplay: 0,
                 strumming: undefined,
-                effects: effects.length > 0 ? effects : undefined
+                effects: effects.length > 0 ? effects.map(e => ({ ...e })) : undefined
             });
         });
     });
@@ -152,10 +167,20 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
         });
     }
 
+    // Debug: Log to verify no reference sharing
+    if (result.length > 0) {
+        console.log('[measuresToChords] Generated', result.length, 'chords');
+        result.forEach((chord, idx) => {
+            const fingersStr = chord.finalChord.fingers.map(f => `${f.string}:${f.fret}`).join(',');
+            console.log(`  [${idx}] ${chord.finalChord.chordName || 'unnamed'} - fingers: ${fingersStr}`);
+        });
+    }
+
     return result;
 }
 
 function createEmptyChord(): ChordDiagramProps {
+    // Always return fresh objects to prevent reference sharing
     return {
         chord: { note: 0, complement: 0, extension: [], bass: 0 },
         origin: 0,

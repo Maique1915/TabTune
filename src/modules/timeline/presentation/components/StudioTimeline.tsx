@@ -29,6 +29,7 @@ interface StudioTimelineProps {
     selectedMeasureId: string | null;
     totalDurationMs?: number;
     currentCursorMs?: number;
+    onSeek?: (ms: number) => void;
 }
 
 const StudioTimeline: React.FC<StudioTimelineProps> = ({
@@ -54,6 +55,7 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
     selectedMeasureId,
     totalDurationMs = 0,
     currentCursorMs = 0,
+    onSeek
 }) => {
     const capacity = getMeasureCapacity(timeSignature);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -255,7 +257,11 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
                                             return (
                                                 <div
                                                     key={note.id}
-                                                    onClick={(e) => { e.stopPropagation(); onSelectNote(note.id, e.shiftKey || e.ctrlKey); }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onSelectNote(note.id, e.shiftKey || e.ctrlKey);
+                                                        if (timing && onSeek) onSeek(timing.start);
+                                                    }}
                                                     onDoubleClick={(e) => { e.stopPropagation(); onDoubleClickNote(note.id); }}
                                                     draggable={true}
                                                     onDragStart={(e) => handleNoteDragStart(e, measure.id, nIdx)}

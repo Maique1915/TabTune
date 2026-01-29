@@ -139,22 +139,66 @@ export function readHistoryFile(file: File): Promise<{
 }> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
+
+        const normalizeFingers = (f: any): any[] => {
+            if (Array.isArray(f)) return f;
+            if (f && typeof f === 'object') {
+                return Object.keys(f).map(key => {
+                    const val = f[key];
+                    // val is expected to be [fret, finger] or [fret, finger, endString/fret?]
+                    // Legacy dict was [fret, finger]
+                    return { string: parseInt(key), fret: val[0], finger: val[1] };
+                });
+            }
+            return [];
+        };
+
         reader.onload = (e) => {
             try {
                 const json = JSON.parse(e.target?.result as string);
                 console.log('[history-manager] Parsed JSON keys:', Object.keys(json));
-                if (json.theme) console.log('[history-manager] Found theme in JSON:', json.theme);
-                else console.warn('[history-manager] Theme missing in JSON root.');
 
-                // Legacy Format: Array of chords
-                if (Array.isArray(json)) {
-                    resolve({ chords: json as ChordDiagramProps[] });
-                }
-                // New Format: Object with version
-                else if (json.chords && Array.isArray(json.chords)) {
+                // V2 Format: Timeline
+                if (json.timeline && Array.isArray(json.timeline)) {
+                    console.log('[history-manager] Detected V2 History Format');
+                    const settings = json.settings || {};
+                    const tuning = settings.tuning || ['E', 'A', 'D', 'G', 'B', 'e'];
+
+                    const chords: ChordDiagramProps[] = json.timeline.map((event: any) => {
+                        const achord = parseChordValues(event.chordName);
+                        return {
+                            chord: achord,
+                            origin: achord.note,
+                            fingers: event.positions || [],
+                            avoid: [],
+                            stringNames: event.tuning || tuning,
+                            chordName: event.chordName,
+                            showChordName: true,
+                            capo: event.capo || settings.capo || 0,
+                            extends: {
+                                durationMs: event.duration
+                            }
+                        };
+                    });
+
                     resolve({
-                        chords: json.chords,
-                        measures: json.measures, // Load raw measures if present
+                        chords,
+                        settings: json.settings,
+                        theme: json.theme
+                    });
+                }
+                // Legacy Formats
+                else if (json.chords || Array.isArray(json)) {
+                    let chords = Array.isArray(json) ? json : json.chords;
+                    // Normalize fingers from Dict to Array if needed
+                    chords = chords.map((c: any) => ({
+                        ...c,
+                        fingers: normalizeFingers(c.fingers)
+                    }));
+
+                    resolve({
+                        chords,
+                        measures: json.measures,
                         settings: json.settings,
                         theme: json.theme
                     });
@@ -225,7 +269,7 @@ export function fretboardToHistory(measures: MeasureData[], settings: GlobalSett
             }
         };
 
-                // Legacy nutForm mapping removed. Barre information is now handled via StandardPosition's endString.
+        // Legacy nutForm mapping removed. Barre information is now handled via StandardPosition's endString.
         history.push(chordData);
     });
 

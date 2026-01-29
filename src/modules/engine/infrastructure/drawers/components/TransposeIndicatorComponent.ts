@@ -90,8 +90,8 @@ export class TransposeIndicatorComponent implements IFretboardComponent {
         const fretboardY = this.geometry.fretboardY;
         const realFretSpacing = this.geometry.realFretSpacing;
 
-        // Final refined position: 45px to the left of the neck
-        const x = fretboardX - (45 * scaleFactor);
+        // Final refined position: 50px to the left of the neck
+        const x = fretboardX - (50 * scaleFactor);
         const y = fretboardY + (this.vFret - 0.5) * realFretSpacing;
 
         ctx.save();
@@ -110,7 +110,7 @@ export class TransposeIndicatorComponent implements IFretboardComponent {
 
         const fontSize = (this.style.fontSize || 35) * scaleFactor;
         ctx.font = `bold ${fontSize}px "Inter", sans-serif`;
-        ctx.textAlign = "right";
+        ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillStyle = this.style.color || "#ffffff";
 

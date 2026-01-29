@@ -4,6 +4,7 @@ import { MeasureData, GlobalSettings, ScoreStyle, DEFAULT_SCORE_STYLE, Duration,
 import { FretboardTheme } from '@/modules/core/domain/types';
 import { useUndoRedo } from '@/modules/editor/presentation/hooks/use-undo-redo';
 import { DEFAULT_COLORS } from '@/modules/editor/presentation/constants';
+import { deepCloneNote, deepCloneMeasure } from '@/modules/editor/domain/clone-utils';
 import {
     getNoteDurationValue,
     getMeasureCapacity,
@@ -91,7 +92,7 @@ export function useChordsEditor() {
 
     const handleToggleBarre = (indices?: number[]) => {
         updateSelectedNotes(n => {
-            const newPositions = [...n.positions];
+            const newPositions = n.positions.map(p => ({ ...p }));
 
             // If explicit indices provided, this is a bit complex in the new model.
             // But usually this means "these strings are part of one finger shift".
@@ -109,7 +110,7 @@ export function useChordsEditor() {
 
     const handleToggleBarreTo = (targetString: number) => {
         updateSelectedNotes(n => {
-            const newPositions = [...n.positions];
+            const newPositions = n.positions.map(p => ({ ...p }));
             const pos = newPositions[activePositionIndex];
             if (!pos) return {};
 
@@ -490,7 +491,7 @@ export function useChordsEditor() {
                 if (noteIndex === -1) return m;
 
                 const noteToCopy = m.notes[noteIndex];
-                const newNote = { ...noteToCopy, id: generateId() };
+                const newNote = deepCloneNote(noteToCopy, true);
                 const newNotes = [...m.notes];
                 newNotes.splice(noteIndex + 1, 0, newNote);
                 return { ...m, notes: newNotes };
@@ -512,7 +513,7 @@ export function useChordsEditor() {
         const { fret, string } = findBestFretForPitch(midi, currentPos.string);
 
         updateSelectedNotes(n => {
-            const newPositions = [...n.positions];
+            const newPositions = n.positions.map(p => ({ ...p }));
             newPositions[activePositionIndex] = { fret: fret, string: string };
             return { positions: newPositions };
         });
@@ -536,7 +537,7 @@ export function useChordsEditor() {
         if (newFret < 0) newFret = 0;
 
         updateSelectedNotes(n => {
-            const newPositions = [...n.positions];
+            const newPositions = n.positions.map(p => ({ ...p }));
             newPositions[activePositionIndex] = { string: newString, fret: newFret };
             return { positions: newPositions };
         });
@@ -563,7 +564,7 @@ export function useChordsEditor() {
 
             const newMidi = naturalMidi + offset;
             const { fret } = findBestFretForPitch(newMidi, currentPos.string);
-            const newPositions = [...n.positions];
+            const newPositions = n.positions.map(p => ({ ...p }));
             newPositions[activePositionIndex] = { ...currentPos, fret: fret };
 
             return {
@@ -586,7 +587,7 @@ export function useChordsEditor() {
 
     const handleSetFingerForString = (idx: number, finger: number | string | undefined) => {
         updateSelectedNotes(n => {
-            const newPositions = [...n.positions];
+            const newPositions = n.positions.map(p => ({ ...p }));
             if (!newPositions[idx]) return {};
 
             if (finger === 'X') {
@@ -600,7 +601,7 @@ export function useChordsEditor() {
 
     const handleSetFretForString = (idx: number, fret: number) => {
         updateSelectedNotes(n => {
-            const newPositions = [...n.positions];
+            const newPositions = n.positions.map(p => ({ ...p }));
             if (!newPositions[idx]) return {};
             newPositions[idx] = { ...newPositions[idx], fret, avoid: false };
             return { positions: newPositions };
@@ -609,7 +610,7 @@ export function useChordsEditor() {
 
     const handleSetStringForPosition = (idx: number, stringNum: number) => {
         updateSelectedNotes(n => {
-            const newPositions = [...n.positions];
+            const newPositions = n.positions.map(p => ({ ...p }));
             if (!newPositions[idx]) return {};
             newPositions[idx] = { ...newPositions[idx], string: stringNum };
             return { positions: newPositions };
@@ -904,12 +905,17 @@ export function useChordsEditor() {
                 if (measureIndex === -1) return prev;
 
                 const newMeasures = [...prev.measures];
-                const newNotes = [...newMeasures[measureIndex].notes];
+                const measure = newMeasures[measureIndex];
+                const newNotes = [...measure.notes];
+
+                // Remove from source
                 const [movedNote] = newNotes.splice(fromIndex, 1);
+
+                // Insert at destination
                 newNotes.splice(toIndex, 0, movedNote);
 
                 newMeasures[measureIndex] = {
-                    ...newMeasures[measureIndex],
+                    ...measure,
                     notes: newNotes
                 };
 
@@ -920,25 +926,22 @@ export function useChordsEditor() {
             });
         },
 
-        // Copy Measure (duplicates and adds to end immediately)
+        // Copy Measure (duplicates and adds right after the source)
         handleCopyMeasure: (measureId: string) => {
             setState((prev: FretboardEditorState) => {
-                const measureToCopy = prev.measures.find((m: MeasureData) => m.id === measureId);
-                if (!measureToCopy) return prev;
+                const measureIndex = prev.measures.findIndex((m: MeasureData) => m.id === measureId);
+                if (measureIndex === -1) return prev;
 
-                // Deep clone the measure with new IDs
-                const newMeasure: MeasureData = {
-                    ...measureToCopy,
-                    id: generateId(),
-                    notes: measureToCopy.notes.map((note: NoteData) => ({
-                        ...note,
-                        id: generateId()
-                    }))
-                };
+                const measureToCopy = prev.measures[measureIndex];
+                const newMeasure = deepCloneMeasure(measureToCopy, true);
+
+                // Insert right after the source measure
+                const newMeasures = [...prev.measures];
+                newMeasures.splice(measureIndex + 1, 0, newMeasure);
 
                 return {
                     ...prev,
-                    measures: [...prev.measures, newMeasure],
+                    measures: newMeasures,
                     copiedMeasure: measureToCopy
                 };
             });
@@ -949,15 +952,7 @@ export function useChordsEditor() {
             setState((prev: FretboardEditorState) => {
                 if (!prev.copiedMeasure) return prev;
 
-                // Deep clone the measure with new IDs
-                const newMeasure: MeasureData = {
-                    ...prev.copiedMeasure,
-                    id: generateId(),
-                    notes: prev.copiedMeasure.notes.map((note: NoteData) => ({
-                        ...note,
-                        id: generateId()
-                    }))
-                };
+                const newMeasure = deepCloneMeasure(prev.copiedMeasure, true);
 
                 return {
                     ...prev,

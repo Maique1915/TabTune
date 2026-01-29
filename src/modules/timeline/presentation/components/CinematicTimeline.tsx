@@ -31,6 +31,7 @@ interface CinematicTimelineProps {
     selectedMeasureId: string | null;
     totalDurationMs?: number;
     currentCursorMs?: number;
+    onSeek?: (ms: number) => void;
 }
 
 const CinematicTimeline: React.FC<CinematicTimelineProps> = ({
@@ -52,6 +53,7 @@ const CinematicTimeline: React.FC<CinematicTimelineProps> = ({
     selectedMeasureId,
     totalDurationMs = 0,
     currentCursorMs = 0,
+    onSeek
 }) => {
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -235,7 +237,11 @@ const CinematicTimeline: React.FC<CinematicTimelineProps> = ({
                                             return (
                                                 <div
                                                     key={note.id}
-                                                    onClick={(e) => { e.stopPropagation(); onSelectNote(note.id, e.shiftKey || e.ctrlKey); }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onSelectNote(note.id, e.shiftKey || e.ctrlKey);
+                                                        if (timing && onSeek) onSeek(timing.start);
+                                                    }}
                                                     draggable={true}
                                                     onDragStart={(e) => handleNoteDragStart(e, measure.id, nIdx)}
                                                     onDragOver={(e) => handleNoteDragOver(e, measure.id, nIdx)}

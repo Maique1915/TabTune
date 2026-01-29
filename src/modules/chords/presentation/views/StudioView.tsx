@@ -90,7 +90,8 @@ export function StudioView() {
         animationType,
         playbackProgress,
         playbackIsPlaying,
-        renderProgress
+        renderProgress,
+        requestPlaybackSeek
     } = useAppContext();
 
     // Studio specific defaults
@@ -130,6 +131,12 @@ export function StudioView() {
         playbackProgress,
         playbackTotalDurationMs
     });
+
+    const handleSeek = (ms: number) => {
+        if (totalDurationMs > 0) {
+            requestPlaybackSeek(ms / totalDurationMs);
+        }
+    };
 
     useEffect(() => {
         if (renderCancelRequested) {
@@ -257,7 +264,8 @@ export function StudioView() {
         onUpdateNote: (id: string, updates: any) => updateSelectedNotes(updates),
         totalDurationMs: totalDurationMs,
         currentCursorMs: currentCursorMs,
-        bpm: settings.bpm
+        bpm: settings.bpm,
+        onSeek: handleSeek
     };
 
     const activeAnimationType = (settings.numFrets || 5) <= 6 ? (animationType === 'guitar-fretboard' ? 'static-fingers' : animationType) : 'guitar-fretboard';
@@ -340,6 +348,7 @@ export function StudioView() {
                                 <FretboardStage
                                     ref={videoCanvasRef}
                                     chords={chords}
+                                    activeChordIndex={activeChordIndex}
                                     transitionsEnabled={playbackTransitionsEnabled}
                                     buildEnabled={playbackBuildEnabled}
                                     onAnimationStateChange={handleAnimationStateChange}

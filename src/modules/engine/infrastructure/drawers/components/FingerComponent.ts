@@ -26,6 +26,7 @@ export class FingerComponent implements IFretboardComponent {
     private sOpacity: number;
     private sLabel: number | string;
     private sTransport: number = 1;
+    private sScale: number = 1;
 
     private tFret: number;
     private tString: number;
@@ -33,11 +34,13 @@ export class FingerComponent implements IFretboardComponent {
     private tOpacity: number;
     private tLabel: number | string;
     private tTransport: number = 1;
+    private tScale: number = 1;
 
     // Runtime visual state
     private vRect: { x: number; y: number; width: number; height: number } = { x: 0, y: 0, width: 0, height: 0 };
     private vOpacity: number = 1;
     private vLabel: number | string = "";
+    private vScale: number = 1;
 
     constructor(
         fret: number,
@@ -58,7 +61,7 @@ export class FingerComponent implements IFretboardComponent {
         this.geometry = geometry;
         this.transport = this.sTransport = this.tTransport = transport;
 
-        this.sOpacity = this.tOpacity = style.opacity ?? 1;
+        this.sOpacity = this.tOpacity = 1;
         this.syncVisuals(0);
     }
 
@@ -78,19 +81,28 @@ export class FingerComponent implements IFretboardComponent {
 
         // If any finger exceeds the visible area, we shift to the minimum fret used.
         if (maxFret > numFrets) {
-            return minFret;
+            const transport = minFret;
+
+            // IDEMPOTENCY CHECK:
+            // If applying this transport would result in any finger having a negative visual fret,
+            // it means the input is PROBABLY already transposed.
+            const wouldHaveNegativeFrets = fingers.some(f => f.fret > 0 && (f.fret - (transport - 1)) < 0);
+            if (wouldHaveNegativeFrets) return 1;
+
+            return transport;
         }
 
         return 1;
     }
 
-    public setTarget(fret: number, string: number, opacity: number, label: number | string, transport: number = 1, barreEnd?: number): void {
+    public setTarget(fret: number, string: number, opacity: number, label: number | string, transport: number = 1, barreEnd?: number, scale: number = 1): void {
         this.sFret = this.fret;
         this.sString = this.string;
         this.sEndString = this.barreEndString;
         this.sOpacity = this.vOpacity;
         this.sLabel = this.vLabel;
         this.sTransport = this.transport;
+        this.sScale = this.vScale;
 
         this.tFret = fret;
         this.tString = string;
@@ -98,12 +110,18 @@ export class FingerComponent implements IFretboardComponent {
         this.tOpacity = opacity;
         this.tLabel = label;
         this.tTransport = transport;
+        this.tScale = scale;
 
         this.syncVisuals(0);
     }
 
     public update(progress: number): void {
         this.syncVisuals(progress);
+    }
+
+    public setScale(scale: number) {
+        // Immediate set for construction if needed, implies current state
+        this.sScale = this.tScale = this.vScale = scale;
     }
 
     private syncVisuals(progress: number): void {
@@ -125,19 +143,20 @@ export class FingerComponent implements IFretboardComponent {
 
         this.vOpacity = this.sOpacity + (this.tOpacity - this.sOpacity) * progress;
         this.vLabel = progress < 0.5 ? this.sLabel : this.tLabel;
+        this.vScale = this.sScale + (this.tScale - this.sScale) * progress;
 
         if (this.isBarre || this.tEndString) {
             const sEnd = this.sEndString || this.sString;
             const tEnd = this.tEndString || this.tString;
             const curS2 = sEnd + (tEnd - sEnd) * progress;
 
-            const bWidth = (this.style.barreWidth || 56) * this.geometry.scaleFactor;
-            const fRadius = (this.style.radius || 28) * this.geometry.scaleFactor;
+            const bWidth = (this.style.barreWidth || 56) * this.geometry.scaleFactor * this.vScale;
+            const fRadius = (this.style.radius || 28) * this.geometry.scaleFactor * this.vScale;
 
             this.vRect = this.geometry.getBarreRect(curF, curS1, curS2, bWidth, fRadius);
         } else {
             const coords = this.geometry.getFingerCoords(curF, curS1);
-            const r = (this.style.radius || 28) * this.geometry.scaleFactor;
+            const r = (this.style.radius || 28) * this.geometry.scaleFactor * this.vScale;
             this.vRect = {
                 x: coords.x - r,
                 y: coords.y - r,
@@ -166,6 +185,20 @@ export class FingerComponent implements IFretboardComponent {
         if (canvasDimensions) this.canvasDimensions = canvasDimensions;
     }
 
+    private hexToRgba(hex: string, alpha: number): string {
+        if (!hex) return `rgba(0, 0, 0, ${alpha})`;
+        if (hex.startsWith('rgba')) return hex;
+
+        let c = hex.substring(1).split('');
+        if (c.length === 3) c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+
+        const r = parseInt(c[0] + c[1], 16);
+        const g = parseInt(c[2] + c[3], 16);
+        const b = parseInt(c[4] + c[5], 16);
+
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
     public draw(ctx: CanvasRenderingContext2D): void {
         if (this.vOpacity <= 0) return;
 
@@ -181,9 +214,21 @@ export class FingerComponent implements IFretboardComponent {
             ctx.translate(-cx, -cy);
         }
 
-        ctx.globalAlpha = this.vOpacity;
+        // Global Alpha handles visibility transitions (fade in/out), NOT stylistic opacity
+        // Multiply with existing alpha to support nested transparency (e.g. from Carousel)
+        ctx.globalAlpha = ctx.globalAlpha * this.vOpacity;
 
         const radius = (this.isBarre ? (this.style.barreFingerRadius || 28) : (this.style.radius || 28)) * this.geometry.scaleFactor;
+
+        // Shadow Logic
+        if (this.style.shadow?.enabled) {
+            ctx.shadowColor = this.style.shadow.color || "rgba(0,0,0,0.5)";
+            ctx.shadowBlur = (this.style.shadow.blur ?? 5) * this.geometry.scaleFactor;
+            ctx.shadowOffsetX = (this.style.shadow.offsetX ?? 0) * this.geometry.scaleFactor;
+            ctx.shadowOffsetY = (this.style.shadow.offsetY ?? 0) * this.geometry.scaleFactor;
+        } else {
+            ctx.shadowColor = 'transparent';
+        }
 
         ctx.beginPath();
         if (this.isBarre) {
@@ -200,8 +245,13 @@ export class FingerComponent implements IFretboardComponent {
             ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
         }
 
-        ctx.fillStyle = this.style.color || "#000000";
+        // Apply BG Opacity ONLY to the fill
+        const bgOpacity = this.style.opacity ?? 1;
+        ctx.fillStyle = this.hexToRgba(this.style.color || "#000000", bgOpacity);
         ctx.fill();
+
+        // Remove shadow for subsequent strokes/text
+        ctx.shadowColor = 'transparent';
 
         if (this.style.border) {
             ctx.strokeStyle = this.style.border.color;
@@ -223,15 +273,8 @@ export class FingerComponent implements IFretboardComponent {
 
             if (this.mirror) ctx.scale(-1, 1);
 
-            // Separate rotation logic for Short vs Full neck as requested
-            // Currently applying unified counter-rotation, but structure allows divergence
             const rot = this.rotation || 0;
-
-            if (this.geometry.neckType === NeckType.SHORT) {
-                ctx.rotate((-rot * Math.PI) / 180);
-            } else {
-                ctx.rotate((-rot * Math.PI) / 180);
-            }
+            ctx.rotate((-rot * Math.PI) / 180);
 
             ctx.fillText(this.vLabel.toString(), 0, 0);
             ctx.restore();

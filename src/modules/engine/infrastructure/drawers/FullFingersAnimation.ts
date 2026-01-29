@@ -1,11 +1,11 @@
 import type { ChordDiagramProps, BarreInfo, StandardPosition, CapoStyle } from "@/modules/core/domain/types";
-import { FingersAnimationDrawer, FingersAnimationParams } from "./static-fingers-drawer";
+import { FingersAnimationDrawer, FingersAnimationParams } from "./ChordDrawer";
 import { easeInOutQuad } from "../utils/animacao";
 import { detectBarreFromChord } from "./utils/barre-detection";
 import { getFinNum } from "./utils/fingers-utils";
 import { FingerComponent } from "./components/FingerComponent";
 import { CapoComponent } from "./components/CapoComponent";
-import { AvoidsAnimation } from "./AvoidsAnimation";
+import { AvoidComponent } from "./components/AvoidComponent";
 import { NeckType } from "./components/NeckType";
 
 /**
@@ -16,7 +16,7 @@ export class FullFingersAnimation implements FingersAnimationDrawer {
     private fingerComponents: FingerComponent[] = [];
     private barreComponent: FingerComponent | null = null;
     private capoComponent: CapoComponent | null = null;
-    private avoidsAnimation: AvoidsAnimation = new AvoidsAnimation();
+    private avoidComponents: AvoidComponent[] = [];
     private lastChordId: string = "";
 
     public draw(params: FingersAnimationParams): void {
@@ -47,8 +47,8 @@ export class FullFingersAnimation implements FingersAnimationDrawer {
 
         // Apply global transforms to components
         const dims = drawer.dimensions;
-        const rot = drawer.rotation;
-        const mir = drawer.mirror;
+        const rot = (drawer as any).rotation;
+        const mir = (drawer as any).mirror;
 
         if (this.barreComponent) this.barreComponent.setRotation(rot, mir, dims);
         this.fingerComponents.forEach(f => f.setRotation(rot, mir, dims));
@@ -81,13 +81,9 @@ export class FullFingersAnimation implements FingersAnimationDrawer {
             });
 
             // Update & Draw Avoids
-            this.avoidsAnimation.draw({
-                ctx,
-                currentAvoid: currentDisplayChord.finalChord.avoid || [],
-                nextAvoid: nextDisplayChord.finalChord.avoid || [],
-                progress: transitionProgress,
-                geometry,
-                style: drawer.colors.avoid
+            this.avoidComponents.forEach(avoid => {
+                avoid.update(eased);
+                avoid.draw(ctx);
             });
 
             ctx.restore();
@@ -111,13 +107,9 @@ export class FullFingersAnimation implements FingersAnimationDrawer {
                 f.draw(ctx);
             });
 
-            this.avoidsAnimation.draw({
-                ctx,
-                currentAvoid: currentDisplayChord.finalChord.avoid || [],
-                nextAvoid: currentDisplayChord.finalChord.avoid || [],
-                progress: 1,
-                geometry,
-                style: drawer.colors.avoid
+            this.avoidComponents.forEach(avoid => {
+                avoid.update(1);
+                avoid.draw(ctx);
             });
 
             ctx.restore();
@@ -131,6 +123,13 @@ export class FullFingersAnimation implements FingersAnimationDrawer {
         // Include geometry in ID
         const geometryId = `${drawer.fretboardX}_${drawer.fretboardWidth}_${drawer.scaleFactor}`;
         const transitionId = `${curId}_to_${nextId}_geo_${geometryId}`;
+
+        console.log('[FullFingersAnimation] Checking transition:', {
+            lastChordId: this.lastChordId,
+            transitionId,
+            curFingers: current.finalChord.fingers,
+            nxtFingers: next.finalChord.fingers
+        });
 
         if (this.lastChordId === transitionId) return; // Already setup for this specific transition
 
@@ -164,43 +163,55 @@ export class FullFingersAnimation implements FingersAnimationDrawer {
             if (!this.barreComponent && curB) {
                 this.barreComponent = new FingerComponent(curB.fret, curB.startString, curB.finger ?? 1, drawer.colors.fingers, geometry, curT, curB.endString);
             } else if (!this.barreComponent && nxtB) {
-                this.barreComponent = new FingerComponent(nxtB.fret, nxtB.startString, nxtB.finger ?? 1, { ...drawer.colors.fingers, opacity: 1 }, geometry, nxtT, nxtB.endString);
+                this.barreComponent = new FingerComponent(nxtB.fret, nxtB.startString, nxtB.finger ?? 1, { ...drawer.colors.fingers, opacity: 0 }, geometry, nxtT, nxtB.endString);
             }
 
             if (this.barreComponent) {
                 const tF = nxtB ? nxtB.fret : (curB ? curB.fret : 0);
                 const tS = nxtB ? nxtB.startString : (curB ? curB.startString : 0);
                 const tE = nxtB ? nxtB.endString : (curB ? curB.endString : 0);
-                const tO = 1;
+                const tO = nxtB ? 1 : 0; // Fix: Opacity target based on existence of next
                 this.barreComponent.setTarget(tF, tS, tO, nxtB?.finger ?? curB?.finger ?? 1, nxtT, tE);
             }
         } else {
             this.barreComponent = null;
         }
 
-        // 2. Setup Fingers
+        // 2. Setup Fingers (ID-based matching for Zoom transitions)
         this.fingerComponents = [];
-        const max = Math.max(cL.length, nL.length);
-        for (let i = 0; i < max; i++) {
-            const cur = cL[i];
-            const nxt = nL[i];
+
+        const curMap = new Map<number, any>();
+        cL.forEach(f => curMap.set(getFinNum(f.finger), f));
+
+        const nxtMap = new Map<number, any>();
+        nL.forEach(f => nxtMap.set(getFinNum(f.finger), f));
+
+        const allIds = new Set([...curMap.keys(), ...nxtMap.keys()]);
+
+        allIds.forEach(id => {
+            const cur = curMap.get(id);
+            const nxt = nxtMap.get(id);
 
             let fComp: FingerComponent;
-            if (cur) {
+
+            if (cur && nxt) {
+                // Move: Transition position
                 fComp = new FingerComponent(cur.fret, cur.string, cur.finger ?? 1, drawer.colors.fingers, geometry, curT);
-                const tO = 1;
-                const tF = nxt ? nxt.fret : cur.fret;
-                const tS = nxt ? nxt.string : cur.string;
-                const tL = nxt ? nxt.finger : cur.finger;
-                fComp.setTarget(tF, tS, tO, tL ?? 1, nxtT);
-            } else if (nxt) {
-                fComp = new FingerComponent(nxt.fret, nxt.string, nxt.finger ?? 1, { ...drawer.colors.fingers, opacity: 1 }, geometry, nxtT);
-                fComp.setTarget(nxt.fret, nxt.string, 1, nxt.finger ?? 1, nxtT);
+                fComp.setTarget(nxt.fret, nxt.string, 1, nxt.finger ?? 1, nxtT, undefined, 1);
+            } else if (cur && !nxt) {
+                // Disappear: Zoom Out (Scale 1 -> 0)
+                fComp = new FingerComponent(cur.fret, cur.string, cur.finger ?? 1, drawer.colors.fingers, geometry, curT);
+                fComp.setTarget(cur.fret, cur.string, 0, cur.finger ?? 1, nxtT, undefined, 0); // Opacity 0 + Scale 0
+            } else if (!cur && nxt) {
+                // Appear: Zoom In (Scale 0 -> 1)
+                fComp = new FingerComponent(nxt.fret, nxt.string, nxt.finger ?? 1, drawer.colors.fingers, geometry, nxtT);
+                fComp.setScale(0); // Initialize at scale 0
+                fComp.setTarget(nxt.fret, nxt.string, 1, nxt.finger ?? 1, nxtT, undefined, 1);
             } else {
-                continue;
+                return;
             }
             this.fingerComponents.push(fComp);
-        }
+        });
 
         // 3. Setup Capo
         const curCapo = (drawer as any)._globalCapo || 0;
@@ -218,6 +229,25 @@ export class FullFingersAnimation implements FingersAnimationDrawer {
         } else {
             this.capoComponent = null;
         }
+
+        // 4. Setup Avoids
+        this.avoidComponents = [];
+        const curAvoid = current.finalChord.avoid || [];
+        const nxtAvoid = next.finalChord.avoid || [];
+
+        const curSet = new Set(curAvoid as number[]);
+        const nxtSet = new Set(nxtAvoid as number[]);
+        const allStrings = new Set([...curSet, ...nxtSet]);
+
+        allStrings.forEach(stringNum => {
+            const isCur = curSet.has(stringNum);
+            const isNxt = nxtSet.has(stringNum);
+
+            const style = drawer.colors.avoid;
+            const comp = new AvoidComponent(stringNum, { ...style, opacity: isCur ? 1 : 0 }, geometry);
+            comp.setTargetOpacity(isNxt ? 1 : 0);
+            this.avoidComponents.push(comp);
+        });
 
         this.lastChordId = transitionId;
     }

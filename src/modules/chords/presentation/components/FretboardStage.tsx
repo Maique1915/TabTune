@@ -4,11 +4,11 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { type JSAnimation } from "animejs";
 import type { ChordWithTiming, ChordDiagramProps, FretboardTheme } from "@/modules/core/domain/types";
 import { useAppContext } from "@/modules/core/presentation/context/app-context";
-import { type ChordDrawer } from "@/modules/engine/infrastructure/drawers/ChordDrawer";
+import { type ChordDrawer, type FingersAnimationDrawer, type FingersAnimationParams } from "@/modules/engine/infrastructure/drawers/ChordDrawer";
 import { ShortNeckDrawer } from "@/modules/engine/infrastructure/drawers/ShortNeck";
 import { FullNeckDrawer } from "@/modules/engine/infrastructure/drawers/FullNeck";
 
-import { FingersAnimationDrawer, FingersAnimationParams } from "@/modules/engine/infrastructure/drawers/static-fingers-drawer";
+
 import { ShortFingersAnimation } from "@/modules/engine/infrastructure/drawers/ShortFingersAnimation";
 import { FullFingersAnimation } from "@/modules/engine/infrastructure/drawers/FullFingersAnimation";
 import { extensions as extensionMap } from "@/modules/core/domain/chord-logic";
@@ -548,6 +548,14 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
             }
 
             if (clampedElapsed >= totalDurationMs) {
+                // Reset to first chord when animation completes
+                animationStateRef.current.chordIndex = 0;
+                animationStateRef.current.chordProgress = 0;
+                animationStateRef.current.transitionProgress = 0;
+                animationStateRef.current.buildProgress = 1;
+                playheadStateRef.current.t = 0;
+                playbackElapsedMsRef.current = 0;
+
                 setPlaybackProgress(0);
                 setPlaybackIsPlaying(false);
                 setPlaybackIsPaused(false);
@@ -555,6 +563,9 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                 isAnimatingRef.current = false;
                 setIsPaused(false);
                 if (onAnimationStateChange) onAnimationStateChange(false, false);
+
+                // Redraw to show first chord
+                drawAnimatedChord();
                 stopPlayhead();
                 return;
             }
@@ -563,18 +574,6 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         playbackRafIdRef.current = requestAnimationFrame(tick);
     }, [computeStateAtTimeMs, drawAnimatedChord, onAnimationStateChange, setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress, stopPlayhead, chords]);
 
-    useEffect(() => {
-        if (isAnimating && !isPaused) {
-            const totalMs = computeTotalPlaybackDurationMs();
-            startPlaybackRafLoop(totalMs);
-        }
-        return () => {
-            if (playbackRafIdRef.current !== null) {
-                cancelAnimationFrame(playbackRafIdRef.current);
-                playbackRafIdRef.current = null;
-            }
-        };
-    }, [isAnimating, isPaused, startPlaybackRafLoop, computeTotalPlaybackDurationMs]);
 
     const startAnimation = () => {
         if (!chords || chords.length === 0) return;
@@ -663,8 +662,9 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
         }
     }, [chords, computeStateAtTimeMs, computeTotalPlaybackDurationMs, playbackSeekNonce, playbackSeekProgress, setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress]);
 
+    // Effect for when chords array changes
     useEffect(() => {
-        if (!isAnimating && typeof activeChordIndex === 'number' && chords && chords.length > 0) {
+        if (!isAnimating && chords && chords.length > 0 && typeof activeChordIndex === 'number') {
             const index = Math.max(0, Math.min(chords.length - 1, activeChordIndex));
             animationStateRef.current.chordIndex = index;
             animationStateRef.current.chordProgress = 0;
@@ -672,9 +672,36 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
             animationStateRef.current.currentChordName = currentChordData?.finalChord?.chordName || "";
             animationStateRef.current.prevChordName = "";
             animationStateRef.current.nameTransitionProgress = 1;
-            drawAnimatedChord();
+
+            if (drawFrameRef.current) {
+                drawFrameRef.current(animationStateRef.current, playheadStateRef.current.t);
+            }
         }
-    }, [activeChordIndex, chords, isAnimating, drawAnimatedChord]);
+    }, [chords, isAnimating]);
+
+    // Effect for when activeChordIndex changes
+    useEffect(() => {
+        if (!isAnimating && typeof activeChordIndex === 'number' && chords && chords.length > 0) {
+            const index = Math.max(0, Math.min(chords.length - 1, activeChordIndex));
+            console.log('[FretboardStage] activeChordIndex changed:', {
+                activeChordIndex,
+                clampedIndex: index,
+                totalChords: chords.length,
+                chordData: chords[index]?.finalChord
+            });
+
+            animationStateRef.current.chordIndex = index;
+            animationStateRef.current.chordProgress = 0;
+            const currentChordData = chords[index];
+            animationStateRef.current.currentChordName = currentChordData?.finalChord?.chordName || "";
+            animationStateRef.current.prevChordName = "";
+            animationStateRef.current.nameTransitionProgress = 1;
+
+            if (drawFrameRef.current) {
+                drawFrameRef.current(animationStateRef.current, playheadStateRef.current.t);
+            }
+        }
+    }, [activeChordIndex, isAnimating]);
 
     const handleRender = useCallback(async (format?: 'mp4' | 'webm' | 'json', quality?: 'low' | 'medium' | 'high' | 'ultra') => {
         if (!chords || chords.length === 0 || !canvasRef.current) return;

@@ -89,7 +89,8 @@ export function CinematicView() {
         playbackTotalDurationMs,
         animationType,
         playbackProgress,
-        playbackIsPlaying
+        playbackIsPlaying,
+        requestPlaybackSeek
     } = useAppContext();
 
     // Cinematic specific defaults
@@ -129,6 +130,12 @@ export function CinematicView() {
         playbackProgress,
         playbackTotalDurationMs
     });
+
+    const handleSeek = (ms: number) => {
+        if (totalDurationMs > 0) {
+            requestPlaybackSeek(ms / totalDurationMs);
+        }
+    };
 
     useEffect(() => {
         if (renderCancelRequested) {
@@ -256,7 +263,8 @@ export function CinematicView() {
         onUpdateNote: (id: string, updates: any) => updateSelectedNotes(updates),
         totalDurationMs: totalDurationMs,
         currentCursorMs: currentCursorMs,
-        bpm: settings.bpm
+        bpm: settings.bpm,
+        onSeek: handleSeek
     };
 
     return (
@@ -339,6 +347,7 @@ export function CinematicView() {
                                 <FretboardStage
                                     ref={videoCanvasRef}
                                     chords={chords}
+                                    activeChordIndex={activeChordIndex}
                                     transitionsEnabled={playbackTransitionsEnabled}
                                     buildEnabled={playbackBuildEnabled}
                                     onAnimationStateChange={handleAnimationStateChange}

@@ -55,6 +55,8 @@ export function useUndoRedo<T>(initialState: T, options: Options = { enableShort
     const setState = useCallback((newState: T | ((prevState: T) => T), options?: { overwrite?: boolean }) => {
         setHistoryState(prev => {
             const current = prev.history[prev.index];
+
+            // CRITICAL FIX: Always use the current state from history, not a cached reference
             const resolvedState = typeof newState === 'function' ? (newState as Function)(current) : newState;
 
             if (resolvedState === undefined || resolvedState === null) return prev;
@@ -77,23 +79,15 @@ export function useUndoRedo<T>(initialState: T, options: Options = { enableShort
             }
 
             if (options?.overwrite) {
-                // console.log('[useUndoRedo] Overwrite at index', prev.index);
+                // Overwrite current state without creating new history entry
                 const newHistory = [...prev.history];
                 newHistory[prev.index] = resolvedState;
                 return { ...prev, history: newHistory };
             }
 
-            // DEBUG: Identify loop source
-            const keysDiff = Object.keys(resolvedState as any).filter(k => (resolvedState as any)[k] !== (current as any)[k]);
-            console.log('[useUndoRedo] Update Trace. Changed Keys:', keysDiff);
-
+            // Create new history entry
             const newHistory = prev.history.slice(0, prev.index + 1);
             newHistory.push(resolvedState);
-
-            console.log('[useUndoRedo] New Entry:', {
-                index: newHistory.length - 1,
-                size: newHistory.length
-            });
 
             return {
                 history: newHistory,

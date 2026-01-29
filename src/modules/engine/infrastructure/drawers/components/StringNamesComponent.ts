@@ -24,6 +24,9 @@ export class StringNamesComponent implements IFretboardComponent {
     private stringNamesY?: number;
     private headstockYOffset?: number;
 
+    private rotation: number = 0;
+    private mirror: boolean = false;
+
     constructor(
         neckType: NeckType,
         stringNames: string[],
@@ -52,6 +55,11 @@ export class StringNamesComponent implements IFretboardComponent {
 
     public update(progress: number): void {
         // Animation support
+    }
+
+    public setRotation(rotation: number, mirror: boolean): void {
+        this.rotation = rotation;
+        this.mirror = mirror;
     }
 
     public draw(ctx: CanvasRenderingContext2D, progress: number = 1): void {
@@ -83,7 +91,8 @@ export class StringNamesComponent implements IFretboardComponent {
         for (let i = 0; i < numStrings; i++) {
             const y = boardY + stringMargin + i * stringSpacing;
             const name = this.stringNames[i] || "";
-            ctx.fillText(name, centerX, y);
+            // Adjust for visual centering (textBaseline middle is sometimes 'high')
+            ctx.fillText(name, centerX, y + 2 * scaleFactor);
         }
 
         ctx.restore();
@@ -113,7 +122,18 @@ export class StringNamesComponent implements IFretboardComponent {
             const x = fretboardX + this.horizontalPadding + i * stringSpacing;
             const y = this.stringNamesY! + translateY + (this.headstockYOffset ?? 0);
 
-            ctx.fillText(name, x, y);
+            if (this.rotation !== 0 || this.mirror) {
+                // Counter-rotate logic to keep text upright
+                ctx.save();
+                ctx.translate(x, y);
+                if (this.mirror) ctx.scale(-1, 1);
+                if (this.rotation !== 0) ctx.rotate((-this.rotation * Math.PI) / 180);
+
+                ctx.fillText(name, 0, 0);
+                ctx.restore();
+            } else {
+                ctx.fillText(name, x, y);
+            }
         });
 
         ctx.restore();

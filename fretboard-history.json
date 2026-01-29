@@ -9,43 +9,30 @@
         "bass": 0
       },
       "origin": 0,
-      "positions": {
-        "3": [
-          0,
-          3,
-          9
-        ],
-        "4": [
-          0,
-          4,
-          4
-        ],
+      "fingers": {
         "5": [
-          0,
-          5,
-          4
+          3,
+          3
         ],
         "6": [
-          0,
-          6,
-          2
+          1,
+          1
         ]
       },
       "avoid": [],
-      "chordName": "F#",
+      "stringNames": [
+        "E",
+        "A",
+        "D",
+        "G",
+        "B",
+        "e"
+      ],
+      "chordName": "",
+      "capo": 0,
       "extends": {
         "durationMs": 2000,
-        "measureId": "bm0ejl61a"
-      },
-      "nut": {
-        "vis": true,
-        "pos": 2,
-        "str": [
-          6,
-          6
-        ],
-        "fin": 1,
-        "trn": 0
+        "measureId": "6931igmqd"
       }
     },
     {
@@ -56,176 +43,154 @@
         "bass": 0
       },
       "origin": 0,
-      "positions": {
-        "2": [
-          0,
-          2,
+      "fingers": {
+        "5": [
+          5,
           3
         ],
-        "3": [
-          0,
+        "6": [
           3,
-          9
-        ],
-        "4": [
-          0,
-          4,
-          4
-        ],
-        "5": [
-          0,
-          5,
-          2
+          1
         ]
       },
       "avoid": [],
-      "chordName": "Bm",
+      "stringNames": [
+        "E",
+        "A",
+        "D",
+        "G",
+        "B",
+        "e"
+      ],
+      "chordName": "",
+      "capo": 0,
       "extends": {
         "durationMs": 2000,
-        "measureId": "1yslaha7a"
+        "measureId": "vacwiei2p"
+      }
+    },
+    {
+      "chord": {
+        "note": 0,
+        "complement": 0,
+        "extension": [],
+        "bass": 0
       },
-      "nut": {
-        "vis": true,
-        "pos": 2,
-        "str": [
+      "origin": 0,
+      "fingers": {
+        "4": [
           5,
-          5
+          3
         ],
-        "fin": 1,
-        "trn": 0
+        "5": [
+          3,
+          1
+        ]
+      },
+      "avoid": [],
+      "stringNames": [
+        "E",
+        "A",
+        "D",
+        "G",
+        "B",
+        "e"
+      ],
+      "chordName": "",
+      "capo": 0,
+      "extends": {
+        "durationMs": 2000,
+        "measureId": "09mcfn1xo"
       }
     }
   ],
   "measures": [
     {
-      "id": "bm0ejl61a",
+      "id": "6931igmqd",
       "isCollapsed": false,
       "showClef": true,
       "showTimeSig": true,
       "notes": [
         {
-          "id": "oiis34fmq",
+          "id": "tqt9cf1gc",
+          "type": "note",
+          "duration": "q",
           "positions": [
             {
-              "fret": 2,
-              "string": 6
+              "finger": 1,
+              "string": 6,
+              "fret": 1,
+              "endString": 1
             },
             {
-              "fret": 3,
-              "string": 3
-            },
-            {
-              "fret": 4,
-              "string": 5
-            },
-            {
-              "fret": 4,
-              "string": 4
+              "finger": 3,
+              "string": 5,
+              "fret": 3
             }
           ],
-          "duration": "q",
-          "type": "note",
-          "decorators": {},
-          "accidental": "none",
-          "barre": {
-            "fret": 2,
-            "startString": 6,
-            "endString": 6
-          }
-        },
-        {
-          "id": "j6b4qhfab",
-          "positions": [
-            {
-              "fret": 7,
-              "string": 3
-            }
-          ],
-          "duration": "q",
-          "type": "note",
-          "decorators": {},
-          "accidental": "none"
-        },
-        {
-          "id": "fdqn9yk0j",
-          "positions": [
-            {
-              "fret": 9,
-              "string": 3
-            }
-          ],
-          "duration": "q",
-          "type": "note",
           "decorators": {},
           "accidental": "none"
         }
       ],
-      "chordName": "F#"
+      "chordName": ""
     },
     {
-      "id": "1yslaha7a",
+      "id": "vacwiei2p",
       "isCollapsed": false,
       "showClef": true,
       "showTimeSig": true,
       "notes": [
         {
-          "id": "nebkckj0x",
+          "id": "5o3prvds2",
+          "type": "note",
+          "duration": "q",
           "positions": [
             {
-              "fret": 2,
-              "string": 5
-            },
-            {
+              "finger": 1,
+              "string": 6,
               "fret": 3,
-              "string": 2
+              "endString": 1
             },
             {
-              "fret": 4,
-              "string": 4
-            },
-            {
-              "fret": 4,
-              "string": 3
+              "finger": 3,
+              "string": 5,
+              "fret": 5
             }
           ],
-          "duration": "q",
-          "type": "note",
-          "decorators": {},
-          "accidental": "none",
-          "barre": {
-            "fret": 2,
-            "startString": 5,
-            "endString": 5
-          }
-        },
-        {
-          "id": "sorsb9h6y",
-          "positions": [
-            {
-              "fret": 7,
-              "string": 3
-            }
-          ],
-          "duration": "q",
-          "type": "note",
-          "decorators": {},
-          "accidental": "none"
-        },
-        {
-          "id": "c1t5d0wmo",
-          "positions": [
-            {
-              "fret": 9,
-              "string": 3
-            }
-          ],
-          "duration": "q",
-          "type": "note",
           "decorators": {},
           "accidental": "none"
         }
       ],
-      "chordName": "Bm"
+      "chordName": ""
+    },
+    {
+      "id": "09mcfn1xo",
+      "isCollapsed": false,
+      "showClef": true,
+      "showTimeSig": true,
+      "notes": [
+        {
+          "id": "xq0cw4l23",
+          "type": "note",
+          "duration": "q",
+          "positions": [
+            {
+              "finger": 1,
+              "string": 5,
+              "fret": 3,
+              "endString": 1
+            },
+            {
+              "finger": 3,
+              "string": 4,
+              "fret": 5
+            }
+          ],
+          "decorators": {},
+          "accidental": "none"
+        }
+      ],
+      "chordName": ""
     }
   ],
   "settings": {
@@ -234,9 +199,146 @@
     "time": "4/4",
     "bpm": 120,
     "showNotation": true,
-    "showTablature": true
+    "showTablature": true,
+    "instrumentId": "violao",
+    "tuningIndex": 0,
+    "capo": 0,
+    "tuningShift": 0,
+    "numFrets": 5,
+    "tuning": [
+      "E",
+      "A",
+      "D",
+      "G",
+      "B",
+      "e"
+    ],
+    "width": 1920,
+    "height": 1080,
+    "numStrings": 6,
+    "animationType": "static-fingers"
   },
   "theme": {
+    "global": {
+      "backgroundColor": "#000000",
+      "primaryTextColor": "#FF8C42",
+      "scale": 1,
+      "rotation": 0,
+      "mirror": false
+    },
+    "fretboard": {
+      "neck": {
+        "color": "#303135",
+        "opacity": 1,
+        "shadow": {
+          "enabled": false,
+          "color": "rgba(0,0,0,0.5)",
+          "blur": 5
+        }
+      },
+      "frets": {
+        "color": "#000000",
+        "shadow": {
+          "enabled": false,
+          "color": "rgba(0,0,0,0.5)",
+          "blur": 3
+        }
+      },
+      "strings": {
+        "color": "#FFFFFF",
+        "thickness": 3,
+        "shadow": {
+          "enabled": false,
+          "color": "rgba(0,0,0,0.5)",
+          "blur": 3
+        }
+      },
+      "board": {
+        "inlays": {
+          "color": "rgba(0, 0, 0, 0.35)",
+          "shadow": {
+            "enabled": false,
+            "color": "rgba(0,0,0,0.5)",
+            "blur": 3
+          }
+        }
+      }
+    },
+    "fingers": {
+      "color": "#200f0f",
+      "textColor": "#ffffff",
+      "border": {
+        "color": "#FFFFFF",
+        "width": 4
+      },
+      "opacity": 0.9,
+      "shadow": {
+        "enabled": true,
+        "color": "rgba(0,0,0,0.6)",
+        "blur": 8
+      },
+      "radius": 22,
+      "fontSize": 16,
+      "barreWidth": 48,
+      "barreFingerRadius": 22
+    },
+    "chordName": {
+      "color": "#ffffff",
+      "textColor": "#ffffff",
+      "opacity": 1,
+      "shadow": {
+        "color": "rgba(0,0,0,0.5)",
+        "blur": 5,
+        "enabled": true
+      },
+      "stroke": {
+        "color": "#000000",
+        "width": 0
+      },
+      "fontSize": 35,
+      "extSize": 24
+    },
+    "capo": {
+      "color": "rgba(100, 100, 110, 0.9)",
+      "border": {
+        "color": "rgba(0, 0, 0, 0.3)",
+        "width": 1
+      },
+      "textColors": {
+        "name": "#ffffff",
+        "number": "#FF8C42"
+      },
+      "shadow": {
+        "enabled": false,
+        "color": "rgba(0,0,0,0.5)",
+        "blur": 5
+      }
+    },
+    "avoid": {
+      "color": "#ffffff",
+      "lineWidth": 6,
+      "size": 15,
+      "opacity": 0.9,
+      "border": {
+        "color": "#000000",
+        "width": 2
+      }
+    },
+    "head": {
+      "color": "#3a3a3e",
+      "textColors": {
+        "name": "#FF8C42"
+      },
+      "border": {
+        "color": "#3a3a3e",
+        "width": 0
+      },
+      "shadow": {
+        "enabled": false,
+        "color": "rgba(0,0,0,0.5)",
+        "blur": 5
+      }
+    },
     "cardColor": "#ffffff",
     "fingerColor": "#333333",
     "fretboardColor": "#f5f5f5",

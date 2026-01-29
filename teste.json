@@ -8,58 +8,6 @@
           "endString": 1,
           "fret": 1,
           "finger": 1
-        },
-        {
-          "string": 5,
-          "fret": 3,
-          "finger": 3
-        }
-      ],
-      "avoid": [],
-      "duration": 500,
-      "origin": 0
-    },
-    {
-      "chordName": "",
-      "fingers": [
-        {
-          "string": 6,
-          "endString": 1,
-          "fret": 3,
-          "finger": 1
-        }
-      ],
-      "avoid": [],
-      "duration": 500,
-      "origin": 0
-    },
-    {
-      "chordName": "",
-      "fingers": [
-        {
-          "string": 6,
-          "endString": 1,
-          "fret": 5,
-          "finger": 1
-        }
-      ],
-      "avoid": [],
-      "duration": 500,
-      "origin": 0
-    },
-    {
-      "chordName": "",
-      "fingers": [
-        {
-          "string": 6,
-          "endString": 1,
-          "fret": 3,
-          "finger": 1
-        },
-        {
-          "string": 5,
-          "fret": 5,
-          "finger": 3
         }
       ],
       "avoid": [],
@@ -223,33 +171,6 @@
         "color": "rgba(0,0,0,0.5)",
         "blur": 5
       }
-    },
-    "cardColor": "#ffffff",
-    "fingerColor": "#333333",
-    "fretboardColor": "#f5f5f5",
-    "borderColor": "#000000",
-    "fretColor": "#dddddd",
-    "textColor": "#FF8C42",
-    "chordNameColor": "#000000",
-    "chordNameOpacity": 1,
-    "chordNameShadow": false,
-    "chordNameShadowColor": "transparent",
-    "chordNameShadowBlur": 0,
-    "chordNameStrokeColor": "transparent",
-    "chordNameStrokeWidth": 0,
-    "borderWidth": 3,
-    "stringThickness": 3,
-    "fingerTextColor": "#ffffff",
-    "fingerBorderColor": "#000000",
-    "fingerBorderWidth": 4,
-    "fingerBoxShadowHOffset": 0,
-    "fingerBoxShadowVOffset": 0,
-    "fingerBoxShadowBlur": 0,
-    "fingerBoxShadowSpread": 0,
-    "fingerBoxShadowColor": "#00000050",
-    "fingerBackgroundAlpha": 0.3,
-    "fretboardScale": 1,
-    "rotation": 0,
-    "mirror": false
+    }
   }
 }
