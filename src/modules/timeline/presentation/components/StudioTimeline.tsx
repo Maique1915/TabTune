@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { MeasureData, NoteData, Duration } from '@/modules/editor/domain/types';
-import { getNoteDurationValue, getMeasureCapacity, getMsFromDuration } from '@/modules/editor/domain/music-math';
+import { getNoteDurationValue, getMeasureCapacity, getMsFromDuration, getMidiFromPosition, getPitchFromMidi } from '@/modules/editor/domain/music-math';
 import { Icons } from '@/modules/editor/presentation/constants';
 
 interface StudioTimelineProps {
@@ -16,6 +16,8 @@ interface StudioTimelineProps {
     onDoubleClickNote: (id: string) => void;
     onAddNote: (measureId: string) => void;
     onUpdateNote: (id: string, updates: Partial<NoteData>) => void;
+    onRemoveNote?: (id: string) => void;
+    onCopyNote?: (id: string) => void;
     onRemoveMeasure: (id: string) => void;
     onAddMeasure: () => void;
     onUpdateMeasure: (id: string, updates: Partial<MeasureData>) => void;
@@ -42,6 +44,9 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
     onSelectNote,
     onDoubleClickNote,
     onAddNote,
+    onUpdateNote,
+    onRemoveNote,
+    onCopyNote,
     onRemoveMeasure,
     onAddMeasure,
     onUpdateMeasure,
@@ -153,6 +158,12 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
             className="flex flex-col w-full h-full bg-[#050505]/40 backdrop-blur-2xl border-t border-white/[0.03] relative"
             onClick={onDeselectAll}
         >
+            {/* Playback Progress Overlay */}
+            <div
+                className="absolute top-0 left-0 h-0.5 bg-gradient-to-r from-cyan-600 via-cyan-400 to-cyan-600 z-50 transition-all duration-100 ease-linear shadow-[0_0_15px_rgba(6,182,212,0.8)]"
+                style={{ width: `${Math.min(100, (currentCursorMs / totalDurationMs) * 100)}%` }}
+            />
+
             {/* Time Status */}
             <div className="absolute top-4 right-8 z-20 pointer-events-none">
                 <div className="flex items-center space-x-2.5 bg-black/60 px-4 py-2 rounded-xl border border-white/5 backdrop-blur-xl shadow-2xl">
@@ -174,7 +185,16 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
                         return (
                             <div
                                 key={measure.id}
-                                onClick={(e) => { e.stopPropagation(); onSelectMeasure(measure.id); }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSelectMeasure(measure.id);
+                                    const firstNote = measure.notes[0];
+                                    if (firstNote) {
+                                        onSelectNote(firstNote.id, e.shiftKey || e.ctrlKey);
+                                        const timing = noteTimingMap.get(firstNote.id);
+                                        if (timing && onSeek) onSeek(timing.start);
+                                    }
+                                }}
                                 draggable={true}
                                 onDragStart={(e) => handleDragStart(e, mIdx)}
                                 onDragOver={(e) => handleDragOver(e, mIdx)}
@@ -198,28 +218,19 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
                                 <div className="absolute inset-0 rounded-[24px] bg-gradient-to-br from-white/[0.05] to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
                                 {/* Measure Header */}
-                                <div className={`flex flex-col p-3 z-10 ${isCollapsed ? 'items-center space-y-3' : 'border-b border-white/[0.05]'}`}>
+                                <div className={`flex flex-col p-2.5 z-10 ${isCollapsed ? 'items-center' : 'border-b border-white/[0.05]'}`}>
                                     <div className="flex items-center justify-between w-full">
-                                        <div className="flex items-center space-x-4">
-                                            <div
-                                                className="w-7 h-7 flex items-center justify-center rounded-lg bg-black/40 border border-white/5 text-[11px] font-black text-zinc-500 cursor-grab active:cursor-grabbing hover:text-cyan-400 hover:border-cyan-500/30 transition-all shadow-inner"
-                                                title="Drag to reorder"
-                                            >
-                                                {mIdx + 1}
-                                            </div>
-                                            {!isCollapsed && (
-                                                <div className="flex flex-col">
-                                                    <span className="text-[12px] font-black text-cyan-400 uppercase tracking-[0.2em] drop-shadow-[0_0_8px_rgba(34,211,238,0.4)]">
-                                                        {measure.chordName || `Chord ${mIdx + 1}`}
-                                                    </span>
-                                                </div>
-                                            )}
+                                        <div
+                                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-black/40 border border-white/5 text-[11px] font-black text-zinc-500 cursor-grab active:cursor-grabbing hover:text-cyan-400 hover:border-cyan-500/30 transition-all shadow-inner"
+                                            title="Drag to reorder"
+                                        >
+                                            {mIdx + 1}
                                         </div>
 
-                                        <div className="flex items-center space-x-2">
-                                            {/* Action Buttons moved here */}
+                                        <div className="flex items-center gap-1">
+                                            {/* Action Buttons */}
                                             {!isCollapsed && (
-                                                <div className="flex items-center gap-1.5 mr-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all duration-300">
                                                     <button onClick={(e) => { e.stopPropagation(); onCopyMeasure(measure.id); }}
                                                         className="p-1.5 hover:bg-white/10 rounded-lg text-zinc-500 hover:text-cyan-400 transition-all duration-300"
                                                         title="Duplicate">
@@ -257,11 +268,6 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
                                             return (
                                                 <div
                                                     key={note.id}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onSelectNote(note.id, e.shiftKey || e.ctrlKey);
-                                                        if (timing && onSeek) onSeek(timing.start);
-                                                    }}
                                                     onDoubleClick={(e) => { e.stopPropagation(); onDoubleClickNote(note.id); }}
                                                     draggable={true}
                                                     onDragStart={(e) => handleNoteDragStart(e, measure.id, nIdx)}
@@ -271,7 +277,7 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
                                                     onDragLeave={() => setDragOverNoteIndex(null)}
                                                     className={`
                                                         relative cursor-pointer transition-all duration-500 group/note
-                                                        w-[100px] h-[60px] shrink-0 rounded-[18px] border-2 flex flex-col items-center justify-center select-none shadow-xl
+                                                        w-[100px] h-[65px] shrink-0 rounded-[20px] border-2 flex flex-col items-center justify-center select-none shadow-xl
                                                         ${isPlaying
                                                             ? 'bg-cyan-500/15 border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.25)] scale-[1.05] z-10'
                                                             : isSelected
@@ -286,37 +292,55 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
                                                     {isPlaying && <div className="absolute inset-x-0 bottom-0 top-1/2 bg-cyan-500/20 blur-2xl rounded-full" />}
 
                                                     {/* Note Info */}
-                                                    <span className={`absolute top-2.5 left-4 text-[9px] font-black uppercase tracking-tighter ${isSelected || isPlaying ? 'text-cyan-400' : 'text-zinc-600'}`}>
+                                                    <span className={`absolute top-2 left-4 text-[8px] font-black uppercase tracking-widest ${isSelected || isPlaying ? 'text-cyan-400' : 'text-zinc-600'}`}>
                                                         {note.duration}{note.decorators.dot && '•'}
                                                     </span>
 
                                                     {/* Main Value */}
                                                     <div className={`flex flex-row flex-wrap items-center justify-center content-center transition-all duration-500 group-hover/note:scale-110 ${isRest ? 'text-zinc-600' : 'text-white'} gap-1.5 px-2`}>
-                                                        {isRest ? Icons.MusicRest(note.duration) : note.positions.map((pos, idx) => (
-                                                            <div key={idx} className="flex flex-col items-center leading-none">
-                                                                <span className="text-[17px] font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{pos.fret}</span>
+                                                        {isRest ? Icons.MusicRest(note.duration) : (
+                                                            <div className="flex -space-x-1.5">
+                                                                {(() => {
+                                                                    const uniqueNotes = Array.from(new Set(note.positions
+                                                                        .filter(p => !p.avoid)
+                                                                        .map(p => {
+                                                                            const midi = getMidiFromPosition(p.fret, p.string);
+                                                                            const pitch = getPitchFromMidi(midi);
+                                                                            return pitch.name + pitch.accidental.replace('#', '♯').replace('b', '♭');
+                                                                        })));
+
+                                                                    return uniqueNotes.slice(0, 3).map((noteName, i) => (
+                                                                        <div key={i} className={`
+                                                                            w-7 h-7 rounded-full border-2 flex items-center justify-center text-[10px] font-black shadow-lg transition-all duration-500
+                                                                            ${isPlaying ? 'bg-cyan-400 border-white text-black scale-110' : 'bg-zinc-900 border-white/20 text-white'}
+                                                                        `}>
+                                                                            {noteName}
+                                                                        </div>
+                                                                    ));
+                                                                })()}
+                                                                {note.positions.filter(p => !p.avoid).length > 3 && (
+                                                                    <div className="w-5 h-5 rounded-full bg-cyan-950 border-2 border-cyan-400/50 flex items-center justify-center text-[8px] font-black text-cyan-400 shadow-lg">
+                                                                        +
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                        ))}
+                                                        )}
                                                     </div>
 
                                                     {/* Indicators (Bottom Dots) */}
-                                                    <div className="absolute bottom-3 flex gap-1">
+                                                    <div className="absolute bottom-3 left-4 flex gap-1">
                                                         {note.technique && <div className={`w-1.5 h-1.5 rounded-full ring-2 ring-black/40 shadow-sm ${getTechColor(note.technique)}`} />}
                                                     </div>
+
+                                                    {/* Progress bar inside note (match cinematic) */}
+                                                    {isPlaying && timing && (
+                                                        <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-cyan-600 via-cyan-400 to-cyan-600 rounded-full transition-all duration-100 ease-linear shadow-[0_0_10px_rgba(34,211,238,0.7)]"
+                                                            style={{ width: `${Math.min(100, Math.max(0, ((currentCursorMs - timing.start) / (timing.end - timing.start)) * 100))}%` }}
+                                                        />
+                                                    )}
                                                 </div>
                                             );
                                         })}
-
-                                        {/* Add Note Button inside measure */}
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); onAddNote(measure.id); }}
-                                            className="w-14 h-[60px] shrink-0 border-2 border-dashed border-cyan-500/20 bg-cyan-500/5 rounded-[18px] flex items-center justify-center text-cyan-500/60 hover:text-cyan-400 hover:border-cyan-500/40 hover:bg-cyan-500/10 transition-all duration-500 group/add-n"
-                                            title="Add note to this chord"
-                                        >
-                                            <div className="p-3 transition-transform duration-500 group-hover/add-n:scale-110">
-                                                <Icons.Plus />
-                                            </div>
-                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -336,7 +360,7 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
                     </button>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

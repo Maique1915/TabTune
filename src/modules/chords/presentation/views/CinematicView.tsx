@@ -324,8 +324,8 @@ export function CinematicView() {
                     onRemoveChordNote={handleRemoveChordNote}
                     onToggleBarre={handleToggleBarre}
                     onToggleBarreTo={handleToggleBarreTo}
-                    onSetFingerForString={handleSetFingerForString}
-                    onSetFretForString={handleSetFretForString}
+                    onSetFingerForPosition={handleSetFingerForString}
+                    onSetFretForPosition={handleSetFretForString}
                     onSetStringForPosition={handleSetStringForPosition}
                     globalSettings={settings}
                     onGlobalSettingsChange={(newSettings: any) => setSettings(prev => ({ ...prev, ...newSettings }))}
@@ -335,6 +335,7 @@ export function CinematicView() {
                     canUndo={canUndo}
                     canRedo={canRedo}
                     theme={theme}
+                    measures={measures}
                 />
             }
             rightSidebar={<SettingsPanel isMobile={isMobile} isOpen={activePanel === 'customize'} onClose={() => setLocalActivePanel('studio')} colors={theme} onColorChange={setTheme as any} numFrets={settings.numFrets || 24} />}

@@ -20,6 +20,7 @@ interface GenericSidebarProps {
     // Layout props
     side?: 'left' | 'right';
     className?: string;
+    contentClassName?: string;
     headerAction?: React.ReactNode;
 }
 
@@ -37,6 +38,7 @@ export const GenericSidebar: React.FC<GenericSidebarProps> = ({
     onClose,
     side = 'right',
     className,
+    contentClassName,
     headerAction
 }) => {
     const isRight = side === 'right';
@@ -120,7 +122,7 @@ export const GenericSidebar: React.FC<GenericSidebarProps> = ({
             )}
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
+            <div className={cn("flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar", contentClassName)}>
                 {children}
             </div>
 

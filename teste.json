@@ -1,55 +1,76 @@
 {
+  "version": 1,
   "chords": [
     {
-      "chordName": "",
-      "fingers": [
-        {
-          "string": 6,
-          "endString": 1,
-          "fret": 1,
-          "finger": 1
-        }
-      ],
+      "chord": {
+        "note": 5,
+        "complement": 2,
+        "extension": [
+          4,
+          5,
+          7,
+          8
+        ],
+        "bass": 0
+      },
+      "origin": 5,
+      "fingers": {
+        "5": [
+          3,
+          1
+        ]
+      },
       "avoid": [],
-      "duration": 500,
-      "origin": 0
-    },
+      "chordName": "Fdim91176/D",
+      "showChordName": true,
+      "capo": 0,
+      "extends": {
+        "durationMs": 2000,
+        "measureId": "cgfs602h8"
+      }
+    }
+  ],
+  "measures": [
     {
-      "chordName": "",
-      "fingers": [
+      "id": "cgfs602h8",
+      "isCollapsed": false,
+      "showClef": true,
+      "showTimeSig": true,
+      "notes": [
         {
-          "string": 6,
-          "endString": 1,
-          "fret": 3,
-          "finger": 1
+          "id": "vrsvvi639",
+          "positions": [
+            {
+              "fret": 3,
+              "string": 5,
+              "avoid": false,
+              "finger": 1
+            }
+          ],
+          "duration": "q",
+          "type": "note",
+          "decorators": {
+            "dot": false
+          },
+          "accidental": "none"
         }
       ],
-      "avoid": [],
-      "duration": 500,
-      "origin": 0
-    },
-    {
-      "chordName": "",
-      "fingers": [
-        {
-          "string": 6,
-          "endString": 1,
-          "fret": 5,
-          "finger": 1
-        }
-      ],
-      "avoid": [],
-      "duration": 500,
-      "origin": 0
+      "chordName": "Fdim91176/D",
+      "showChordName": true
     }
   ],
   "settings": {
-    "width": 1920,
-    "height": 1080,
-    "numStrings": 6,
-    "numFrets": 5,
+    "clef": "tab",
+    "key": "C",
+    "time": "4/4",
+    "bpm": 120,
+    "showNotation": true,
+    "showTablature": true,
+    "instrumentId": "violao",
+    "tuningIndex": 0,
     "capo": 0,
-    "animationType": "static-fingers"
+    "tuningShift": 0,
+    "numFrets": 24
   },
   "theme": {
     "global": {

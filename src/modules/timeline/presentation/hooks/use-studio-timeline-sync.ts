@@ -14,7 +14,7 @@ interface TimelineSyncProps {
     playbackTotalDurationMs: number;
 }
 
-export function useTimelineSync({
+export function useStudioTimelineSync({
     measures,
     settings,
     activeMeasure,

@@ -7,6 +7,7 @@ import { FingerComponent } from "./components/FingerComponent";
 import { CapoComponent } from "./components/CapoComponent";
 import { AvoidComponent } from "./components/AvoidComponent";
 import { NeckType } from "./components/NeckType";
+import { detectBarreFromChord as detectBarre } from "./utils/barre-detection";
 
 /**
  * Specialized animation orchestrator for the Full Cinematic Neck.
@@ -163,8 +164,21 @@ export class FullFingersAnimation implements FingersAnimationDrawer {
         const nxtA = getActors(nxtV);
         const componentsMap = new Map<number | string, FingerComponent>();
 
-        const curBarre = curA.barre;
-        const nxtBarre = nxtA.barre;
+        // 1. Barre logic
+
+        // Access global capo from drawer (FullNeckDrawer has it)
+        const globalCapo = (drawer as any)._globalCapo || 0;
+
+        // Use the visually transposed actors for barre logic
+        let nxtBarre = nxtA.barre;
+        if (nxtBarre && (nxtBarre.fret <= 0 || (globalCapo > 0 && nxtBarre.fret === globalCapo))) {
+            nxtBarre = null;
+        }
+
+        let curBarre = curA.barre;
+        if (curBarre && (curBarre.fret <= 0 || (globalCapo > 0 && curBarre.fret === globalCapo))) {
+            curBarre = null;
+        }
 
         // 1. Barre logic
         if (curBarre || nxtBarre) {

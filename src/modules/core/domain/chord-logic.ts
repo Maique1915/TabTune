@@ -295,3 +295,13 @@ export const prepareShortChordVisuals = (
     };
 };
 
+/**
+ * Legacy/Utility: Prepares chord display data for the timeline and other views.
+ */
+export const getChordDisplayData = (chord: ChordDiagramProps, numFrets: number = 4) => {
+    const visuals = prepareShortChordVisuals(chord, numFrets);
+    return {
+        finalChord: visuals.finalChord,
+        transportDisplay: visuals.startFret
+    };
+};

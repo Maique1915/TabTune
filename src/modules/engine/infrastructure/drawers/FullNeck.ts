@@ -174,7 +174,14 @@ export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer, Chord
 
     public drawFingers(chord: ChordDiagramProps): void {
         const barre = detectBarre(chord);
-        if (barre) this.drawBarre(barre.fret, barre.startString, barre.endString, barre.finger || 1);
+        // Hide barre if:
+        // 1. It's at fret 0 (Nut)
+        // 2. It's at the same fret as the Global Capo (Capo replaces the barre)
+        const isAtNut = barre && barre.fret <= 0;
+        const isAtCapo = barre && this._globalCapo > 0 && barre.fret === this._globalCapo;
+        const shouldDrawBarre = barre && !isAtNut && !isAtCapo;
+
+        if (shouldDrawBarre) this.drawBarre(barre.fret, barre.startString, barre.endString, barre.finger || 1);
         chord.fingers.forEach(f => {
             if (f.fret > 0) {
                 if (barre && f.fret === barre.fret && f.string >= Math.min(barre.startString, barre.endString) && f.string <= Math.max(barre.startString, barre.endString)) return;
@@ -282,6 +289,30 @@ export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer, Chord
     public setStringSpacing(s: number) { this._stringSpacing = s; this.calculateDimensions(); }
 
     public getGeometry(): GeometryProvider { return this._geometry; }
+
+    public validateFit(chords: ChordDiagramProps[], newCapo: number): boolean {
+        // Only positive capo moves fingers up the neck
+        const capoShift = newCapo > 0 ? newCapo : 0;
+
+        // Check Capo limit per se
+        if (newCapo > 0 && newCapo > this._numFrets) return false;
+
+        return chords.every(chord => {
+            if (!chord.fingers) return true;
+            return chord.fingers.every(f => {
+                if (f.fret === undefined || f.fret <= 0) return true;
+
+                // Finger Fret + Capo Shift
+                // Note: We don't have transport info here for each chord unless passed.
+                // Assuming standard transport=1 for this validation or that chords are raw.
+                // If the user means "chords in timeline", they might have individual transports?
+                // Usually validation is done against the raw chord at transport 1.
+
+                const finalFret = f.fret + capoShift;
+                return finalFret <= this._numFrets;
+            });
+        });
+    }
 
     public static validateFretLimit(chord: ChordDiagramProps, shift: number): boolean {
         const MAX_FRET = 24;

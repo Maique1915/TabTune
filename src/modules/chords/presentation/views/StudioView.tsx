@@ -16,8 +16,8 @@ import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { cn } from "@/shared/lib/utils";
 import { Library, Settings, Guitar } from "lucide-react";
 import { TimelineControls } from "@/modules/timeline/presentation/components/TimelineControls";
-import { useChordsEditor } from "@/modules/editor/presentation/hooks/use-chords-editor";
-import { useTimelineSync } from "@/modules/timeline/presentation/hooks/use-timeline-sync";
+import { useStudioChordsEditor } from "@/modules/editor/presentation/hooks/use-studio-chords-editor";
+import { useStudioTimelineSync } from "@/modules/timeline/presentation/hooks/use-studio-timeline-sync";
 import { RenderDialog, RenderFormat, RenderQuality } from "@/modules/chords/presentation/components/RenderDialog";
 
 export function StudioView() {
@@ -75,7 +75,7 @@ export function StudioView() {
         canRedo,
         theme,
         setTheme
-    } = useChordsEditor();
+    } = useStudioChordsEditor();
 
     const {
         playbackTransitionsEnabled,
@@ -120,7 +120,7 @@ export function StudioView() {
         activeChordIndex,
         totalDurationMs,
         currentCursorMs
-    } = useTimelineSync({
+    } = useStudioTimelineSync({
         measures,
         settings,
         activeMeasure,
@@ -325,8 +325,8 @@ export function StudioView() {
                     onRemoveChordNote={handleRemoveChordNote}
                     onToggleBarre={handleToggleBarre}
                     onToggleBarreTo={handleToggleBarreTo}
-                    onSetFingerForString={handleSetFingerForString}
-                    onSetFretForString={handleSetFretForString}
+                    onSetFingerForPosition={handleSetFingerForString}
+                    onSetFretForPosition={handleSetFretForString}
                     onSetStringForPosition={handleSetStringForPosition}
                     globalSettings={settings}
                     onGlobalSettingsChange={(newSettings: any) => setSettings(prev => ({ ...prev, ...newSettings }))}
@@ -336,6 +336,7 @@ export function StudioView() {
                     canUndo={canUndo}
                     canRedo={canRedo}
                     theme={theme}
+                    measures={measures}
                 />
             }
             rightSidebar={<SettingsPanel isMobile={isMobile} isOpen={activePanel === 'customize'} onClose={() => setLocalActivePanel('studio')} colors={theme} onColorChange={setTheme as any} numFrets={settings.numFrets || 5} />}
