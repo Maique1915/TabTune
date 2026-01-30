@@ -740,7 +740,7 @@ export function useStudioChordsEditor() {
         });
     };
 
-    const handleTransposeMeasure = (measureId: string, semitones: number) => {
+    const handleTransposeMeasure = (measureId: string, semitones: number, smartTranspose?: boolean) => {
         setState((prev: FretboardEditorState) => {
             const measureIndex = prev.measures.findIndex((m: MeasureData) => m.id === measureId);
             if (measureIndex === -1) return prev;
@@ -767,25 +767,76 @@ export function useStudioChordsEditor() {
 
             const targetIds = targetNotes.map(n => n.id);
 
+            // Analysis for Smart Transpose (Before Transposition)
+            let isStartingOpen = false;
+            if (smartTranspose) {
+                const allFrets = targetNotes.flatMap(n => n.positions.filter((p: any) => !p.avoid).map((p: any) => p.fret));
+                if (allFrets.length > 0) {
+                    const minFret = Math.min(...allFrets);
+                    isStartingOpen = minFret === 0;
+                }
+            }
+
             const transposedNotes = measure.notes.map((note: NoteData) => {
                 if (targetIds.includes(note.id)) {
+                    let newPositions = note.positions.map((pos: any) => {
+                        if (pos.avoid) return pos; // Don't shift avoided strings
+                        return {
+                            ...pos,
+                            fret: pos.fret + semitones
+                        };
+                    });
+
+                    // Smart Transpose Logic (After Transposition Calculation)
+                    if (smartTranspose) {
+                        const allNewFrets = newPositions.filter((p: any) => !p.avoid).map((p: any) => p.fret);
+                        if (allNewFrets.length > 0) {
+                            const newMinFret = Math.min(...allNewFrets);
+                            const isEndingOpen = newMinFret === 0;
+
+                            // Case 1: Open -> Barre (Shift Fingers Up)
+                            if (isStartingOpen && !isEndingOpen) {
+                                newPositions = newPositions.map((p: any) => {
+                                    if (p.avoid) return p;
+                                    let newFinger = p.finger;
+                                    if (typeof p.finger === 'number') {
+                                        newFinger = p.finger + 1;
+                                    }
+                                    // If this position is at the 'barre' fret (min fret), force finger 1 if not set
+                                    if (p.fret === newMinFret && !newFinger) {
+                                        newFinger = 1;
+                                    }
+                                    return { ...p, finger: newFinger };
+                                });
+                            }
+                            // Case 2: Barre -> Open (Shift Fingers Down)
+                            else if (!isStartingOpen && isEndingOpen) {
+                                newPositions = newPositions.map((p: any) => {
+                                    if (p.avoid) return p;
+                                    let newFinger = p.finger;
+                                    // If open string, remove finger
+                                    if (p.fret === 0) {
+                                        newFinger = undefined;
+                                    } else if (typeof p.finger === 'number') {
+                                        newFinger = Math.max(1, p.finger - 1);
+                                    }
+                                    return { ...p, finger: newFinger };
+                                });
+                            }
+                        }
+                    }
+
                     return {
                         ...note,
-                        positions: note.positions.map((pos: any) => {
-                            if (pos.avoid) return pos; // Don't shift avoided strings
-                            return {
-                                ...pos,
-                                fret: pos.fret + semitones
-                            };
-                        }),
+                        positions: newPositions,
                         barre: undefined
                     };
                 }
                 return note;
             });
 
-            // Transpose chord name ONLY in Global Mode
-            const newChordName = !isSelectiveMode
+            // Transpose chord name if Global Mode OR Smart Transpose is active
+            const newChordName = (!isSelectiveMode || smartTranspose)
                 ? transposeChordName(measure.chordName, semitones)
                 : measure.chordName;
 

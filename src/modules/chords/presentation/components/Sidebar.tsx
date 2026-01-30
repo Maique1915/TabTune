@@ -103,7 +103,7 @@ interface SidebarProps {
     onClose?: () => void;
     simpleMode?: boolean;
     onUpdateMeasure?: (measureId: string, updates: Partial<MeasureData>) => void;
-    onTransposeMeasure?: (measureId: string, semitones: number) => void;
+    onTransposeMeasure?: (measureId: string, semitones: number, smartTranspose?: boolean) => void;
     onTransposeAll?: (semitones: number) => void;
     theme?: FretboardTheme;
     isSequentialMode?: boolean;
@@ -194,6 +194,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         bass: "Root",
         extensions: []
     });
+
+    const [smartTranspose, setSmartTranspose] = React.useState(false);
 
     // Reset barre selector when note changes or active position changes
     React.useEffect(() => {
@@ -926,16 +928,19 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                     Transpose
                                                 </span>
                                             </div>
-                                            <div className="px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20">
+                                            <div
+                                                onClick={() => setSmartTranspose(!smartTranspose)}
+                                                className={`px-3 py-1 rounded-full border cursor-pointer transition-all ${smartTranspose ? 'bg-orange-500/20 border-orange-500 text-orange-400' : 'bg-zinc-900 border-zinc-800 text-zinc-600 hover:text-zinc-400'}`}
+                                            >
                                                 <div className="flex flex-col items-center">
-                                                    <span className="text-[8px] font-black text-orange-400 leading-none">DATA</span>
-                                                    <span className="text-[8px] font-black text-orange-400 leading-none mt-0.5">SHIFT</span>
+                                                    <span className="text-[8px] font-black leading-none">DATA</span>
+                                                    <span className="text-[8px] font-black leading-none mt-0.5">SHIFT</span>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="flex items-center justify-center gap-4">
                                             <button
-                                                onClick={() => activeMeasure && onTransposeMeasure?.(activeMeasure.id, -1)}
+                                                onClick={() => activeMeasure && onTransposeMeasure?.(activeMeasure.id, -1, smartTranspose)}
                                                 className="w-14 h-14 flex items-center justify-center bg-zinc-900/50 hover:bg-zinc-800 border border-zinc-800/50 rounded-2xl text-zinc-400 hover:text-white transition-all active:scale-90 shadow-lg"
                                             >
                                                 <Minus className="w-5 h-5" />
@@ -947,7 +952,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                             </div>
 
                                             <button
-                                                onClick={() => activeMeasure && onTransposeMeasure?.(activeMeasure.id, 1)}
+                                                onClick={() => activeMeasure && onTransposeMeasure?.(activeMeasure.id, 1, smartTranspose)}
                                                 className="w-14 h-14 flex items-center justify-center bg-zinc-900/50 hover:bg-zinc-800 border border-zinc-800/50 rounded-2xl text-zinc-400 hover:text-white transition-all active:scale-90 shadow-lg"
                                             >
                                                 <Plus className="w-5 h-5" />
