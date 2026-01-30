@@ -204,6 +204,7 @@ export class FingerComponent implements IFretboardComponent {
 
     public draw(ctx: CanvasRenderingContext2D): void {
         if (this.vOpacity <= 0) return;
+        if (this.isBarre && this.tFret === 0) return;
 
         ctx.save();
 
