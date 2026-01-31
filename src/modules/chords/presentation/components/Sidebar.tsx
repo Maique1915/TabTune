@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { Music, Settings2, Guitar, Home, ChevronDown, Minus, Plus, Clock, Wrench } from 'lucide-react';
 import { useAppContext } from '@/modules/core/presentation/context/app-context';
 import { NOTE_NAMES, getMsFromDuration } from '@/modules/editor/domain/music-math';
-import { FullNeckDrawer } from '@/modules/engine/infrastructure/drawers/FullNeck';
+
 import {
     Accordion,
     AccordionContent,
@@ -104,7 +104,7 @@ interface SidebarProps {
     simpleMode?: boolean;
     onUpdateMeasure?: (measureId: string, updates: Partial<MeasureData>) => void;
     onTransposeMeasure?: (measureId: string, semitones: number, smartTranspose?: boolean) => void;
-    onTransposeAll?: (semitones: number) => void;
+    onTransposeAll?: (semitones: number, smartTranspose?: boolean) => void;
     theme?: FretboardTheme;
     isSequentialMode?: boolean;
     onNoteDurationStatic?: (noteId: string, duration: Duration) => void;
@@ -533,14 +533,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                                 const fret = i + 1;
                                                                 const currentFret = parseInt(currentPos?.fret?.toString() || '0');
                                                                 const currentCapo = globalSettings?.capo || 0;
-                                                                const isOverLimit = animationType === 'guitar-fretboard' && (fret + currentCapo > 24);
+                                                                const isOverLimit = false;
 
                                                                 return (
                                                                     <button
                                                                         key={fret}
-                                                                        disabled={isOverLimit}
                                                                         onClick={() => onSetFretForPosition?.(activePositionIndex, fret)}
-                                                                        className={`h-7 rounded-md border font-black text-[10px] transition-all ${isOverLimit ? 'opacity-20 cursor-not-allowed bg-zinc-950 border-transparent' : (currentFret === fret ? 'shadow-[0_0_10px_rgba(255,255,255,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300')}`}
+                                                                        className={`h-7 rounded-md border font-black text-[10px] transition-all bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300`}
                                                                         style={currentFret === fret ? {
                                                                             backgroundColor: theme?.fingers?.color || '#06b6d4',
                                                                             borderColor: theme?.fingers?.border?.color || '#22d3ee',
@@ -635,48 +634,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <div className="space-y-6 animate-in slide-in-from-right-2 duration-300">
                             {editingNote ? (
                                 <>
-                                    {/* Symbol Preview Box */}
-                                    <div className="relative group overflow-hidden">
-                                        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-50" />
-                                        <div className="bg-black/60 p-6 rounded-[24px] border border-white/[0.05] text-center relative z-10 shadow-2xl backdrop-blur-sm">
-                                            <div className="flex items-center justify-center">
-                                                <span className="text-4xl font-black text-cyan-400 drop-shadow-[0_0_20px_rgba(34,211,238,0.4)] tracking-tighter">
-                                                    {chordData.root?.replace('#', '♯').replace('b', '♭')}
-                                                </span>
-                                                {chordData.quality && (
-                                                    <span className="text-4xl font-black text-cyan-400 drop-shadow-[0_0_20px_rgba(34,211,238,0.4)] tracking-tighter ml-1">
-                                                        {chordData.quality === 'dim' ? 'º' : chordData.quality === 'aug' ? '+' : chordData.quality}
-                                                    </span>
-                                                )}
-                                                {chordData.extensions && chordData.extensions.length > 0 && (
-                                                    <div className="flex flex-col items-start leading-[1] ml-0.5 pt-1.5">
-                                                        {chordData.extensions.slice().sort((a, b) => extensionOrder.indexOf(a) - extensionOrder.indexOf(b)).map((ext, i) => (
-                                                            <span key={i} className="text-[16px] font-black text-cyan-400/90 drop-shadow-sm tracking-tighter">{ext.replace('#', '♯').replace('b', '♭')}</span>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                {chordData.bass && chordData.bass !== 'Root' && (
-                                                    <span className="text-[24px] font-black text-cyan-500/40 ml-1.5 self-center transform translate-y-[2px]">
-                                                        /{chordData.bass.replace('/', '').replace('#', '♯').replace('b', '♭')}
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            <div className="mt-3 flex gap-2 justify-center">
-                                                {activeMeasure && (
-                                                    <button
-                                                        onClick={() => onUpdateMeasure?.(activeMeasure.id, { showChordName: !activeMeasure.showChordName })}
-                                                        className={`px-3 py-1 rounded-full text-[8px] font-black transition-all border uppercase tracking-[0.1em] ${activeMeasure.showChordName !== false
-                                                            ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
-                                                            : 'bg-zinc-900/80 text-zinc-600 border-zinc-800'
-                                                            }`}
-                                                    >
-                                                        {activeMeasure.showChordName !== false ? '• SYMBOL VISIBLE' : '• SYMBOL HIDDEN'}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
 
                                     {/* Root Selection */}
                                     <div className="space-y-3 bg-zinc-950/40 p-4 rounded-2xl border border-white/[0.02]">
@@ -933,8 +890,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                 className={`px-3 py-1 rounded-full border cursor-pointer transition-all ${smartTranspose ? 'bg-orange-500/20 border-orange-500 text-orange-400' : 'bg-zinc-900 border-zinc-800 text-zinc-600 hover:text-zinc-400'}`}
                                             >
                                                 <div className="flex flex-col items-center">
-                                                    <span className="text-[8px] font-black leading-none">DATA</span>
-                                                    <span className="text-[8px] font-black leading-none mt-0.5">SHIFT</span>
+                                                    <span className="text-[8px] font-black leading-none">AUTO</span>
+                                                    <span className="text-[8px] font-black leading-none mt-0.5">FINGER</span>
                                                 </div>
                                             </div>
                                         </div>

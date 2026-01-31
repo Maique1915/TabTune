@@ -869,17 +869,28 @@ export function useStudioChordsEditor() {
             if (wouldGoOutOfBounds) return prev;
 
             const newMeasures = prev.measures.map((measure: MeasureData) => {
-                const transposedNotes = measure.notes.map((note: NoteData) => ({
-                    ...note,
-                    positions: note.positions.map((pos: any) => {
-                        if (pos.avoid) return pos;
-                        return {
-                            ...pos,
-                            fret: pos.fret + semitones
+                const transposedNotes = measure.notes.map((note: NoteData) => {
+                    // Adjust barre if it exists
+                    let newBarre = note.barre;
+                    if (newBarre) {
+                        newBarre = {
+                            ...newBarre,
+                            fret: newBarre.fret + semitones
                         };
-                    }),
-                    barre: undefined
-                }));
+                    }
+
+                    return {
+                        ...note,
+                        positions: note.positions.map((pos: any) => {
+                            if (pos.avoid) return pos;
+                            return {
+                                ...pos,
+                                fret: pos.fret + semitones
+                            };
+                        }),
+                        barre: newBarre
+                    };
+                });
 
                 const newName = transposeChordName(measure.chordName, semitones);
                 return { ...measure, notes: transposedNotes, chordName: newName };

@@ -289,7 +289,15 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
 
     public override transposeForDisplay(chord: ChordDiagramProps, transportDisplay: number): { finalChord: ChordDiagramProps; transportDisplay: number } {
         let finalChord = chord;
-        const effectiveTransport = transportDisplay;
+
+        // Calculate effective transport if not explicitly provided (or default 1)
+        // This ensures that if a chord exceeds the visual neck length (numFrets), 
+        // it gets visually transported to start from fret 1.
+        const effectiveTransport = FingerComponent.calculateEffectiveTransport(
+            chord.fingers,
+            this._effectiveNumFrets,
+            transportDisplay
+        );
 
         if (effectiveTransport > 1) {
             finalChord = {

@@ -353,14 +353,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
       {/* Rotation Controls */}
       <div className="space-y-3 p-3 bg-zinc-950/30 rounded-lg border border-zinc-800/50 mb-3">
         <div className="grid grid-cols-4 gap-2">
-          {(numFrets && numFrets <= 6 ? [
-            { label: '1ª', rotation: 0 as const, mirror: false },
-            { label: '2ª', rotation: 90 as const, mirror: false },
-            { label: '3ª', rotation: 270 as const, mirror: true }
-          ] : [
-            { label: '1ª', rotation: 0 as const, mirror: false },
-            { label: '2ª', rotation: 0 as const, mirror: true }
-          ]).map((option) => (
+          {[{ label: '1ª', rotation: 0 as const, mirror: false }, { label: '2ª', rotation: 0 as const, mirror: true }].map((option) => (
             <button
               key={`${option.label}-${option.rotation}-${option.mirror}`}
               onClick={() => {
@@ -395,7 +388,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
       <div className="space-y-3">
         <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Animation Type</span>
         <div className="grid grid-cols-1 gap-2">
-          {numFrets && numFrets <= 6 && (
+          {numFrets && numFrets <= 24 && (
             <button
               onClick={() => {
                 console.log('Set animation to carousel');
@@ -415,7 +408,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
             </button>
           )}
 
-          {numFrets && numFrets <= 6 && (
+          {numFrets && numFrets <= 24 && (
             <button
               onClick={() => {
                 console.log('Set animation to static-fingers');
@@ -435,25 +428,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
             </button>
           )}
 
-          {numFrets && numFrets > 6 && (
-            <button
-              onClick={() => {
-                console.log('Set animation to guitar-fretboard');
-                setAnimationType('guitar-fretboard');
-              }}
-              className={`p-3 rounded-lg border text-left transition-all ${animationType === 'guitar-fretboard'
-                ? 'bg-pink-500/10 border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.15)]'
-                : 'bg-zinc-900/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
-                }`}
-            >
-              <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${animationType === 'guitar-fretboard' ? 'text-pink-400' : 'text-zinc-300'}`}>
-                Cinematic Fretboard
-              </div>
-              <div className="text-[9px] opacity-70">
-                Full horizontal neck with high-fidelity rendering.
-              </div>
-            </button>
-          )}
+
         </div>
       </div>
 
