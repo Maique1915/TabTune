@@ -450,7 +450,7 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
 
         this._ctx.restore();
 
-        if (finalChord.chordName && !opts?.skipChordName) {
+        if (finalChord.chordName && !opts?.skipChordName && finalChord.showChordName !== false) {
             this.drawChordName(finalChord.chordName);
         }
     }
@@ -498,14 +498,24 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         if (!chordName) return;
 
         const { x, y } = this.getChordNameCoords();
+
+        const finalColor = options?.color || this._colors.chordName?.color || this._colors.global.primaryTextColor;
+        console.log('[ShortNeck] Chord Name Color Debug:', {
+            name: chordName,
+            finalColor,
+            optionsColor: options?.color,
+            themeChordName: this._colors.chordName,
+            themeGlobal: this._colors.global
+        });
+
         const component = new ChordNameComponent(
             chordName,
             x,
             y,
             {
-                color: options?.color || this._colors.global.primaryTextColor,
+                color: finalColor,
                 fontSize: options?.fontSize,
-                opacity: options?.opacity
+                opacity: options?.opacity ?? this._colors.chordName?.opacity ?? 1
             },
             this._scaleFactor
         );

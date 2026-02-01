@@ -10,13 +10,14 @@ import { ShortNeckDrawer } from "@/modules/engine/infrastructure/drawers/ShortNe
 
 import { FretboardEngine } from "@/modules/engine/infrastructure/FretboardEngine";
 import { TimelineState } from "@/modules/chords/domain/types";
+import JSZip from 'jszip';
 import { useCanvasRecorder } from "@/lib/shared/hooks/useCanvasRecorder";
 
 export interface FretboardStageRef {
     startAnimation: () => void;
     pauseAnimation: () => void;
     resumeAnimation: () => void;
-    handleRender: (format?: 'mp4' | 'webm' | 'json', quality?: 'low' | 'medium' | 'high' | 'ultra') => Promise<void>;
+    handleRender: (format?: 'mp4' | 'webm' | 'png-sequence', quality?: 'low' | 'medium' | 'high', fileName?: string) => Promise<void>;
     cancelRender: () => void;
     isAnimating: boolean;
     isRendering: boolean;
@@ -138,8 +139,8 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
     const [isAnimating, setIsAnimating] = useState(false);
     const isAnimatingRef = useRef(false);
     const [isPaused, setIsPaused] = useState(false);
-    const [renderFormat, setRenderFormat] = useState<'mp4' | 'webm' | 'json'>('mp4');
-    const [renderQuality, setRenderQuality] = useState<'low' | 'medium' | 'high' | 'ultra'>('medium');
+    const [renderFormat, setRenderFormat] = useState<'mp4' | 'webm' | 'png-sequence'>('mp4');
+    const [renderQuality, setRenderQuality] = useState<'low' | 'medium' | 'high'>('medium');
 
     const isRenderCancelledRef = useRef(false);
     const isRenderingRef = useRef(false);
@@ -232,7 +233,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
     // Canvas recorder for video rendering
     const canvasRecorder = useCanvasRecorder(stageContainerRef as any, {
         fps: 30,
-        format: renderFormat === 'json' ? 'webm' : renderFormat,
+        format: renderFormat === 'png-sequence' ? 'webm' : renderFormat,
         quality: renderQuality,
     });
 
@@ -507,7 +508,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
 
     // Effect for when chords array changes
     useEffect(() => {
-        if (!isAnimating && chords && chords.length > 0 && typeof activeChordIndex === 'number') {
+        if ((!isAnimating || isPaused) && chords && chords.length > 0 && typeof activeChordIndex === 'number') {
             const index = Math.max(0, Math.min(chords.length - 1, activeChordIndex));
             animationStateRef.current.chordIndex = index;
             animationStateRef.current.chordProgress = 0;
@@ -520,11 +521,11 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                 drawFrameRef.current(animationStateRef.current, playheadStateRef.current.t);
             }
         }
-    }, [chords, isAnimating]);
+    }, [chords, isAnimating, isPaused]);
 
     // Effect for when activeChordIndex changes
     useEffect(() => {
-        if (!isAnimating && typeof activeChordIndex === 'number' && chords && chords.length > 0) {
+        if ((!isAnimating || isPaused) && typeof activeChordIndex === 'number' && chords && chords.length > 0) {
             const index = Math.max(0, Math.min(chords.length - 1, activeChordIndex));
             console.log('[FretboardStage] activeChordIndex changed:', {
                 activeChordIndex,
@@ -544,29 +545,82 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                 drawFrameRef.current(animationStateRef.current, playheadStateRef.current.t);
             }
         }
-    }, [activeChordIndex, isAnimating]);
+    }, [activeChordIndex, isAnimating, isPaused]);
 
-    const handleRender = useCallback(async (format?: 'mp4' | 'webm' | 'json', quality?: 'low' | 'medium' | 'high' | 'ultra') => {
+    const handleRender = useCallback(async (format?: 'mp4' | 'webm' | 'png-sequence', quality?: 'low' | 'medium' | 'high', fileName?: string) => {
         if (!chords || chords.length === 0 || !canvasRef.current) return;
         const targetFormat = format || 'mp4';
         const targetQuality = quality || 'medium';
+        const targetFileName = fileName || 'chord-animation';
         setRenderFormat(targetFormat);
         setRenderQuality(targetQuality);
 
-        if (targetFormat === 'json') {
-            const exportData = {
-                chords: chords.map(c => ({
-                    chordName: c.finalChord?.chordName || '',
-                    fingers: c.finalChord?.fingers || [],
-                    avoid: c.finalChord?.avoid || [],
-                    duration: c.duration,
-                    origin: c.finalChord?.origin || 0,
-                })),
-                settings: { width, height, numStrings, numFrets, capo, animationType },
-                theme: colors,
-            };
-            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-            canvasRecorder.downloadVideo(blob, 'animation-data.json');
+        if (targetFormat === 'png-sequence') {
+            try {
+                isRenderingRef.current = true;
+                canvasRecorder.setIsRendering(true);
+                canvasRecorder.setIsComplete(false);
+                canvasRecorder.setRenderProgress(0);
+                canvasRecorder.setRenderStatus('Preparando imagens...');
+                isRenderCancelledRef.current = false;
+
+                const zip = new JSZip();
+                const totalChords = chords.length;
+
+                // Configure canvas for high quality capture
+                const canvas = canvasRef.current;
+
+                // We'll iterate through each chord, set the state to that chord's time, and capture
+                let currentTime = 0;
+
+                for (let i = 0; i < totalChords; i++) {
+                    if (isRenderCancelledRef.current) throw new Error("Render cancelled");
+
+                    const chord = chords[i];
+                    // Position cursor in the middle of the chord duration to ensure it's stable/visible
+                    // or just at the start. Middle is safer for transitions ideally, but start is fine if no transition
+                    const captureTime = currentTime + 100; // Small offset to ensure we are 'inside' the chord
+
+                    const state = computeStateAtTimeMs(captureTime);
+                    if (state && drawFrameRef.current) {
+                        // Ensure full visibility
+                        animationStateRef.current = { ...animationStateRef.current, ...state, fingerOpacity: 1, fingerScale: 1, cardY: 0, nameOpacity: 1 };
+                        drawFrameRef.current(animationStateRef.current, captureTime);
+
+                        // Wait a tick for draw
+                        await new Promise(resolve => setTimeout(resolve, 50));
+
+                        // Capture blob
+                        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+                        if (blob) {
+                            // Chord name as filename if available, else index
+                            const chordName = chord.finalChord?.chordName?.replace(/[^a-z0-9]/gi, '_') || `chord_${i + 1}`;
+                            zip.file(`${String(i + 1).padStart(2, '0')}_${chordName}.png`, blob);
+                        }
+                    }
+
+                    currentTime += chord.duration;
+
+                    const progress = ((i + 1) / totalChords) * 100;
+                    canvasRecorder.setRenderProgress(progress);
+                    canvasRecorder.setRenderStatus(`Capturando acorde ${i + 1} de ${totalChords}...`);
+                    if (onRenderProgress) onRenderProgress(progress);
+                }
+
+                if (isRenderCancelledRef.current) return;
+
+                canvasRecorder.setRenderStatus('Gerando arquivo ZIP...');
+                const zipContent = await zip.generateAsync({ type: "blob" });
+                canvasRecorder.downloadVideo(zipContent, `${targetFileName}.zip`);
+                canvasRecorder.setIsComplete(true);
+                canvasRecorder.setRenderProgress(100);
+
+            } catch (error: any) {
+                console.error("ZIP Render error:", error);
+                canvasRecorder.setIsRendering(false);
+            } finally {
+                isRenderingRef.current = false;
+            }
             return;
         }
 
@@ -605,7 +659,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
             });
             if (videoBlob) {
                 const extension = targetFormat === 'webm' ? 'webm' : 'mp4';
-                canvasRecorder.downloadVideo(videoBlob, `chord-animation.${extension}`);
+                canvasRecorder.downloadVideo(videoBlob, `${targetFileName}.${extension}`);
                 canvasRecorder.setIsComplete(true);
             }
         } catch (error: any) {

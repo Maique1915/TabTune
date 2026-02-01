@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TabTune - Render Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#06b6d4",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#020617",
+                        "surface-dark": "#0f172a",
+                        "card-dark": "#1e293b",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                        sans: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.75rem",
+                    },
+                },
+            },
+        };
+    </script>
+<style type="text/tailwindcss">
+        .glass-morphism {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .cyan-glow {
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+        }
+        .gradient-primary {
+            background: linear-gradient(135deg, #06b6d4 0%, #6366f1 100%);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased text-slate-900 dark:text-slate-100 bg-background-light dark:bg-background-dark min-h-screen flex items-center justify-center p-4">
+<div class="fixed inset-0 z-0 overflow-hidden pointer-events-none opacity-40 dark:opacity-20">
+<div class="absolute top-0 left-0 w-64 h-full border-r border-slate-200 dark:border-slate-800 p-6 flex flex-col gap-8">
+<div class="h-8 w-32 bg-slate-300 dark:bg-slate-700 rounded-md"></div>
+<div class="space-y-4">
+<div class="h-4 w-full bg-slate-300 dark:bg-slate-700 rounded"></div>
+<div class="h-4 w-3/4 bg-slate-300 dark:bg-slate-700 rounded"></div>
+</div>
+<div class="mt-auto h-12 w-12 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+</div>
+<div class="absolute top-0 left-64 right-0 h-16 border-b border-slate-200 dark:border-slate-800 flex items-center px-8 justify-between">
+<div class="h-6 w-48 bg-slate-300 dark:bg-slate-700 rounded"></div>
+<div class="flex gap-4">
+<div class="h-8 w-8 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+<div class="h-8 w-24 bg-slate-300 dark:bg-slate-700 rounded"></div>
+</div>
+</div>
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-1/2 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl flex items-center justify-center">
+<span class="material-symbols-outlined text-6xl text-slate-300 dark:text-slate-700">music_note</span>
+</div>
+</div>
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-10"></div>
+<div class="relative z-20 w-full max-w-lg glass-morphism rounded-2xl overflow-hidden shadow-2xl cyan-glow border-t border-white/10">
+<div class="p-6 flex items-center justify-between border-b border-white/5">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">videocam</span>
+</div>
+<div>
+<h2 class="text-xl font-semibold tracking-tight">Renderizar Animação</h2>
+<p class="text-xs text-slate-400 mt-0.5">Escolha o formato e a qualidade para exportar sua animação.</p>
+</div>
+</div>
+<button class="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-white">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="p-6 space-y-6">
+<section class="space-y-2">
+<label class="text-sm font-medium text-slate-300 flex items-center gap-2" for="file-name">
+<span class="material-symbols-outlined text-base text-slate-500">drive_file_rename_outline</span>
+                    Nome do Arquivo
+                </label>
+<input class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-600 text-slate-200" id="file-name" placeholder="Meu Acorde Animado" type="text"/>
+</section>
+<section class="space-y-4">
+<h3 class="text-sm font-medium text-slate-300 flex items-center gap-2">
+<span class="material-symbols-outlined text-base text-slate-500">settings_suggest</span>
+                    Formato de Saída
+                </h3>
+<div class="space-y-3">
+<label class="relative block cursor-pointer group">
+<input checked="" class="peer sr-only" name="format" type="radio"/>
+<div class="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all peer-checked:border-primary peer-checked:bg-primary/5">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 text-primary">
+<span class="material-symbols-outlined">video_file</span>
+</div>
+<div>
+<p class="font-medium text-sm">MP4</p>
+<p class="text-xs text-slate-400">Compatível com todos os players (recomendado)</p>
+</div>
+</div>
+<div class="w-5 h-5 rounded-full border-2 border-slate-600 peer-checked:border-primary flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-primary scale-0 transition-transform peer-checked:scale-100"></div>
+</div>
+</div>
+</label>
+<label class="relative block cursor-pointer group">
+<input class="peer sr-only" name="format" type="radio"/>
+<div class="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all peer-checked:border-primary peer-checked:bg-primary/5">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full flex items-center justify-center bg-slate-700/50 text-slate-300">
+<span class="material-symbols-outlined">language</span>
+</div>
+<div>
+<p class="font-medium text-sm">WebM</p>
+<p class="text-xs text-slate-400">Renderização rápida, menor tamanho</p>
+</div>
+</div>
+<div class="w-5 h-5 rounded-full border-2 border-slate-600 peer-checked:border-primary flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-primary scale-0 transition-transform peer-checked:scale-100"></div>
+</div>
+</div>
+</label>
+<label class="relative block cursor-pointer group">
+<input class="peer sr-only" name="format" type="radio"/>
+<div class="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all peer-checked:border-primary peer-checked:bg-primary/5">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full flex items-center justify-center bg-slate-700/50 text-slate-300">
+<span class="material-symbols-outlined">code</span>
+</div>
+<div>
+<p class="font-medium text-sm">JSON</p>
+<p class="text-xs text-slate-400">Dados da animação para integração</p>
+</div>
+</div>
+<div class="w-5 h-5 rounded-full border-2 border-slate-600 peer-checked:border-primary flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-primary scale-0 transition-transform peer-checked:scale-100"></div>
+</div>
+</div>
+</label>
+<label class="relative block cursor-pointer group">
+<input class="peer sr-only" name="format" type="radio"/>
+<div class="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all peer-checked:border-primary peer-checked:bg-primary/5">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full flex items-center justify-center bg-slate-700/50 text-slate-300">
+<span class="material-symbols-outlined">folder_zip</span>
+</div>
+<div>
+<p class="font-medium text-sm">Sequência PNG (ZIP)</p>
+<p class="text-xs text-slate-400">Exporta cada quadro individualmente em um arquivo .zip</p>
+</div>
+</div>
+<div class="w-5 h-5 rounded-full border-2 border-slate-600 peer-checked:border-primary flex items-center justify-center">
+<div class="w-2.5 h-2.5 rounded-full bg-primary scale-0 transition-transform peer-checked:scale-100"></div>
+</div>
+</div>
+</label>
+</div>
+</section>
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="text-sm font-medium text-slate-300 flex items-center gap-2">
+<span class="material-symbols-outlined text-base text-slate-500">high_quality</span>
+                        Qualidade
+                    </h3>
+</div>
+<div class="relative">
+<select class="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all cursor-pointer text-slate-200">
+<option class="bg-slate-900">Alta (1920x1080, 1080p)</option>
+<option class="bg-slate-900" selected="">Média (1280x720, 720p)</option>
+<option class="bg-slate-900">Baixa (854x480, 480p)</option>
+<option class="bg-slate-900">Ultra (3840x2160, 4K)</option>
+</select>
+<div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+<p class="text-[11px] text-slate-500 leading-relaxed">
+                    Qualidades maiores resultam em arquivos maiores e tempo de renderização mais longo.
+                </p>
+</section>
+<div class="space-y-2 pt-2">
+<div class="flex justify-between text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+<span>Progresso da Renderização</span>
+<span>0%</span>
+</div>
+<div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+<div class="h-full bg-slate-700 w-0 transition-all duration-500"></div>
+</div>
+</div>
+</div>
+<div class="p-6 pt-2 flex items-center justify-end gap-3 border-t border-white/5">
+<button class="px-6 py-2.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-all border border-transparent hover:border-white/10">
+                Cancelar
+            </button>
+<button class="gradient-primary flex items-center gap-2 px-8 py-2.5 text-sm font-semibold text-white rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:scale-[1.02] active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined text-lg">videocam</span>
+                Renderizar
+            </button>
+</div>
+</div>
+<div class="fixed bottom-6 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/50 border border-white/5 text-[10px] text-slate-500 uppercase tracking-widest z-30">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+        Noteforge Engine Active
+    </div>
+
+</body></html>

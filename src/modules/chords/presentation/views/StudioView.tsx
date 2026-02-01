@@ -19,6 +19,7 @@ import { TimelineControls } from "@/modules/timeline/presentation/components/Tim
 import { useStudioChordsEditor } from "@/modules/editor/presentation/hooks/use-studio-chords-editor";
 import { useTimelineSync } from "@/modules/timeline/presentation/hooks/use-timeline-sync";
 import { RenderDialog, RenderFormat, RenderQuality } from "@/modules/chords/presentation/components/RenderDialog";
+import { PreviewWatermark } from "@/modules/chords/presentation/components/PreviewWatermark";
 
 export function StudioView() {
     const {
@@ -106,6 +107,9 @@ export function StudioView() {
     const [isAnimating, setIsAnimating] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [renderDialogOpen, setRenderDialogOpen] = useState(false);
+    const [renderQuality, setRenderQuality] = useState<string>('--');
+    const [renderStartTime, setRenderStartTime] = useState<number | null>(null);
+    const [elapsedTime, setElapsedTime] = useState("--:--");
 
     const handleAnimationStateChange = useCallback((animating: boolean, paused: boolean) => {
         setIsAnimating(animating);
@@ -178,12 +182,16 @@ export function StudioView() {
         setRenderDialogOpen(true);
     };
 
-    const handleRenderWithOptions = async (format: RenderFormat, quality: RenderQuality) => {
+    const handleRenderWithOptions = async (format: RenderFormat, quality: RenderQuality, fileName: string) => {
+        setRenderDialogOpen(false);
+        setRenderQuality(quality);
+        setRenderStartTime(Date.now());
+        setElapsedTime("00:00");
         if (videoCanvasRef.current) {
             setIsRendering(true);
             setRenderProgress(0);
             try {
-                await videoCanvasRef.current.handleRender(format, quality);
+                await videoCanvasRef.current.handleRender(format, quality, fileName);
                 if (!renderCancelRequested) setRenderProgress(100);
             } catch (error) {
                 console.error("Error rendering:", error);
@@ -199,6 +207,19 @@ export function StudioView() {
             }
         }
     };
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (isRendering && renderStartTime) {
+            interval = setInterval(() => {
+                const seconds = Math.floor((Date.now() - renderStartTime) / 1000);
+                const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const secs = (seconds % 60).toString().padStart(2, '0');
+                setElapsedTime(`${mins}:${secs}`);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [isRendering, renderStartTime]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -230,6 +251,8 @@ export function StudioView() {
             onAudioUpload={() => { }}
             audioUploaded={false}
             onResetPlayback={handleResetPlayback}
+            currentTime={currentCursorMs}
+            totalDuration={totalDurationMs}
         />
     );
 
@@ -395,6 +418,7 @@ export function StudioView() {
                                 colors={theme}
                                 animationType={activeAnimationType}
                             />
+                            {!isRendering && <PreviewWatermark />}
                         </StageContainer>
                     }
                     bottomSection={<StudioTimeline {...visualEditorProps} />}
@@ -408,7 +432,7 @@ export function StudioView() {
                 isRendering={isRendering}
                 renderProgress={renderProgress}
             />
-            <RenderingProgressCard />
+            <RenderingProgressCard elapsedTime={elapsedTime} quality={renderQuality} />
 
         </WorkspaceLayout>
     );

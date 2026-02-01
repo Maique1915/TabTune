@@ -40,9 +40,9 @@ const ColorPicker = ({ color, onChange }: { color: string; onChange: (c: string)
     <Popover.Root>
       <Popover.Trigger asChild>
         <button
-          className="w-8 h-8 rounded-full ring-2 ring-zinc-700 overflow-hidden cursor-pointer shadow-sm hover:ring-pink-500/50 transition-all relative"
+          className="w-8 h-8 rounded-full ring-2 ring-white/10 overflow-hidden cursor-pointer shadow-sm hover:ring-primary/50 transition-all relative"
           style={{ backgroundColor: color }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
         />
       </Popover.Trigger>
       <Popover.Portal>
@@ -51,17 +51,15 @@ const ColorPicker = ({ color, onChange }: { color: string; onChange: (c: string)
           side="left"
           align="start"
           sideOffset={10}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
         >
           <div className="flex flex-col gap-3">
             <HexColorPicker color={color} onChange={onChange} style={{ width: '100%', height: '160px' }} />
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-zinc-500 font-bold">#</span>
               <input
-                type="text"
-                value={color.startsWith('#') ? color.replace('#', '') : color}
                 onChange={(e) => onChange(`#${e.target.value}`)}
-                className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-200 font-mono focus:border-pink-500/50 outline-none uppercase"
+                className="flex-1 bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-zinc-200 font-mono focus:border-primary/50 outline-none uppercase"
               />
             </div>
           </div>
@@ -160,7 +158,9 @@ const SETTING_GROUPS: SettingGroup[] = [
 
       { type: 'color', label: 'Capo Color', key: 'capo.color' },
       { type: 'color', label: 'Capo Text', key: 'capo.textColors.name' },
+      { type: 'color', label: 'Capo Number', key: 'capo.textColors.number' },
       { type: 'toggle', label: 'Capo Shadow', key: 'capo.shadow.enabled' },
+      { type: 'color', label: 'Shadow Color', key: 'capo.shadow.color' },
     ]
   }
 ];
@@ -205,36 +205,47 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
 
   const renderBasicTab = () => (
     <div className="space-y-4">
+      <div className="space-y-1 mb-4">
+        <h3 className="text-white text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+          Visual Presets
+        </h3>
+        <p className="text-white/40 text-[10px]">Customize render output style</p>
+      </div>
+
       <div className="grid grid-cols-1 gap-3">
-        {Object.entries(STUDIO_PRESETS).map(([key, preset]) => (
-          <div
-            key={key}
-            onClick={() => setColors(preset.style)}
-            className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800 hover:border-pink-500/50 cursor-pointer transition-all group"
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-full border-2 border-white/10 shadow-lg relative overflow-hidden"
-                style={{ backgroundColor: preset.style.global.backgroundColor }}
-              >
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: preset.style.fingers.color }}
-                  />
+        {Object.entries(STUDIO_PRESETS).map(([key, preset]) => {
+          const colors = [
+            preset.style.fingers?.color || '#000',
+            preset.style.global?.backgroundColor || '#000',
+            preset.style.fretboard?.strings?.color || '#fff'
+          ];
+
+          return (
+            <div
+              key={key}
+              onClick={() => setColors(preset.style)}
+              className="p-3 rounded-xl bg-white/5 border border-white/5 cursor-pointer hover:border-white/20 hover:bg-white/10 transition-colors group"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div
+                  className="size-8 rounded bg-gradient-to-br from-white/10 to-white/5 border border-white/10 shadow-inner"
+                  style={{ background: `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%)` }}
+                />
+                <div>
+                  <p className="text-xs font-bold text-white group-hover:text-primary transition-colors">{preset.label}</p>
+                  <p className="text-[9px] text-white/40">Professional Styles</p>
                 </div>
               </div>
-              <div>
-                <h3 className="text-xs font-bold text-zinc-200 group-hover:text-pink-400 transition-colors uppercase tracking-wider">
-                  {preset.label}
-                </h3>
-                <p className="text-[9px] text-zinc-500">Click to apply preset</p>
+              <div className="flex gap-1 h-1 w-full rounded-full overflow-hidden bg-black/20">
+                <div className="flex-1 h-full" style={{ backgroundColor: colors[0] }} />
+                <div className="flex-1 h-full" style={{ backgroundColor: colors[1] }} />
+                <div className="flex-1 h-full" style={{ backgroundColor: colors[2] }} />
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-    </div>
+    </div >
   );
 
   const renderAdvancedTab = () => (
@@ -248,17 +259,17 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
         return (
           <div
             key={group.id}
-            className={`flex flex-col rounded-xl border transition-all duration-300 overflow-hidden ${isExpanded ? 'bg-zinc-900/60 border-pink-500/30' : 'bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-800/40'}`}
+            className={`flex flex-col rounded-xl border transition-all duration-300 overflow-hidden ${isExpanded ? 'bg-black/40 border-primary/30' : 'bg-black/20 border-white/5 hover:bg-white/5'}`}
           >
             <div
               className="flex items-center justify-between p-3 cursor-pointer group"
               onClick={() => toggleExpand(group.id)}
             >
               <div className="flex items-center gap-3">
-                {isExpanded ? <ChevronDown className="w-3 h-3 text-pink-400" /> : <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-zinc-400" />}
+                {isExpanded ? <ChevronDown className="w-3 h-3 text-primary" /> : <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-zinc-400" />}
                 <div className="flex items-center gap-2">
-                  <Icon className={`w-3 h-3 ${isExpanded ? 'text-pink-400' : 'text-zinc-500'}`} />
-                  <span className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${isExpanded ? 'text-pink-100' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+                  <Icon className={`w-3 h-3 ${isExpanded ? 'text-primary' : 'text-zinc-500'}`} />
+                  <span className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${isExpanded ? 'text-primary-100' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
                     {group.label}
                   </span>
                 </div>
@@ -297,7 +308,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                           step={control.step}
                           value={Number(currentValue ?? 0)}
                           onChange={(e) => handleColorChange(control.key, parseFloat(e.target.value) || 0)}
-                          className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-pink-500 [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:bg-pink-400 transition-all"
+                          className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:scale-125 transition-all shadow-cyan-glow"
                         />
                       </div>
                     );
@@ -314,7 +325,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                           step={control.step || 1}
                           value={Number(currentValue ?? 0)}
                           onChange={(e) => handleColorChange(control.key, parseFloat(e.target.value) || 0)}
-                          className="w-16 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-300 font-mono focus:border-pink-500/50 outline-none text-right"
+                          className="w-16 bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-zinc-300 font-mono focus:border-primary/50 outline-none text-right"
                         />
                       </div>
                     );
@@ -326,11 +337,11 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                         <span className="text-[10px] font-medium text-zinc-400 uppercase">{control.label}</span>
                         <button
                           onClick={() => handleColorChange(control.key, !currentValue)}
-                          className={`w-8 h-4 rounded-full transition-colors relative ${currentValue ? 'bg-pink-500/20' : 'bg-zinc-800'
+                          className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${currentValue ? 'bg-primary/20' : 'bg-white/10'
                             }`}
                         >
                           <div className={`absolute top-0.5 bottom-0.5 w-3 h-3 rounded-full transition-all duration-300 ${currentValue
-                            ? 'left-[18px] bg-pink-400 shadow-[0_0_8px_rgba(244,114,182,0.6)]'
+                            ? 'left-[18px] bg-primary shadow-[0_0_8px_rgba(6,182,212,0.6)]'
                             : 'left-0.5 bg-zinc-600'
                             }`} />
                         </button>
@@ -375,8 +386,8 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                   }));
                 }}
                 className={`py-2 rounded-lg border text-[10px] font-black transition-all ${colors.global?.rotation === opt.val
-                    ? 'bg-pink-500/10 border-pink-500/40 text-pink-400 font-bold shadow-[0_0_10px_rgba(236,72,153,0.1)]'
-                    : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
+                  ? 'bg-primary/10 border-primary/40 text-primary font-bold shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                  : 'bg-black/20 border-white/5 text-zinc-500 hover:bg-white/5 hover:text-zinc-300'
                   }`}
               >
                 {opt.label}
@@ -402,11 +413,11 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                 setAnimationType('carousel');
               }}
               className={`p-3 rounded-lg border text-left transition-all ${animationType === 'carousel'
-                ? 'bg-pink-500/10 border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.15)]'
-                : 'bg-zinc-900/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                ? 'bg-secondary-neon/10 border-secondary-neon/50 shadow-[0_0_15px_rgba(255,0,229,0.15)]'
+                : 'bg-black/20 border-white/5 text-zinc-500 hover:border-white/10 hover:text-zinc-300'
                 }`}
             >
-              <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${animationType === 'carousel' ? 'text-pink-400' : 'text-zinc-300'}`}>
+              <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${animationType === 'carousel' ? 'text-secondary-neon' : 'text-zinc-300'}`}>
                 Carousel
               </div>
               <div className="text-[9px] opacity-70">
@@ -422,11 +433,11 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                 setAnimationType('static-fingers');
               }}
               className={`p-3 rounded-lg border text-left transition-all ${animationType === 'static-fingers'
-                ? 'bg-pink-500/10 border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.15)]'
-                : 'bg-zinc-900/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                ? 'bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
+                : 'bg-black/20 border-white/5 text-zinc-500 hover:border-white/10 hover:text-zinc-300'
                 }`}
             >
-              <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${animationType === 'static-fingers' ? 'text-pink-400' : 'text-zinc-300'}`}>
+              <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${animationType === 'static-fingers' ? 'text-primary' : 'text-zinc-300'}`}>
                 Static Fretboard
               </div>
               <div className="text-[9px] opacity-70">
@@ -450,7 +461,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
 
   return (
     <GenericSidebar
-      title="Customize"
+      title="Visual Presets"
       icon={Palette}
       onReset={handleReset}
       tabs={tabs}

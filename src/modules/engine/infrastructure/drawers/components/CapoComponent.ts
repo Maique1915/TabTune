@@ -193,7 +193,9 @@ export class CapoComponent implements IFretboardComponent {
             const numX = fretboardX - 35 * scaleFactor;
             const numY = centerY;
             const numFont = `bold ${32 * scaleFactor}px sans-serif`;
-            const numColor = this.style.color || this.style.textColor;
+            // Use numberColor if available, else fall back to textColor (resolved) or main color
+            const resolvedTextColor = this.style.textColor || '#2c2c2c';
+            const numColor = (this.style as any).numberColor || resolvedTextColor || this.style.color;
             this.drawText(ctx, displayFret.toString(), numX, numY, numFont, numColor, "right", "middle", true, this.rotation, this.mirror);
         }
 

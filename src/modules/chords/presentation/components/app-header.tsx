@@ -1,6 +1,6 @@
 "use client";
 
-import { Music, Settings, Menu, Upload, Download } from 'lucide-react';
+import { Music, Settings, Menu, Upload, Download, User, Share2 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 
 interface HeaderProps {
@@ -13,72 +13,88 @@ interface HeaderProps {
 
 export function AppHeader({ onMenuClick, onSettingsClick, onImportHistory, onExportHistory, title }: HeaderProps) {
   return (
-    <header className="flex justify-between items-center px-6 py-4 bg-zinc-950/40 backdrop-blur-md border-b border-zinc-800/50 shrink-0 z-20">
-      <div className="flex items-center space-x-3">
-        <div className="p-2 bg-pink-500/10 rounded-xl border border-pink-500/20 shadow-[0_0_15px_rgba(236,72,153,0.1)]">
-          <Music className="text-pink-400" size={20} />
-        </div>
-        <div className="flex flex-col">
-          <h1 className="text-sm font-black tracking-[0.2em] text-zinc-100 uppercase leading-tight">TabTune</h1>
-          {title && <span className="text-[10px] font-bold text-pink-500 uppercase tracking-widest leading-tight">{title}</span>}
+    <header className="flex justify-between items-center px-4 py-3 bg-panel-dark/80 backdrop-blur-md border-b border-white/5 shrink-0 z-50 relative">
+      <div className="flex items-center space-x-4">
+        <div className="flex items-center gap-3 group cursor-pointer">
+          <div className="size-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-cyan-glow group-hover:bg-primary/20 transition-all">
+            <Music className="text-primary" size={18} />
+          </div>
+          <div className="flex flex-col">
+            <h1 className="text-base font-display font-black tracking-widest text-white uppercase leading-none flex items-center gap-2">
+              TabTune <div className="size-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+            </h1>
+            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-[0.2em] leading-tight group-hover:text-primary transition-colors">
+              Studio Mode
+            </span>
+          </div>
         </div>
       </div>
+
+      {/* Center Navigation - Visual Only for now */}
+
+
       <div className="flex items-center gap-3">
-        {onImportHistory && (
-          <>
-            <input
-              type="file"
-              id="import-history"
-              className="hidden"
-              accept=".json"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  onImportHistory(file);
-                  e.target.value = ''; // Reset to allow importing the same file again
-                }
-              }}
-            />
+        <div className="flex items-center gap-1 pr-4 border-r border-white/5 mr-1">
+          {onImportHistory && (
+            <>
+              <input
+                type="file"
+                id="import-history"
+                className="hidden"
+                accept=".json"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    onImportHistory(file);
+                    e.target.value = ''; // Reset to allow importing the same file again
+                  }
+                }}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => document.getElementById('import-history')?.click()}
+                className="size-8 rounded-lg text-zinc-500 hover:text-primary hover:bg-white/5 transition-all"
+                title="Importar"
+              >
+                <Upload size={16} />
+              </Button>
+            </>
+          )}
+
+          {onExportHistory && (
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => document.getElementById('import-history')?.click()}
-              className="w-9 h-9 rounded-xl bg-zinc-900/50 border border-zinc-800/50 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all"
-              title="Importar"
+              onClick={onExportHistory}
+              className="size-8 rounded-lg text-zinc-500 hover:text-primary hover:bg-white/5 transition-all"
+              title="Exportar"
             >
-              <Upload size={18} />
+              <Download size={16} />
             </Button>
-          </>
-        )}
+          )}
 
-        {onExportHistory && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onExportHistory}
-            className="w-9 h-9 rounded-xl bg-zinc-900/50 border border-zinc-800/50 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all"
-            title="Exportar"
-          >
-            <Download size={18} />
+          <Button className="ml-2 h-7 px-3 bg-primary/10 text-primary hover:bg-primary/20 text-[10px] font-bold uppercase tracking-wider border border-primary/20 rounded-lg">
+            <Share2 size={12} className="mr-2" /> Share
           </Button>
-        )}
+        </div>
 
-        {onSettingsClick && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onSettingsClick}
-            className="w-9 h-9 rounded-xl bg-zinc-900/50 border border-zinc-800/50 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all"
-          >
-            <Settings size={18} />
-          </Button>
-        )}
+        <div className="flex items-center gap-3 pl-1">
+          <div className="flex items-col text-right hidden sm:block">
+            <p className="text-[10px] font-bold text-white leading-none">Guest User</p>
+            <p className="text-[8px] font-bold text-primary uppercase tracking-wider leading-none mt-0.5">Free Plan</p>
+          </div>
+          <div className="size-8 rounded-full bg-zinc-800 border-2 border-primary/30 flex items-center justify-center overflow-hidden">
+            <User size={14} className="text-zinc-400" />
+          </div>
+        </div>
+
         {onMenuClick && (
           <Button
             variant="ghost"
             size="icon"
             onClick={onMenuClick}
-            className="lg:hidden w-9 h-9 rounded-xl bg-zinc-900/50 border border-zinc-800/50 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all"
+            className="lg:hidden w-9 h-9 rounded-xl bg-zinc-900/50 border border-zinc-800/50 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-all ml-2"
           >
             <Menu size={18} />
           </Button>

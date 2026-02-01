@@ -5,7 +5,7 @@ import { toBlobURL, fetchFile } from '@ffmpeg/util';
 export interface CanvasRecorderOptions {
     fps?: number;
     format?: 'webm' | 'mp4';
-    quality?: 'low' | 'medium' | 'high' | 'ultra';
+    quality?: 'low' | 'medium' | 'high';
 }
 
 export interface CanvasRecorderResult {
@@ -34,7 +34,6 @@ const QUALITY_SETTINGS = {
     low: { crf: 28, preset: 'ultrafast', bitrate: 5000000, scale: 0.5 },    // 960x540
     medium: { crf: 22, preset: 'fast', bitrate: 15000000, scale: 0.75 },   // 1440x810
     high: { crf: 12, preset: 'veryfast', bitrate: 45000000, scale: 1 },    // 1920x1080
-    ultra: { crf: 0, preset: 'faster', bitrate: 100000000, scale: 2 },     // 3840x2160 (4K)
 };
 
 /**
@@ -69,12 +68,13 @@ export function useCanvasRecorder(
         quality = 'medium'
     } = useMemo(() => options, [options.fps, options.format, options.quality]);
 
-    // Load FFmpeg (only needed for MP4)
     const loadFFmpeg = useCallback(async () => {
         if (ffmpegRef.current?.loaded) return;
+        // If we have a pending load, return it
         if (ffmpegLoadPromiseRef.current) return ffmpegLoadPromiseRef.current;
 
         ffmpegLoadPromiseRef.current = (async () => {
+            // Always create a fresh instance if not loaded/terminated
             const ffmpeg = new FFmpeg();
             ffmpegRef.current = ffmpeg;
 
@@ -88,6 +88,7 @@ export function useCanvasRecorder(
             } catch (err) {
                 console.error('FFmpeg load error:', err);
                 ffmpegLoadPromiseRef.current = null;
+                ffmpegRef.current = null;
                 throw err;
             }
         })();
@@ -184,7 +185,12 @@ export function useCanvasRecorder(
 
     const stopRecording = useCallback(async (): Promise<Blob | null> => {
         // Add a buffer delay to ensure final frames are captured and encoded
+        // Also check cancellation
+        if (isCancelledRef.current) return null;
+
         await new Promise(resolve => setTimeout(resolve, 500));
+
+        if (isCancelledRef.current) return null;
 
         if (animationFrameRef.current) {
             cancelAnimationFrame(animationFrameRef.current);
@@ -199,6 +205,11 @@ export function useCanvasRecorder(
             }
 
             mediaRecorder.onstop = () => {
+                if (isCancelledRef.current) {
+                    resolve(null);
+                    return;
+                }
+
                 const type = mediaRecorder.mimeType || 'video/webm';
                 const blob = new Blob(chunksRef.current, { type });
                 chunksRef.current = [];
@@ -221,6 +232,8 @@ export function useCanvasRecorder(
     // Convert WebM to MP4 using FFmpeg
     const convertWebMToMP4 = useCallback(async (webmBlob: Blob, onProgress?: (progress: number) => void): Promise<Blob | null> => {
         try {
+            if (isCancelledRef.current) return null;
+
             console.log('Starting WebM to MP4 conversion...');
             console.log('WebM blob size:', webmBlob.size, 'bytes');
             console.log('WebM blob type:', webmBlob.type);
@@ -235,7 +248,10 @@ export function useCanvasRecorder(
             }
 
             // Create a fresh FFmpeg instance for this conversion
-            const ffmpeg = new FFmpeg();
+            // Using loadFFmpeg helper to ensure consistency
+            await loadFFmpeg();
+            if (isCancelledRef.current || !ffmpegRef.current?.loaded) return null;
+            const ffmpeg = ffmpegRef.current;
 
             ffmpeg.on('log', ({ message }) => {
                 console.log('[FFmpeg]:', message);
@@ -248,20 +264,7 @@ export function useCanvasRecorder(
             renderStartTimeRef.current = Date.now();
             setEstimatedTime(null);
 
-            try {
-                const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-                await ffmpeg.load({
-                    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-                    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-                });
-                console.log('FFmpeg loaded successfully');
-
-                // Wait a bit to ensure FFmpeg is fully initialized
-                await new Promise(resolve => setTimeout(resolve, 100));
-            } catch (loadErr) {
-                console.error('FFmpeg load error:', loadErr);
-                throw new Error(`Failed to load FFmpeg: ${loadErr}`);
-            }
+            // FFmpeg is already loaded by loadFFmpeg helper
 
             if (onProgress) onProgress(10);
             setRenderProgress(10);
@@ -272,6 +275,7 @@ export function useCanvasRecorder(
             const webmData = await fetchFile(webmBlob);
             console.log('WebM data size:', webmData.byteLength, 'bytes');
 
+            if (isCancelledRef.current) return null;
             try {
                 await ffmpeg.writeFile('input.webm', webmData);
                 console.log('WebM file written successfully');
@@ -318,7 +322,6 @@ export function useCanvasRecorder(
                 }
 
                 if (onProgress) onProgress(mappedProgress);
-                console.log('FFmpeg Progress:', { ratio: safeRatio, mapped: mappedProgress, raw: event });
             };
 
             ffmpeg.on('progress', progressHandler);
@@ -334,6 +337,8 @@ export function useCanvasRecorder(
                     '-movflags', '+faststart',
                     'output.mp4'
                 ];
+
+                if (isCancelledRef.current) return null;
                 await ffmpeg.exec(ffmpegArgs);
                 console.log('FFmpeg conversion completed');
             } catch (execErr) {
@@ -342,6 +347,8 @@ export function useCanvasRecorder(
             } finally {
                 ffmpeg.off('progress', progressHandler);
             }
+
+            if (isCancelledRef.current) return null;
 
             if (onProgress) onProgress(95);
             setRenderProgress(95);
@@ -361,9 +368,12 @@ export function useCanvasRecorder(
                 console.warn('Cleanup error (non-fatal):', cleanupErr);
             }
 
-            // Terminate FFmpeg instance
+            // We don't terminate here anymore, let the hook management or cancel handle it
+            // ensuring we can reuse if needed, or just let it close component unmount.
+            // But usually we can keep it alive. Or stick to original behavior:
             try {
                 ffmpeg.terminate();
+                ffmpegRef.current = null; // Clear ref
                 console.log('FFmpeg instance terminated');
             } catch (termErr) {
                 console.warn('FFmpeg termination error (non-fatal):', termErr);
@@ -377,22 +387,21 @@ export function useCanvasRecorder(
 
             return mp4Blob;
         } catch (err: any) {
+            if (isCancelledRef.current) return null;
             console.error('WebM to MP4 conversion error:', err);
-            console.error('Error details:', {
-                message: err.message,
-                stack: err.stack,
-                name: err.name
-            });
             setError(err.message || 'Conversion failed');
             setIsRendering(false);
             return null;
         }
-    }, [quality]);
+    }, [quality, loadFFmpeg]);
 
     const captureFrame = useCallback(async (canvas: HTMLCanvasElement, index: number) => {
         try {
+            if (isCancelledRef.current) return;
             await loadFFmpeg();
-            const ffmpeg = ffmpegRef.current!;
+
+            if (isCancelledRef.current || !ffmpegRef.current?.loaded) return;
+            const ffmpeg = ffmpegRef.current;
 
             // Format index as 0000
             const fileName = `frame${String(index).padStart(4, '0')}.png`;
@@ -402,12 +411,18 @@ export function useCanvasRecorder(
                 canvas.toBlob((b) => resolve(b!), 'image/png');
             });
 
+            if (isCancelledRef.current) return;
+
             const data = await fetchFile(blob);
+
+            if (isCancelledRef.current) return;
             await ffmpeg.writeFile(fileName, data);
 
             // Also keep track of frames needed for conversion
             frameCountRef.current = Math.max(frameCountRef.current, index + 1);
         } catch (err: any) {
+            // Ignore errors if cancelled
+            if (isCancelledRef.current) return;
             console.error('Frame capture error:', err);
             setError(`Capture failed at frame ${index}: ${err.message}`);
         }
@@ -415,9 +430,11 @@ export function useCanvasRecorder(
 
     const renderFramesToVideo = useCallback(async (totalFrames: number, onProgress?: (progress: number) => void): Promise<Blob | null> => {
         try {
+            if (isCancelledRef.current) return null;
             await loadFFmpeg();
+
+            if (isCancelledRef.current || !ffmpegRef.current?.loaded) return null;
             const ffmpeg = ffmpegRef.current;
-            if (!ffmpeg) throw new Error('FFmpeg not initialized');
 
             setIsRendering(true);
             setIsComplete(false);
@@ -458,10 +475,13 @@ export function useCanvasRecorder(
                     'output.mp4'
                 ];
 
+                if (isCancelledRef.current) return null;
                 await ffmpeg.exec(ffmpegArgs);
             } finally {
                 ffmpeg.off('progress', progressHandler);
             }
+
+            if (isCancelledRef.current) return null;
 
             const data = await ffmpeg.readFile('output.mp4');
             const mp4Blob = new Blob([new Uint8Array(data as Uint8Array)], { type: 'video/mp4' });
@@ -478,11 +498,12 @@ export function useCanvasRecorder(
             setRenderProgress(100);
             return mp4Blob;
         } catch (err: any) {
+            if (isCancelledRef.current) return null;
             setError(err.message);
             setIsRendering(false);
             return null;
         }
-    }, [quality, fps]);
+    }, [quality, fps, loadFFmpeg]);
 
     // MP4 Rendering (record as WebM, then convert to MP4)
     const renderToFile = useCallback(async (onProgress?: (progress: number) => void): Promise<Blob | null> => {
@@ -512,18 +533,31 @@ export function useCanvasRecorder(
 
     const cancelRender = useCallback(() => {
         isCancelledRef.current = true;
+
+        // Clear promises and refs immediately
+        ffmpegLoadPromiseRef.current = null;
+
         if (ffmpegRef.current) {
             try {
+                // Try to terminate gracefully if possible, or just kill it
                 ffmpegRef.current.terminate();
                 console.log('FFmpeg terminated');
             } catch (e) {
                 console.error('Error terminating FFmpeg:', e);
             }
+            // Nullify reference to prevent reuse
+            ffmpegRef.current = null;
         }
+
         setIsRendering(false);
         setIsComplete(false);
         setRenderProgress(0);
         setEstimatedTime(null);
+
+        // Reset cancellation flag after a delay to allow pending ops to abort
+        setTimeout(() => {
+            isCancelledRef.current = false;
+        }, 1000);
     }, []);
 
     const downloadVideo = useCallback((blob: Blob, filename: string = 'video') => {

@@ -15,13 +15,13 @@ import { RadioGroup, RadioGroupItem } from "@/shared/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
 import { Video, FileVideo, FileJson, Loader2 } from "lucide-react";
 
-export type RenderFormat = 'mp4' | 'webm' | 'json';
-export type RenderQuality = 'low' | 'medium' | 'high' | 'ultra';
+export type RenderFormat = 'mp4' | 'webm' | 'png-sequence';
+export type RenderQuality = 'low' | 'medium' | 'high';
 
 interface RenderDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onRender: (format: RenderFormat, quality: RenderQuality) => void;
+    onRender: (format: RenderFormat, quality: RenderQuality, fileName: string) => void;
     isRendering?: boolean;
     renderProgress?: number;
     renderStatus?: string;
@@ -37,133 +37,154 @@ export function RenderDialog({
 }: RenderDialogProps) {
     const [format, setFormat] = useState<RenderFormat>('mp4');
     const [quality, setQuality] = useState<RenderQuality>('medium');
+    const [fileName, setFileName] = useState("Meu Acorde Animado");
 
     const handleRender = () => {
-        onRender(format, quality);
+        onRender(format, quality, fileName);
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] bg-zinc-900 border-white/10">
-                <DialogHeader>
-                    <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
-                        <Video className="w-6 h-6 text-cyan-500" />
-                        Renderizar Animação
-                    </DialogTitle>
-                    <DialogDescription className="text-zinc-400">
-                        Escolha o formato e a qualidade para exportar sua animação de acordes.
-                    </DialogDescription>
-                </DialogHeader>
+            <DialogContent className="sm:max-w-lg bg-[#0f172a]/80 backdrop-blur-xl border border-white/10 shadow-[0_0_20px_rgba(6,182,212,0.15)] p-0 rounded-2xl overflow-hidden gap-0">
 
-                {isRendering ? (
-                    <div className="py-8 space-y-4">
-                        <div className="flex flex-col items-center gap-4">
-                            <Loader2 className="w-12 h-12 text-cyan-500 animate-spin" />
-                            <div className="w-full max-w-xs">
-                                <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-cyan-500 to-indigo-500 transition-all duration-300"
-                                        style={{ width: `${renderProgress}%` }}
-                                    />
-                                </div>
-                                <p className="text-sm text-zinc-400 mt-2 text-center">
-                                    {renderStatus || `Renderizando... ${Math.round(renderProgress)}%`}
-                                </p>
-                            </div>
+                {/* Header */}
+                <div className="p-6 flex items-center justify-between border-b border-white/5">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400">
+                            <span className="material-symbols-outlined">videocam</span>
+                        </div>
+                        <div>
+                            <DialogTitle className="text-xl font-semibold tracking-tight text-white mb-0.5">Renderizar Animação</DialogTitle>
+                            <DialogDescription className="text-xs text-slate-400">Escolha o formato e a qualidade para exportar sua animação.</DialogDescription>
                         </div>
                     </div>
-                ) : (
-                    <div className="space-y-6 py-4">
-                        {/* Format Selection */}
+                </div>
+
+                <div className="p-6 space-y-6">
+                    {/* File Name Input */}
+                    <section className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-300 flex items-center gap-2" htmlFor="file-name">
+                            <span className="material-symbols-outlined text-base text-slate-500">drive_file_rename_outline</span>
+                            Nome do Arquivo
+                        </Label>
+                        <input
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all placeholder:text-slate-600 text-slate-200"
+                            id="file-name"
+                            placeholder="Meu Acorde Animado"
+                            type="text"
+                            value={fileName}
+                            onChange={(e) => setFileName(e.target.value)}
+                        />
+                    </section>
+
+                    {/* Format Selection */}
+                    <section className="space-y-4">
+                        <h3 className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-base text-slate-500">settings_suggest</span>
+                            Formato de Saída
+                        </h3>
                         <div className="space-y-3">
-                            <Label className="text-white font-medium">Formato de Saída</Label>
-                            <RadioGroup value={format} onValueChange={(v) => setFormat(v as RenderFormat)}>
-                                <div className="flex items-center space-x-3 p-3 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
-                                    <RadioGroupItem value="mp4" id="mp4" />
-                                    <Label htmlFor="mp4" className="flex items-center gap-2 cursor-pointer flex-1">
-                                        <FileVideo className="w-4 h-4 text-cyan-500" />
-                                        <div>
-                                            <p className="text-white font-medium">MP4</p>
-                                            <p className="text-xs text-zinc-500">Compatível com todos os players (recomendado)</p>
+                            <label className="relative block cursor-pointer group">
+                                <input checked={format === 'mp4'} onChange={() => setFormat('mp4')} className="peer sr-only" name="format" type="radio" />
+                                <div className="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all peer-checked:border-cyan-500 peer-checked:bg-cyan-500/5">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-cyan-500/10 text-cyan-500">
+                                            <span className="material-symbols-outlined">video_file</span>
                                         </div>
-                                    </Label>
+                                        <div>
+                                            <p className="font-medium text-sm text-white">MP4</p>
+                                            <p className="text-xs text-slate-400">Compatível com todos os players (recomendado)</p>
+                                        </div>
+                                    </div>
+                                    <div className="w-5 h-5 rounded-full border-2 border-slate-600 peer-checked:border-cyan-500 flex items-center justify-center">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-cyan-500 scale-0 transition-transform peer-checked:scale-100"></div>
+                                    </div>
                                 </div>
+                            </label>
 
-                                <div className="flex items-center space-x-3 p-3 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
-                                    <RadioGroupItem value="webm" id="webm" />
-                                    <Label htmlFor="webm" className="flex items-center gap-2 cursor-pointer flex-1">
-                                        <FileVideo className="w-4 h-4 text-indigo-500" />
-                                        <div>
-                                            <p className="text-white font-medium">WebM</p>
-                                            <p className="text-xs text-zinc-500">Renderização rápida, menor tamanho</p>
+                            <label className="relative block cursor-pointer group">
+                                <input checked={format === 'webm'} onChange={() => setFormat('webm')} className="peer sr-only" name="format" type="radio" />
+                                <div className="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all peer-checked:border-cyan-500 peer-checked:bg-cyan-500/5">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-700/50 text-slate-300">
+                                            <span className="material-symbols-outlined">language</span>
                                         </div>
-                                    </Label>
+                                        <div>
+                                            <p className="font-medium text-sm text-white">WebM</p>
+                                            <p className="text-xs text-slate-400">Renderização rápida, menor tamanho</p>
+                                        </div>
+                                    </div>
+                                    <div className="w-5 h-5 rounded-full border-2 border-slate-600 peer-checked:border-cyan-500 flex items-center justify-center">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-cyan-500 scale-0 transition-transform peer-checked:scale-100"></div>
+                                    </div>
                                 </div>
+                            </label>
 
-                                <div className="flex items-center space-x-3 p-3 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
-                                    <RadioGroupItem value="json" id="json" />
-                                    <Label htmlFor="json" className="flex items-center gap-2 cursor-pointer flex-1">
-                                        <FileJson className="w-4 h-4 text-purple-500" />
-                                        <div>
-                                            <p className="text-white font-medium">JSON</p>
-                                            <p className="text-xs text-zinc-500">Dados da animação para integração</p>
+                            <label className="relative block cursor-pointer group">
+                                <input checked={format === 'png-sequence'} onChange={() => setFormat('png-sequence')} className="peer sr-only" name="format" type="radio" />
+                                <div className="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all peer-checked:border-cyan-500 peer-checked:bg-cyan-500/5">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-700/50 text-slate-300">
+                                            <span className="material-symbols-outlined">imagesmode</span>
                                         </div>
-                                    </Label>
+                                        <div>
+                                            <p className="font-medium text-sm text-white">Sequência PNG (ZIP)</p>
+                                            <p className="text-xs text-slate-400">Uma imagem para cada acorde</p>
+                                        </div>
+                                    </div>
+                                    <div className="w-5 h-5 rounded-full border-2 border-slate-600 peer-checked:border-cyan-500 flex items-center justify-center">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-cyan-500 scale-0 transition-transform peer-checked:scale-100"></div>
+                                    </div>
                                 </div>
-                            </RadioGroup>
+                            </label>
                         </div>
+                    </section>
 
-                        {/* Quality Selection (only for video formats) */}
-                        {(format === 'mp4' || format === 'webm') && (
-                            <div className="space-y-3">
-                                <Label className="text-white font-medium">Qualidade</Label>
-                                <Select value={quality} onValueChange={(v) => setQuality(v as RenderQuality)}>
-                                    <SelectTrigger className="bg-zinc-800 border-white/10 text-white">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-zinc-800 border-white/10">
-                                        <SelectItem value="low" className="text-white hover:bg-white/5">
-                                            Baixa (800x340, rápido)
-                                        </SelectItem>
-                                        <SelectItem value="medium" className="text-white hover:bg-white/5">
-                                            Média (1200x510, balanceado)
-                                        </SelectItem>
-                                        <SelectItem value="high" className="text-white hover:bg-white/5">
-                                            Alta (1920x816, 1080p)
-                                        </SelectItem>
-                                        <SelectItem value="ultra" className="text-white hover:bg-white/5">
-                                            Ultra (3840x1632, 4K sem perdas)
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <p className="text-xs text-zinc-500">
-                                    Qualidades maiores resultam em arquivos maiores e tempo de renderização mais longo.
-                                </p>
+                    {/* Quality Selection */}
+                    <section className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-base text-slate-500">high_quality</span>
+                                Qualidade
+                            </h3>
+                        </div>
+                        <div className="relative">
+                            <select
+                                value={quality}
+                                onChange={(e) => setQuality(e.target.value as RenderQuality)}
+                                className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all cursor-pointer text-slate-200"
+                            >
+                                <option className="bg-slate-900" value="low">Baixa (854x480, 480p)</option>
+                                <option className="bg-slate-900" value="medium">Média (1280x720, 720p)</option>
+                                <option className="bg-slate-900" value="high">Alta (1920x1080, 1080p)</option>
+                            </select>
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                <span className="material-symbols-outlined">expand_more</span>
                             </div>
-                        )}
-                    </div>
-                )}
+                        </div>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">
+                            Qualidades maiores resultam em arquivos maiores e tempo de renderização mais longo.
+                        </p>
+                    </section>
+                </div>
 
-                <DialogFooter>
-                    {!isRendering && (
-                        <>
-                            <Button
-                                variant="outline"
-                                onClick={() => onOpenChange(false)}
-                                className="bg-transparent border-white/10 text-white hover:bg-white/5"
-                            >
-                                Cancelar
-                            </Button>
-                            <Button
-                                onClick={handleRender}
-                                className="bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-400 hover:to-indigo-400 text-white"
-                            >
-                                <Video className="w-4 h-4 mr-2" />
-                                Renderizar
-                            </Button>
-                        </>
-                    )}
-                </DialogFooter>
+                {/* Footer */}
+                <div className="p-6 pt-2 flex items-center justify-end gap-3 border-t border-white/5">
+                    <Button
+                        variant="ghost"
+                        onClick={() => onOpenChange(false)}
+                        className="px-6 py-2.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-all border border-transparent hover:border-white/10 h-auto"
+                    >
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={handleRender}
+                        className="bg-gradient-to-br from-cyan-500 to-indigo-500 flex items-center gap-2 px-8 py-2.5 text-sm font-semibold text-white rounded-xl shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all h-auto border-none"
+                    >
+                        <span className="material-symbols-outlined text-lg">videocam</span>
+                        Renderizar
+                    </Button>
+                </div>
             </DialogContent>
         </Dialog>
     );

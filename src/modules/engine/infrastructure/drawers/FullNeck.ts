@@ -155,9 +155,9 @@ export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer, Chord
             this._dimensions.width / 2,
             this._fretboardY - 60 * this._scaleFactor,
             {
-                color: options?.color || this.colors.global.primaryTextColor,
+                color: options?.color || this._colors.chordName?.color || this._colors.global.primaryTextColor,
                 fontSize: 48,
-                opacity: options?.opacity
+                opacity: options?.opacity ?? this._colors.chordName?.opacity ?? 1
             },
             this._scaleFactor
         );

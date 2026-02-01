@@ -354,7 +354,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         >
             <div className="flex h-full overflow-hidden">
                 {/* Vertical Navigation Rail */}
-                <div className="w-16 bg-zinc-950/60 border-r border-zinc-800/30 flex flex-col items-center py-4 gap-4">
+                {/* Vertical Navigation Rail */}
+                <div className="w-16 bg-panel-dark/50 border-r border-white/5 flex flex-col items-center py-6 gap-4 backdrop-blur-md">
                     {[
                         { id: 'editor', icon: Guitar, label: 'Fretboard' },
                         { id: 'chord', icon: Music, label: 'Harmonia' },
@@ -366,19 +367,26 @@ const Sidebar: React.FC<SidebarProps> = ({
                             key={cat.id}
                             onClick={() => setActiveCategory(cat.id as any)}
                             className={`group relative w-10 h-10 flex flex-col items-center justify-center rounded-xl transition-all duration-300 ${activeCategory === cat.id
-                                ? 'bg-cyan-500 text-black shadow-[0_0_15px_rgba(6,182,212,0.4)]'
-                                : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50'
+                                ? 'bg-primary/20 text-primary border border-primary/30 shadow-cyan-glow'
+                                : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
                                 }`}
                         >
                             <cat.icon className="w-5 h-5" />
-                            <span className={`absolute left-full ml-4 px-2 py-1 bg-zinc-800 text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl border border-zinc-700`}>
+                            {/* Tooltip */}
+                            <span className="absolute left-full ml-4 px-2 py-1 bg-card-dark text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl border border-white/10">
                                 {cat.label}
                             </span>
-                            {activeCategory === cat.id && (
-                                <div className="absolute right-0 w-1 h-4 bg-cyan-500 rounded-l-full" />
-                            )}
                         </button>
                     ))}
+
+                    <div className="mt-auto mb-2">
+                        <button className="group relative w-10 h-10 flex flex-col items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-secondary-neon/20 border border-white/10 hover:border-primary/50 transition-all shadow-lg hover:shadow-cyan-glow">
+                            <div className="text-[9px] font-black text-white group-hover:text-primary transition-colors">PRO</div>
+                            <span className="absolute left-full ml-4 px-2 py-1 bg-card-dark text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl border border-white/10">
+                                Upgrade Plan
+                            </span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Content Area */}
@@ -397,7 +405,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={onAddChordNote}
-                                                    className="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400 text-[9px] font-bold hover:bg-cyan-500/20 transition-colors border border-cyan-500/20"
+                                                    className="px-2 py-1 rounded bg-primary/10 text-primary text-[9px] font-bold hover:bg-primary/20 transition-colors border border-primary/20"
                                                 >
                                                     + ADD STRING
                                                 </button>
@@ -405,7 +413,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         </div>
 
                                         {/* Active Notes List */}
-                                        <div className="flex flex-wrap gap-1.5 bg-zinc-950/40 p-2 rounded-xl border border-zinc-800/50 min-h-[50px] items-center">
+                                        <div className="flex flex-wrap gap-1.5 bg-black/20 p-2 rounded-xl border border-white/5 min-h-[50px] items-center">
                                             {editingNote.positions.length === 0 && (
                                                 <span className="text-[9px] text-zinc-600 italic px-2">No notes placed on fretboard</span>
                                             )}
@@ -420,7 +428,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                                 setSelectedIndices([]);
                                                             }
                                                         }}
-                                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border ${activePositionIndex === idx || selectedIndices.includes(idx) ? 'shadow-[0_0_10px_rgba(255,255,255,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
+                                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border ${activePositionIndex === idx || selectedIndices.includes(idx) ? 'shadow-[0_0_10px_rgba(255,255,255,0.1)]' : 'bg-black/40 border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-300'}`}
                                                         style={activePositionIndex === idx || selectedIndices.includes(idx) ? {
                                                             backgroundColor: theme?.fingers?.color || '#06b6d4',
                                                             borderColor: theme?.fingers?.border?.color || '#22d3ee',
@@ -455,7 +463,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                     {/* 1. String Selector */}
                                                     <div className="space-y-2 pt-2">
                                                         <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">1. Select String</span>
-                                                        <div className="grid grid-cols-6 gap-1.5">
+                                                        <div className="flex gap-2 justify-between">
                                                             {Array.from({ length: globalSettings?.numStrings || 6 }, (_, i) => (globalSettings?.numStrings || 6) - i).map(s => {
                                                                 const isActive = currentPos?.string === s;
                                                                 const isUsedElsewhere = editingNote.positions.some((p, i) => p.string === s && i !== activePositionIndex);
@@ -465,34 +473,31 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                                         key={s}
                                                                         disabled={isUsedElsewhere}
                                                                         onClick={() => onSetStringForPosition?.(activePositionIndex, s)}
-                                                                        className={`py-2 rounded-lg border font-bold text-[9px] transition-all ${isActive
-                                                                            ? 'shadow-[0_0_10px_rgba(255,255,255,0.1)]'
+                                                                        className={`flex-1 h-9 rounded-lg border font-bold text-[10px] transition-all flex items-center justify-center ${isActive
+                                                                            ? 'bg-primary shadow-cyan-glow border-primary text-black'
                                                                             : isUsedElsewhere
-                                                                                ? 'bg-zinc-950/40 border-zinc-900/50 text-zinc-800 cursor-not-allowed opacity-30'
-                                                                                : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
+                                                                                ? 'bg-black/40 border-white/5 text-zinc-700 cursor-not-allowed'
+                                                                                : 'bg-black/20 border-white/10 text-zinc-400 hover:bg-white/10 hover:text-white'
                                                                             }`}
-                                                                        style={isActive ? {
-                                                                            backgroundColor: theme?.fingers?.color || '#06b6d4',
-                                                                            borderColor: theme?.fingers?.border?.color || '#22d3ee',
-                                                                            color: theme?.fingers?.textColor || '#ffffff'
-                                                                        } : {}}
-                                                                    >STR {s}</button>
+                                                                    >
+                                                                        {s}
+                                                                    </button>
                                                                 );
                                                             })}
                                                         </div>
                                                     </div>
 
-                                                    {/* 2. Finger Selector (includes Avoid) */}
+                                                    {/* 2. Finger Selector */}
                                                     <div className="space-y-2 pt-2">
                                                         <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">2. Select Finger</span>
-                                                        <div className="flex gap-1.5 flex-wrap">
+                                                        <div className="flex gap-2">
                                                             {[
-                                                                { label: 'Index (1)', val: 1 },
-                                                                { label: 'Middle (2)', val: 2 },
-                                                                { label: 'Ring (3)', val: 3 },
-                                                                { label: 'Pinky (4)', val: 4 },
-                                                                { label: 'Thumb (T)', val: 0 },
-                                                                { label: 'Avoid (X)', val: 'X' }
+                                                                { label: '1', val: 1 },
+                                                                { label: '2', val: 2 },
+                                                                { label: '3', val: 3 },
+                                                                { label: '4', val: 4 },
+                                                                { label: 'T', val: 0 },
+                                                                { label: 'X', val: 'X' }
                                                             ].map((finger) => {
                                                                 const isAvoidVal = finger.val === 'X';
                                                                 const isActive = isAvoidVal ? currentPos?.avoid : (currentPos?.finger === finger.val && !currentPos?.avoid);
@@ -503,14 +508,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                                         key={finger.label}
                                                                         disabled={isUsed}
                                                                         onClick={() => onSetFingerForPosition?.(activePositionIndex, finger.val)}
-                                                                        className={`flex-1 min-w-[60px] py-2 rounded-lg border font-bold text-[9px] transition-all ${isActive
-                                                                            ? (isAvoidVal ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.15)]')
+                                                                        className={`flex-1 h-9 rounded-lg border font-bold text-xs transition-all flex items-center justify-center ${isActive
+                                                                            ? (isAvoidVal ? 'bg-red-500/20 border-red-500 text-red-500' : 'bg-primary shadow-cyan-glow border-primary text-black')
                                                                             : isUsed
-                                                                                ? 'bg-zinc-950/20 border-zinc-900/50 text-zinc-800 opacity-30 cursor-not-allowed'
-                                                                                : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800'
+                                                                                ? 'bg-black/40 border-white/5 text-zinc-800 cursor-not-allowed'
+                                                                                : 'bg-black/20 border-white/10 text-zinc-400 hover:bg-white/10 hover:text-white'
                                                                             }`}
                                                                     >
-                                                                        {finger.label.split(" ")[0]} <span className="opacity-50">{finger.label.split(" ")[1]}</span>
+                                                                        {finger.label}
                                                                     </button>
                                                                 );
                                                             })}
@@ -519,24 +524,25 @@ const Sidebar: React.FC<SidebarProps> = ({
 
                                                     {/* 3. Fret Selector */}
                                                     <div className={`space-y-2 pt-2 transition-opacity duration-300 ${currentPos?.avoid ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-                                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">3. Select Fret</span>
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">3. Select Fret</span>
+                                                            <span className="text-[10px] font-mono text-primary font-bold">
+                                                                {parseInt(currentPos?.fret?.toString() || '0') > 0 ? `FRET ${currentPos?.fret}` : 'NUT'}
+                                                            </span>
+                                                        </div>
                                                         <div className="grid grid-cols-6 gap-1.5">
                                                             {Array.from({ length: 24 }).map((_, i) => {
                                                                 const fret = i + 1;
                                                                 const currentFret = parseInt(currentPos?.fret?.toString() || '0');
-                                                                const currentCapo = globalSettings?.capo || 0;
-                                                                const isOverLimit = false;
 
                                                                 return (
                                                                     <button
                                                                         key={fret}
                                                                         onClick={() => onSetFretForPosition?.(activePositionIndex, fret)}
-                                                                        className={`h-7 rounded-md border font-black text-[10px] transition-all bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300`}
-                                                                        style={currentFret === fret ? {
-                                                                            backgroundColor: theme?.fingers?.color || '#06b6d4',
-                                                                            borderColor: theme?.fingers?.border?.color || '#22d3ee',
-                                                                            color: theme?.fingers?.textColor || '#ffffff'
-                                                                        } : {}}
+                                                                        className={`h-7 rounded-sm border font-mono text-[10px] transition-all flex items-center justify-center ${currentFret === fret
+                                                                            ? 'bg-primary border-primary text-black shadow-cyan-glow'
+                                                                            : 'bg-black/20 border-white/5 text-zinc-500 hover:bg-white/10 hover:text-white'
+                                                                            }`}
                                                                     >
                                                                         {fret}
                                                                     </button>
@@ -557,7 +563,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                                         <button
                                                                             disabled={!isBarreFinger}
                                                                             onClick={() => setIsBarreSelectorOpen(true)}
-                                                                            className={`w-full py-3 rounded-xl border border-dashed text-[10px] font-black transition-all uppercase tracking-widest ${isBarreFinger ? 'border-zinc-800 text-zinc-500 hover:border-cyan-500/50 hover:text-cyan-400 hover:bg-cyan-500/5' : 'border-zinc-900 text-zinc-800 cursor-not-allowed'}`}
+                                                                            className={`w-full py-3 rounded-xl border border-dashed text-[10px] font-black transition-all uppercase tracking-widest ${isBarreFinger ? 'border-primary/50 text-zinc-500 hover:border-primary hover:text-primary hover:bg-primary/5' : 'border-zinc-900 text-zinc-800 cursor-not-allowed'}`}
                                                                         >
                                                                             + ADD BARRE (Pestana)
                                                                         </button>
@@ -582,7 +588,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                                                         <button
                                                                                             key={s}
                                                                                             onClick={() => onToggleBarreTo?.(s)}
-                                                                                            className={`py-2 rounded-lg border font-bold text-[9px] transition-all ${isTarget ? 'shadow-[0_0_10px_rgba(255,255,255,0.1)]' : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'}`}
+                                                                                            className={`py-2 rounded-lg border font-bold text-[9px] transition-all ${isTarget ? 'shadow-[0_0_10px_rgba(255,255,255,0.1)]' : 'bg-black/30 border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-300'}`}
                                                                                             style={isTarget ? {
                                                                                                 backgroundColor: theme?.fingers?.color || '#06b6d4',
                                                                                                 borderColor: theme?.fingers?.border?.color || '#22d3ee',
@@ -628,7 +634,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 <>
 
                                     {/* Root Selection */}
-                                    <div className="space-y-3 bg-zinc-950/40 p-4 rounded-2xl border border-white/[0.02]">
+                                    <div className="space-y-3 bg-black/20 p-4 rounded-2xl border border-white/5">
                                         <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest px-0.5">Root & Tone</label>
                                         <div className="grid grid-cols-7 gap-1">
                                             {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map((note) => {
@@ -641,7 +647,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                             const currentAcc = chordData.root.includes('#') ? '#' : chordData.root.includes('b') ? 'b' : '';
                                                             handleChordChange({ root: note + currentAcc });
                                                         }}
-                                                        className={`aspect-square rounded-lg flex items-center justify-center text-[10px] font-black transition-all ${isActive ? 'bg-cyan-500 text-black shadow-[0_0_12px_rgba(6,182,212,0.3)]' : 'bg-zinc-900/40 text-zinc-500 hover:bg-zinc-800 hover:text-white'}`}
+                                                        className={`aspect-square rounded-lg flex items-center justify-center text-[10px] font-black transition-all ${isActive ? 'bg-primary text-black shadow-[0_0_12px_rgba(7,182,213,0.3)]' : 'bg-black/40 text-zinc-500 hover:bg-white/10 hover:text-white'}`}
                                                     >
                                                         {note}
                                                     </button>
@@ -657,7 +663,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                     <button
                                                         key={acc.label}
                                                         onClick={() => handleChordChange({ root: currentBase + acc.val })}
-                                                        className={`flex-1 h-8 rounded-xl text-[9px] font-black uppercase transition-all border ${isAccActive ? 'bg-zinc-800 text-cyan-400 border-cyan-500/30' : 'bg-zinc-950/20 text-zinc-600 border-zinc-900/50 hover:bg-zinc-900'}`}
+                                                        className={`flex-1 h-8 rounded-xl text-[9px] font-black uppercase transition-all border ${isAccActive ? 'bg-white/10 text-primary border-primary/30' : 'bg-black/20 text-zinc-600 border-white/5 hover:bg-white/5'}`}
                                                     >
                                                         {acc.label}
                                                     </button>
@@ -667,12 +673,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     </div>
 
                                     {/* Quality & Extensions */}
-                                    <div className="space-y-4 bg-zinc-950/40 p-4 rounded-2xl border border-white/[0.02]">
+                                    <div className="space-y-4 bg-black/20 p-4 rounded-2xl border border-white/5">
                                         <div className="space-y-2">
                                             <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest px-0.5">Quality</label>
                                             <div className="relative">
                                                 <select
-                                                    className="w-full bg-zinc-900/40 border border-zinc-800/60 rounded-xl px-3 py-2 text-[10px] font-black text-zinc-300 focus:outline-none focus:border-cyan-500/50 appearance-none cursor-pointer"
+                                                    className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-black text-zinc-300 focus:outline-none focus:border-primary/50 appearance-none cursor-pointer"
                                                     value={chordData.quality}
                                                     onChange={(e) => handleChordChange({ quality: e.target.value })}
                                                 >
@@ -702,27 +708,27 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                         <div
                                                             key={base}
                                                             className={`flex h-8 rounded-xl overflow-hidden border transition-all duration-300 ${isActive
-                                                                ? 'bg-cyan-500/10 border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.1)]'
-                                                                : 'bg-zinc-900/20 border-zinc-800/80'
+                                                                ? 'bg-primary/10 border-primary/40 shadow-[0_0_15px_rgba(7,182,213,0.1)]'
+                                                                : 'bg-black/20 border-white/5'
                                                                 }`}
                                                         >
                                                             <button
                                                                 onClick={() => toggleExtension(base, 'b')}
-                                                                className={`flex-1 text-[9px] font-black transition-all border-r border-zinc-800/50 ${isFlatActive ? 'bg-cyan-500 text-black' : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/40'
+                                                                className={`flex-1 text-[9px] font-black transition-all border-r border-white/5 ${isFlatActive ? 'bg-primary text-black' : 'text-zinc-600 hover:text-zinc-300 hover:bg-white/5'
                                                                     }`}
                                                             >
                                                                 b
                                                             </button>
                                                             <button
                                                                 onClick={() => toggleExtension(base, '')}
-                                                                className={`flex-[2] text-[10px] font-black transition-all border-r border-zinc-800/50 ${isNatActive ? 'bg-cyan-500 text-black' : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/40'
+                                                                className={`flex-[2] text-[10px] font-black transition-all border-r border-white/5 ${isNatActive ? 'bg-primary text-black' : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5'
                                                                     }`}
                                                             >
                                                                 {base}
                                                             </button>
                                                             <button
                                                                 onClick={() => toggleExtension(base, '#')}
-                                                                className={`flex-1 text-[9px] font-black transition-all ${isSharpActive ? 'bg-cyan-500 text-black' : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/40'
+                                                                className={`flex-1 text-[9px] font-black transition-all ${isSharpActive ? 'bg-primary text-black' : 'text-zinc-600 hover:text-zinc-300 hover:bg-white/5'
                                                                     }`}
                                                             >
                                                                 #
@@ -735,13 +741,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     </div>
 
                                     {/* Bass Selection */}
-                                    <div className="space-y-3 bg-zinc-950/40 p-4 rounded-2xl border border-white/[0.02]">
+                                    <div className="space-y-3 bg-black/20 p-4 rounded-2xl border border-white/5">
                                         <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest px-0.5">Bass Note</label>
                                         <div className="grid grid-cols-2 gap-2">
                                             {/* Root Toggle */}
                                             <button
                                                 onClick={() => toggleBass('Root')}
-                                                className={`col-span-2 py-2 rounded-xl text-[10px] font-black border transition-all ${chordData.bass === 'Root' ? 'bg-amber-500/10 border-amber-500/40 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.1)]' : 'bg-zinc-900/20 border-zinc-800/80 text-zinc-500 hover:text-white'}`}
+                                                className={`col-span-2 py-2 rounded-xl text-[10px] font-black border transition-all ${chordData.bass === 'Root' ? 'bg-primary/20 border-primary/40 text-primary shadow-[0_0_15px_rgba(7,182,213,0.1)]' : 'bg-black/20 border-white/5 text-zinc-500 hover:text-white'}`}
                                             >
                                                 ROOT
                                             </button>
@@ -758,27 +764,27 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                     <div
                                                         key={note}
                                                         className={`flex h-8 rounded-xl overflow-hidden border transition-all duration-300 ${isActive
-                                                            ? 'bg-amber-500/10 border-amber-500/40 shadow-[0_0_15px_rgba(245,158,11,0.1)]'
-                                                            : 'bg-zinc-900/20 border-zinc-800/80'
+                                                            ? 'bg-primary/10 border-primary/40 shadow-[0_0_15px_rgba(7,182,213,0.1)]'
+                                                            : 'bg-black/20 border-white/5'
                                                             }`}
                                                     >
                                                         <button
                                                             onClick={() => toggleBass(note, 'b')}
-                                                            className={`flex-1 text-[9px] font-black transition-all border-r border-zinc-800/50 ${isFlatActive ? 'bg-amber-500 text-black' : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/40'
+                                                            className={`flex-1 text-[9px] font-black transition-all border-r border-white/5 ${isFlatActive ? 'bg-primary text-black' : 'text-zinc-600 hover:text-zinc-300 hover:bg-white/5'
                                                                 }`}
                                                         >
                                                             b
                                                         </button>
                                                         <button
                                                             onClick={() => toggleBass(note, '')}
-                                                            className={`flex-[2] text-[10px] font-black transition-all border-r border-zinc-800/50 ${isNatActive ? 'bg-amber-500 text-black' : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/40'
+                                                            className={`flex-[2] text-[10px] font-black transition-all border-r border-white/5 ${isNatActive ? 'bg-primary text-black' : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5'
                                                                 }`}
                                                         >
                                                             {note}
                                                         </button>
                                                         <button
                                                             onClick={() => toggleBass(note, '#')}
-                                                            className={`flex-1 text-[9px] font-black transition-all ${isSharpActive ? 'bg-amber-500 text-black' : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/40'
+                                                            className={`flex-1 text-[9px] font-black transition-all ${isSharpActive ? 'bg-primary text-black' : 'text-zinc-600 hover:text-zinc-300 hover:bg-white/5'
                                                                 }`}
                                                         >
                                                             #

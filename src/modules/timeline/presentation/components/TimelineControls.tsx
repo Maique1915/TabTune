@@ -18,6 +18,8 @@ interface TimelineControlsProps {
   onAudioUpload?: () => void;
   audioUploaded?: boolean;
   onResetPlayback?: () => void;
+  currentTime?: number;
+  totalDuration?: number;
 }
 
 export function TimelineControls({
@@ -29,12 +31,21 @@ export function TimelineControls({
   handleRenderVideo,
   isTimelineEmpty,
   ffmpegLoaded = true,
-  onResetPlayback
+  onResetPlayback,
+  currentTime = 0,
+  totalDuration = 0
 }: TimelineControlsProps) {
   const { isRendering } = useAppContext();
 
+  const formatTime = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   return (
-    <div className="flex items-center gap-1 bg-[#09090b] p-1.5 rounded-2xl border border-white/5 shadow-2xl">
+    <div className="flex items-center gap-4 bg-panel-dark/80 backdrop-blur-xl px-4 py-2 rounded-2xl border border-white/10 shadow-[0_0_20px_rgba(7,182,213,0.15)]">
       <Button
         variant="ghost"
         size="icon"
@@ -43,41 +54,42 @@ export function TimelineControls({
           else if (isPaused) handleResume();
           else handlePause();
         }}
-        className={cn("w-10 h-10 rounded-xl transition-all duration-300", {
-          "bg-indigo-500 hover:bg-indigo-400 text-white shadow-[0_0_15px_rgba(99,102,241,0.3)]": !isAnimating || isPaused,
-          "bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400": isAnimating && !isPaused,
-          "cursor-not-allowed opacity-50": isTimelineEmpty,
+        className={cn("w-8 h-8 rounded-full bg-white flex items-center justify-center text-background-dark hover:scale-105 transition-transform p-0 border-none shadow-none", {
+          "opacity-50 cursor-not-allowed": isTimelineEmpty
         })}
         disabled={isTimelineEmpty || isRendering}
       >
-        {isAnimating && !isPaused ? <Pause className="fill-current w-5 h-5" /> : <Play className="fill-current w-5 h-5 ml-0.5" />}
+        {isAnimating && !isPaused ?
+          <span className="material-symbols-outlined text-[20px] fill text-black leading-none">pause</span> :
+          <span className="material-symbols-outlined text-[20px] fill text-black leading-none">play_arrow</span>
+        }
       </Button>
 
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={onResetPlayback}
-        className={cn("w-10 h-10 rounded-xl text-zinc-500 hover:text-zinc-300 hover:bg-white/5 transition-all", {
-          "cursor-not-allowed opacity-50": !isAnimating && !isPaused,
-        })}
-        disabled={(!isAnimating && !isPaused) || isRendering}
-      >
-        <StopCircle className="w-5 h-5" />
-      </Button>
+      {/* Time Display */}
+      <div className="flex items-center gap-1.5 px-2">
+        <span className="text-[11px] font-mono font-bold text-cyan-400 tabular-nums tracking-tight">
+          {formatTime(currentTime)}
+        </span>
+        <span className="text-[10px] font-mono text-white/30">/</span>
+        <span className="text-[11px] font-mono font-medium text-white/50 tabular-nums tracking-tight">
+          {formatTime(totalDuration)}
+        </span>
+      </div>
+
+      <div className="h-4 w-px bg-white/10"></div>
 
       <Button
-        variant="ghost"
-        size="icon"
         onClick={handleRenderVideo}
         className={cn(
-          "w-10 h-10 rounded-xl text-cyan-500/70 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all",
+          "bg-primary hover:bg-primary/80 px-4 py-1.5 rounded-lg text-[10px] font-bold text-white shadow-[0_0_15px_rgba(7,182,213,0.2)] flex items-center gap-1.5 h-auto transition-all uppercase tracking-wide",
           {
             "cursor-not-allowed opacity-50": isTimelineEmpty || isRendering || !ffmpegLoaded,
           }
         )}
         disabled={isTimelineEmpty || isRendering || !ffmpegLoaded}
       >
-        <Video className="w-5 h-5" />
+        <span className="material-symbols-outlined text-sm leading-none">movie</span>
+        Render
       </Button>
     </div>
   );

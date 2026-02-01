@@ -244,7 +244,7 @@ export class FretboardEngine {
             const exts = chordData.finalChord.chord?.extension
                 ? chordData.finalChord.chord.extension.map(i => extensionMap[i]).filter((e): e is string => !!e)
                 : undefined;
-            this.chordDrawer.drawChordName(chordData.finalChord.chordName || "", { opacity: 1, extensions: exts });
+            this.chordDrawer.drawChordName(chordData.finalChord.chordName || "", { extensions: exts });
         }
     }
 

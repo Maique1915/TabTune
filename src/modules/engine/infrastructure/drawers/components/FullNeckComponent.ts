@@ -32,9 +32,9 @@ export class FullNeckComponent {
         return {
             enabled: !!s.enabled,
             color: s.color || '#000000',
-            blur: s.blur || 0,
+            blur: s.blur !== undefined ? s.blur : 20,
             offsetX: s.offsetX || 0,
-            offsetY: s.offsetY || 0
+            offsetY: s.offsetY !== undefined ? s.offsetY : 10
         };
     }
 
@@ -42,7 +42,7 @@ export class FullNeckComponent {
         if (!b) return undefined;
         return {
             color: b.color || 'transparent',
-            width: b.width || 0
+            width: b.width !== undefined ? b.width : 4
         };
     }
 
@@ -157,8 +157,9 @@ export class FullNeckComponent {
             color: this.theme.capo?.color || '#c0c0c0',
             border: this.theme.capo?.border || { color: '#808080', width: 2 },
             textColor: this.theme.capo?.textColors?.name || '#2c2c2c',
-            opacity: 1
-        }, this.geometry, { transport });
+            opacity: 1,
+            numberColor: this.theme.capo?.textColors?.number // Passing it via style object
+        } as any, this.geometry, { transport });
 
         const rotation = this.theme.global.rotation || 0;
         const mirror = this.theme.global.mirror || false;

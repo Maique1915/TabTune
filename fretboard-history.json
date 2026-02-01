@@ -3,12 +3,14 @@
   "chords": [
     {
       "chord": {
-        "note": 0,
-        "complement": 0,
-        "extension": [],
+        "note": 5,
+        "complement": 1,
+        "extension": [
+          5
+        ],
         "bass": 0
       },
-      "origin": 0,
+      "origin": 5,
       "fingers": {
         "5": [
           3,
@@ -28,21 +30,23 @@
         "B",
         "e"
       ],
-      "chordName": "",
+      "chordName": "Fm7",
       "capo": 0,
       "extends": {
-        "durationMs": 2000,
+        "durationMs": 3200,
         "measureId": "6931igmqd"
       }
     },
     {
       "chord": {
-        "note": 0,
-        "complement": 0,
-        "extension": [],
+        "note": 9,
+        "complement": 1,
+        "extension": [
+          5
+        ],
         "bass": 0
       },
-      "origin": 0,
+      "origin": 9,
       "fingers": {
         "5": [
           5,
@@ -62,10 +66,10 @@
         "B",
         "e"
       ],
-      "chordName": "",
+      "chordName": "Am7",
       "capo": 0,
       "extends": {
-        "durationMs": 2000,
+        "durationMs": 3200,
         "measureId": "vacwiei2p"
       }
     },
@@ -73,7 +77,10 @@
       "chord": {
         "note": 0,
         "complement": 0,
-        "extension": [],
+        "extension": [
+          5,
+          7
+        ],
         "bass": 0
       },
       "origin": 0,
@@ -96,10 +103,10 @@
         "B",
         "e"
       ],
-      "chordName": "",
+      "chordName": "C79",
       "capo": 0,
       "extends": {
-        "durationMs": 2000,
+        "durationMs": 3200,
         "measureId": "09mcfn1xo"
       }
     },
@@ -134,10 +141,10 @@
         "B",
         "e"
       ],
-      "chordName": "",
+      "chordName": "C",
       "capo": 0,
       "extends": {
-        "durationMs": 2000,
+        "durationMs": 3200,
         "measureId": "0f6pp3eec"
       }
     }
@@ -170,7 +177,7 @@
           "accidental": "none"
         }
       ],
-      "chordName": ""
+      "chordName": "Fm7"
     },
     {
       "id": "vacwiei2p",
@@ -199,7 +206,7 @@
           "accidental": "none"
         }
       ],
-      "chordName": ""
+      "chordName": "Am7"
     },
     {
       "id": "09mcfn1xo",
@@ -228,7 +235,7 @@
           "accidental": "none"
         }
       ],
-      "chordName": ""
+      "chordName": "C79"
     },
     {
       "id": "0f6pp3eec",
@@ -266,14 +273,15 @@
           "technique": "",
           "isSlurred": false
         }
-      ]
+      ],
+      "chordName": "C"
     }
   ],
   "settings": {
     "clef": "tab",
     "key": "C",
     "time": "4/4",
-    "bpm": 120,
+    "bpm": 75,
     "showNotation": true,
     "showTablature": true,
     "instrumentId": "violao",

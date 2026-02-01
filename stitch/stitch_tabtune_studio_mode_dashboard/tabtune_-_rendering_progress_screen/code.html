@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="pt-br"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TabTune - Rendering Progress</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#07b6d5",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#0f2023",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: "Space Grotesk", sans-serif;
+        }
+        .glass-morphic {
+            background: rgba(15, 32, 35, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(7, 182, 213, 0.3);
+            box-shadow: 0 0 20px rgba(7, 182, 213, 0.15);
+        }
+        .neon-glow {
+            box-shadow: 0 0 15px rgba(7, 182, 213, 0.4);
+        }
+        .progress-gradient {
+            background: linear-gradient(90deg, #07b6d5 0%, #6366f1 100%);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-white min-h-screen overflow-hidden">
+<!-- Main Workspace Background (Blurred) -->
+<div class="fixed inset-0 z-0 filter blur-xl opacity-40 grayscale pointer-events-none">
+<div class="layout-container flex h-full grow flex-col">
+<div class="px-40 flex flex-1 justify-center py-5">
+<div class="layout-content-container flex flex-col max-w-[960px] flex-1">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#27373a] px-10 py-3">
+<div class="flex items-center gap-4 text-white">
+<div class="size-4">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="M39.475 21.6262C40.358 21.4363 40.6863 21.5589 40.7581 21.5934C40.7876 21.655 40.8547 21.857 40.8082 22.3336C40.7408 23.0255 40.4502 24.0046 39.8572 25.2301C38.6799 27.6631 36.5085 30.6631 33.5858 33.5858C30.6631 36.5085 27.6632 38.6799 25.2301 39.8572C24.0046 40.4502 23.0255 40.7407 22.3336 40.8082C21.8571 40.8547 21.6551 40.7875 21.5934 40.7581C21.5589 40.6863 21.4363 40.358 21.6262 39.475C21.8562 38.4054 22.4689 36.9657 23.5038 35.2817C24.7575 33.2417 26.5497 30.9744 28.7621 28.762C30.9744 26.5497 33.2417 24.7574 35.2817 23.5037C36.9657 22.4689 38.4054 21.8562 39.475 21.6262ZM4.41189 29.2403L18.7597 43.5881C19.8813 44.7097 21.4027 44.9179 22.7217 44.7893C24.0585 44.659 25.5148 44.1631 26.9723 43.4579C29.9052 42.0387 33.2618 39.5667 36.4142 36.4142C39.5667 33.2618 42.0387 29.9052 43.4579 26.9723C44.1631 25.5148 44.659 24.0585 44.7893 22.7217C44.9179 21.4027 44.7097 19.8813 43.5881 18.7597L29.2403 4.41187C27.8527 3.02428 25.8765 3.02573 24.2861 3.36776C22.6081 3.72863 20.7334 4.58419 18.8396 5.74801C16.4978 7.18716 13.9881 9.18353 11.5858 11.5858C9.18354 13.988 7.18717 16.4978 5.74802 18.8396C4.58421 20.7334 3.72865 22.6081 3.36778 24.2861C3.02574 25.8765 3.02429 27.8527 4.41189 29.2403Z" fill="currentColor" fill-rule="evenodd"></path></svg>
+</div>
+<h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">TabTune Studio</h2>
+</div>
+</header>
+<div class="p-10 grid grid-cols-2 gap-4">
+<div class="h-40 bg-white/10 rounded-xl"></div>
+<div class="h-40 bg-white/10 rounded-xl"></div>
+<div class="h-40 bg-white/10 rounded-xl"></div>
+<div class="h-40 bg-white/10 rounded-xl"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Dark Overlay -->
+<div class="fixed inset-0 bg-black/60 z-10"></div>
+<!-- Central Progress Card -->
+<div class="fixed inset-0 z-20 flex items-center justify-center p-6">
+<div class="glass-morphic w-full max-w-[840px] rounded-xl overflow-hidden flex flex-col p-8 border border-primary/30">
+<!-- Header Section -->
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary animate-pulse font-bold">radio_button_checked</span>
+<h1 class="text-2xl font-bold tracking-tight text-white">Renderizando Vídeo...</h1>
+</div>
+<div class="bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+<p class="text-primary text-xs font-semibold uppercase tracking-wider">Exportação Ativa</p>
+</div>
+</div>
+<!-- Preview Card (Optional Visual Context) -->
+<div class="mb-8 rounded-xl overflow-hidden relative group">
+<div class="w-full h-48 bg-center bg-no-repeat bg-cover bg-[#1b2627]" data-alt="Dark abstract cinematic video preview frame" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBXkZQhFTboT4lcjUS6mxCUm0K4o8Md_y68_zKKfBHjzxITCISRtsIXREJkJeYsK0U3Cgo5YtfXFWogOXLtP0rCvRSQ7JyDmuA_ktqM7tTtMyMQl2SNXqmLFqZv5crTDUYyYRs_GAAcwwjBcuaD4m_cRwU1eqwp-arnyO8GKK9-N1lxLWE2Hgnd8ierq2hEuq6SJKel-pskZHhvUB2Nmt5NvzV7KF8txA2AFBBCtq-TtJofk90I7zwHMf-WQAO4K293fkM9YV5J3g");'>
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark/80 to-transparent"></div>
+<div class="absolute bottom-4 left-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-white text-sm">movie</span>
+<p class="text-white text-sm font-medium">MeuProjeto_Final_V2.mp4</p>
+</div>
+</div>
+</div>
+<!-- Progress Section -->
+<div class="flex flex-col gap-4 mb-8">
+<div class="flex justify-between items-end">
+<div class="flex flex-col gap-1">
+<p class="text-primary/80 text-sm font-medium uppercase tracking-tight">Status do Processamento</p>
+<p class="text-white text-lg font-bold">Codificando quadros <span class="text-primary">(192 de 300)</span></p>
+</div>
+<p class="text-4xl font-bold text-white leading-none">64%</p>
+</div>
+<div class="h-4 w-full bg-[#1b2627] rounded-full overflow-hidden border border-white/5 p-0.5">
+<div class="h-full rounded-full progress-gradient relative overflow-hidden" style="width: 64%;">
+<div class="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%)] bg-[length:40px_40px] opacity-30"></div>
+</div>
+</div>
+</div>
+<!-- Statistics Grid -->
+<div class="grid grid-cols-3 gap-4 mb-8">
+<div class="flex flex-col gap-1 p-4 rounded-lg bg-white/5 border border-white/10">
+<p class="text-white/50 text-xs font-medium uppercase tracking-wider">Tempo Decorrido</p>
+<p class="text-white text-xl font-bold font-display leading-tight">01:24</p>
+</div>
+<div class="flex flex-col gap-1 p-4 rounded-lg bg-primary/10 border border-primary/20 neon-glow">
+<p class="text-primary/70 text-xs font-medium uppercase tracking-wider">Estimativa Restante</p>
+<p class="text-primary text-xl font-bold font-display leading-tight">00:48</p>
+</div>
+<div class="flex flex-col gap-1 p-4 rounded-lg bg-white/5 border border-white/10">
+<p class="text-white/50 text-xs font-medium uppercase tracking-wider">Qualidade</p>
+<p class="text-white text-xl font-bold font-display leading-tight">1080p @ 30fps</p>
+</div>
+</div>
+<!-- Console Log -->
+<div class="bg-black/40 rounded-lg p-4 mb-8 font-mono text-[11px] text-white/40 border border-white/5 max-h-24 overflow-hidden">
+<div class="flex flex-col gap-1">
+<p>&gt; [INFO] Initializing H.264 encoder...</p>
+<p>&gt; [INFO] Processing frame 188... (Applying motion blur)</p>
+<p>&gt; [INFO] Processing frame 189... (Applying motion blur)</p>
+<p>&gt; [INFO] Processing frame 190... (Applying motion blur)</p>
+<p>&gt; [INFO] Processing frame 191... (Applying motion blur)</p>
+<p class="text-primary/60 font-semibold">&gt; [DEBUG] Processing frame 192... (Optimizing bitstream)</p>
+</div>
+</div>
+<!-- Footer Action -->
+<div class="flex items-center justify-center">
+<button class="group flex items-center gap-2 px-6 py-2 rounded-lg border border-white/10 hover:border-red-500/50 hover:bg-red-500/10 transition-all duration-300">
+<span class="material-symbols-outlined text-white/50 group-hover:text-red-500 transition-colors text-lg">close</span>
+<span class="text-white/50 group-hover:text-red-500 font-medium transition-colors">Cancelar Renderização</span>
+</button>
+</div>
+</div>
+</div>
+</body></html>

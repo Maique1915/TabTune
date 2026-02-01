@@ -15,7 +15,7 @@ export default {
         body: ['"Space Grotesk"', 'sans-serif'],
         headline: ['"Space Grotesk"', 'sans-serif'],
         code: ['"Source Code Pro"', 'monospace'],
-        display: ['"Spline Sans"', 'sans-serif'],
+        display: ['"Space Grotesk"', 'sans-serif'],
         sans: ['Inter', 'sans-serif'],
       },
       colors: {
@@ -26,7 +26,13 @@ export default {
         'surface-light': '#FFFFFF',
         'surface-dark': '#111827',
         'panel-light': '#E5E7EB',
-        'panel-dark': '#1F2937',
+        'panel-dark': '#162a2d',
+
+        // Stitch Design System Extensions
+        'accent-pink': '#f472b6',
+        'secondary-neon': '#ff00e5',
+        'c-dark': '#0c1a1d', // Another dark shade from design
+        'card-dark': '#161b1d',
 
         // Existing shadcn colors
         background: 'hsl(var(--background))',
@@ -98,6 +104,10 @@ export default {
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+      },
+      boxShadow: {
+        'cyan-glow': '0 0 15px rgba(7, 182, 213, 0.4)',
+        'glass-panel': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
       },
     },
   },

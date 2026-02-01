@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TabTune Home - Landing Page</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#07b6d5",
+                        "secondary-neon": "#ff00e5",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#0a0a0a",
+                        "card-dark": "#161b1d",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .grid-pattern {
+            background-image: radial-gradient(circle, rgba(7, 182, 213, 0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        .glow-shadow {
+            box-shadow: 0 0 20px rgba(7, 182, 213, 0.4);
+        }
+        .neon-border {
+            border: 1px solid rgba(7, 182, 213, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white selection:bg-primary/30">
+<!-- Navigation -->
+<header class="sticky top-0 z-50 border-b border-white/5 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
+<div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+<div class="flex items-center gap-3 group">
+<div class="size-10 bg-primary rounded-lg flex items-center justify-center text-background-dark shadow-[0_0_15px_rgba(7,182,213,0.5)]">
+<span class="material-symbols-outlined text-2xl font-bold">graphic_eq</span>
+</div>
+<h2 class="text-2xl font-bold tracking-tighter">TabTune<span class="text-primary">.</span></h2>
+</div>
+<nav class="hidden md:flex items-center gap-10">
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Features</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Creators</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Pricing</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="text-sm font-semibold hover:text-primary transition-colors">Log In</button>
+<button class="bg-primary text-background-dark px-6 py-2.5 rounded-lg text-sm font-bold glow-shadow hover:brightness-110 transition-all">
+                    Start Creating
+                </button>
+</div>
+</div>
+</header>
+<main class="relative">
+<!-- Background Decor -->
+<div class="absolute inset-0 grid-pattern opacity-30 pointer-events-none"></div>
+<div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 blur-[120px] rounded-full pointer-events-none"></div>
+<div class="absolute top-[20%] right-[-5%] w-[30%] h-[30%] bg-secondary-neon/5 blur-[120px] rounded-full pointer-events-none"></div>
+<!-- Hero Section -->
+<section class="relative pt-20 pb-16 px-6">
+<div class="max-w-7xl mx-auto text-center">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-bold uppercase tracking-widest mb-8">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+                    Now with 4K Rendering
+                </div>
+<h1 class="text-6xl md:text-8xl font-black tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/50 leading-[1.1]">
+                    Animated Chords for <br/> <span class="text-primary">Guitar Creators</span>
+</h1>
+<p class="max-w-2xl mx-auto text-lg md:text-xl text-slate-400 mb-10 leading-relaxed">
+                    Professional-grade fretboard animations for lessons, social media, and courses. Build cinematic chord charts in seconds.
+                </p>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+<button class="w-full sm:w-auto px-8 py-4 bg-primary text-background-dark rounded-xl font-bold text-lg glow-shadow hover:scale-105 transition-all">
+                        Start Creating Free
+                    </button>
+<button class="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">play_circle</span>
+                        View Demo
+                    </button>
+</div>
+</div>
+</section>
+<!-- Visual Preview / Mockup Section -->
+<section class="relative px-6 py-12">
+<div class="max-w-5xl mx-auto">
+<div class="bg-[#0e1416] rounded-2xl border border-white/10 p-4 shadow-2xl overflow-hidden relative">
+<!-- Dashboard Toolbar Mockup -->
+<div class="flex items-center justify-between mb-4 border-b border-white/5 pb-4 px-2">
+<div class="flex gap-2">
+<div class="size-3 rounded-full bg-red-500/50"></div>
+<div class="size-3 rounded-full bg-yellow-500/50"></div>
+<div class="size-3 rounded-full bg-green-500/50"></div>
+</div>
+<div class="bg-white/5 px-4 py-1 rounded-md text-[10px] font-mono text-white/40 tracking-widest">TABTUNE_STUDIO_V2.EXE</div>
+<div class="w-12"></div>
+</div>
+<div class="relative aspect-video rounded-xl bg-[#050808] border border-white/5 overflow-hidden group">
+<div class="absolute inset-0 bg-[url('https://placeholder.pics/svg/1200x800')] bg-cover bg-center opacity-60" data-alt="Dark studio dashboard with glowing guitar fretboard visualization"></div>
+<!-- UI Overlay Elements -->
+<div class="absolute left-6 top-6 flex flex-col gap-3">
+<div class="p-3 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 w-48">
+<div class="text-[10px] text-primary font-bold uppercase mb-2">Chord Type</div>
+<div class="text-sm font-bold">C Major 7 (Add 9)</div>
+</div>
+<div class="p-3 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 w-48">
+<div class="text-[10px] text-secondary-neon font-bold uppercase mb-2">Animation State</div>
+<div class="flex items-center gap-2">
+<div class="size-2 rounded-full bg-secondary-neon animate-pulse"></div>
+<div class="text-sm font-bold">Rendering...</div>
+</div>
+</div>
+</div>
+<div class="absolute inset-0 flex items-center justify-center">
+<button class="size-20 rounded-full bg-primary/20 backdrop-blur-sm border border-primary/50 text-primary flex items-center justify-center hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-4xl fill-1">play_arrow</span>
+</button>
+</div>
+<!-- Progress Bar -->
+<div class="absolute bottom-6 inset-x-6">
+<div class="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-2/3 shadow-[0_0_10px_#07b6d5]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Feature Section -->
+<section class="py-24 px-6 relative">
+<div class="max-w-7xl mx-auto">
+<div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+<div class="max-w-2xl">
+<h2 class="text-4xl font-bold mb-4">Designed for Excellence</h2>
+<p class="text-slate-400 text-lg leading-relaxed">
+                            Experience the future of guitar content creation with tools built for speed, cinematic quality, and absolute precision.
+                        </p>
+</div>
+<a class="text-primary font-bold flex items-center gap-2 hover:underline underline-offset-4" href="#">
+                        Explore all tools <span class="material-symbols-outlined">trending_flat</span>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Feature Card 1 -->
+<div class="group p-8 rounded-2xl bg-card-dark border border-white/5 hover:border-primary/30 transition-all hover:-translate-y-2">
+<div class="size-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-6 group-hover:bg-primary group-hover:text-background-dark transition-all">
+<span class="material-symbols-outlined text-3xl">precision_manufacturing</span>
+</div>
+<h3 class="text-xl font-bold mb-3">Studio Precision</h3>
+<p class="text-slate-400 leading-relaxed">
+                            Vertical diagrams optimized for traditional high-quality chord charts. Perfect for PDFs and songbooks.
+                        </p>
+</div>
+<!-- Feature Card 2 -->
+<div class="group p-8 rounded-2xl bg-card-dark border border-white/5 hover:border-secondary-neon/30 transition-all hover:-translate-y-2">
+<div class="size-14 rounded-xl bg-secondary-neon/10 flex items-center justify-center text-secondary-neon mb-6 group-hover:bg-secondary-neon group-hover:text-background-dark transition-all">
+<span class="material-symbols-outlined text-3xl">videocam</span>
+</div>
+<h3 class="text-xl font-bold mb-3">Cinematic Rendering</h3>
+<p class="text-slate-400 leading-relaxed">
+                            Ultra-smooth full-neck views for intricate solos and scale runs. Export in 4K at 60fps for YouTube and TikTok.
+                        </p>
+</div>
+<!-- Feature Card 3 -->
+<div class="group p-8 rounded-2xl bg-card-dark border border-white/5 hover:border-primary/30 transition-all hover:-translate-y-2">
+<div class="size-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-6 group-hover:bg-primary group-hover:text-background-dark transition-all">
+<span class="material-symbols-outlined text-3xl">psychology</span>
+</div>
+<h3 class="text-xl font-bold mb-3">Smart Transpose</h3>
+<p class="text-slate-400 leading-relaxed">
+                            Proprietary AI-assisted positioning for optimal finger placement. No more awkward fingerings for complex jazz chords.
+                        </p>
+</div>
+</div>
+</div>
+</section>
+<!-- Final CTA -->
+<section class="py-24 px-6">
+<div class="max-w-5xl mx-auto relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 to-secondary-neon/10 border border-white/10 p-12 text-center">
+<div class="absolute inset-0 grid-pattern opacity-20"></div>
+<h2 class="text-4xl md:text-5xl font-black mb-6 relative z-10">Ready to transform <br/> your lessons?</h2>
+<p class="text-lg text-slate-300 mb-10 max-w-xl mx-auto relative z-10">
+                    Join over 5,000+ guitar creators making world-class visuals with TabTune. No design skills required.
+                </p>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10">
+<button class="bg-primary text-background-dark px-10 py-4 rounded-xl font-black text-lg glow-shadow hover:scale-105 transition-all">
+                        Get Started For Free
+                    </button>
+<button class="text-white font-bold hover:text-primary transition-colors">
+                        View Pricing Plans
+                    </button>
+</div>
+</div>
+</section>
+</main>
+<footer class="border-t border-white/5 py-12 px-6 bg-background-light dark:bg-background-dark/50">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+<div class="flex items-center gap-3">
+<div class="size-8 bg-primary/20 rounded flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-xl font-bold">graphic_eq</span>
+</div>
+<span class="text-xl font-bold tracking-tighter">TabTune</span>
+</div>
+<div class="flex gap-8 text-sm text-slate-500">
+<a class="hover:text-white transition-colors" href="#">Terms of Service</a>
+<a class="hover:text-white transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-white transition-colors" href="#">Discord Community</a>
+</div>
+<p class="text-sm text-slate-600">
+                © 2024 TabTune Animator. All rights reserved.
+            </p>
+</div>
+</footer>
+</body></html>

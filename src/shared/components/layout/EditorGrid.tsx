@@ -29,12 +29,12 @@ export function EditorGrid({
         >
             {/* Top Section: typically the Stage/Canvas */}
             <div className={cn("flex flex-col h-full overflow-hidden relative", topSectionClassName)}>
+                {topSection}
                 {floatingControls && (
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-fit">
+                    <div className="w-full flex justify-center py-4 shrink-0 z-30">
                         {floatingControls}
                     </div>
                 )}
-                {topSection}
             </div>
 
             {/* Bottom Section: typically the Timeline/VisualEditor */}

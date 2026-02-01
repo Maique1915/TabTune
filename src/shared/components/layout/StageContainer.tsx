@@ -45,29 +45,31 @@ export const StageContainer = ({
         <section className={cn("flex-1 relative flex items-center justify-center bg-transparent overflow-hidden px-4 py-2", className)}>
             {/* CRT Monitor Frame */}
             <div className={cn(
-                "relative w-full max-w-[900px] rounded-3xl border-4 border-[#333] shadow-[0_0_0_2px_#111,0_0_40px_rgba(0,0,0,0.5),0_0_100px_rgba(6,182,212,0.05)] overflow-hidden group",
+                "relative w-full max-w-[900px] aspect-[4/3] rounded-2xl border-4 border-[#1a3a3f] shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden group flex flex-col items-center justify-center bg-[#0c1a1d]",
                 aspectRatio
-            )} style={{ backgroundColor: background }}>
+            )}>
+
+                {/* Scanline Overlay */}
+                <div
+                    className="absolute inset-0 z-10 pointer-events-none"
+                    style={{
+                        background: `
+                            linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+                            linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03))
+                        `,
+                        backgroundSize: '100% 3px, 3px 100%'
+                    }}
+                />
 
                 {/* Screen Bezel/Inner Shadow */}
                 <div className="absolute inset-0 rounded-2xl pointer-events-none z-20 shadow-[inset_0_0_40px_rgba(0,0,0,0.8)]" />
 
-                {/* CRT Scanline Overlay - Reduced opacity */}
-                <div className="absolute inset-0 pointer-events-none z-30 opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(255,0,0,0.02))] bg-[length:100%_4px,3px_100%]" />
+                <div className="w-full h-full relative z-0 flex items-center justify-center">
+                    {children}
 
-                {/* Subtle Screen Curved Reflection - Reduced opacity and made neutral */}
-                <div className="absolute inset-0 pointer-events-none z-30 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-10 rounded-2xl" />
 
-                <div className="w-full h-full relative z-10 flex items-center justify-center" style={{ backgroundColor: background }}>
-                    <div className="relative w-full h-full flex items-center justify-center">
-                        {children}
-                    </div>
-                    <p className="absolute bottom-4 text-cyan-500/20 font-mono text-[10px] uppercase tracking-widest pointer-events-none">{statusLabel}</p>
                 </div>
             </div>
-
-            {/* Decorative localized glow under the monitor - Reduced intensity */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-32 bg-cyan-500/5 blur-[100px] pointer-events-none" />
         </section>
     );
 };

@@ -44,15 +44,15 @@ export const GenericSidebar: React.FC<GenericSidebarProps> = ({
     const isRight = side === 'right';
 
     const rootClasses = cn(
-        "bg-[#0d0d0f] flex flex-col z-20 transition-all duration-300 ease-in-out",
+        "flex flex-col z-20 transition-all duration-300 ease-in-out backdrop-blur-xl bg-panel-dark/80 border-white/5",
         isMobile
             ? cn(
-                "fixed inset-x-0 bottom-0 h-[70vh] rounded-t-2xl border-t border-zinc-800/50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]",
+                "fixed inset-x-0 bottom-0 h-[70vh] rounded-t-2xl border-t shadow-[0_-10px_40px_rgba(0,0,0,0.5)]",
                 isOpen ? "translate-y-0" : "translate-y-full"
             )
             : cn(
                 "relative w-80 h-full",
-                isRight ? "border-l border-zinc-800/50 shadow-[-5px_0_30px_rgba(0,0,0,0.5)]" : "border-r border-zinc-800/50 shadow-[5px_0_30px_rgba(0,0,0,0.5)]"
+                isRight ? "border-l shadow-[-5px_0_30px_rgba(0,0,0,0.5)]" : "border-r shadow-[5px_0_30px_rgba(0,0,0,0.5)]"
             ),
         className
     );
@@ -69,8 +69,8 @@ export const GenericSidebar: React.FC<GenericSidebarProps> = ({
             {/* Main Header */}
             <div className="flex items-center justify-between p-6 pb-4">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-pink-500/20 rounded-lg shadow-[0_0_15px_rgba(236,72,153,0.1)]">
-                        <Icon className="w-5 h-5 text-pink-400" />
+                    <div className="p-2 bg-primary/20 rounded-lg shadow-[0_0_15px_rgba(7,182,213,0.2)]">
+                        <Icon className="w-5 h-5 text-primary" />
                     </div>
                     <div className="flex flex-col">
                         <h1 className="text-sm font-bold tracking-widest text-zinc-100 uppercase">{title}</h1>
@@ -82,7 +82,7 @@ export const GenericSidebar: React.FC<GenericSidebarProps> = ({
                     {onReset && (
                         <button
                             onClick={onReset}
-                            className="p-2 bg-zinc-900/50 hover:bg-pink-500/10 rounded-lg text-zinc-500 hover:text-pink-400 border border-zinc-800 hover:border-pink-500/30 transition-all"
+                            className="p-2 bg-white/5 hover:bg-primary/10 rounded-lg text-zinc-500 hover:text-primary border border-white/5 hover:border-primary/30 transition-all"
                             title="Reset Defaults"
                         >
                             <RotateCcw className="w-4 h-4" />
@@ -91,7 +91,7 @@ export const GenericSidebar: React.FC<GenericSidebarProps> = ({
                     {isMobile && onClose && (
                         <button
                             onClick={onClose}
-                            className="p-2 bg-zinc-900/50 rounded-lg text-zinc-500 hover:text-white border border-zinc-800 transition-all"
+                            className="p-2 bg-white/5 rounded-lg text-zinc-500 hover:text-white border border-white/5 transition-all"
                         >
                             <X className="w-4 h-4" />
                         </button>
@@ -102,7 +102,7 @@ export const GenericSidebar: React.FC<GenericSidebarProps> = ({
             {/* Tab Switcher */}
             {tabs && activeTab && onTabChange && (
                 <div className="px-6 mb-4">
-                    <div className="flex bg-zinc-950/50 p-1 rounded-xl border border-zinc-800/50 backdrop-blur-sm">
+                    <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 backdrop-blur-sm">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
@@ -110,7 +110,7 @@ export const GenericSidebar: React.FC<GenericSidebarProps> = ({
                                 className={cn(
                                     "flex-1 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all duration-200",
                                     activeTab === tab.id
-                                        ? "bg-zinc-800/80 text-pink-400 shadow-[0_2px_10px_rgba(0,0,0,0.3)] border border-pink-500/20"
+                                        ? "bg-primary/20 text-primary shadow-lg border border-primary/20"
                                         : "text-zinc-500 hover:text-zinc-300"
                                 )}
                             >
@@ -128,7 +128,7 @@ export const GenericSidebar: React.FC<GenericSidebarProps> = ({
 
             {/* Footer */}
             {footer ? (
-                <div className="mt-auto p-4 border-t border-zinc-800/30 bg-zinc-950/20">
+                <div className="mt-auto p-4 border-t border-white/5 bg-black/20">
                     {footer}
                 </div>
             ) : (

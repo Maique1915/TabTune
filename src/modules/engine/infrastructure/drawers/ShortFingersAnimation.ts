@@ -45,7 +45,7 @@ export class ShortFingersAnimation implements FingersAnimationDrawer {
         }
 
         if (!geometry) {
-            drawer.drawChord(currentFinalChord, currentTransportDisplay, 0, { skipFretboard });
+            drawer.drawChord(currentFinalChord, currentTransportDisplay, 0, { skipFretboard, skipChordName: true });
             return;
         }
 
@@ -84,7 +84,7 @@ export class ShortFingersAnimation implements FingersAnimationDrawer {
 
             ctx.restore();
         } else {
-            drawer.drawChord(currentFinalChord, currentTransportDisplay, 0, { skipFretboard });
+            drawer.drawChord(currentFinalChord, currentTransportDisplay, 0, { skipFretboard, skipChordName: true });
         }
     }
 

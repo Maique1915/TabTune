@@ -38,9 +38,9 @@ export class ShortNeckComponent {
         return {
             enabled: !!s.enabled,
             color: s.color || '#000000',
-            blur: s.blur || 0,
+            blur: s.blur !== undefined ? s.blur : 20,
             offsetX: s.offsetX || 0,
-            offsetY: s.offsetY || 0
+            offsetY: s.offsetY !== undefined ? s.offsetY : 10
         };
     }
 
@@ -48,7 +48,7 @@ export class ShortNeckComponent {
         if (!b) return undefined;
         return {
             color: b.color || 'transparent',
-            width: b.width || 0
+            width: b.width !== undefined ? b.width : 4
         };
     }
 
@@ -164,8 +164,9 @@ export class ShortNeckComponent {
             border: this.theme.capo?.border || { color: '#808080', width: 2 },
             textColor: this.theme.capo?.textColors?.name || '#2c2c2c',
             opacity: 1,
-            shadow: this.theme.capo?.shadow
-        }, this.geometry, {
+            shadow: this.theme.capo?.shadow,
+            numberColor: this.theme.capo?.textColors?.number // Passing it via style object (casted inside component)
+        } as any, this.geometry, {
             neckAppearance: {
                 backgroundColor: this.theme.fretboard.neck.color || "#8d8d8d",
                 stringColor: this.theme.fretboard.strings.color || "#444444"
