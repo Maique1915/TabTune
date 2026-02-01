@@ -18,6 +18,8 @@ export default function ChordsLandingPage() {
                 </Link>
 
                 {/* Cinematic Mode */}
+                {/* Cinematic Mode - COMING SOON (Hidden for now as it's empty) */}
+                {/* 
                 <Link href="/chords/cinematic" className="group">
                     <div className="h-64 bg-zinc-900/50 border border-zinc-800 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 transition-all hover:border-pink-500/50 hover:bg-zinc-800 shadow-xl relative overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-tr from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -25,7 +27,8 @@ export default function ChordsLandingPage() {
                         <h2 className="text-2xl font-black uppercase italic">Cinematic Mode</h2>
                         <p className="text-zinc-400 text-sm max-w-[200px]">Horizontal full-neck guitar visualizer for high-quality video exports.</p>
                     </div>
-                </Link>
+                </Link> 
+                */}
             </div>
         </div>
     );

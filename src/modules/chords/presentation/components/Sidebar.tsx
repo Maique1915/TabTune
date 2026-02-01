@@ -364,11 +364,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {/* Vertical Navigation Rail */}
                 <div className="w-16 bg-zinc-950/60 border-r border-zinc-800/30 flex flex-col items-center py-4 gap-4">
                     {[
-                        { id: 'editor', icon: Guitar, label: 'Editor' },
-                        { id: 'chord', icon: Music, label: 'Theory' },
-                        { id: 'rhythm', icon: Clock, label: 'Rhythm' },
-                        { id: 'tools', icon: Wrench, label: 'Tools' },
-                        { id: 'config', icon: Settings2, label: 'Config' },
+                        { id: 'editor', icon: Guitar, label: 'Fretboard' },
+                        { id: 'chord', icon: Music, label: 'Harmonia' },
+                        { id: 'rhythm', icon: Clock, label: 'Duração' },
+                        { id: 'tools', icon: Wrench, label: 'Ações' },
+                        { id: 'config', icon: Settings2, label: 'Projeto' },
                     ].map((cat) => (
                         <button
                             key={cat.id}
