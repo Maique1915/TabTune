@@ -163,7 +163,8 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
             showChordName,
             transitionsEnabled,
             buildEnabled,
-            capo
+            capo,
+            tuning: stringNames
         });
 
         // Initial draw
@@ -184,10 +185,11 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                 showChordName,
                 transitionsEnabled,
                 buildEnabled,
-                capo
+                capo,
+                tuning: stringNames
             });
         }
-    }, [width, height, numStrings, effectiveNumFrets, colors, animationType, showChordName, transitionsEnabled, buildEnabled, capo]);
+    }, [width, height, numStrings, effectiveNumFrets, colors, animationType, showChordName, transitionsEnabled, buildEnabled, capo, stringNames]);
 
     // Update Chords
     useEffect(() => {

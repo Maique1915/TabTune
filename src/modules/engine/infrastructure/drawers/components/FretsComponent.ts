@@ -46,7 +46,56 @@ export class FretsComponent implements IFretboardComponent {
     }
 
     public draw(ctx: CanvasRenderingContext2D): void {
-        this.drawShortFrets(ctx);
+        if (this.neckType === NeckType.FULL) {
+            this.drawFullFrets(ctx);
+        } else {
+            this.drawShortFrets(ctx);
+        }
+    }
+
+    private drawFullFrets(ctx: CanvasRenderingContext2D): void {
+        const settings = (this.geometry as any).settings;
+        const fretboardX = settings.fretboardX;
+        const boardY = settings.boardY;
+        const fretboardHeight = settings.fretboardHeight;
+        const numFrets = settings.numFrets;
+        const fretWidth = settings.fretboardWidth / numFrets;
+        const scaleFactor = settings.scaleFactor;
+
+        ctx.save();
+
+        // Apply shadow
+        if (this.style.shadow?.enabled) {
+            ctx.shadowColor = this.style.shadow.color;
+            ctx.shadowBlur = this.style.shadow.blur * scaleFactor;
+            ctx.shadowOffsetX = this.style.shadow.offsetX * scaleFactor;
+            ctx.shadowOffsetY = this.style.shadow.offsetY * scaleFactor;
+        }
+
+        ctx.strokeStyle = this.style.color;
+        ctx.lineWidth = this.style.thickness * scaleFactor;
+        ctx.beginPath();
+
+        // Draw vertical fret lines
+        for (let i = 1; i <= numFrets; i++) {
+            const x = fretboardX + i * fretWidth;
+            ctx.moveTo(x, boardY);
+            ctx.lineTo(x, boardY + fretboardHeight);
+        }
+
+        ctx.stroke();
+
+        // Draw nut (thicker first fret)
+        if (this.showNut) {
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+            ctx.lineWidth = 4 * scaleFactor;
+            ctx.beginPath();
+            ctx.moveTo(fretboardX, boardY);
+            ctx.lineTo(fretboardX, boardY + fretboardHeight);
+            ctx.stroke();
+        }
+
+        ctx.restore();
     }
 
     private drawShortFrets(ctx: CanvasRenderingContext2D): void {

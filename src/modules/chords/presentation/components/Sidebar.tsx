@@ -456,7 +456,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                     <div className="space-y-2 pt-2">
                                                         <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">1. Select String</span>
                                                         <div className="grid grid-cols-6 gap-1.5">
-                                                            {[6, 5, 4, 3, 2, 1].map(s => {
+                                                            {Array.from({ length: globalSettings?.numStrings || 6 }, (_, i) => (globalSettings?.numStrings || 6) - i).map(s => {
                                                                 const isActive = currentPos?.string === s;
                                                                 const isUsedElsewhere = editingNote.positions.some((p, i) => p.string === s && i !== activePositionIndex);
 
@@ -575,7 +575,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                                                 )}
                                                                             </div>
                                                                             <div className="grid grid-cols-6 gap-1.5">
-                                                                                {[1, 2, 3, 4, 5, 6].map(s => {
+                                                                                {Array.from({ length: globalSettings?.numStrings || 6 }, (_, i) => i + 1).map(s => {
                                                                                     const isTarget = currentPos?.endString === s;
 
                                                                                     return (
@@ -993,7 +993,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                 onGlobalSettingsChange({
                                                     instrumentId: instId,
                                                     tuningIndex: 0,
-                                                    tuning: calculateShiftedTuning(baseTuning, shift)
+                                                    tuning: calculateShiftedTuning(baseTuning, shift),
+                                                    numStrings: baseTuning.length
                                                 });
                                             }
                                         }}

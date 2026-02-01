@@ -13,6 +13,7 @@ export interface GeometrySettings {
     boardY: number;
     stringMargin: number;
     scaleFactor: number;
+    neckType: NeckType;
     fingerRadius: number;
     barreWidth: number;
     headstockYOffset?: number;
@@ -36,12 +37,21 @@ export class GeometryProvider {
     }
 
     public getFingerCoords(fret: number, string: number): { x: number; y: number } {
-        // Vertical logic (ShortNeck style)
-        // Reverse string order: Index 0 (Left) = String 6, Index 5 (Right) = String 1
-        const visualIdx = this.settings.numStrings - string;
-        const x = this.settings.fretboardX + this.settings.paddingX + visualIdx * this.settings.stringSpacing;
-        const y = this.settings.fretboardY + (fret - 0.5) * this.settings.realFretSpacing;
-        return { x, y };
+        if (this.settings.neckType === NeckType.FULL) {
+            // X is fret based
+            const x = this.settings.fretboardX + (fret - 0.5) * this.settings.realFretSpacing;
+            // Y is string based (Mi Grave / string 6 at top = index 0)
+            const visualIdx = this.settings.numStrings - string;
+            const y = this.settings.boardY + this.settings.stringMargin + visualIdx * this.settings.stringSpacing;
+            return { x, y };
+        } else {
+            // Vertical logic (ShortNeck style)
+            // Reverse string order: Index 0 (Left) = String 6, Index 5 (Right) = String 1
+            const visualIdx = this.settings.numStrings - string;
+            const x = this.settings.fretboardX + this.settings.paddingX + visualIdx * this.settings.stringSpacing;
+            const y = this.settings.fretboardY + (fret - 0.5) * this.settings.realFretSpacing;
+            return { x, y };
+        }
     }
 
     public getBarreRect(fret: number, startString: number, endString: number, barreWidth?: number, fingerRadius?: number): { x: number; y: number; width: number; height: number } {
@@ -51,17 +61,32 @@ export class GeometryProvider {
         const bWidth = barreWidth || this.settings.barreWidth;
         const fRadius = fingerRadius || this.settings.fingerRadius;
 
-        // Barre is horizontal in coordinate system (spans across strings in SHORT neck)
-        const leftX = Math.min(p1.x, p2.x);
-        const rightX = Math.max(p1.x, p2.x);
-        const spanWidth = Math.abs(rightX - leftX) + (fRadius * 2);
+        const isHorizontalInCoords = Math.abs(p1.y - p2.y) < 1;
 
-        return {
-            x: leftX - fRadius,
-            y: p1.y - bWidth / 2,
-            width: spanWidth,
-            height: bWidth
-        };
+        if (isHorizontalInCoords) {
+            // Barre is horizontal in coordinate system (spans across strings in SHORT neck)
+            const leftX = Math.min(p1.x, p2.x);
+            const rightX = Math.max(p1.x, p2.x);
+            const spanWidth = Math.abs(rightX - leftX) + (fRadius * 2);
+
+            return {
+                x: leftX - fRadius,
+                y: p1.y - bWidth / 2,
+                width: spanWidth,
+                height: bWidth
+            };
+        } else {
+            // Barre is vertical in coordinate system (spans across strings in FULL neck)
+            const topY = Math.min(p1.y, p2.y) - fRadius;
+            const bottomY = Math.max(p1.y, p2.y) + fRadius;
+            const height = bottomY - topY;
+            return {
+                x: p1.x - bWidth / 2,
+                y: topY,
+                width: bWidth,
+                height: height
+            };
+        }
     }
 
     public validate(fret: number, string: number): boolean {
@@ -75,7 +100,8 @@ export class GeometryProvider {
     public get barreWidth(): number { return this.settings.barreWidth; }
     public get numStrings(): number { return this.settings.numStrings; }
     public get numFrets(): number { return this.settings.numFrets; }
-    public get isHorizontal(): boolean { return false; }
+    public get neckType(): NeckType { return this.settings.neckType; }
+    public get isHorizontal(): boolean { return this.settings.neckType === NeckType.FULL; }
     public get fretboardX(): number { return this.settings.fretboardX; }
     public get fretboardY(): number { return this.settings.fretboardY; }
     public get fretboardWidth(): number { return this.settings.fretboardWidth; }

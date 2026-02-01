@@ -11,6 +11,7 @@ import { FingerComponent } from "./components/FingerComponent";
 import { TransposeIndicatorComponent } from "./components/TransposeIndicatorComponent";
 import { ShortNeckComponent } from "./components/ShortNeckComponent";
 import { ChordNameComponent } from "./components/ChordNameComponent";
+import { transposeStringNames } from "./utils/tuning-utils";
 
 export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, ChordDrawer {
     protected _neckRadius: number = 0;
@@ -24,6 +25,8 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
     protected _capoComp: CapoComponent | null = null;
     protected _shortNeckComp!: ShortNeckComponent;
     protected _transformationIndex: 1 | 2 | 3 = 1;
+
+    protected _baseStringNames: string[] = ["E", "A", "D", "G", "B", "e"];
 
     protected _effectiveNumFrets: number = 0;
     protected _capoPaddingY: number = 66;
@@ -105,7 +108,17 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
         const diagramScale = 0.6;
         this._diagramHeight = CH * diagramScale;
 
-        const baseWidth = (this._diagramHeight * 0.7) / this._scaleFactor;
+        // Dynamic Width Calculation based on String Count
+        // Standard ratio 0.7 is ideal for 6 strings (5 gaps).
+        // specificRatio = 0.7 / 5 = 0.14 per gap.
+        const ratioPerGap = 0.14;
+        const effectiveGaps = Math.max(1, this._numStrings - 1);
+        const effectiveRatio = ratioPerGap * effectiveGaps;
+
+        // Apply a small base width for the "neck" itself plus the gaps
+        // Or simply scale strictly:
+        const baseWidth = (this._diagramHeight * effectiveRatio) / this._scaleFactor;
+
         const localW = baseWidth * this._scaleFactor;
         const localH = this._diagramHeight;
 
@@ -262,11 +275,29 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
     }
 
     public setStringNames(arg1: number | string[] | undefined, arg2?: string[]): void {
+        let names: string[] | undefined;
+
         if (Array.isArray(arg1)) {
-            this._stringNames = arg1;
+            names = arg1;
         } else if (arg2) {
-            this._stringNames = arg2;
+            names = arg2;
         }
+
+        if (names) {
+            // Always set as base, because this method is the entry point for tuning changes
+            this._baseStringNames = [...names];
+            this._stringNames = names;
+        }
+
+        // If we have a negative capo, re-apply transposition from the BASE
+        if (this._globalCapo < 0 && this._baseStringNames) {
+            const transposed = transposeStringNames(this._baseStringNames, this._globalCapo);
+            this._stringNames = transposed;
+        } else if (this._globalCapo >= 0 && this._baseStringNames) {
+            // Ensure we are using base names if capo is positive/zero
+            this._stringNames = [...this._baseStringNames];
+        }
+
         if (this._shortNeckComp && this._stringNames) {
             this._shortNeckComp.setStringNames(this._stringNames);
         }
@@ -275,6 +306,11 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
     public setGlobalCapo(capo: number) {
         this._globalCapo = capo;
         this.setCapo(capo > 0, capo);
+
+        // Refresh string names using the current base and new capo
+        if (this._baseStringNames) {
+            this.setStringNames(this._baseStringNames);
+        }
     }
 
     public getChordNameCoords(): { x: number; y: number } {

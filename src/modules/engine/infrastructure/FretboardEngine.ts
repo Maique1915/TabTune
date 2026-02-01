@@ -15,6 +15,7 @@ export interface EngineOptions {
     transitionsEnabled?: boolean;
     buildEnabled?: boolean;
     capo?: number;
+    tuning?: string[];
 }
 
 export interface AnimationState {
@@ -54,7 +55,7 @@ export class FretboardEngine {
 
     private initDrawers() {
         // Currently hardcoded to ShortNeck as per cleanup, but extensive enough to swap if needed
-        this.chordDrawer = new ShortNeckDrawer(
+        const drawer = new ShortNeckDrawer(
             this.ctx,
             this.options.colors as any, // Type cast might be needed depending on strictness
             this.dimensions,
@@ -76,6 +77,16 @@ export class FretboardEngine {
                 stringNamesY: 0
             }
         );
+
+        if (this.options.tuning) {
+            drawer.setStringNames(this.options.tuning);
+        }
+
+        if (this.options.capo !== undefined) {
+            drawer.setGlobalCapo(this.options.capo);
+        }
+
+        this.chordDrawer = drawer;
 
         this.fingersAnimation = new ShortFingersAnimation();
     }
