@@ -352,32 +352,39 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
 
       {/* Rotation Controls */}
       <div className="space-y-3 p-3 bg-zinc-950/30 rounded-lg border border-zinc-800/50 mb-3">
-        <div className="grid grid-cols-4 gap-2">
-          {[{ label: '1ª', rotation: 0 as const, mirror: false }, { label: '2ª', rotation: 0 as const, mirror: true }].map((option) => (
-            <button
-              key={`${option.label}-${option.rotation}-${option.mirror}`}
-              onClick={() => {
-                setColors((prev: any) => {
-                  const current = prev || DEFAULT_COLORS;
-                  return {
-                    ...current,
+
+        {/* Rotation Buttons */}
+        <div className="space-y-1">
+          <span className="text-[9px] text-zinc-500 font-medium">Rotation</span>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: '0°', val: 0, mirror: false },
+              { label: '90°', val: 90, mirror: false },
+              { label: '270°', val: 270, mirror: true }
+            ].map((opt) => (
+              <button
+                key={opt.val}
+                onClick={() => {
+                  setColors((prev: any) => ({
+                    ...prev,
                     global: {
-                      ...(current.global || {}),
-                      rotation: option.rotation,
-                      mirror: option.mirror
+                      ...(prev.global || {}),
+                      rotation: opt.val,
+                      mirror: opt.mirror
                     }
-                  };
-                });
-              }}
-              className={`py-2 rounded-lg border text-[10px] font-black transition-all ${colors.global?.rotation === option.rotation && !!colors.global?.mirror === option.mirror
-                ? 'bg-pink-500/10 border-pink-500/40 text-pink-400'
-                : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
-                }`}
-            >
-              {option.label}
-            </button>
-          ))}
+                  }));
+                }}
+                className={`py-2 rounded-lg border text-[10px] font-black transition-all ${colors.global?.rotation === opt.val
+                    ? 'bg-pink-500/10 border-pink-500/40 text-pink-400 font-bold shadow-[0_0_10px_rgba(236,72,153,0.1)]'
+                    : 'bg-zinc-900/50 border-zinc-800/50 text-zinc-500 hover:bg-zinc-800/80 hover:text-zinc-300'
+                  }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
+
       </div>
 
     </div>

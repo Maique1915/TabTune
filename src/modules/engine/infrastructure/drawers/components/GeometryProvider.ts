@@ -13,7 +13,6 @@ export interface GeometrySettings {
     boardY: number;
     stringMargin: number;
     scaleFactor: number;
-    neckType: NeckType;
     fingerRadius: number;
     barreWidth: number;
     headstockYOffset?: number;
@@ -76,7 +75,6 @@ export class GeometryProvider {
     public get barreWidth(): number { return this.settings.barreWidth; }
     public get numStrings(): number { return this.settings.numStrings; }
     public get numFrets(): number { return this.settings.numFrets; }
-    public get neckType(): NeckType { return this.settings.neckType; }
     public get isHorizontal(): boolean { return false; }
     public get fretboardX(): number { return this.settings.fretboardX; }
     public get fretboardY(): number { return this.settings.fretboardY; }

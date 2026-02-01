@@ -1,7 +1,6 @@
 import { IFretboardComponent } from "./IFretboardComponent";
 import { GeometryProvider } from "./GeometryProvider";
 import { CapoStyle } from "@/modules/core/domain/types";
-import { NeckType } from "./NeckType";
 
 export class CapoComponent implements IFretboardComponent {
     private fret: number;
