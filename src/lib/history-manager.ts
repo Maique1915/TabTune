@@ -1,7 +1,5 @@
 import { ChordDiagramProps, FretboardTheme, Achord } from "@/modules/core/domain/types";
 import { MeasureData, NoteData, Duration, GlobalSettings } from "@/modules/editor/domain/types";
-import { measuresToChords } from "@/lib/chords/converter";
-import { getNote, getComplement, getExtension, getBasse, notes, complements, extensions, basses } from "@/modules/core/domain/chord-logic";
 
 export interface FullHistoryState {
     version: number;

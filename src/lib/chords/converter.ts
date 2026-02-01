@@ -1,7 +1,7 @@
 
-import { MeasureData, GlobalSettings, Duration } from "@/modules/editor/domain/types";
-import { ChordWithTiming, ChordDiagramProps, Position, TabEffect, StandardPosition } from "@/modules/core/domain/types";
-import { getNoteDurationValue, findBestFretForPitch, getMidiFromPosition, detectChordFromMeasure, getMsFromDuration } from "@/modules/editor/domain/music-math";
+import { MeasureData, GlobalSettings } from "@/modules/editor/domain/types";
+import { ChordWithTiming, ChordDiagramProps, TabEffect, StandardPosition } from "@/modules/core/domain/types";
+import { getNoteDurationValue, getMsFromDuration } from "@/modules/editor/domain/music-math";
 
 /**
  * Converts a list of MeasureData (from Tab Editor) into a flat list of ChordWithTiming (for Fretboard Visualizer).

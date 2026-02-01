@@ -25,7 +25,7 @@ export class AvoidComponent {
         this.currentOpacity = style.opacity ?? 1;
         this.targetOpacity = style.opacity ?? 1;
         this.isHorizontal = geometry.isHorizontal;
-        this.neckType = neckType ?? (this.isHorizontal ? NeckType.FULL : NeckType.SHORT);
+        this.neckType = neckType ?? NeckType.SHORT;
     }
 
     public update(progress: number): void {

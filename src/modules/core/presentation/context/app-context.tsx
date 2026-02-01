@@ -2,7 +2,7 @@
 
 import type { Dispatch, SetStateAction } from "react";
 import { createContext, useContext, useState, useRef, useMemo, useCallback } from "react";
-import type { Achord, ChordDiagramProps, ChordWithTiming, FretboardTheme } from "@/modules/core/domain/types";
+import type { ChordDiagramProps, ChordWithTiming, FretboardTheme } from "@/modules/core/domain/types";
 import type { TimelineState } from "@/modules/chords/domain/types";
 import { useUndoRedo } from "@/modules/editor/presentation/hooks/use-undo-redo";
 import { generateClipId } from "@/modules/chords/application/utils";

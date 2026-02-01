@@ -67,8 +67,13 @@ export class FretboardEngine {
                 numFrets: this.options.numFrets || 5,
                 horizontalPadding: 100,
                 stringSpacing: 0, // Calculated internally
-                scaleFactor: (this.options.colors?.global?.scale || 1),
-                neckType: "SHORT" as any
+                fretboardX: 0,
+                fretboardY: 0,
+                fretboardWidth: this.dimensions.width,
+                fretboardHeight: this.dimensions.height,
+                realFretSpacing: 0,
+                neckRadius: 0,
+                stringNamesY: 0
             }
         );
 
@@ -225,7 +230,9 @@ export class FretboardEngine {
 
     private drawSingleName(chordData: ChordWithTiming) {
         if (chordData.finalChord.showChordName !== false && this.chordDrawer) {
-            const exts = chordData.finalChord.chord?.extension ? chordData.finalChord.chord.extension.map(i => extensionMap[i]) : undefined;
+            const exts = chordData.finalChord.chord?.extension
+                ? chordData.finalChord.chord.extension.map(i => extensionMap[i]).filter((e): e is string => !!e)
+                : undefined;
             this.chordDrawer.drawChordName(chordData.finalChord.chordName || "", { opacity: 1, extensions: exts });
         }
     }
@@ -235,7 +242,9 @@ export class FretboardEngine {
 
         this.chordDrawer.drawFingers(this.previewChord);
         if (this.options.showChordName && this.previewChord.chordName && this.previewChord.showChordName !== false) {
-            const exts = this.previewChord.chord?.extension ? this.previewChord.chord.extension.map(i => extensionMap[i]) : undefined;
+            const exts = this.previewChord.chord?.extension
+                ? this.previewChord.chord.extension.map(i => extensionMap[i]).filter((e): e is string => !!e)
+                : undefined;
             this.chordDrawer.drawChordName(this.previewChord.chordName, { extensions: exts });
         }
     }

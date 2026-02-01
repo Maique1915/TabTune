@@ -256,3 +256,32 @@ export interface ProjectData {
     tracks: Track[];
     duration: number; // total duration in seconds or beats
 }
+
+export interface FretboardTimelineEvent {
+    startTime: number;
+    duration: number;
+    chordName: string;
+    positions: {
+        string: number;
+        fret: number;
+        finger: number;
+    }[];
+    tuning?: string[];
+    capo?: number;
+}
+
+export interface FretboardHistoryFile {
+    version: number;
+    settings: {
+        tuning: string[];
+        capo: number;
+        numStrings: number;
+        tuningShift?: number;
+        bpm?: number;
+        time?: {
+            numerator: number;
+            denominator: number;
+        };
+    };
+    timeline: FretboardTimelineEvent[];
+}

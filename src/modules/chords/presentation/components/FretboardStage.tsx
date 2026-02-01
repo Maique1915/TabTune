@@ -2,17 +2,15 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { type JSAnimation } from "animejs";
-import type { ChordWithTiming, ChordDiagramProps, FretboardTheme } from "@/modules/core/domain/types";
+import type { ChordWithTiming, ChordDiagramProps } from "@/modules/core/domain/types";
 import { useAppContext } from "@/modules/core/presentation/context/app-context";
-import { type ChordDrawer, type FingersAnimationDrawer, type FingersAnimationParams } from "@/modules/engine/infrastructure/drawers/ChordDrawer";
+import { type ChordDrawer } from "@/modules/engine/infrastructure/drawers/ChordDrawer";
 import { ShortNeckDrawer } from "@/modules/engine/infrastructure/drawers/ShortNeck";
 
 
-import { ShortFingersAnimation } from "@/modules/engine/infrastructure/drawers/ShortFingersAnimation";
-import { extensions as extensionMap } from "@/modules/core/domain/chord-logic";
 import { FretboardEngine } from "@/modules/engine/infrastructure/FretboardEngine";
 import { TimelineState } from "@/modules/chords/domain/types";
-import { useCanvasRecorder, CanvasRecorderOptions } from "@/lib/shared/hooks/useCanvasRecorder";
+import { useCanvasRecorder } from "@/lib/shared/hooks/useCanvasRecorder";
 
 export interface FretboardStageRef {
     startAnimation: () => void;

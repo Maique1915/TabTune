@@ -3,21 +3,13 @@
 import React from 'react';
 import { Duration, NoteData, MeasureData, GlobalSettings, ManualChordData } from '@/modules/editor/domain/types';
 import { FretboardTheme } from '@/modules/core/domain/types';
-import { extensions as extensionOrder } from '@/modules/core/domain/chord-logic';
 import { INSTRUMENTS } from '@/lib/instruments';
 import { VexFlowRhythmIcon } from './VexFlowRhythmIcon';
 import { GenericSidebar } from '@/shared/components/layout/GenericSidebar';
 import Link from 'next/link';
 import { Music, Settings2, Guitar, Home, ChevronDown, Minus, Plus, Clock, Wrench } from 'lucide-react';
 import { useAppContext } from '@/modules/core/presentation/context/app-context';
-import { NOTE_NAMES, getMsFromDuration } from '@/modules/editor/domain/music-math';
-
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger
-} from '@/shared/components/ui/accordion';
+import { NOTE_NAMES } from '@/modules/editor/domain/music-math';
 
 const calculateShiftedTuning = (baseTuning: string[], shift: number): string[] => {
     if (shift >= 0) return [...baseTuning]; // Fix names for Capo or Standard

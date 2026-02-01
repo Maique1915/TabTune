@@ -17,7 +17,7 @@ import { cn } from "@/shared/lib/utils";
 import { Library, Settings, Guitar } from "lucide-react";
 import { TimelineControls } from "@/modules/timeline/presentation/components/TimelineControls";
 import { useStudioChordsEditor } from "@/modules/editor/presentation/hooks/use-studio-chords-editor";
-import { useStudioTimelineSync } from "@/modules/timeline/presentation/hooks/use-studio-timeline-sync";
+import { useTimelineSync } from "@/modules/timeline/presentation/hooks/use-timeline-sync";
 import { RenderDialog, RenderFormat, RenderQuality } from "@/modules/chords/presentation/components/RenderDialog";
 
 export function StudioView() {
@@ -120,7 +120,7 @@ export function StudioView() {
         activeChordIndex,
         totalDurationMs,
         currentCursorMs
-    } = useStudioTimelineSync({
+    } = useTimelineSync({
         measures,
         settings,
         activeMeasure,

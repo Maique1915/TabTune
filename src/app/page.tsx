@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { Music, FileMusic, Guitar } from "lucide-react";
-import { cn } from "@/shared/lib/utils";
+import { Music } from "lucide-react";
 
 export default function LandingPage() {
   return (

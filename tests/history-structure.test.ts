@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest';
-import { FretboardHistoryFile, FretboardTimelineEvent } from './src/modules/core/domain/types';
+import { FretboardHistoryFile, FretboardTimelineEvent } from '@/modules/core/domain/types';
 
 // Mock logic that would be in a parser/mapper
 const mapTimelineToChords = (history: FretboardHistoryFile) => {

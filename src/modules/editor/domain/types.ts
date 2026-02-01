@@ -49,6 +49,7 @@ export interface NoteData extends Omit<MusicalEvent, 'type'> {
     showChordName?: boolean; // Per-note control for chord name visibility
 
     // Barre (inherited from MusicalEvent as BarreData: all numbers)
+    barre?: BarreData;
 }
 
 export interface MeasureData {
