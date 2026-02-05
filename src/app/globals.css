@@ -46,7 +46,7 @@ body {
 
   .dark {
     /* Dark Mode - Stitch Theme (Cybernetic Luthier) */
-    
+
     /* Background: Deep Dark Cyan #0f2023 -> 189 40% 10% */
     --background: 189 40% 10%;
     --foreground: 210 20% 98%;
@@ -64,7 +64,7 @@ body {
     --primary-foreground: 222 47.4% 11.2%;
 
     /* Secondary: Deep muted blue/gray #1e293b (Adjusted for harmony) */
-    --secondary: 189 30% 15%; 
+    --secondary: 189 30% 15%;
     --secondary-foreground: 210 20% 98%;
 
     /* Muted: #334155 adapted */
@@ -152,4 +152,18 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #3f3f46;
+}
+
+.crt-overlay {
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 255, 0, 0.03));
+  background-size: 100% 3px, 3px 100%;
+  pointer-events: none;
+}
+
+.bg-grid-pattern {
+  background-color: #0c1a1d;
+  background-image: linear-gradient(rgba(7, 182, 213, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(7, 182, 213, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
 }

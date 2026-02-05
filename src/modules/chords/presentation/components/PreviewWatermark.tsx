@@ -1,7 +1,7 @@
 export const PreviewWatermark = () => {
     return (
         <div className="absolute inset-0 z-40 pointer-events-none flex items-center justify-center overflow-hidden select-none">
-            <h1 className="text-[150px] font-black tracking-widest opacity-10 animate-pulse"
+            <h1 className="text-[150px] font-black tracking-widest opacity-15 animate-pulse"
                 style={{
                     animation: 'colorCycle 10s infinite, pulse 4s infinite ease-in-out',
                     transform: 'rotate(-15deg)'

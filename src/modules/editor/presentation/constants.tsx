@@ -300,6 +300,81 @@ export const STUDIO_PRESETS = {
                 shadow: { enabled: true, color: "#5c403330", blur: 5 }
             }
         }
+    },
+    studio: {
+        label: 'Studio Mode',
+        style: {
+            ...DEFAULT_COLORS,
+            global: {
+                ...DEFAULT_COLORS.global,
+                backgroundColor: "#0c1a1d",
+                primaryTextColor: "#07b6d5",
+                scale: 1.0,
+            },
+            fretboard: {
+                neck: {
+                    color: "#0c1a1d", // Dark monitor background
+                    opacity: 1,
+                    shadow: { enabled: true, color: "rgba(0,0,0,0.5)", blur: 10 }
+                },
+                frets: {
+                    color: "rgba(255, 255, 255, 0.2)", // Subtle grid lines
+                    shadow: { enabled: false, color: "transparent", blur: 0 }
+                },
+                strings: {
+                    color: "rgba(255, 255, 255, 0.2)",
+                    thickness: 2,
+                    shadow: { enabled: false, color: "transparent", blur: 0 }
+                },
+                board: {
+                    inlays: {
+                        color: "rgba(7, 182, 213, 0.2)",
+                        shadow: { enabled: true, color: "rgba(7, 182, 213, 0.4)", blur: 8 }
+                    }
+                }
+            },
+            chordName: {
+                color: "#07b6d5", // Cyan
+                opacity: 1,
+                stroke: { color: "transparent", width: 0 },
+                fontSize: 42,
+                extSize: 28,
+                shadow: { enabled: true, color: "rgba(7, 182, 213, 0.6)", blur: 15 } // Intense glow
+            },
+            fingers: {
+                color: "#07b6d5", // Primary Cyan
+                textColor: "#0f2023", // Dark contrast
+                border: {
+                    color: "#ffffff",
+                    width: 2,
+                },
+                opacity: 0.9,
+                radius: 24,
+                fontSize: 18,
+                barreWidth: 52,
+                barreFingerRadius: 24,
+                shadow: { enabled: true, color: "rgba(7, 182, 213, 0.5)", blur: 10 } // Cyan glow
+            },
+            capo: {
+                color: "#162a2d",
+                border: { color: "#07b6d5", width: 2 },
+                textColors: { name: "#ffffff", number: "#07b6d5" },
+                shadow: { enabled: true, color: "rgba(7, 182, 213, 0.3)", blur: 8 }
+            },
+            head: {
+                color: "#0c1a1d",
+                textColors: { name: "#07b6d5" },
+                border: { color: "#1a3a3f", width: 2 },
+                shadow: { enabled: true, color: "rgba(0,0,0,0.5)", blur: 10 }
+            },
+            avoid: {
+                color: "#f472b6", // Accent Pink
+                lineWidth: 5,
+                size: 14,
+                opacity: 0.9,
+                border: { color: "#ffffff", width: 2 }
+            }
+        }
     }
 };
 

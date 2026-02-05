@@ -44,7 +44,7 @@ export const GenericSidebar: React.FC<GenericSidebarProps> = ({
     const isRight = side === 'right';
 
     const rootClasses = cn(
-        "flex flex-col z-20 transition-all duration-300 ease-in-out backdrop-blur-xl bg-panel-dark/80 border-white/5",
+        "flex flex-col z-20 transition-all duration-300 ease-in-out backdrop-blur-xl bg-[#162a2d]/90 border-r border-white/10 shadow-[5px_0_30px_rgba(0,0,0,0.5)]",
         isMobile
             ? cn(
                 "fixed inset-x-0 bottom-0 h-[70vh] rounded-t-2xl border-t shadow-[0_-10px_40px_rgba(0,0,0,0.5)]",

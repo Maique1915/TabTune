@@ -28,7 +28,7 @@ export function EditorGrid({
             style={{ display: 'grid', gridTemplateRows: splitRatio }}
         >
             {/* Top Section: typically the Stage/Canvas */}
-            <div className={cn("flex flex-col h-full overflow-hidden relative", topSectionClassName)}>
+            <div className={cn("flex flex-col h-full overflow-hidden relative p-4 bg-grid-pattern", topSectionClassName)}>
                 {topSection}
                 {floatingControls && (
                     <div className="w-full flex justify-center py-4 shrink-0 z-30">

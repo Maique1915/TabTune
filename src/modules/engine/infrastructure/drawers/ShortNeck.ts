@@ -314,8 +314,15 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
     }
 
     public getChordNameCoords(): { x: number; y: number } {
-        const visualHeight = this._fretboardHeight + (75 * this._scaleFactor);
-        const offsetN = 100 * this._scaleFactor;
+        const isRotated = this._rotation === 90 || this._rotation === 270;
+        // If rotated, the 'vertical' visual span is the width (thickness) of the neck.
+        // If vertical, it's the height (length).
+        const visualHeight = isRotated ? this._fretboardWidth : this._fretboardHeight;
+
+        // When rotated (horizontal neck), we need much less offset because vertical space is tighter
+        // and perception of "gap" is different.
+        const baseOffset = isRotated ? 45 : 100;
+        const offsetN = baseOffset * this._scaleFactor;
 
         return {
             x: this._dimensions.width / 2,

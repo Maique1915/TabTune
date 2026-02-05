@@ -87,6 +87,7 @@ export class FretboardEngine {
         }
 
         const rotation = this.options.colors?.global?.rotation || 0;
+        console.log('[FretboardEngine] initDrawers - Setting rotation:', rotation);
         const mirror = this.options.colors?.global?.mirror || false;
         drawer.setTransforms(rotation, mirror);
 
@@ -160,6 +161,8 @@ export class FretboardEngine {
      */
     public drawFrame(state: AnimationState) {
         if (!this.chordDrawer) return;
+
+        console.log('[FretboardEngine] drawFrame - Rotation:', (this.chordDrawer as any).rotation, 'Dimensions:', this.dimensions);
 
         // Clear canvas
         this.ctx.fillStyle = this.options.colors?.global?.backgroundColor || '#000000';

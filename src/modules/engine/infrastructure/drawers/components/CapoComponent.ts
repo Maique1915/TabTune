@@ -180,7 +180,7 @@ export class CapoComponent implements IFretboardComponent {
         const fontSize = 16 * scaleFactor;
         const font = `bold ${fontSize}px sans-serif`;
 
-        this.drawRotatedText(ctx, "C A P O", centerX, centerY, font, textColor);
+        this.drawText(ctx, "C  A  P  O", centerX, centerY, font, textColor, "center", "middle", false, this.rotation, this.mirror);
 
         // Draw Number
         const displayFret = this.options?.displayFret ?? this.fret;

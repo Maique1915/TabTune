@@ -45,7 +45,7 @@ export const StageContainer = ({
         <section className={cn("flex-1 relative flex items-center justify-center bg-transparent overflow-hidden px-4 py-2", className)}>
             {/* CRT Monitor Frame */}
             <div className={cn(
-                "relative w-full max-w-[900px] aspect-[4/3] rounded-2xl border-4 border-[#1a3a3f] shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden group flex flex-col items-center justify-center bg-[#0c1a1d]",
+                "relative w-full max-w-[900px] aspect-video rounded-2xl border-[#1a3a3f] shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden group flex flex-col items-center justify-center",
                 aspectRatio
             )}>
 
