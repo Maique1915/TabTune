@@ -181,12 +181,7 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onSelectMeasure(measure.id);
-                                    const firstNote = measure.notes[0];
-                                    if (firstNote) {
-                                        onSelectNote(firstNote.id, e.shiftKey || e.ctrlKey);
-                                        const timing = noteTimingMap.get(firstNote.id);
-                                        if (timing && onSeek) onSeek(timing.start);
-                                    }
+                                    // Removed auto-select first note to allow Measure-level selection
                                 }}
                                 draggable={true}
                                 onDragStart={(e) => handleDragStart(e, mIdx)}
@@ -267,6 +262,11 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
                                             return (
                                                 <div
                                                     key={note.id}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onSelectMeasure(measure.id);
+                                                        onSelectNote(note.id, e.shiftKey || e.ctrlKey);
+                                                    }}
                                                     onDoubleClick={(e) => { e.stopPropagation(); onDoubleClickNote(note.id); }}
                                                     draggable={true}
                                                     onDragStart={(e) => handleNoteDragStart(e, measure.id, nIdx)}

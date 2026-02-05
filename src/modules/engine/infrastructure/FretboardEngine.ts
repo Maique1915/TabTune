@@ -86,33 +86,49 @@ export class FretboardEngine {
             drawer.setGlobalCapo(this.options.capo);
         }
 
+        const rotation = this.options.colors?.global?.rotation || 0;
+        const mirror = this.options.colors?.global?.mirror || false;
+        drawer.setTransforms(rotation, mirror);
+
         this.chordDrawer = drawer;
 
         this.fingersAnimation = new ShortFingersAnimation();
     }
 
-    public resize(width: number, height: number) {
+    public resize(width: number, height: number, currentState?: AnimationState) {
         this.dimensions = { width, height };
         this.canvas.width = width;
         this.canvas.height = height;
         // Re-init drawers with new dimensions
         this.initDrawers();
-        this.drawSingleFrame(); // Force redraw
+
+        // If state is provided, redraw it. Otherwise do nothing (wait for consumer).
+        if (currentState) {
+            this.drawFrame(currentState);
+        }
     }
 
-    public updateOptions(newOptions: Partial<EngineOptions>) {
+    public updateOptions(newOptions: Partial<EngineOptions>, currentState?: AnimationState) {
         this.options = { ...this.options, ...newOptions };
         this.initDrawers(); // Re-init to apply potential theme/layout changes
-        if (!this.isRunning) {
-            this.drawSingleFrame();
+
+        if (currentState) {
+            this.drawFrame(currentState);
+        } else if (!this.isRunning) {
+            // Only draw single frame (default 0) if NO state provided and NOT running.
+            // But preferably, we shouldn't even do this if we want to preserve state.
+            // But for backward compat if callee assumes reset:
+            // Let's decide: safe to remove if FretboardStage manages it.
+            // For now, only draw if State provided, or just wait.
+            // If we don't draw, canvas might be blank if initDrawers clears it? No, drawFretboard does.
+            // Let's rely on consumer.
         }
     }
 
     public setChords(chords: ChordWithTiming[]) {
         this.chords = chords;
-        if (!this.isRunning) {
-            this.drawSingleFrame();
-        }
+        // Do not force redraw here as it resets to frame 0.
+        // The consumer (FretboardStage) should call drawFrame with the correct state.
     }
 
     public setPreviewChord(chord: ChordDiagramProps | null) {
@@ -149,7 +165,10 @@ export class FretboardEngine {
         this.ctx.fillStyle = this.options.colors?.global?.backgroundColor || '#000000';
         this.ctx.fillRect(0, 0, this.dimensions.width, this.dimensions.height);
 
+        this.ctx.save();
+        this.chordDrawer.applyTransforms();
         this.chordDrawer.drawFretboard();
+        this.ctx.restore();
 
         if (this.chords && this.chords.length > 0) {
             this.drawChords(state);

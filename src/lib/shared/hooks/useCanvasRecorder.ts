@@ -330,7 +330,7 @@ export function useCanvasRecorder(
                 const ffmpegArgs = [
                     '-i', 'input.webm',
                     '-c:v', 'libx264',
-                    '-pix_fmt', quality === 'ultra' ? 'yuv444p' : 'yuv420p',
+                    '-pix_fmt', (quality as string) === 'ultra' ? 'yuv444p' : 'yuv420p',
                     '-preset', qualitySettings.preset,
                     '-crf', String(qualitySettings.crf),
                     '-tune', 'animation',
@@ -461,7 +461,7 @@ export function useCanvasRecorder(
 
             try {
                 // Use yuv444p for Ultra quality to avoid chroma blurring
-                const pixFmt = quality === 'ultra' ? 'yuv444p' : 'yuv420p';
+                const pixFmt = (quality as string) === 'ultra' ? 'yuv444p' : 'yuv420p';
 
                 const ffmpegArgs = [
                     '-framerate', String(fps),

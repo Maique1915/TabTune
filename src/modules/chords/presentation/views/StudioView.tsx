@@ -69,6 +69,7 @@ export function StudioView() {
         handlePasteMeasure,
         handleTransposeMeasure,
         handleTransposeAll,
+        handleAutoFingerToggle,
         updateSelectedNotes,
         undo,
         redo,
@@ -133,7 +134,8 @@ export function StudioView() {
         selectedNoteIds,
         playbackIsPlaying,
         playbackProgress,
-        playbackTotalDurationMs
+        playbackTotalDurationMs,
+        selectedMeasureId
     });
 
     const handleSeek = (ms: number) => {
@@ -331,7 +333,10 @@ export function StudioView() {
                     editingNote={editingNote}
                     currentPitch={currentPitch}
                     onCloseInspector={() => setEditingNoteId(null)}
-                    onNoteRhythmChange={(dur, dot) => { if (editingNoteId) handleNoteRhythmChange(editingNoteId, dur, dot); }}
+                    onNoteRhythmChange={(dur, dot) => {
+                        const targetId = editingNoteId || activeMeasure?.notes[0]?.id;
+                        if (targetId) handleNoteRhythmChange(targetId, dur, dot);
+                    }}
                     onNoteTypeChange={(type: any) => updateSelectedNotes({ type })}
                     onPitchChange={handlePitchChange}
                     onStringChange={handleStringChange}
@@ -342,6 +347,7 @@ export function StudioView() {
                     onUpdateMeasure={handleUpdateMeasure}
                     onTransposeMeasure={handleTransposeMeasure}
                     onTransposeAll={handleTransposeAll}
+                    onToggleAutoFinger={handleAutoFingerToggle}
                     activePositionIndex={activePositionIndex}
                     onActivePositionIndexChange={setActivePositionIndex}
                     onAddChordNote={handleAddChordNote}

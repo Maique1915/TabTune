@@ -188,7 +188,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                 buildEnabled,
                 capo,
                 tuning: stringNames
-            });
+            }, animationStateRef.current);
         }
     }, [width, height, numStrings, effectiveNumFrets, colors, animationType, showChordName, transitionsEnabled, buildEnabled, capo, stringNames]);
 
@@ -226,7 +226,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
     // Resize handling (if props don't catch it strictly, or pure window resize needed)
     useEffect(() => {
         if (engineRef.current && canvasRef.current) {
-            engineRef.current.resize(width, height);
+            engineRef.current.resize(width, height, animationStateRef.current);
         }
     }, [width, height]);
 
@@ -392,11 +392,21 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
             }
 
             if (clampedElapsed >= totalDurationMs) {
-                // Reset to first chord when animation completes
-                animationStateRef.current.chordIndex = 0;
+                // Reset to ACTIVE chord when animation completes, not just the first one.
+                const targetIndex = typeof activeChordIndex === 'number'
+                    ? Math.max(0, Math.min((chords?.length || 1) - 1, activeChordIndex))
+                    : 0;
+
+                animationStateRef.current.chordIndex = targetIndex;
                 animationStateRef.current.chordProgress = 0;
                 animationStateRef.current.transitionProgress = 0;
                 animationStateRef.current.buildProgress = 1;
+
+                // Set current chord name for the target selection
+                if (chords && chords[targetIndex]) {
+                    animationStateRef.current.currentChordName = chords[targetIndex].finalChord?.chordName || "";
+                }
+
                 playheadStateRef.current.t = 0;
                 playbackElapsedMsRef.current = 0;
 
@@ -408,7 +418,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                 setIsPaused(false);
                 if (onAnimationStateChange) onAnimationStateChange(false, false);
 
-                // Redraw to show first chord
+                // Redraw to show selected chord
                 drawAnimatedChord();
                 stopPlayhead();
                 return;
@@ -416,7 +426,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
             playbackRafIdRef.current = requestAnimationFrame(tick);
         };
         playbackRafIdRef.current = requestAnimationFrame(tick);
-    }, [computeStateAtTimeMs, drawAnimatedChord, onAnimationStateChange, setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress, stopPlayhead, chords]);
+    }, [computeStateAtTimeMs, drawAnimatedChord, onAnimationStateChange, setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress, stopPlayhead, chords, activeChordIndex]);
 
 
     const startAnimation = () => {
@@ -521,7 +531,7 @@ export const FretboardStage = React.forwardRef<FretboardStageRef, FretboardStage
                 drawFrameRef.current(animationStateRef.current, playheadStateRef.current.t);
             }
         }
-    }, [chords, isAnimating, isPaused]);
+    }, [chords, isAnimating, isPaused, activeChordIndex]);
 
     // Effect for when activeChordIndex changes
     useEffect(() => {

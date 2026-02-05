@@ -77,7 +77,6 @@ export class CapoComponent implements IFretboardComponent {
     private syncVisuals(progress: number): void {
         const getVisualFret = (fret: number, transport: number) => {
             // If transport > 1, it means we are in a transposing view (ShortNeck)
-            // For FullNeck, we now pass transport=1 to keep absolute position.
             if (transport > 1 && fret > 0) {
                 return fret - (transport - 1);
             }
@@ -111,11 +110,7 @@ export class CapoComponent implements IFretboardComponent {
     }
 
     public draw(ctx: CanvasRenderingContext2D): void {
-        if (this.geometry.neckType === NeckType.SHORT) {
-            this.drawShort(ctx);
-        } else {
-            this.drawFull(ctx);
-        }
+        this.drawShort(ctx);
     }
 
     private drawShort(ctx: CanvasRenderingContext2D): void {
@@ -293,91 +288,22 @@ export class CapoComponent implements IFretboardComponent {
         ctx.restore();
     }
 
-    private drawFull(ctx: CanvasRenderingContext2D): void {
-        const p1 = this.geometry.getFingerCoords(this.vFret, this.geometry.numStrings);
-        const p2 = this.geometry.getFingerCoords(this.vFret, 1);
 
-        const overhang = 25 * this.geometry.scaleFactor;
-        const thickness = 35 * this.geometry.scaleFactor;
-
-        ctx.save();
-        ctx.globalAlpha = this.vOpacity;
-
-        const rectX = p1.x - thickness / 2;
-        const rectY = Math.min(p1.y, p2.y) - overhang;
-        const rectW = thickness;
-        const rectH = Math.abs(p1.y - p2.y) + overhang * 2;
-
-        ctx.fillStyle = this.style.color;
-        ctx.beginPath();
-        if (typeof (ctx as any).roundRect === 'function') {
-            (ctx as any).roundRect(rectX, rectY, rectW, rectH, 8 * this.geometry.scaleFactor);
-        } else {
-            ctx.rect(rectX, rectY, rectW, rectH);
-        }
-        ctx.fill();
-
-        ctx.strokeStyle = this.style.border?.color || "#000000";
-        ctx.lineWidth = (this.style.border?.width || 2) * this.geometry.scaleFactor;
-        ctx.stroke();
-
-        ctx.fillStyle = this.style.textColor || "#ffffff";
-        ctx.font = `900 ${thickness * 0.45}px "Inter", sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-
-        const letters = ["C", "A", "P", "O"];
-        const segmentHeight = rectH / 4;
-        letters.forEach((char, i) => {
-            const charX = p1.x;
-            const charY = rectY + (i * segmentHeight) + (segmentHeight / 2);
-
-            if (this.rotation !== 0 || this.mirror) {
-                ctx.save();
-                ctx.translate(charX, charY);
-                if (this.mirror) ctx.scale(-1, 1);
-                if (this.rotation !== 0) ctx.rotate((-this.rotation * Math.PI) / 180);
-                ctx.fillText(char, 0, 0);
-                ctx.restore();
-            } else {
-                ctx.fillText(char, charX, charY);
-            }
-        });
-
-        ctx.restore();
-    }
 
     public getBounds() {
-        const p1 = this.geometry.getFingerCoords(this.vFret, this.geometry.numStrings);
-        const p2 = this.geometry.getFingerCoords(this.vFret, 1);
-        const overhang = 25 * this.geometry.scaleFactor;
-        const thickness = 35 * this.geometry.scaleFactor;
+        const fretboardWidth = this.geometry.fretboardWidth;
+        const scaleFactor = this.geometry.scaleFactor;
+        const fretboardX = this.geometry.fretboardX;
+        const fretboardY = this.geometry.fretboardY;
+        const capoHeight = 35 * scaleFactor;
+        const capoY = fretboardY - (capoHeight / 2) - (2 * scaleFactor) + 27;
 
-        if (this.geometry.neckType === NeckType.FULL) {
-            return {
-                x: p1.x - thickness / 2,
-                y: Math.min(p1.y, p2.y) - overhang,
-                width: thickness,
-                height: Math.abs(p1.y - p2.y) + overhang * 2
-            };
-        } else {
-            // Updated bounds for Short logic if needed, or keep generic approximation
-            // Using logic from drawShort to approximate bounds
-            const fretboardWidth = this.geometry.fretboardWidth;
-            const scaleFactor = this.geometry.scaleFactor;
-            const fretboardX = this.geometry.fretboardX;
-            const fretboardY = this.geometry.fretboardY;
-            const headstockYOffset = this.geometry.headstockYOffset;
-            const capoHeight = 35 * scaleFactor;
-            const capoY = fretboardY - (capoHeight / 2) - (2 * scaleFactor) + 27;
-
-            return {
-                x: fretboardX - 5 * scaleFactor,
-                y: capoY,
-                width: fretboardWidth + 10 * scaleFactor,
-                height: capoHeight
-            };
-        }
+        return {
+            x: fretboardX - 5 * scaleFactor,
+            y: capoY,
+            width: fretboardWidth + 10 * scaleFactor,
+            height: capoHeight
+        };
     }
 
     public setFret(fret: number) { this.fret = this.sFret = this.tFret = fret; this.syncVisuals(1); }

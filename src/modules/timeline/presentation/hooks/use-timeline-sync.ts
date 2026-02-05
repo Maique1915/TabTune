@@ -12,6 +12,7 @@ interface TimelineSyncProps {
     playbackIsPlaying: boolean;
     playbackProgress: number;
     playbackTotalDurationMs: number;
+    selectedMeasureId: string | null;
 }
 
 export function useTimelineSync({
@@ -23,7 +24,8 @@ export function useTimelineSync({
     selectedNoteIds,
     playbackIsPlaying,
     playbackProgress,
-    playbackTotalDurationMs
+    playbackTotalDurationMs,
+    selectedMeasureId
 }: TimelineSyncProps) {
     // Use a stable reference for chords by stringifying measures
     const measuresKey = useMemo(() => JSON.stringify(measures.map(m => ({
@@ -38,18 +40,25 @@ export function useTimelineSync({
     }, [measuresKey, settings]);
 
     const activeChordIndex = useMemo(() => {
-        if (!activeMeasure || chords.length === 0) return 0;
+        // Robustness: Find measure by ID from current measures list
+        const targetMeasure = measures.find(m => m.id === selectedMeasureId) || activeMeasure;
 
-        const previousMeasures = measures.slice(0, currentMeasureIndex);
+        if (!targetMeasure || chords.length === 0) return 0;
+
+        // Robustness Fix: Recalculate index to ensure sync with activeMeasure
+        const measureIndex = measures.findIndex(m => m.id === targetMeasure.id);
+        const effectiveIndex = measureIndex !== -1 ? measureIndex : currentMeasureIndex;
+
+        const previousMeasures = measures.slice(0, effectiveIndex);
         const prevChordsCount = measuresToChords(previousMeasures, settings).length;
 
         let offset = 0;
         if (editingNoteId) {
-            const index = activeMeasure.notes.findIndex(n => n.id === editingNoteId);
+            const index = targetMeasure.notes.findIndex(n => n.id === editingNoteId);
             if (index !== -1) offset = index;
         } else if (selectedNoteIds.length > 0) {
             let maxIndex = -1;
-            activeMeasure.notes.forEach((n, idx) => {
+            targetMeasure.notes.forEach((n, idx) => {
                 if (selectedNoteIds.includes(n.id)) {
                     maxIndex = Math.max(maxIndex, idx);
                 }
@@ -68,7 +77,7 @@ export function useTimelineSync({
             totalChords: chords.length
         });
         return result;
-    }, [activeMeasure, currentMeasureIndex, measures, settings, chords, editingNoteId, selectedNoteIds]);
+    }, [selectedMeasureId, activeMeasure, currentMeasureIndex, measures, settings, chords, editingNoteId, selectedNoteIds]);
 
     const totalDurationMs = useMemo(() => {
         return chords.reduce((acc, chord) => acc + (chord.duration || 0), 0);
