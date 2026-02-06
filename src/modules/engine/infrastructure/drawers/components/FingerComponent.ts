@@ -228,13 +228,30 @@ export class FingerComponent implements IFretboardComponent {
         }
 
         ctx.beginPath();
-        // UNIFIED SHAPE: Always use rounded rect for smooth transitions
-        const thickness = Math.min(this.vRect.width, this.vRect.height);
-        const cornerRadius = thickness / 2;
-        if (typeof (ctx as any).roundRect === 'function') {
-            (ctx as any).roundRect(this.vRect.x, this.vRect.y, this.vRect.width, this.vRect.height, cornerRadius);
+        // UNIFIED SHAPE: In SHORT neck, always use rounded rect for smooth transitions
+        if (this.geometry.neckType === NeckType.SHORT) {
+            const thickness = Math.min(this.vRect.width, this.vRect.height);
+            const cornerRadius = thickness / 2;
+            if (typeof (ctx as any).roundRect === 'function') {
+                (ctx as any).roundRect(this.vRect.x, this.vRect.y, this.vRect.width, this.vRect.height, cornerRadius);
+            } else {
+                ctx.rect(this.vRect.x, this.vRect.y, this.vRect.width, this.vRect.height);
+            }
         } else {
-            ctx.rect(this.vRect.x, this.vRect.y, this.vRect.width, this.vRect.height);
+            // FULL Neck still uses hard switch for performance/looks if needed, 
+            // but we could unify here too if transitions are added to FULL.
+            if (this.isBarre) {
+                const cornerRadius = this.vRect.width / 2;
+                if (typeof (ctx as any).roundRect === 'function') {
+                    (ctx as any).roundRect(this.vRect.x, this.vRect.y, this.vRect.width, this.vRect.height, cornerRadius);
+                } else {
+                    ctx.rect(this.vRect.x, this.vRect.y, this.vRect.width, this.vRect.height);
+                }
+            } else {
+                const centerX = this.vRect.x + this.vRect.width / 2;
+                const centerY = this.vRect.y + this.vRect.height / 2;
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            }
         }
 
         // Apply BG Opacity ONLY to the fill

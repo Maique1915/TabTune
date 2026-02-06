@@ -48,10 +48,48 @@ export class StringsComponent implements IFretboardComponent {
     public draw(ctx: CanvasRenderingContext2D): void {
         if (this.style.thickness <= 0) return;
 
-        this.drawShortStrings(ctx);
+        if (this.neckType === NeckType.FULL) {
+            this.drawFullStrings(ctx);
+        } else {
+            this.drawShortStrings(ctx);
+        }
     }
 
+    private drawFullStrings(ctx: CanvasRenderingContext2D): void {
+        const settings = (this.geometry as any).settings;
+        const fretboardX = settings.fretboardX;
+        const boardY = settings.boardY;
+        const stringMargin = settings.stringMargin;
+        const stringSpacing = settings.stringSpacing;
+        const fretboardWidth = settings.fretboardWidth;
+        const numStrings = settings.numStrings;
+        const scaleFactor = settings.scaleFactor;
 
+        ctx.save();
+
+        // Apply shadow
+        if (this.style.shadow?.enabled) {
+            ctx.shadowColor = this.style.shadow.color;
+            ctx.shadowBlur = this.style.shadow.blur * scaleFactor;
+            ctx.shadowOffsetX = this.style.shadow.offsetX * scaleFactor;
+            ctx.shadowOffsetY = this.style.shadow.offsetY * scaleFactor;
+        }
+
+        // Draw horizontal strings
+        for (let i = 0; i < numStrings; i++) {
+            const y = boardY + stringMargin + i * stringSpacing;
+            const thickness = (1.2 + (numStrings - 1 - i) * 0.4) * scaleFactor;
+
+            ctx.beginPath();
+            ctx.lineWidth = thickness;
+            ctx.strokeStyle = this.style.color;
+            ctx.moveTo(fretboardX, y);
+            ctx.lineTo(fretboardX + fretboardWidth, y);
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
 
     private drawShortStrings(ctx: CanvasRenderingContext2D): void {
         const settings = (this.geometry as any).settings;

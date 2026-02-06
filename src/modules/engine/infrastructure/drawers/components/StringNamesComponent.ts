@@ -63,10 +63,52 @@ export class StringNamesComponent implements IFretboardComponent {
     }
 
     public draw(ctx: CanvasRenderingContext2D, progress: number = 1): void {
-        this.drawShortStringNames(ctx, progress);
+        if (this.neckType === NeckType.FULL) {
+            this.drawFullStringNames(ctx);
+        } else {
+            this.drawShortStringNames(ctx, progress);
+        }
     }
 
+    private drawFullStringNames(ctx: CanvasRenderingContext2D): void {
+        const settings = (this.geometry as any).settings;
+        const fretboardX = settings.fretboardX;
+        const boardY = settings.boardY;
+        const stringMargin = settings.stringMargin;
+        const stringSpacing = settings.stringSpacing;
+        const numStrings = settings.numStrings;
+        const scaleFactor = settings.scaleFactor;
 
+        const headWidth = this.headWidth ?? (this.geometry.realFretSpacing || 45 * scaleFactor);
+        const centerX = fretboardX - headWidth / 2 - 5 * scaleFactor;
+
+        ctx.save();
+        ctx.fillStyle = this.style.color;
+        ctx.font = `bold ${this.style.fontSize * scaleFactor}px "Inter", sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        for (let i = 0; i < numStrings; i++) {
+            const y = boardY + stringMargin + i * stringSpacing;
+            const name = this.stringNames[i] || "";
+            const textY = y + 4 * scaleFactor;
+
+            if (this.rotation !== 0 || this.mirror) {
+                // Counter-rotate logic to keep text upright and un-mirrored
+                ctx.save();
+                ctx.translate(centerX, textY);
+                if (this.mirror) ctx.scale(-1, 1);
+                if (this.rotation !== 0) ctx.rotate((-this.rotation * Math.PI) / 180);
+
+                ctx.fillText(name, 0, 0);
+                ctx.restore();
+            } else {
+                ctx.fillText(name, centerX, textY);
+            }
+        }
+
+        ctx.restore();
+    }
 
     private drawShortStringNames(ctx: CanvasRenderingContext2D, progress: number): void {
         if (this.stringNamesY === undefined) return;

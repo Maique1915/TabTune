@@ -368,13 +368,19 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
         <div className="space-y-1">
           <span className="text-[9px] text-zinc-500 font-medium">Rotation</span>
           <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: '0°', val: 0, mirror: false },
-              { label: '90°', val: 90, mirror: false },
-              { label: '270°', val: 270, mirror: true }
-            ].map((opt) => (
+            {(numFrets && numFrets > 12
+              ? [
+                { label: '0°', val: 0, mirror: false },
+                { label: '180°', val: 0, mirror: true } // Mirror on Y axis (headstock to the right)
+              ]
+              : [
+                { label: '0°', val: 0, mirror: false },
+                { label: '90°', val: 90, mirror: false },
+                { label: '270°', val: 270, mirror: true }
+              ]
+            ).map((opt) => (
               <button
-                key={opt.val}
+                key={`${opt.val}-${opt.mirror}`}
                 onClick={() => {
                   setColors((prev: any) => ({
                     ...prev,
@@ -385,7 +391,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                     }
                   }));
                 }}
-                className={`py-2 rounded-lg border text-[10px] font-black transition-all ${colors.global?.rotation === opt.val
+                className={`py-2 rounded-lg border text-[10px] font-black transition-all ${colors.global?.rotation === opt.val && colors.global?.mirror === opt.mirror
                   ? 'bg-primary/10 border-primary/40 text-primary font-bold shadow-[0_0_10px_rgba(6,182,212,0.2)]'
                   : 'bg-black/20 border-white/5 text-zinc-500 hover:bg-white/5 hover:text-zinc-300'
                   }`}
