@@ -146,10 +146,17 @@ export class FullFingersAnimation implements FingersAnimationDrawer {
             fontSize: (drawer as any)._baseFontSize || drawer.colors.fingers.fontSize || 35
         };
 
+        // Access global capo from drawer (FullNeckDrawer has it)
+        const globalCapo = (drawer as any)._globalCapo || 0;
+
         const getActors = (chord: ChordDiagramProps) => {
-            const barre = detectBarreFromChord(chord);
+            let barre = detectBarreFromChord(chord);
+            if (barre && globalCapo > 0 && barre.fret === globalCapo) {
+                barre = null;
+            }
             const loose = chord.fingers.filter(f => {
                 if (f.fret <= 0) return false;
+                if (globalCapo > 0 && f.fret === globalCapo) return false;
                 if (barre && f.fret === barre.fret) {
                     const sMin = Math.min(barre.startString, barre.endString);
                     const sMax = Math.max(barre.startString, barre.endString);
@@ -166,15 +173,18 @@ export class FullFingersAnimation implements FingersAnimationDrawer {
 
         // 1. Barre logic
 
-        // Access global capo from drawer (FullNeckDrawer has it)
-        const globalCapo = (drawer as any)._globalCapo || 0;
-
         // Use the visually transposed actors for barre logic
         // 1. Barre logic
         let nxtBarre = nxtA.barre;
         let curBarre = curA.barre;
 
         // 1. Barre logic
+        if (curBarre || nxtBarre) {
+            if (globalCapo > 0 && (curBarre?.fret === globalCapo || nxtBarre?.fret === globalCapo)) {
+                curBarre = null;
+                nxtBarre = null;
+            }
+        }
         if (curBarre || nxtBarre) {
             const fingerId = curBarre?.finger ?? nxtBarre?.finger ?? 1;
             const initB = curBarre || nxtBarre;

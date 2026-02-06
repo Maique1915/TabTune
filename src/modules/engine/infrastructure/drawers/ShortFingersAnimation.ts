@@ -172,8 +172,10 @@ export class ShortFingersAnimation implements FingersAnimationDrawer {
         // An Actor is either a Barre or a Loose Finger
         const getActors = (chord: ChordDiagramProps) => {
             const barre = detectBarreFromChord(chord);
+            const globalCapo = (drawer as any)._globalCapo || 0;
             const loose = chord.fingers.filter(f => {
                 if (f.fret <= 0) return false;
+                if (globalCapo > 0 && f.fret === globalCapo) return false;
                 if (barre && f.fret === barre.fret) {
                     const sMin = Math.min(barre.startString, barre.endString);
                     const sMax = Math.max(barre.startString, barre.endString);

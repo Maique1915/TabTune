@@ -240,6 +240,7 @@ export abstract class BaseDrawer {
      */
     public drawFinger(fret: number, string: number, finger: number | string, color?: string, opacity: number = 1, transport: number = 1): void {
         if (!this.validatePosition(fret, string)) return;
+        if (this._globalCapo > 0 && fret === this._globalCapo) return;
 
         const style: FingersStyle = {
             ...this._colors.fingers,
@@ -256,6 +257,8 @@ export abstract class BaseDrawer {
     }
 
     public drawBarre(fret: number, startString: number, endString: number, finger: number | string, color?: string, opacity: number = 1, transport: number = 1): void {
+        if (fret <= 0) return;
+        if (this._globalCapo > 0 && fret === this._globalCapo) return;
         if (!this.validatePosition(fret, startString) || !this.validatePosition(fret, endString)) return;
 
         const style: FingersStyle = {

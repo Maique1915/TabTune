@@ -25,7 +25,8 @@ export function useEditorNotes(
         editingNoteId,
         activePositionIndex,
         selectedMeasureId,
-        activeDuration
+        activeDuration,
+        settings
     } = state;
 
     // --- Helpers ---
@@ -37,13 +38,8 @@ export function useEditorNotes(
                 if (found) return found;
             }
         }
-        // Implicit targeting: first note of selected measure
-        if (selectedMeasureId && selectedNoteIds.length === 0) {
-            const measure = measures.find(m => m.id === selectedMeasureId);
-            if (measure && measure.notes.length > 0) return measure.notes[0];
-        }
         return null;
-    }, [editingNoteId, measures, selectedMeasureId, selectedNoteIds]);
+    }, [editingNoteId, measures]);
 
     const getCurrentPitch = useCallback(() => {
         const editingNote = getEditingNote();
@@ -60,9 +56,7 @@ export function useEditorNotes(
                 ...m,
                 notes: m.notes.map((n: NoteData, nIdx: number) => {
                     const isExplicitlySelected = prev.selectedNoteIds.includes(n.id) || n.id === prev.editingNoteId;
-                    const isImplicitlySelected = !prev.editingNoteId && prev.selectedNoteIds.length === 0 && m.id === prev.selectedMeasureId && nIdx === 0;
-
-                    if (isExplicitlySelected || isImplicitlySelected) {
+                    if (isExplicitlySelected) {
                         const resolved = typeof updates === 'function' ? updates(n) : updates;
                         return { ...n, ...resolved };
                     }
@@ -107,6 +101,7 @@ export function useEditorNotes(
 
             const durationToAdd = durationOverride || prev.activeDuration;
             const newNoteId = generateId();
+            const minAllowedFret = Math.max(0, prev.settings?.capo ?? 0);
 
             const newMeasures = prev.measures.map((m: MeasureData, idx: number) => {
                 if (idx === measureIndex) {
@@ -114,7 +109,7 @@ export function useEditorNotes(
                         ...m,
                         notes: [...m.notes, {
                             id: newNoteId,
-                            positions: [{ fret: 1, string: 3 }],
+                            positions: [{ fret: Math.max(1, minAllowedFret), string: 3 }],
                             duration: durationToAdd,
                             type: 'note' as const,
                             decorators: {},
@@ -373,13 +368,15 @@ export function useEditorNotes(
     }, [updateSelectedNotes]);
 
     const handleSetFretForString = useCallback((idx: number, fret: number) => {
+        const minAllowedFret = Math.max(0, settings?.capo ?? 0);
+        const clampedFret = Math.max(fret, minAllowedFret);
         updateSelectedNotes(n => {
             const newPositions = n.positions.map(p => ({ ...p }));
             if (!newPositions[idx]) return {};
-            newPositions[idx] = { ...newPositions[idx], fret, avoid: false };
+            newPositions[idx] = { ...newPositions[idx], fret: clampedFret, avoid: false };
             return { positions: newPositions };
         });
-    }, [updateSelectedNotes]);
+    }, [updateSelectedNotes, settings?.capo]);
 
     const handleSetStringForPosition = useCallback((idx: number, stringNum: number) => {
         updateSelectedNotes(n => {
@@ -392,6 +389,7 @@ export function useEditorNotes(
 
     const handleSelectStringAndAddIfMissing = useCallback((stringNum: number) => {
         setState((prev: FretboardEditorState) => {
+            const minAllowedFret = Math.max(0, prev.settings?.capo ?? 0);
             let targetNoteId = prev.editingNoteId;
             if (!targetNoteId && prev.selectedMeasureId) {
                 const measure = prev.measures.find(m => m.id === prev.selectedMeasureId);
@@ -415,7 +413,7 @@ export function useEditorNotes(
                     if (n.id === targetNoteId) {
                         return {
                             ...n,
-                            positions: [...n.positions, { fret: 0, string: stringNum }]
+                            positions: [...n.positions, { fret: minAllowedFret, string: stringNum }]
                         };
                     }
                     return n;
@@ -436,7 +434,9 @@ export function useEditorNotes(
             if (!pos) return {};
 
             if (pos.endString && pos.endString !== pos.string) {
-                newPositions[activePositionIndex] = { ...pos, endString: undefined };
+                // Fix: Robustly remove endString and ensure finger is set (default to 1 'Indicator')
+                const { endString, ...rest } = pos;
+                newPositions[activePositionIndex] = { ...rest, finger: pos.finger || 1 };
             }
 
             return { positions: newPositions };
@@ -450,7 +450,9 @@ export function useEditorNotes(
             if (!pos) return {};
 
             if (pos.endString === targetString) {
-                newPositions[activePositionIndex] = { ...pos, endString: undefined };
+                // Fix: Robustly remove endString and ensure finger is set
+                const { endString, ...rest } = pos;
+                newPositions[activePositionIndex] = { ...rest, finger: pos.finger || 1 };
             } else {
                 newPositions[activePositionIndex] = {
                     ...pos,

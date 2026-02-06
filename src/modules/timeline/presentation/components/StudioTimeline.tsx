@@ -248,7 +248,7 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
 
                                 {/* Measure Content (Notes) */}
                                 {!isCollapsed && (
-                                    <div className="flex-1 px-3 py-2 z-10 overflow-hidden flex flex-row gap-3 items-center justify-center">
+                                    <div className="flex-1 px-3 py-2 z-10 overflow-y-auto overflow-x-hidden flex flex-wrap gap-2 items-center justify-center">
                                         {measure.notes.map((note, nIdx) => {
                                             const isSelected = selectedNoteIds.includes(note.id);
                                             const isRest = note.type === 'rest';
@@ -276,7 +276,7 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
                                                     onDragLeave={() => setDragOverNoteIndex(null)}
                                                     className={`
                                                         relative cursor-pointer transition-all duration-300 group/note
-                                                        w-[100px] h-[60px] shrink-0 rounded-xl border flex flex-col items-center justify-center select-none shadow-md
+                                                        w-[110px] h-[72px] shrink-0 rounded-xl border flex flex-col items-center justify-center select-none shadow-md pt-4
                                                         ${isPlaying
                                                             ? 'bg-primary/20 border-primary shadow-cyan-glow scale-[1.05] z-20'
                                                             : isSelected
@@ -287,6 +287,29 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
                                                         ${isNoteOver ? 'border-primary scale-[1.05] -translate-y-1' : ''}
                                                     `}
                                                 >
+                                                    {/* Note Actions */}
+                                                    {(onCopyNote || onRemoveNote) && (
+                                                        <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover/note:opacity-100 transition-opacity z-10">
+                                                            {onCopyNote && (
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); onCopyNote(note.id); }}
+                                                                    className="size-5 flex items-center justify-center rounded-md bg-black/60 hover:bg-white/10 text-zinc-300 hover:text-white transition"
+                                                                    title="Duplicar"
+                                                                >
+                                                                    <Icons.Copy className="w-3 h-3" />
+                                                                </button>
+                                                            )}
+                                                            {onRemoveNote && (
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); onRemoveNote(note.id); }}
+                                                                    className="size-5 flex items-center justify-center rounded-md bg-black/60 hover:bg-rose-500/20 text-zinc-300 hover:text-rose-400 transition"
+                                                                    title="Excluir"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                     {/* Glow behind playing note */}
                                                     {isPlaying && <div className="absolute inset-0 bg-primary/10 animate-pulse rounded-xl" />}
 
@@ -296,7 +319,7 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
                                                     </span>
 
                                                     {/* Main Value */}
-                                                    <div className={`flex flex-row flex-wrap items-center justify-center content-center transition-all duration-500 group-hover/note:scale-110 ${isRest ? 'text-zinc-600' : 'text-white'} gap-1.5 px-2`}>
+                                                    <div className={`flex flex-row flex-wrap items-center justify-center content-center transition-all duration-500 group-hover/note:scale-105 ${isRest ? 'text-zinc-600' : 'text-white'} gap-1.5 px-2`}> 
                                                         {isRest ? Icons.MusicRest(note.duration) : (
                                                             <div className="flex -space-x-2">
                                                                 {(() => {

@@ -532,7 +532,7 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
 
     public drawFingers(chord: ChordDiagramProps): void {
         const barre = detectBarre(chord);
-        if (barre) {
+        if (barre && barre.fret > 0) {
             this.drawBarre(barre.fret, barre.startString, barre.endString, barre.finger || 1);
         }
 

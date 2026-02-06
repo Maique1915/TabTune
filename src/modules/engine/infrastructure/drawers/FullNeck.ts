@@ -18,6 +18,7 @@ export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer, Chord
     protected _headstockWidth: number = 0;
     protected _fullNeckComp!: FullNeckComponent;
     protected _baseStringNames: string[] = ["E", "A", "D", "G", "B", "e"];
+    protected override _baseFingerRadius: number = 24;
 
     constructor(
         ctx: CanvasRenderingContext2D,
@@ -57,6 +58,7 @@ export class FullNeckDrawer extends BaseDrawer implements FretboardDrawer, Chord
     public calculateDimensions(): void {
         const CW = this._dimensions.width;
         const CH = this._dimensions.height;
+        this._baseBarreWidth = this._baseFingerRadius * 2;
         this._fretboardWidth = CW * 0.82; // Reduced slightly to ensure headstock fits well
         this._fretboardHeight = 350 * this._scaleFactor;
 

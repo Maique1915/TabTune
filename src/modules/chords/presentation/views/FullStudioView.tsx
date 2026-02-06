@@ -334,8 +334,7 @@ export function FullStudioView() {
                     currentPitch={currentPitch}
                     onCloseInspector={() => setEditingNoteId(null)}
                     onNoteRhythmChange={(dur, dot) => {
-                        const targetId = editingNoteId || activeMeasure?.notes[0]?.id;
-                        if (targetId) handleNoteRhythmChange(targetId, dur, dot);
+                        if (editingNoteId) handleNoteRhythmChange(editingNoteId, dur, dot);
                     }}
                     onNoteTypeChange={(type: any) => updateSelectedNotes({ type })}
                     onPitchChange={handlePitchChange}

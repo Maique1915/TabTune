@@ -15,6 +15,7 @@ export function useEditorTransposition(
             if (measureIndex === -1) return prev;
 
             const measure = prev.measures[measureIndex];
+            const minAllowedFret = Math.max(0, prev.settings?.capo ?? 0);
 
             // Determine selection mode:
             // 1. If selectedNoteIds is not empty OR there is an editingNoteId, it's Selective Mode.
@@ -28,8 +29,8 @@ export function useEditorTransposition(
                 note.positions.some((pos: any) => {
                     if (pos.avoid) return false; // Ignore avoided strings in bounds check
                     const newFret = pos.fret + semitones;
-                    return newFret < 0 || newFret > 24;
-                })
+                    return newFret < minAllowedFret || newFret > 24;
+                }) || (note.barre ? ((note.barre.fret + semitones) < minAllowedFret || (note.barre.fret + semitones) > 24) : false)
             );
 
             if (wouldGoOutOfBounds) return prev;
@@ -42,7 +43,7 @@ export function useEditorTransposition(
                 const allFrets = targetNotes.flatMap(n => n.positions.filter((p: any) => !p.avoid).map((p: any) => p.fret));
                 if (allFrets.length > 0) {
                     const minFret = Math.min(...allFrets);
-                    isStartingOpen = minFret === 0;
+                    isStartingOpen = minFret === minAllowedFret;
                 }
             }
 
@@ -64,7 +65,7 @@ export function useEditorTransposition(
                         const allNewFrets = newPositions.filter((p: any) => !p.avoid).map((p: any) => p.fret);
                         if (allNewFrets.length > 0) {
                             const newMinFret = Math.min(...allNewFrets);
-                            const isEndingOpen = newMinFret === 0;
+                            const isEndingOpen = newMinFret === minAllowedFret;
 
                             // Case 1: Open -> Barre (Shift Fingers Up)
                             if (isStartingOpen && !isEndingOpen) {
@@ -87,7 +88,7 @@ export function useEditorTransposition(
                                     if (p.avoid) return p;
                                     let newFinger = p.finger;
                                     // If open string, remove finger
-                                    if (p.fret === 0) {
+                                    if (p.fret === minAllowedFret) {
                                         newFinger = undefined;
                                     } else if (typeof p.finger === 'number') {
                                         newFinger = Math.max(1, p.finger - 1);
@@ -102,7 +103,10 @@ export function useEditorTransposition(
                     let newBarre = note.barre ? { ...note.barre, fret: note.barre.fret + semitones } : undefined;
 
                     // Bounds check for barre
-                    if (newBarre && (newBarre.fret < 0 || newBarre.fret > 24)) {
+                    if (newBarre && (newBarre.fret < minAllowedFret || newBarre.fret > 24)) {
+                        newBarre = undefined;
+                    }
+                    if (newBarre && newBarre.fret === minAllowedFret) {
                         newBarre = undefined;
                     }
 
@@ -135,14 +139,15 @@ export function useEditorTransposition(
 
     const handleTransposeAll = useCallback((semitones: number) => {
         setState((prev: FretboardEditorState) => {
+            const minAllowedFret = Math.max(0, prev.settings?.capo ?? 0);
             // Check bounds for ALL notes in ALL measures
             const wouldGoOutOfBounds = prev.measures.some((measure: MeasureData) =>
                 measure.notes.some((note: NoteData) =>
                     note.positions.some((pos: any) => {
                         if (pos.avoid) return false;
                         const newFret = pos.fret + semitones;
-                        return newFret < 0 || newFret > 24;
-                    })
+                        return newFret < minAllowedFret || newFret > 24;
+                    }) || (note.barre ? ((note.barre.fret + semitones) < minAllowedFret || (note.barre.fret + semitones) > 24) : false)
                 )
             );
 
@@ -157,6 +162,12 @@ export function useEditorTransposition(
                             ...newBarre,
                             fret: newBarre.fret + semitones
                         };
+                    }
+                    if (newBarre && (newBarre.fret < minAllowedFret || newBarre.fret > 24)) {
+                        newBarre = undefined;
+                    }
+                    if (newBarre && newBarre.fret === minAllowedFret) {
+                        newBarre = undefined;
                     }
 
                     return {
@@ -188,17 +199,20 @@ export function useEditorTransposition(
             const measureIndex = prev.measures.findIndex(m => m.id === prev.selectedMeasureId);
             if (measureIndex === -1) return prev;
 
+            const minAllowedFret = Math.max(0, prev.settings?.capo ?? 0);
+            const hasCapoNut = minAllowedFret > 0;
+
             const newMeasures = prev.measures.map((m: MeasureData, idx: number) => {
                 if (idx !== measureIndex) return m;
 
                 const newNotes = m.notes.map((note: NoteData) => {
-                    // Check if the chord is in Open Position (Fret 0)
+                    // Check if the chord is in Open Position (Capo-as-nut)
                     // This applies to both existing Hidden Barre chords AND chords that lost their barre
                     const allFrets = note.positions.filter((p: any) => !p.avoid).map((p: any) => p.fret);
                     if (allFrets.length === 0) return note;
                     const minFret = Math.min(...allFrets);
 
-                    if (minFret !== 0) {
+                    if (minFret !== minAllowedFret) {
                         // Not open position - ignore
                         return note;
                     }
@@ -206,9 +220,12 @@ export function useEditorTransposition(
                     // If turning OFF (Manual/Restore), ensuring we have a Hidden Barre structure exists
                     // This fixes cases where the barre was previously lost
                     let newBarre = note.barre;
-                    if (!enabled && !newBarre) {
+                    if (!enabled && !newBarre && !hasCapoNut) {
                         // Create a default hidden barre covering all active strings or full neck
-                        newBarre = { fret: 0, startString: 6, endString: 1, finger: 1 };
+                        newBarre = { fret: minAllowedFret, startString: 6, endString: 1, finger: 1 };
+                    }
+                    if (newBarre && newBarre.fret === minAllowedFret) {
+                        newBarre = undefined;
                     }
 
                     // Calculate finger changes
@@ -218,7 +235,7 @@ export function useEditorTransposition(
 
                         if (enabled) {
                             // Turning ON: SIMPLIFY (3 -> 2)
-                            if (p.fret === 0) {
+                            if (p.fret === minAllowedFret) {
                                 newFinger = undefined;
                             } else if (typeof p.finger === 'number') {
                                 newFinger = Math.max(1, p.finger - 1);
@@ -229,7 +246,7 @@ export function useEditorTransposition(
                                 newFinger = p.finger + 1;
                             }
                             // If at open fret and no finger (and we are restoring barre), set to 1
-                            if (p.fret === 0 && !newFinger) {
+                            if (p.fret === minAllowedFret && !newFinger) {
                                 newFinger = 1;
                             }
                         }

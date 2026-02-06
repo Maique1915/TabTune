@@ -150,6 +150,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     const [selectedStrings, setSelectedStrings] = React.useState<number[]>([]);
     const [isBarreSelectorOpen, setIsBarreSelectorOpen] = React.useState(false);
     const [activeCategory, setActiveCategory] = React.useState<'config' | 'chord' | 'rhythm' | 'editor' | 'tools'>((editingNote || activeMeasure) ? 'editor' : 'config');
+    const isEditorGroup = activeCategory === 'editor' || activeCategory === 'rhythm' || activeCategory === 'tools';
 
     const displayNote = editingNote || (activeMeasure?.notes && activeMeasure.notes.length > 0 ? activeMeasure.notes[0] : null);
 
@@ -361,16 +362,20 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {/* Vertical Navigation Rail */}
                 <div className="w-16 bg-panel-dark/50 border-r border-white/5 flex flex-col items-center py-6 gap-4 backdrop-blur-md">
                     {[
-                        { id: 'editor', icon: Guitar, label: 'Fretboard' },
-                        { id: 'chord', icon: Music, label: 'Harmonia' },
-                        { id: 'rhythm', icon: Clock, label: 'Duração' },
-                        { id: 'tools', icon: Wrench, label: 'Ações' },
                         { id: 'config', icon: Settings2, label: 'Projeto' },
+                        { id: 'chord', icon: Music, label: 'Harmonia' },
+                        { id: 'editorGroup', icon: Guitar, label: 'Editor' },
                     ].map((cat) => (
                         <button
                             key={cat.id}
-                            onClick={() => setActiveCategory(cat.id as any)}
-                            className={`group relative w-10 h-10 flex flex-col items-center justify-center rounded-xl transition-all duration-300 ${activeCategory === cat.id
+                            onClick={() => {
+                                if (cat.id === 'editorGroup') {
+                                    setActiveCategory('editor');
+                                } else {
+                                    setActiveCategory(cat.id as any);
+                                }
+                            }}
+                            className={`group relative w-10 h-10 flex flex-col items-center justify-center rounded-xl transition-all duration-300 ${(cat.id === 'editorGroup' ? isEditorGroup : activeCategory === cat.id)
                                 ? 'bg-primary/20 text-primary border border-primary/30 shadow-cyan-glow'
                                 : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
                                 }`}
@@ -395,6 +400,30 @@ const Sidebar: React.FC<SidebarProps> = ({
 
                 {/* Content Area */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pt-4 pb-20">
+
+                    {isEditorGroup && (
+                        <div className="mb-5">
+                            <div className="grid grid-cols-3 rounded-2xl border border-white/10 bg-gradient-to-b from-black/40 to-black/20 p-1 shadow-[inset_0_0_24px_rgba(0,0,0,0.55)]">
+                                {[
+                                    { id: 'editor', label: 'Braço', icon: Guitar },
+                                    { id: 'rhythm', label: 'Duração', icon: Clock },
+                                    { id: 'tools', label: 'Ações', icon: Wrench },
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveCategory(tab.id as any)}
+                                        className={`group relative flex items-center justify-center gap-2 px-2 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activeCategory === tab.id
+                                            ? 'bg-primary/20 text-primary border border-primary/30 shadow-cyan-glow'
+                                            : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
+                                            }`}
+                                    >
+                                        {tab.label}
+                                        <span className={`absolute -bottom-1 left-1/2 h-[2px] w-6 -translate-x-1/2 rounded-full transition-all ${activeCategory === tab.id ? 'bg-primary shadow-cyan-glow' : 'bg-transparent'}`} />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* --- CATEGORY: EDITOR (Fretboard Visuals) --- */}
                     {activeCategory === 'editor' && (

@@ -14,6 +14,7 @@ export function detectBarreFromFinger(fingers: StandardPosition[]): BarreInfo | 
     let maxSpan = 0;
 
     fingers.forEach(f => {
+        if (f.fret <= 0) return;
         // Verifica se o dedo cobre múltiplas cordas (tem endString diferente de string)
         if (f.endString !== undefined && f.endString !== f.string) {
             const span = Math.abs(f.endString - f.string);

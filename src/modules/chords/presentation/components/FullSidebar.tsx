@@ -150,8 +150,9 @@ const FullSidebar: React.FC<SidebarProps> = ({
     const [selectedStrings, setSelectedStrings] = React.useState<number[]>([]);
     const [isBarreSelectorOpen, setIsBarreSelectorOpen] = React.useState(false);
     const [activeCategory, setActiveCategory] = React.useState<'config' | 'chord' | 'rhythm' | 'editor' | 'tools'>((editingNote || activeMeasure) ? 'editor' : 'config');
+    const isEditorGroup = activeCategory === 'editor' || activeCategory === 'rhythm' || activeCategory === 'tools';
 
-    const displayNote = editingNote || (activeMeasure?.notes && activeMeasure.notes.length > 0 ? activeMeasure.notes[0] : null);
+    const displayNote = editingNote;
 
     // --- REUSABLE EMPTY STATE COMPONENT ---
     const EmptyState = ({ icon: Icon, title, description, features }: {
@@ -361,16 +362,20 @@ const FullSidebar: React.FC<SidebarProps> = ({
                 {/* Vertical Navigation Rail */}
                 <div className="w-16 bg-panel-dark/50 border-r border-white/5 flex flex-col items-center py-6 gap-4 backdrop-blur-md">
                     {[
-                        { id: 'editor', icon: Guitar, label: 'Fretboard' },
-                        { id: 'chord', icon: Music, label: 'Harmonia' },
-                        { id: 'rhythm', icon: Clock, label: 'Duração' },
-                        { id: 'tools', icon: Wrench, label: 'Ações' },
                         { id: 'config', icon: Settings2, label: 'Projeto' },
+                        { id: 'chord', icon: Music, label: 'Harmonia' },
+                        { id: 'editorGroup', icon: Guitar, label: 'Editor' },
                     ].map((cat) => (
                         <button
                             key={cat.id}
-                            onClick={() => setActiveCategory(cat.id as any)}
-                            className={`group relative w-10 h-10 flex flex-col items-center justify-center rounded-xl transition-all duration-300 ${activeCategory === cat.id
+                            onClick={() => {
+                                if (cat.id === 'editorGroup') {
+                                    setActiveCategory('editor');
+                                } else {
+                                    setActiveCategory(cat.id as any);
+                                }
+                            }}
+                            className={`group relative w-10 h-10 flex flex-col items-center justify-center rounded-xl transition-all duration-300 ${(cat.id === 'editorGroup' ? isEditorGroup : activeCategory === cat.id)
                                 ? 'bg-primary/20 text-primary border border-primary/30 shadow-cyan-glow'
                                 : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
                                 }`}
@@ -396,235 +401,261 @@ const FullSidebar: React.FC<SidebarProps> = ({
                 {/* Content Area */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pt-4 pb-20">
 
+                    {isEditorGroup && (
+                        <div className="mb-5">
+                            <div className="grid grid-cols-3 rounded-2xl border border-white/10 bg-gradient-to-b from-black/40 to-black/20 p-1 shadow-[inset_0_0_24px_rgba(0,0,0,0.55)]">
+                                {[
+                                    { id: 'editor', label: 'Braço', icon: Guitar },
+                                    { id: 'rhythm', label: 'Duração', icon: Clock },
+                                    { id: 'tools', label: 'Ações', icon: Wrench },
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveCategory(tab.id as any)}
+                                        className={`group relative flex items-center justify-center gap-2 px-2 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${activeCategory === tab.id
+                                            ? 'bg-primary/20 text-primary border border-primary/30 shadow-cyan-glow'
+                                            : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
+                                            }`}
+                                    >
+                                        {tab.label}
+                                        <span className={`absolute -bottom-1 left-1/2 h-[2px] w-6 -translate-x-1/2 rounded-full transition-all ${activeCategory === tab.id ? 'bg-primary shadow-cyan-glow' : 'bg-transparent'}`} />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* --- CATEGORY: EDITOR (Fretboard Visuals) --- */}
                     {activeCategory === 'editor' && (
                         <div className="space-y-6 animate-in slide-in-from-right-2 duration-300 h-full flex flex-col">
-                            {/* VIEW WHEN A CHORD IS SELECTED */}
                             {displayNote ? (
-                                <>
-                                    {/* Strings & Frets - Consolidated */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Fretboard Map</h3>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={onAddChordNote}
-                                                    className="px-2 py-1 rounded bg-primary/10 text-primary text-[9px] font-bold hover:bg-primary/20 transition-colors border border-primary/20"
-                                                >
-                                                    + ADD STRING
-                                                </button>
+                                    <>
+                                        {/* Strings & Frets - Consolidated */}
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Fretboard Map</h3>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={onAddChordNote}
+                                                        className="px-2 py-1 rounded bg-primary/10 text-primary text-[9px] font-bold hover:bg-primary/20 transition-colors border border-primary/20"
+                                                    >
+                                                        + ADD STRING
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        {/* Active Notes List */}
-                                        <div className="flex flex-wrap gap-1.5 bg-black/20 p-2 rounded-xl border border-white/5 min-h-[50px] items-center">
-                                            {displayNote.positions.length === 0 && (
-                                                <span className="text-[9px] text-zinc-600 italic px-2">No notes placed on fretboard</span>
-                                            )}
-                                            {displayNote.positions.map((pos, idx) => (
-                                                <div key={idx} className="relative group">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            if (e.shiftKey) {
-                                                                setSelectedIndices(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
-                                                            } else {
-                                                                onActivePositionIndexChange?.(idx);
-                                                                setSelectedIndices([]);
-                                                            }
-                                                        }}
-                                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border ${activePositionIndex === idx || selectedIndices.includes(idx) ? 'shadow-[0_0_10px_rgba(255,255,255,0.1)]' : 'bg-black/40 border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-300'}`}
-                                                        style={activePositionIndex === idx || selectedIndices.includes(idx) ? {
-                                                            backgroundColor: theme?.fingers?.color || '#06b6d4',
-                                                            borderColor: theme?.fingers?.border?.color || '#22d3ee',
-                                                            color: theme?.fingers?.textColor || '#ffffff'
-                                                        } : {}}
-                                                    >
-                                                        F{pos.fret} / S{pos.string}{pos.endString && pos.endString !== pos.string ? `-${pos.endString}` : ''}
-                                                        {pos.finger !== undefined && (
-                                                            <span className="ml-1 opacity-40 text-[8px]">({pos.finger === 0 ? 'T' : pos.finger})</span>
-                                                        )}
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); onRemoveChordNote?.(idx); }}
-                                                        className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity shadow-lg cursor-pointer"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        {/* Detailed Editors - Only visible if notes exist */}
-                                        {displayNote.positions.length > 0 && (() => {
-                                            const currentPos = displayNote.positions[activePositionIndex];
-                                            const usedFingers = displayNote.positions
-                                                .filter((_, idx) => idx !== activePositionIndex)
-                                                .map(p => p.finger)
-                                                .filter(f => f !== undefined && f !== 0);
-
-                                            return (
-                                                <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
-                                                    {/* 1. String Selector */}
-                                                    <div className="space-y-2 pt-2">
-                                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">1. Select String</span>
-                                                        <div className="flex gap-2 justify-between">
-                                                            {Array.from({ length: globalSettings?.numStrings || 6 }, (_, i) => (globalSettings?.numStrings || 6) - i).map(s => {
-                                                                const isActive = currentPos?.string === s;
-                                                                const isUsedElsewhere = displayNote.positions.some((p, i) => p.string === s && i !== activePositionIndex);
-
-                                                                return (
-                                                                    <button
-                                                                        key={s}
-                                                                        disabled={isUsedElsewhere}
-                                                                        onClick={() => onSetStringForPosition?.(activePositionIndex, s)}
-                                                                        className={`flex-1 h-9 rounded-lg border font-bold text-[10px] transition-all flex items-center justify-center ${isActive
-                                                                            ? 'bg-primary shadow-cyan-glow border-primary text-black'
-                                                                            : isUsedElsewhere
-                                                                                ? 'bg-black/40 border-white/5 text-zinc-700 cursor-not-allowed'
-                                                                                : 'bg-black/20 border-white/10 text-zinc-400 hover:bg-white/10 hover:text-white'
-                                                                            }`}
-                                                                    >
-                                                                        {s}
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
+                                            {/* Active Notes List */}
+                                            <div className="flex flex-wrap gap-1.5 bg-black/20 p-2 rounded-xl border border-white/5 min-h-[50px] items-center">
+                                                {displayNote.positions.length === 0 && (
+                                                    <span className="text-[9px] text-zinc-600 italic px-2">No notes placed on fretboard</span>
+                                                )}
+                                                {displayNote.positions.map((pos, idx) => (
+                                                    <div key={idx} className="relative group">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                if (e.shiftKey) {
+                                                                    setSelectedIndices(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
+                                                                } else {
+                                                                    onActivePositionIndexChange?.(idx);
+                                                                    setSelectedIndices([]);
+                                                                }
+                                                            }}
+                                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border ${activePositionIndex === idx || selectedIndices.includes(idx) ? 'shadow-[0_0_10px_rgba(255,255,255,0.1)]' : 'bg-black/40 border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-300'}`}
+                                                            style={activePositionIndex === idx || selectedIndices.includes(idx) ? {
+                                                                backgroundColor: theme?.fingers?.color || '#06b6d4',
+                                                                borderColor: theme?.fingers?.border?.color || '#22d3ee',
+                                                                color: theme?.fingers?.textColor || '#ffffff'
+                                                            } : {}}
+                                                        >
+                                                            F{pos.fret} / S{pos.string}{pos.endString && pos.endString !== pos.string ? `-${pos.endString}` : ''}
+                                                            {pos.finger !== undefined && (
+                                                                <span className="ml-1 opacity-40 text-[8px]">({pos.finger === 0 ? 'T' : pos.finger})</span>
+                                                            )}
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); onRemoveChordNote?.(idx); }}
+                                                            className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity shadow-lg cursor-pointer"
+                                                        >
+                                                            ×
+                                                        </button>
                                                     </div>
+                                                ))}
+                                            </div>
 
-                                                    {/* 2. Finger Selector */}
-                                                    <div className="space-y-2 pt-2">
-                                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">2. Select Finger</span>
-                                                        <div className="flex gap-2">
-                                                            {[
-                                                                { label: '1', val: 1 },
-                                                                { label: '2', val: 2 },
-                                                                { label: '3', val: 3 },
-                                                                { label: '4', val: 4 },
-                                                                { label: 'T', val: 0 },
-                                                                { label: 'X', val: 'X' }
-                                                            ].map((finger) => {
-                                                                const isAvoidVal = finger.val === 'X';
-                                                                const isActive = isAvoidVal ? currentPos?.avoid : (currentPos?.finger === finger.val && !currentPos?.avoid);
-                                                                const isUsed = !isAvoidVal && usedFingers.includes(finger.val as any);
+                                            {/* Detailed Editors - Only visible if notes exist */}
+                                            {displayNote.positions.length > 0 && (() => {
+                                                const currentPos = displayNote.positions[activePositionIndex];
+                                                const usedFingers = displayNote.positions
+                                                    .filter((_, idx) => idx !== activePositionIndex)
+                                                    .map(p => p.finger)
+                                                    .filter(f => f !== undefined && f !== 0);
 
-                                                                return (
-                                                                    <button
-                                                                        key={finger.label}
-                                                                        disabled={isUsed}
-                                                                        onClick={() => onSetFingerForPosition?.(activePositionIndex, finger.val)}
-                                                                        className={`flex-1 h-9 rounded-lg border font-bold text-xs transition-all flex items-center justify-center ${isActive
-                                                                            ? (isAvoidVal ? 'bg-red-500/20 border-red-500 text-red-500' : 'bg-primary shadow-cyan-glow border-primary text-black')
-                                                                            : isUsed
-                                                                                ? 'bg-black/40 border-white/5 text-zinc-800 cursor-not-allowed'
-                                                                                : 'bg-black/20 border-white/10 text-zinc-400 hover:bg-white/10 hover:text-white'
-                                                                            }`}
-                                                                    >
-                                                                        {finger.label}
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
+                                                return (
+                                                    <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
+                                                        {/* 1. String Selector */}
+                                                        <div className="space-y-2 pt-2">
+                                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">1. Select String</span>
+                                                            <div className="flex gap-2 justify-between">
+                                                                {Array.from({ length: globalSettings?.numStrings || 6 }, (_, i) => (globalSettings?.numStrings || 6) - i).map(s => {
+                                                                    const isActive = currentPos?.string === s;
+                                                                    const isUsedElsewhere = displayNote.positions.some((p, i) => p.string === s && i !== activePositionIndex);
 
-                                                    {/* 3. Fret Selector */}
-                                                    <div className={`space-y-2 pt-2 transition-opacity duration-300 ${currentPos?.avoid ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">3. Select Fret</span>
-                                                            <span className="text-[10px] font-mono text-primary font-bold">
-                                                                {parseInt(currentPos?.fret?.toString() || '0') > 0 ? `FRET ${currentPos?.fret}` : 'NUT'}
-                                                            </span>
-                                                        </div>
-                                                        <div className="grid grid-cols-6 gap-1.5">
-                                                            {Array.from({ length: 24 }).map((_, i) => {
-                                                                const fret = i + 1;
-                                                                const currentFret = parseInt(currentPos?.fret?.toString() || '0');
-
-                                                                return (
-                                                                    <button
-                                                                        key={fret}
-                                                                        onClick={() => onSetFretForPosition?.(activePositionIndex, fret)}
-                                                                        className={`h-7 rounded-sm border font-mono text-[10px] transition-all flex items-center justify-center ${currentFret === fret
-                                                                            ? 'bg-primary border-primary text-black shadow-cyan-glow'
-                                                                            : 'bg-black/20 border-white/5 text-zinc-500 hover:bg-white/10 hover:text-white'
-                                                                            }`}
-                                                                    >
-                                                                        {fret}
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* 4. Pestana (Barre) Selector */}
-                                                    <div className={`space-y-2 pt-2 border-t border-zinc-800/50 transition-opacity duration-300 ${currentPos?.avoid ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
-                                                        {(() => {
-                                                            const hasBarre = currentPos?.endString !== undefined && currentPos.endString !== currentPos.string;
-                                                            const isBarreFinger = currentPos?.finger !== undefined && (typeof currentPos.finger === 'number' ? currentPos.finger > 0 : true);
-
-                                                            return (
-                                                                <>
-                                                                    {(!hasBarre && !isBarreSelectorOpen) ? (
+                                                                    return (
                                                                         <button
-                                                                            disabled={!isBarreFinger}
-                                                                            onClick={() => setIsBarreSelectorOpen(true)}
-                                                                            className={`w-full py-3 rounded-xl border border-dashed text-[10px] font-black transition-all uppercase tracking-widest ${isBarreFinger ? 'border-primary/50 text-zinc-500 hover:border-primary hover:text-primary hover:bg-primary/5' : 'border-zinc-900 text-zinc-800 cursor-not-allowed'}`}
+                                                                            key={s}
+                                                                            disabled={isUsedElsewhere}
+                                                                            onClick={() => onSetStringForPosition?.(activePositionIndex, s)}
+                                                                            className={`flex-1 h-9 rounded-lg border font-bold text-[10px] transition-all flex items-center justify-center ${isActive
+                                                                                ? 'bg-primary shadow-cyan-glow border-primary text-black'
+                                                                                : isUsedElsewhere
+                                                                                    ? 'bg-black/40 border-white/5 text-zinc-700 cursor-not-allowed'
+                                                                                    : 'bg-black/20 border-white/10 text-zinc-400 hover:bg-white/10 hover:text-white'
+                                                                                }`}
                                                                         >
-                                                                            + ADD BARRE (Pestana)
+                                                                            {s}
                                                                         </button>
-                                                                    ) : (
-                                                                        <>
-                                                                            <div className="flex items-center justify-between">
-                                                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">4. Pestana (Barre To)</span>
-                                                                                {hasBarre && (
-                                                                                    <button
-                                                                                        onClick={() => onToggleBarre?.()}
-                                                                                        className="px-2 py-0.5 rounded bg-red-500/10 text-red-500 text-[8px] font-bold hover:bg-red-500/20 transition-colors border border-red-500/20"
-                                                                                    >
-                                                                                        REMOVE
-                                                                                    </button>
-                                                                                )}
-                                                                            </div>
-                                                                            <div className="grid grid-cols-6 gap-1.5">
-                                                                                {Array.from({ length: globalSettings?.numStrings || 6 }, (_, i) => i + 1).map(s => {
-                                                                                    const isTarget = currentPos?.endString === s;
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
 
-                                                                                    return (
+                                                        {/* 2. Finger Selector */}
+                                                        <div className="space-y-2 pt-2">
+                                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">2. Select Finger</span>
+                                                            <div className="flex gap-2">
+                                                                {[
+                                                                    { label: '1', val: 1 },
+                                                                    { label: '2', val: 2 },
+                                                                    { label: '3', val: 3 },
+                                                                    { label: '4', val: 4 },
+                                                                    { label: 'T', val: 0 },
+                                                                    { label: 'X', val: 'X' }
+                                                                ].map((finger) => {
+                                                                    const isAvoidVal = finger.val === 'X';
+                                                                    const isActive = isAvoidVal ? currentPos?.avoid : (currentPos?.finger === finger.val && !currentPos?.avoid);
+                                                                    const isUsed = !isAvoidVal && usedFingers.includes(finger.val as any);
+
+                                                                    return (
+                                                                        <button
+                                                                            key={finger.label}
+                                                                            disabled={isUsed}
+                                                                            onClick={() => onSetFingerForPosition?.(activePositionIndex, finger.val)}
+                                                                            className={`flex-1 h-9 rounded-lg border font-bold text-xs transition-all flex items-center justify-center ${isActive
+                                                                                ? (isAvoidVal ? 'bg-red-500/20 border-red-500 text-red-500' : 'bg-primary shadow-cyan-glow border-primary text-black')
+                                                                                : isUsed
+                                                                                    ? 'bg-black/40 border-white/5 text-zinc-800 cursor-not-allowed'
+                                                                                    : 'bg-black/20 border-white/10 text-zinc-400 hover:bg-white/10 hover:text-white'
+                                                                                }`}
+                                                                        >
+                                                                            {finger.label}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 3. Fret Selector */}
+                                                        <div className={`space-y-2 pt-2 transition-opacity duration-300 ${currentPos?.avoid ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">3. Select Fret</span>
+                                                                <span className="text-[10px] font-mono text-primary font-bold">
+                                                                    {parseInt(currentPos?.fret?.toString() || '0') > 0 ? `FRET ${currentPos?.fret}` : 'NUT'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="grid grid-cols-6 gap-1.5">
+                                                                {Array.from({ length: 24 }).map((_, i) => {
+                                                                    const fret = i + 1;
+                                                                    const currentFret = parseInt(currentPos?.fret?.toString() || '0');
+                                                                    const barreFret = displayNote.positions.find(p => p.endString !== undefined && p.endString !== p.string)?.fret || 0;
+                                                                    const minAllowedFret = Math.max(1, globalSettings?.capo ?? 0, barreFret);
+                                                                    if (fret < minAllowedFret) return null;
+
+                                                                    return (
+                                                                        <button
+                                                                            key={fret}
+                                                                            onClick={() => onSetFretForPosition?.(activePositionIndex, fret)}
+                                                                            className={`h-7 rounded-sm border font-mono text-[10px] transition-all flex items-center justify-center ${currentFret === fret
+                                                                                ? 'bg-primary border-primary text-black shadow-cyan-glow'
+                                                                                : 'bg-black/20 border-white/5 text-zinc-500 hover:bg-white/10 hover:text-white'
+                                                                                }`}
+                                                                        >
+                                                                            {fret}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 4. Pestana (Barre) Selector */}
+                                                        <div className={`space-y-2 pt-2 border-t border-zinc-800/50 transition-opacity duration-300 ${currentPos?.avoid ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+                                                            {(() => {
+                                                                const hasBarre = currentPos?.endString !== undefined && currentPos.endString !== currentPos.string;
+                                                                const isBarreFinger = currentPos?.finger !== undefined && (typeof currentPos.finger === 'number' ? currentPos.finger > 0 : true);
+
+                                                                return (
+                                                                    <>
+                                                                        {(!hasBarre && !isBarreSelectorOpen) ? (
+                                                                            <button
+                                                                                disabled={!isBarreFinger}
+                                                                                onClick={() => setIsBarreSelectorOpen(true)}
+                                                                                className={`w-full py-3 rounded-xl border border-dashed text-[10px] font-black transition-all uppercase tracking-widest ${isBarreFinger ? 'border-primary/50 text-zinc-500 hover:border-primary hover:text-primary hover:bg-primary/5' : 'border-zinc-900 text-zinc-800 cursor-not-allowed'}`}
+                                                                            >
+                                                                                + ADD BARRE (Pestana)
+                                                                            </button>
+                                                                        ) : (
+                                                                            <>
+                                                                                <div className="flex items-center justify-between">
+                                                                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">4. Pestana (Barre To)</span>
+                                                                                    {hasBarre && (
                                                                                         <button
-                                                                                            key={s}
-                                                                                            onClick={() => onToggleBarreTo?.(s)}
-                                                                                            className={`py-2 rounded-lg border font-bold text-[9px] transition-all ${isTarget ? 'shadow-[0_0_10px_rgba(255,255,255,0.1)]' : 'bg-black/30 border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-300'}`}
-                                                                                            style={isTarget ? {
-                                                                                                backgroundColor: theme?.fingers?.color || '#06b6d4',
-                                                                                                borderColor: theme?.fingers?.border?.color || '#22d3ee',
-                                                                                                color: theme?.fingers?.textColor || '#ffffff'
-                                                                                            } : {}}
+                                                                                            onClick={() => onToggleBarre?.()}
+                                                                                            className="px-2 py-0.5 rounded bg-red-500/10 text-red-500 text-[8px] font-bold hover:bg-red-500/20 transition-colors border border-red-500/20"
                                                                                         >
-                                                                                            {s}
+                                                                                            REMOVE
                                                                                         </button>
-                                                                                    );
-                                                                                })}
-                                                                            </div>
-                                                                            <p className="text-[8px] text-zinc-600">Selecione uma nota e clique no número da corda onde a pestana deve terminar.</p>
-                                                                        </>
-                                                                    )}
-                                                                </>
-                                                            );
-                                                        })()}
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="grid grid-cols-6 gap-1.5">
+                                                                                    {Array.from({ length: globalSettings?.numStrings || 6 }, (_, i) => i + 1).map(s => {
+                                                                                        const isTarget = currentPos?.endString === s;
+
+                                                                                        return (
+                                                                                            <button
+                                                                                                key={s}
+                                                                                                onClick={() => onToggleBarreTo?.(s)}
+                                                                                                className={`py-2 rounded-lg border font-bold text-[9px] transition-all ${isTarget ? 'shadow-[0_0_10px_rgba(255,255,255,0.1)]' : 'bg-black/30 border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-300'}`}
+                                                                                                style={isTarget ? {
+                                                                                                    backgroundColor: theme?.fingers?.color || '#06b6d4',
+                                                                                                    borderColor: theme?.fingers?.border?.color || '#22d3ee',
+                                                                                                    color: theme?.fingers?.textColor || '#ffffff'
+                                                                                                } : {}}
+                                                                                            >
+                                                                                                {s}
+                                                                                            </button>
+                                                                                        );
+                                                                                    })}
+                                                                                </div>
+                                                                                <p className="text-[8px] text-zinc-600">Selecione uma nota e clique no número da corda onde a pestana deve terminar.</p>
+                                                                            </>
+                                                                        )}
+                                                                    </>
+                                                                );
+                                                            })()}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        })()}
-                                    </div>
-                                </>
+                                                );
+                                            })()}
+                                        </div>
+                                    </>
                             ) : (
                                 <EmptyState
                                     icon={Guitar}
-                                    title="No Note Selected"
-                                    description="Select a chord in the timeline to edit its finger positions on the fretboard."
+                                    title="Selecione uma nota"
+                                    description="Escolha uma nota ou acorde na timeline para editar no fretboard."
                                     features={[
-                                        "Map Fingers to Strings",
-                                        "Select Frets (1-24)",
-                                        "Add Barre Chords"
+                                        "Mapear dedos",
+                                        "Selecionar trastes",
+                                        "Editar pestanas"
                                     ]}
                                 />
                             )}
@@ -634,7 +665,7 @@ const FullSidebar: React.FC<SidebarProps> = ({
                     {/* --- CATEGORY: CHORD (Musical Theory) --- */}
                     {activeCategory === 'chord' && (
                         <div className="space-y-6 animate-in slide-in-from-right-2 duration-300">
-                            {displayNote ? (
+                            {activeMeasure ? (
                                 <>
 
                                     {/* Root Selection */}
@@ -802,12 +833,12 @@ const FullSidebar: React.FC<SidebarProps> = ({
                             ) : (
                                 <EmptyState
                                     icon={Music}
-                                    title="No Note Selected"
-                                    description="Select a chord in the timeline to edit its musical theory properties like root, quality and extensions."
+                                    title="Harmonia do Compasso"
+                                    description="Selecione um compasso na timeline para nomear a harmonia que vale para todas as notas dentro dele."
                                     features={[
-                                        "Define Root & Quality",
-                                        "Add Musical Extensions",
-                                        "Set Bass Note Variations"
+                                        "Nome do acorde",
+                                        "Qualidade e extensões",
+                                        "Baixo do compasso"
                                     ]}
                                 />
                             )}
@@ -903,17 +934,15 @@ const FullSidebar: React.FC<SidebarProps> = ({
                     {/* --- CATEGORY: TOOLS --- */}
                     {activeCategory === 'tools' && (
                         <div className="space-y-6 animate-in slide-in-from-right-2 duration-300 h-full flex flex-col">
-                            {activeMeasure ? (
+                            {displayNote ? (
                                 <div className="space-y-4">
-                                    <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{editingNote ? "Note Tools" : "Measure Tools"}</h3>
+                                    <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Note Tools</h3>
 
                                     {/* Transpose Section */}
                                     <div className="bg-zinc-950/40 rounded-3xl p-5 border border-white/[0.02] shadow-xl">
                                         <div className="flex items-center justify-between mb-6">
                                             <div className="flex flex-col">
-                                                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] leading-tight">
-                                                    {editingNote ? "Selective" : "Measure"}
-                                                </span>
+                                                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] leading-tight">Selective</span>
                                                 <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] leading-tight">
                                                     Transpose
                                                 </span>
@@ -958,7 +987,7 @@ const FullSidebar: React.FC<SidebarProps> = ({
                                 <EmptyState
                                     icon={Wrench}
                                     title="Note Tools"
-                                    description="Select a note to access advanced manipulation tools like selective transposition."
+                                    description="Selecione uma nota para acessar ações avançadas como transposição seletiva."
                                     features={[
                                         "Selective Transpose",
                                         "Semitone Shifts",
