@@ -1,7 +1,8 @@
 "use client";
 
-import { Music, Settings, Menu, Upload, Download, User, Share2 } from 'lucide-react';
+import { Music, Menu, Upload, Download, User, Share2 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
+import { AuthSection } from '@/shared/components/layout/AuthSection';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -11,7 +12,7 @@ interface HeaderProps {
   title?: string;
 }
 
-export function AppHeader({ onMenuClick, onSettingsClick, onImportHistory, onExportHistory, title }: HeaderProps) {
+export function AppHeader({ onMenuClick, onImportHistory, onExportHistory, title }: HeaderProps) {
   return (
     <header className="flex justify-between items-center px-4 py-3 bg-panel-dark/80 backdrop-blur-md border-b border-white/5 shrink-0 z-50 relative">
       <div className="flex items-center space-x-4">
@@ -80,13 +81,7 @@ export function AppHeader({ onMenuClick, onSettingsClick, onImportHistory, onExp
         </div>
 
         <div className="flex items-center gap-3 pl-1">
-          <div className="flex items-col text-right hidden sm:block">
-            <p className="text-[10px] font-bold text-white leading-none">Guest User</p>
-            <p className="text-[8px] font-bold text-primary uppercase tracking-wider leading-none mt-0.5">Free Plan</p>
-          </div>
-          <div className="size-8 rounded-full bg-zinc-800 border-2 border-primary/30 flex items-center justify-center overflow-hidden">
-            <User size={14} className="text-zinc-400" />
-          </div>
+          <AuthSection />
         </div>
 
         {onMenuClick && (

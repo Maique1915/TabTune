@@ -7,6 +7,12 @@ export interface StandardPosition {
     avoid?: boolean;
 }
 
+export interface TimeSignature {
+    numerator: number;
+    denominator: number;
+    bpm?: number;
+}
+
 export interface BarreData {
     fret: number;
     startString: number;
@@ -95,7 +101,9 @@ export interface ChordWithTiming {
     duration: number; // in ms
     finalChord: ChordDiagramProps; // Pre-calculated transposed chord for display
     transportDisplay: number;    // Pre-calculated transpose display value
-    strumming?: 'down' | 'up' | 'pluck' | 'mute';
+    strumming?: 'down' | 'up' | 'pluck' | 'mute' | 'pause';
+    strumMode?: 'strum' | 'hit' | 'mute';
+    isStrong?: boolean;
     effects?: TabEffect[];
 }
 
@@ -203,6 +211,7 @@ export interface FretboardTheme {
         };
     };
     fingers: FingersStyle; // color, border, shadow, textColor, opacity (backgroundAlpha)
+    arrows?: TextStyle; // New property for dedicated arrow styling
     chordName: ChordNameStyle; // color, opacity, shadow, stroke
     capo: ElementStyle & {
         textColors: {

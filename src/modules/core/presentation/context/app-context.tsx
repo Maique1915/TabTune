@@ -9,6 +9,7 @@ import { generateClipId } from "@/modules/chords/application/utils";
 import { getChordDisplayData } from "@/modules/core/domain/chord-logic";
 import { INSTRUMENTS } from "@/lib/instruments";
 import { DEFAULT_COLORS } from "@/modules/editor/presentation/constants";
+import { TranslationProvider } from "./translation-context";
 
 export interface StudioState {
   selectedChords: ChordWithTiming[];
@@ -330,7 +331,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AppContext.Provider value={value}>
-      {children}
+      <TranslationProvider>
+        {children}
+      </TranslationProvider>
     </AppContext.Provider>
   );
 }

@@ -11,9 +11,6 @@ import {
 } from "@/shared/components/ui/dialog";
 import { Button } from "@/shared/components/ui/button";
 import { Label } from "@/shared/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/shared/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
-import { Video, FileVideo, FileJson, Loader2 } from "lucide-react";
 
 export type RenderFormat = 'mp4' | 'webm' | 'png-sequence';
 export type RenderQuality = 'low' | 'medium' | 'high';

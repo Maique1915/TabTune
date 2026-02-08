@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import './globals.css';
+import { Providers } from '@/components/providers';
 
 export const metadata: Metadata = {
   title: 'TabTune Animator',
@@ -29,11 +30,11 @@ export default function RootLayout({
         <meta name="google-adsense-account" content="ca-pub-6346152303245774"></meta>
       </head>
       <body className="font-body antialiased bg-background">
-
-        <div>
-          {children}
-
-        </div>
+        <Providers>
+          <div>
+            {children}
+          </div>
+        </Providers>
       </body>
     </html>
   );

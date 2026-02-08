@@ -212,3 +212,23 @@ export function transposeChordName(chordName: string | undefined, semitones: num
 
     return transposedParts.join('/');
 }
+
+/**
+ * Calculates a new tuning array by shifting notes by a number of semitones.
+ * Preserves case (e.g., 'e' stays lowercase 'f'/'e#' after shift). with octaves support in future
+ */
+export function calculateShiftedTuning(tuning: string[], semitones: number): string[] {
+    if (!tuning || tuning.length === 0) return [];
+    if (semitones === 0) return tuning;
+
+    return tuning.map(note => {
+        // Simple case handling
+        const isLowerCase = note === note.toLowerCase();
+        const upper = note.toUpperCase();
+
+        // Treat as a chord/note name for transposition
+        const transposed = transposeChordName(upper, semitones);
+
+        return isLowerCase ? transposed.toLowerCase() : transposed;
+    });
+}

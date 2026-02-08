@@ -1,40 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { MeasureData, NoteData, Duration } from '@/modules/editor/domain/types';
-import { getNoteDurationValue, getMeasureCapacity, getMsFromDuration, getMidiFromPosition, getPitchFromMidi } from '@/modules/editor/domain/music-math';
+import { BaseTimelineProps } from './BaseTimeline';
+import {
+    getMeasureCapacity,
+    getMsFromDuration,
+    getMidiFromPosition,
+    getPitchFromMidi
+} from '@/modules/editor/domain/music-math';
 import { Icons } from '@/modules/editor/presentation/constants';
 
-interface StudioTimelineProps {
-    measures: MeasureData[];
-    selectedNoteIds: string[];
-    timeSignature: string;
-    activeDuration: Duration;
-    bpm?: number;
-    hasClipboard: boolean;
-    onSelectNote: (id: string, multi: boolean) => void;
-    onDoubleClickNote: (id: string) => void;
-    onAddNote: (measureId: string) => void;
-    onUpdateNote: (id: string, updates: Partial<NoteData>) => void;
-    onRemoveNote?: (id: string) => void;
-    onCopyNote?: (id: string) => void;
-    onRemoveMeasure: (id: string) => void;
-    onAddMeasure: () => void;
-    onUpdateMeasure: (id: string, updates: Partial<MeasureData>) => void;
-    onToggleCollapse: (id: string) => void;
-    onCopyMeasure: (id: string) => void;
-    onPasteMeasure: (id: string) => void;
-    onReorderMeasures: (from: number, to: number) => void;
-    onReorderNotes: (measureId: string, from: number, to: number) => void;
-    onSelectMeasure: (id: string) => void;
-    onDeselectAll: () => void;
-    selectedMeasureId: string | null;
-    totalDurationMs?: number;
-    currentCursorMs?: number;
-    onSeek?: (ms: number) => void;
-}
-
-const StudioTimeline: React.FC<StudioTimelineProps> = ({
+const StudioTimeline: React.FC<BaseTimelineProps> = ({
     measures,
     selectedNoteIds,
     timeSignature,
@@ -251,7 +227,6 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
                                     <div className="flex-1 px-3 py-2 z-10 overflow-y-auto overflow-x-hidden flex flex-wrap gap-2 items-center justify-center">
                                         {measure.notes.map((note, nIdx) => {
                                             const isSelected = selectedNoteIds.includes(note.id);
-                                            const isRest = note.type === 'rest';
 
                                             const isNoteDragging = draggedNote?.measureId === measure.id && draggedNote?.index === nIdx;
                                             const isNoteOver = dragOverNoteIndex === nIdx && draggedNote?.measureId === measure.id;
@@ -280,9 +255,8 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
                                                         ${isPlaying
                                                             ? 'bg-primary/20 border-primary shadow-cyan-glow scale-[1.05] z-20'
                                                             : isSelected
-                                                                ? (isRest ? 'bg-zinc-800/80 border-zinc-500' : 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(6,182,212,0.1)]')
+                                                                ? 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(6,182,212,0.1)]'
                                                                 : 'bg-black/40 border-white/5 hover:border-white/10 hover:bg-black/60'}
-                                                        ${isRest ? 'grayscale-[0.5] opacity-40' : ''}
                                                         ${isNoteDragging ? 'opacity-20 scale-90 blur-[2px]' : ''}
                                                         ${isNoteOver ? 'border-primary scale-[1.05] -translate-y-1' : ''}
                                                     `}
@@ -319,34 +293,32 @@ const StudioTimeline: React.FC<StudioTimelineProps> = ({
                                                     </span>
 
                                                     {/* Main Value */}
-                                                    <div className={`flex flex-row flex-wrap items-center justify-center content-center transition-all duration-500 group-hover/note:scale-105 ${isRest ? 'text-zinc-600' : 'text-white'} gap-1.5 px-2`}> 
-                                                        {isRest ? Icons.MusicRest(note.duration) : (
-                                                            <div className="flex -space-x-2">
-                                                                {(() => {
-                                                                    const uniqueNotes = Array.from(new Set(note.positions
-                                                                        .filter(p => !p.avoid)
-                                                                        .map(p => {
-                                                                            const midi = getMidiFromPosition(p.fret, p.string);
-                                                                            const pitch = getPitchFromMidi(midi);
-                                                                            return pitch.name + pitch.accidental.replace('#', '♯').replace('b', '♭');
-                                                                        })));
+                                                    <div className="flex flex-row flex-wrap items-center justify-center content-center transition-all duration-500 group-hover/note:scale-105 text-white gap-1.5 px-2">
+                                                        <div className="flex -space-x-2">
+                                                            {(() => {
+                                                                const uniqueNotes = Array.from(new Set(note.positions
+                                                                    .filter(p => !p.avoid)
+                                                                    .map(p => {
+                                                                        const midi = getMidiFromPosition(p.fret, p.string);
+                                                                        const pitch = getPitchFromMidi(midi);
+                                                                        return pitch.name + pitch.accidental.replace('#', '♯').replace('b', '♭');
+                                                                    })));
 
-                                                                    return uniqueNotes.slice(0, 3).map((noteName, i) => (
-                                                                        <div key={i} className={`
-                                                                            size-6 rounded-full border border-black flex items-center justify-center text-[9px] font-black shadow-lg transition-all duration-300
-                                                                            ${isPlaying ? 'bg-primary text-black scale-110 z-10' : 'bg-zinc-800 text-zinc-300'}
-                                                                        `}>
-                                                                            {noteName}
-                                                                        </div>
-                                                                    ));
-                                                                })()}
-                                                                {note.positions.filter(p => !p.avoid).length > 3 && (
-                                                                    <div className="w-5 h-5 rounded-full bg-cyan-950 border-2 border-primary/50 flex items-center justify-center text-[8px] font-black text-primary shadow-lg">
-                                                                        +
+                                                                return uniqueNotes.slice(0, 3).map((noteName, i) => (
+                                                                    <div key={i} className={`
+                                                                        size-6 rounded-full border border-black flex items-center justify-center text-[9px] font-black shadow-lg transition-all duration-300
+                                                                        ${isPlaying ? 'bg-primary text-black scale-110 z-10' : 'bg-zinc-800 text-zinc-300'}
+                                                                    `}>
+                                                                        {noteName}
                                                                     </div>
-                                                                )}
-                                                            </div>
-                                                        )}
+                                                                ));
+                                                            })()}
+                                                            {note.positions.filter(p => !p.avoid).length > 3 && (
+                                                                <div className="w-5 h-5 rounded-full bg-cyan-950 border-2 border-primary/50 flex items-center justify-center text-[8px] font-black text-primary shadow-lg">
+                                                                    +
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
 
                                                     {/* Indicators (Bottom Dots) */}

@@ -1,19 +1,12 @@
-"use client";
-
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useImperativeHandle, ForwardedRef } from "react";
 import { type JSAnimation } from "animejs";
-import type { ChordWithTiming, ChordDiagramProps } from "@/modules/core/domain/types";
+import type { ChordWithTiming, ChordDiagramProps, FretboardTheme } from "@/modules/core/domain/types";
 import { useAppContext } from "@/modules/core/presentation/context/app-context";
-import { type ChordDrawer } from "@/modules/engine/infrastructure/drawers/ChordDrawer";
-import { FullNeckDrawer } from "@/modules/engine/infrastructure/drawers/FullNeck";
-
-
-import { FullFretboardEngine } from "@/modules/engine/infrastructure/FullFretboardEngine";
 import { TimelineState } from "@/modules/chords/domain/types";
 import JSZip from 'jszip';
 import { useCanvasRecorder } from "@/lib/shared/hooks/useCanvasRecorder";
 
-export interface FullFretboardStageRef {
+export interface BaseStageRef {
     startAnimation: () => void;
     pauseAnimation: () => void;
     resumeAnimation: () => void;
@@ -25,7 +18,7 @@ export interface FullFretboardStageRef {
     resetPlayback: () => void;
 }
 
-interface FullFretboardStageProps {
+export interface BaseStageProps {
     chords: ChordWithTiming[];
     previewChord?: ChordDiagramProps | null;
     timelineState?: TimelineState;
@@ -45,11 +38,12 @@ interface FullFretboardStageProps {
     tuningShift?: number;
     stringNames?: string[];
     numFrets?: number;
-    colors?: any; // FretboardTheme
+    colors?: FretboardTheme;
     animationType?: string;
+    // Specific props can be extended in the component interface
 }
 
-interface AnimationState {
+export interface AnimationState {
     fingerOpacity: number;
     fingerScale: number;
     cardY: number;
@@ -63,10 +57,26 @@ interface AnimationState {
     nameTransitionProgress: number;
 }
 
-export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFretboardStageProps>(({
+// Minimal interface that all Engines must satisfy
+export interface IStageEngine {
+    drawSingleFrame: () => void;
+    updateOptions: (options: any, state: AnimationState) => void;
+    setChords: (chords: ChordWithTiming[]) => void;
+    setPreviewChord: (chord: ChordDiagramProps | null) => void;
+    drawFrame: (state: AnimationState) => void;
+    resize: (width: number, height: number, state: AnimationState) => void;
+}
+
+interface UseBaseStageParams extends BaseStageProps {
+    engineFactory: (canvas: HTMLCanvasElement) => IStageEngine;
+    onDrawBackground: (ctx: CanvasRenderingContext2D, width: number, height: number) => void;
+    ref: ForwardedRef<BaseStageRef>;
+    extraOptions?: Record<string, any>;
+}
+
+export const useBaseStage = ({
     chords,
     previewChord,
-    timelineState,
     width = 1920,
     height = 1080,
     onFrameCapture,
@@ -82,28 +92,32 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
     capo = 0,
     tuningShift = 0,
     stringNames = ["E", "A", "D", "G", "B", "e"],
-    numFrets: propNumFrets, // Default removed to allow inference
+    numFrets: propNumFrets,
     colors: propsColors,
     animationType: propsAnimationType,
-}, ref) => {
+    engineFactory,
+    onDrawBackground,
+    ref,
+    extraOptions
+}: UseBaseStageParams) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
     const stageContainerRef = useRef<HTMLDivElement>(null);
-    const animationRef = useRef<JSAnimation | null>(null);
-    const playheadAnimationRef = useRef<JSAnimation | null>(null);
+
+    // Playback Refs
     const playheadStateRef = useRef<{ t: number }>({ t: 0 });
     const playbackRafIdRef = useRef<number | null>(null);
     const playbackStartPerfMsRef = useRef<number>(0);
     const playbackElapsedMsRef = useRef<number>(0);
-    const playbackSessionIdRef = useRef<number>(0);
     const lastProgressEmitMsRef = useRef<number>(0);
 
-    const frameCacheRef = useRef<{
-        startFrameIndex: number;
-        bitmaps: Array<ImageBitmap | null>;
-        frameMs: number;
-    } | null>(null);
-    const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
+    const isRenderCancelledRef = useRef(false);
+    const isRenderingRef = useRef(false);
+
+    // Engine & Animation State
+    const engineRef = useRef<IStageEngine | null>(null);
+    const drawFrameRef = useRef<((state: AnimationState, timeMs: number) => void) | null>(null);
+
     const animationStateRef = useRef<AnimationState>({
         fingerOpacity: 0,
         fingerScale: 0.5,
@@ -116,6 +130,7 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
         currentChordName: "",
         prevChordName: "",
     });
+
     const {
         colors: contextColors,
         animationType: contextAnimationType,
@@ -128,18 +143,11 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
         playbackSeekProgress,
     } = useAppContext();
 
-    // Derived values logic (Fixed)
+    // Derived values
     const colors = propsColors || contextColors || undefined;
     const animationType = propsAnimationType || contextAnimationType || 'dynamic-fingers';
-
-    // Determine effective numFrets
     const effectiveNumFrets = propNumFrets ?? 5;
     const numFrets = effectiveNumFrets;
-
-    console.log('[FullFretboardStage] Render colors:', {
-        rotation: colors?.global?.rotation,
-        mirror: colors?.global?.mirror
-    });
 
     const [isAnimating, setIsAnimating] = useState(false);
     const isAnimatingRef = useRef(false);
@@ -147,70 +155,65 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
     const [renderFormat, setRenderFormat] = useState<'mp4' | 'webm' | 'png-sequence'>('mp4');
     const [renderQuality, setRenderQuality] = useState<'low' | 'medium' | 'high'>('medium');
 
-    const isRenderCancelledRef = useRef(false);
-    const isRenderingRef = useRef(false);
-    const prevActiveChordIndexRef = useRef<number | undefined>(undefined);
-
-    // State for the engine instance
-    const engineRef = useRef<FullFretboardEngine | null>(null);
-    const drawFrameRef = useRef<((state: AnimationState, timeMs: number) => void) | null>(null);
-
-    // Initialize Engine
+    // --- Engine Initialization ---
     useEffect(() => {
         if (!canvasRef.current || engineRef.current) return;
-
-        engineRef.current = new FullFretboardEngine(canvasRef.current, {
-            width,
-            height,
-            numStrings,
-            numFrets: effectiveNumFrets,
-            colors: colors as any,
-            animationType,
-            showChordName,
-            transitionsEnabled,
-            buildEnabled,
-            capo,
-            tuning: stringNames
-        });
-
-        // Initial draw
+        engineRef.current = engineFactory(canvasRef.current);
         engineRef.current.drawSingleFrame();
+    }, []); // Run once on mount
 
-    }, []); // Only run once on mount (or you can add deps if you handle "re-creation" logic, but updates are better)
-
-    // Update Engine Options when props change
+    // --- Update Engine Options ---
     useEffect(() => {
         if (engineRef.current) {
+            // We pass all props to updateOptions. engines should pick what they need
+            // or we construct a generic options object here
             engineRef.current.updateOptions({
                 width,
                 height,
                 numStrings,
                 numFrets: effectiveNumFrets,
-                colors: colors as any,
+                colors: colors,
                 animationType,
                 showChordName,
                 transitionsEnabled,
                 buildEnabled,
                 capo,
-                tuning: stringNames
+                tuning: stringNames,
+                ...extraOptions
             }, animationStateRef.current);
         }
-    }, [width, height, numStrings, effectiveNumFrets, colors, animationType, showChordName, transitionsEnabled, buildEnabled, capo, stringNames]);
+    }, [width, height, numStrings, effectiveNumFrets, colors, animationType, showChordName, transitionsEnabled, buildEnabled, capo, stringNames, engineRef, extraOptions]);
 
-    // Update Chords
+    // --- Update Chords ---
     useEffect(() => {
         if (engineRef.current) {
             engineRef.current.setChords(chords);
         }
     }, [chords]);
 
-    // Update Preview Chord
+    // --- Update Preview Chord ---
     useEffect(() => {
         if (engineRef.current) {
             engineRef.current.setPreviewChord(previewChord || null);
         }
     }, [previewChord]);
 
+    // --- Resize ---
+    useEffect(() => {
+        if (engineRef.current && canvasRef.current) {
+            engineRef.current.resize(width, height, animationStateRef.current);
+        }
+    }, [width, height]);
+
+    // --- Background Drawing ---
+    useEffect(() => {
+        if (!backgroundCanvasRef.current) return;
+        const ctx = backgroundCanvasRef.current.getContext('2d');
+        if (!ctx) return;
+        onDrawBackground(ctx, width, height);
+    }, [width, height, onDrawBackground]);
+
+    // --- Drawing Logic ---
     const drawFrame = useCallback((state: AnimationState, timeMs: number) => {
         if (engineRef.current) {
             engineRef.current.drawFrame(state);
@@ -223,76 +226,23 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
     }, [drawFrame]);
 
     useEffect(() => {
-        // This ref is used by the canvas recorder, so it needs to point to the current drawFrame
-        // which now delegates to the engine.
         drawFrameRef.current = drawFrame;
     }, [drawFrame]);
 
-    // Resize handling (if props don't catch it strictly, or pure window resize needed)
-    useEffect(() => {
-        if (engineRef.current && canvasRef.current) {
-            engineRef.current.resize(width, height, animationStateRef.current);
-        }
-    }, [width, height]);
-
-    // Canvas recorder for video rendering
+    // --- Canvas Recorder ---
     const canvasRecorder = useCanvasRecorder(stageContainerRef as any, {
         fps: 30,
         format: renderFormat === 'png-sequence' ? 'webm' : renderFormat,
         quality: renderQuality,
     });
 
-    // Define Timing Helpers EARLY to avoid reference errors
+    // --- Timing Logic ---
     const minSegmentSec = 0.1;
     const getSegmentDurationSec = useCallback((chordWithTiming: ChordWithTiming) => {
         const defaultSegmentSec = 2.0;
         const clipSec = (chordWithTiming.duration / 1000) || defaultSegmentSec;
         return Math.max(clipSec, minSegmentSec);
-        // Removed dangling legacy code
     }, [minSegmentSec]);
-
-    useEffect(() => {
-        if (!backgroundCanvasRef.current) return;
-        const bgCtx = backgroundCanvasRef.current.getContext('2d');
-        if (!bgCtx) return;
-
-        bgCtx.clearRect(0, 0, width, height);
-        if (colors?.global?.backgroundColor) {
-            bgCtx.fillStyle = colors.global.backgroundColor;
-            bgCtx.fillRect(0, 0, width, height);
-        }
-
-        const effectiveScale = colors?.global?.scale || 1;
-        let bgDrawer: ChordDrawer;
-
-        bgDrawer = new FullNeckDrawer(bgCtx, colors, { width, height }, {
-            numStrings: numStrings || 6,
-            numFrets: numFrets || 24
-        }, effectiveScale);
-
-        bgDrawer.setNumStrings(numStrings || 6);
-        bgDrawer.setNumFrets(numFrets || 24);
-        bgDrawer.setGlobalCapo(capo || 0);
-        bgDrawer.setStringNames(stringNames);
-
-        // Explicitly apply transforms to ensure mirror/rotation are picked up
-        const bgRotation = colors?.global?.rotation || 0;
-        const bgMirror = colors?.global?.mirror || false;
-        bgDrawer.setTransforms(bgRotation, bgMirror);
-
-        bgDrawer.drawFretboard();
-    }, [width, height, animationType, colors, numStrings, numFrets, capo, stringNames]);
-
-    const stopPlayhead = useCallback(() => {
-        if (playbackRafIdRef.current !== null) {
-            cancelAnimationFrame(playbackRafIdRef.current);
-            playbackRafIdRef.current = null;
-        }
-        setIsAnimating(false);
-        isAnimatingRef.current = false;
-        setPlaybackIsPlaying(false);
-        setPlaybackIsPaused(false);
-    }, [setPlaybackIsPlaying, setPlaybackIsPaused]);
 
     const computeTotalPlaybackDurationMs = useCallback(() => {
         if (!chords || chords.length === 0) return 0;
@@ -322,7 +272,7 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
             const outHalf = transitionOutTotal / 2;
             const staticMs = currentDur - inHalf - outHalf;
 
-            // 1. IN phase - just display current chord (no transition)
+            // 1. IN phase
             if (t < cursor + inHalf) {
                 return { chordIndex: i, transitionProgress: 0, buildProgress: 1, chordProgress: 0 };
             }
@@ -344,6 +294,18 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
         }
         return { chordIndex: chords.length - 1, transitionProgress: 0, buildProgress: 1, chordProgress: 1 };
     }, [chords, getSegmentDurationSec, transitionsEnabled, animationType]);
+
+    // --- Playback Controls ---
+    const stopPlayhead = useCallback(() => {
+        if (playbackRafIdRef.current !== null) {
+            cancelAnimationFrame(playbackRafIdRef.current);
+            playbackRafIdRef.current = null;
+        }
+        setIsAnimating(false);
+        isAnimatingRef.current = false;
+        setPlaybackIsPlaying(false);
+        setPlaybackIsPaused(false);
+    }, [setPlaybackIsPlaying, setPlaybackIsPaused]);
 
     const startPlayhead = useCallback((totalDurationMs: number) => {
         if (playbackRafIdRef.current !== null) {
@@ -390,7 +352,6 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
             }
 
             if (clampedElapsed >= totalDurationMs) {
-                // Reset to ACTIVE chord when animation completes, not just the first one.
                 const targetIndex = typeof activeChordIndex === 'number'
                     ? Math.max(0, Math.min((chords?.length || 1) - 1, activeChordIndex))
                     : 0;
@@ -400,7 +361,6 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
                 animationStateRef.current.transitionProgress = 0;
                 animationStateRef.current.buildProgress = 1;
 
-                // Set current chord name for the target selection
                 if (chords && chords[targetIndex]) {
                     animationStateRef.current.currentChordName = chords[targetIndex].finalChord?.chordName || "";
                 }
@@ -416,7 +376,6 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
                 setIsPaused(false);
                 if (onAnimationStateChange) onAnimationStateChange(false, false);
 
-                // Redraw to show selected chord
                 drawAnimatedChord();
                 stopPlayhead();
                 return;
@@ -425,7 +384,6 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
         };
         playbackRafIdRef.current = requestAnimationFrame(tick);
     }, [computeStateAtTimeMs, drawAnimatedChord, onAnimationStateChange, setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress, stopPlayhead, chords, activeChordIndex]);
-
 
     const startAnimation = () => {
         if (!chords || chords.length === 0) return;
@@ -481,6 +439,7 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
         drawAnimatedChord();
     };
 
+    // --- Effects for External Control ---
     useEffect(() => {
         const totalMs = computeTotalPlaybackDurationMs();
         if (totalMs !== playbackTotalDurationMs) {
@@ -514,10 +473,14 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
         }
     }, [chords, computeStateAtTimeMs, computeTotalPlaybackDurationMs, playbackSeekNonce, playbackSeekProgress, setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress]);
 
-    // Effect for when chords array changes
+    // Effect for when chords array changes or activeChordIndex changes (Unified logic)
     useEffect(() => {
         if ((!isAnimating || isPaused) && chords && chords.length > 0 && typeof activeChordIndex === 'number') {
             const index = Math.max(0, Math.min(chords.length - 1, activeChordIndex));
+
+            // Only log if explicit prop change (optional)
+            // console.log('[useBaseStage] activeChordIndex syncing:', index);
+
             animationStateRef.current.chordIndex = index;
             animationStateRef.current.chordProgress = 0;
             const currentChordData = chords[index];
@@ -531,30 +494,7 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
         }
     }, [chords, isAnimating, isPaused, activeChordIndex]);
 
-    // Effect for when activeChordIndex changes
-    useEffect(() => {
-        if ((!isAnimating || isPaused) && typeof activeChordIndex === 'number' && chords && chords.length > 0) {
-            const index = Math.max(0, Math.min(chords.length - 1, activeChordIndex));
-            console.log('[FullFretboardStage] activeChordIndex changed:', {
-                activeChordIndex,
-                clampedIndex: index,
-                totalChords: chords.length,
-                chordData: chords[index]?.finalChord
-            });
-
-            animationStateRef.current.chordIndex = index;
-            animationStateRef.current.chordProgress = 0;
-            const currentChordData = chords[index];
-            animationStateRef.current.currentChordName = currentChordData?.finalChord?.chordName || "";
-            animationStateRef.current.prevChordName = "";
-            animationStateRef.current.nameTransitionProgress = 1;
-
-            if (drawFrameRef.current) {
-                drawFrameRef.current(animationStateRef.current, playheadStateRef.current.t);
-            }
-        }
-    }, [activeChordIndex, isAnimating, isPaused]);
-
+    // --- Rendering Logic (Video Export) ---
     const handleRender = useCallback(async (format?: 'mp4' | 'webm' | 'png-sequence', quality?: 'low' | 'medium' | 'high', fileName?: string) => {
         if (!chords || chords.length === 0 || !canvasRef.current) return;
         const targetFormat = format || 'mp4';
@@ -574,41 +514,28 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
 
                 const zip = new JSZip();
                 const totalChords = chords.length;
-
-                // Configure canvas for high quality capture
                 const canvas = canvasRef.current;
-
-                // We'll iterate through each chord, set the state to that chord's time, and capture
                 let currentTime = 0;
 
                 for (let i = 0; i < totalChords; i++) {
                     if (isRenderCancelledRef.current) throw new Error("Render cancelled");
 
                     const chord = chords[i];
-                    // Position cursor in the middle of the chord duration to ensure it's stable/visible
-                    // or just at the start. Middle is safer for transitions ideally, but start is fine if no transition
-                    const captureTime = currentTime + 100; // Small offset to ensure we are 'inside' the chord
-
+                    const captureTime = currentTime + 100;
                     const state = computeStateAtTimeMs(captureTime);
+
                     if (state && drawFrameRef.current) {
-                        // Ensure full visibility
                         animationStateRef.current = { ...animationStateRef.current, ...state, fingerOpacity: 1, fingerScale: 1, cardY: 0, nameOpacity: 1 };
                         drawFrameRef.current(animationStateRef.current, captureTime);
-
-                        // Wait a tick for draw
                         await new Promise(resolve => setTimeout(resolve, 50));
 
-                        // Capture blob
                         const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
                         if (blob) {
-                            // Chord name as filename if available, else index
                             const chordName = chord.finalChord?.chordName?.replace(/[^a-z0-9]/gi, '_') || `chord_${i + 1}`;
                             zip.file(`${String(i + 1).padStart(2, '0')}_${chordName}.png`, blob);
                         }
                     }
-
                     currentTime += chord.duration;
-
                     const progress = ((i + 1) / totalChords) * 100;
                     canvasRecorder.setRenderProgress(progress);
                     canvasRecorder.setRenderStatus(`Capturando acorde ${i + 1} de ${totalChords}...`);
@@ -645,10 +572,12 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
             const totalFrames = Math.ceil((totalDurationMs / 1000) * fps);
             const msPerFrame = 1000 / fps;
             let globalFrameIndex = 0;
+
             for (let i = 0; i < totalFrames; i++) {
                 if (isRenderCancelledRef.current) throw new Error("Render cancelled");
                 const currentTime = i * msPerFrame;
                 const state = computeStateAtTimeMs(currentTime);
+
                 if (state && drawFrameRef.current) {
                     animationStateRef.current = { ...animationStateRef.current, ...state, fingerOpacity: 1, fingerScale: 1, cardY: 0, nameOpacity: 1 };
                     drawFrameRef.current(animationStateRef.current, currentTime);
@@ -676,31 +605,33 @@ export const FullFretboardStage = React.forwardRef<FullFretboardStageRef, FullFr
         } finally {
             isRenderingRef.current = false;
             canvasRecorder.setIsRendering(false);
+            canvasRecorder.setIsComplete(true); // Should probably set this or clean up
         }
     }, [chords, width, height, numStrings, numFrets, capo, animationType, colors, canvasRecorder, computeTotalPlaybackDurationMs, computeStateAtTimeMs, onRenderProgress]);
 
-    React.useImperativeHandle(ref, () => ({
+    // --- Expose Ref ---
+    useImperativeHandle(ref, () => ({
         startAnimation,
         pauseAnimation,
         resumeAnimation,
         handleRender,
-        cancelRender: () => { isRenderCancelledRef.current = true; canvasRecorder.cancelRender(); },
+        cancelRender: () => {
+            console.log("BaseStage cancelRender called via ref!");
+            isRenderCancelledRef.current = true;
+            canvasRecorder.cancelRender();
+        },
         isAnimating: isAnimatingRef.current,
         isRendering: isRenderingRef.current,
         isPaused: isPaused,
         resetPlayback
     }));
 
-    return (
-        <div ref={stageContainerRef} className="relative w-full h-full flex items-center justify-center p-8">
-            <div className="relative w-full max-w-[900px] rounded-2xl border-2 border-[#1a3a3f] shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden group flex flex-col items-center justify-center bg-[#0c1a1d] aspect-video">
-                <div className="crt-overlay absolute inset-0 z-10 pointer-events-none opacity-80"></div>
-                <div className="absolute inset-0 z-20 pointer-events-none shadow-[inset_0_0_100px_rgba(0,0,0,0.6)]"></div>
-                <canvas ref={backgroundCanvasRef} width={width} height={height} className="absolute inset-0 w-full h-full object-contain pointer-events-none bg-[#0c1a1d]" />
-                <canvas ref={canvasRef} width={width} height={height} className="absolute inset-0 w-full h-full object-contain pointer-events-none" />
-            </div>
-        </div>
-    );
-});
-
-FullFretboardStage.displayName = "FullFretboardStage";
+    return {
+        canvasRef,
+        backgroundCanvasRef,
+        stageContainerRef,
+        colors,
+        animationType,
+        effectiveNumFrets
+    };
+};

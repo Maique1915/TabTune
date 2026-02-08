@@ -35,6 +35,7 @@ export interface NoteData extends Omit<MusicalEvent, 'type'> {
 
     // Editor specifics
     accidental?: Accidental;
+    bass?: string; // Additional property for Beats mode
     decorators: NoteDecorator;
     noteHead?: 'standard' | 'x' | 'diamond' | 'square' | 'triangle' | 'slash' | 'cross' | 'circle' | 'triangle_inv' | 'arrow_down' | 'arrow_up' | 'slashed';
 
@@ -50,6 +51,12 @@ export interface NoteData extends Omit<MusicalEvent, 'type'> {
 
     // Barre (inherited from MusicalEvent as BarreData: all numbers)
     barre?: BarreData;
+
+    // Rhythm / Strumming Details
+    strumDirection?: 'up' | 'down';
+    strumMode?: 'strum' | 'hit' | 'mute';
+    strumFinger?: string; // P, i, m, a, etc.
+    isStrong?: boolean; // Whether it's a strong beat for visual scaling
 }
 
 export interface MeasureData {

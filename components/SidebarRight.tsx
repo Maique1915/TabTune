@@ -23,9 +23,8 @@ const SidebarRight: React.FC = () => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex-1 py-1.5 rounded text-[10px] font-medium transition-all ${
-              activeTab === tab.id ? 'bg-[#374151] text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'
-            }`}
+            className={`flex-1 py-1.5 rounded text-[10px] font-medium transition-all ${activeTab === tab.id ? 'bg-[#374151] text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'
+              }`}
           >
             {tab.label}
           </button>
@@ -37,10 +36,10 @@ const SidebarRight: React.FC = () => {
           <h3 className="text-[10px] font-bold text-slate-500 uppercase mb-4 tracking-wider">Estilo de animação</h3>
           <div className="space-y-4">
             <label className="flex items-start gap-3 cursor-pointer group">
-              <input 
-                type="radio" 
-                name="anim" 
-                checked={animStyle === AnimationStyle.CAROUSEL} 
+              <input
+                type="radio"
+                name="anim"
+                checked={animStyle === AnimationStyle.CAROUSEL}
                 onChange={() => setAnimStyle(AnimationStyle.CAROUSEL)}
                 className="mt-1 accent-blue-500"
               />
@@ -51,10 +50,10 @@ const SidebarRight: React.FC = () => {
             </label>
 
             <label className="flex items-start gap-3 cursor-pointer group">
-              <input 
-                type="radio" 
-                name="anim" 
-                checked={animStyle === AnimationStyle.STATIC} 
+              <input
+                type="radio"
+                name="anim"
+                checked={animStyle === AnimationStyle.STATIC}
                 onChange={() => setAnimStyle(AnimationStyle.STATIC)}
                 className="mt-1 accent-blue-500"
               />

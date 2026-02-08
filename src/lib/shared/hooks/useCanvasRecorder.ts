@@ -41,7 +41,7 @@ const QUALITY_SETTINGS = {
  * Supports WebM (fast, real-time) and MP4 (compatible, FFmpeg-based)
  */
 export function useCanvasRecorder(
-    canvasRef: React.RefObject<HTMLCanvasElement | null>,
+    canvasRef: React.RefObject<HTMLElement | null>,
     options: CanvasRecorderOptions = {}
 ): CanvasRecorderResult {
     const ffmpegRef = useRef<FFmpeg | null>(null);
@@ -372,9 +372,11 @@ export function useCanvasRecorder(
             // ensuring we can reuse if needed, or just let it close component unmount.
             // But usually we can keep it alive. Or stick to original behavior:
             try {
-                ffmpeg.terminate();
+                if (ffmpeg.loaded) {
+                    ffmpeg.terminate();
+                    console.log('FFmpeg instance terminated');
+                }
                 ffmpegRef.current = null; // Clear ref
-                console.log('FFmpeg instance terminated');
             } catch (termErr) {
                 console.warn('FFmpeg termination error (non-fatal):', termErr);
             }
@@ -539,11 +541,13 @@ export function useCanvasRecorder(
 
         if (ffmpegRef.current) {
             try {
-                // Try to terminate gracefully if possible, or just kill it
-                ffmpegRef.current.terminate();
-                console.log('FFmpeg terminated');
+                // Only terminate if loaded to avoid errors
+                if (ffmpegRef.current.loaded) {
+                    ffmpegRef.current.terminate();
+                    console.log('FFmpeg terminated');
+                }
             } catch (e) {
-                console.error('Error terminating FFmpeg:', e);
+                console.warn('Error terminating FFmpeg (safe to ignore):', e);
             }
             // Nullify reference to prevent reuse
             ffmpegRef.current = null;

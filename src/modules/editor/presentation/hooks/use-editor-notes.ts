@@ -99,36 +99,126 @@ export function useEditorNotes(
             const measureIndex = prev.measures.findIndex((m: MeasureData) => m.id === measureId);
             if (measureIndex === -1) return prev;
 
+            const m = prev.measures[measureIndex];
             const durationToAdd = durationOverride || prev.activeDuration;
-            const newNoteId = generateId();
-            const minAllowedFret = Math.max(0, prev.settings?.capo ?? 0);
 
-            const newMeasures = prev.measures.map((m: MeasureData, idx: number) => {
-                if (idx === measureIndex) {
-                    return {
-                        ...m,
-                        notes: [...m.notes, {
-                            id: newNoteId,
-                            positions: [{ fret: Math.max(1, minAllowedFret), string: 3 }],
-                            duration: durationToAdd,
-                            type: 'note' as const,
-                            decorators: {},
-                            accidental: 'none' as const
-                        }]
-                    };
+            // --- CAPACITY CHECK ---
+            const timeSignature = prev.settings?.time || '4/4';
+            const capacity = getMeasureCapacity(timeSignature);
+            const currentTotal = m.notes.reduce((acc, note) => acc + getNoteDurationValue(note.duration, !!note.decorators.dot), 0);
+            const valueToAdd = getNoteDurationValue(durationToAdd, false);
+
+            const canFitInCurrent = (currentTotal + valueToAdd) <= (capacity + 0.001);
+
+            if (canFitInCurrent) {
+                // Regular add to current measure
+                const newNoteId = generateId();
+                const minAllowedFret = Math.max(0, prev.settings?.capo ?? 0);
+
+                const newMeasures = prev.measures.map((measure: MeasureData, idx: number) => {
+                    if (idx === measureIndex) {
+                        return {
+                            ...measure,
+                            notes: [...measure.notes, {
+                                id: newNoteId,
+                                positions: [{ fret: Math.max(1, minAllowedFret), string: 3 }],
+                                duration: durationToAdd,
+                                type: 'note' as const,
+                                decorators: {},
+                                accidental: 'none' as const,
+                                strumDirection: 'down' as const // Default for Beats
+                            }]
+                        };
+                    }
+                    return measure;
+                });
+
+                return {
+                    ...prev,
+                    measures: newMeasures,
+                    currentMeasureIndex: measureIndex,
+                    selectedMeasureId: measureId,
+                    editingNoteId: newNoteId,
+                    selectedNoteIds: [newNoteId],
+                    activePositionIndex: 0
+                };
+            } else {
+                // OVERFLOW: Move to next measure or create new one
+                const nextMeasureIndex = measureIndex + 1;
+                const nextMeasure = prev.measures[nextMeasureIndex];
+
+                if (nextMeasure) {
+                    // Check if note fits in next measure
+                    const nextTotal = nextMeasure.notes.reduce((acc, note) => acc + getNoteDurationValue(note.duration, !!note.decorators.dot), 0);
+                    if ((nextTotal + valueToAdd) <= (capacity + 0.001)) {
+                        // Recursively add to next measure
+                        // NOTE: Directly modifying the state object here for the return
+                        const newNoteId = generateId();
+                        const minAllowedFret = Math.max(0, prev.settings?.capo ?? 0);
+                        const newMeasures = prev.measures.map((measure: MeasureData, idx: number) => {
+                            if (idx === nextMeasureIndex) {
+                                return {
+                                    ...measure,
+                                    notes: [...measure.notes, {
+                                        id: newNoteId,
+                                        positions: [{ fret: Math.max(1, minAllowedFret), string: 3 }],
+                                        duration: durationToAdd,
+                                        type: 'note' as const,
+                                        decorators: {},
+                                        accidental: 'none' as const,
+                                        strumDirection: 'down' as const // Default for Beats
+                                    }]
+                                };
+                            }
+                            return measure;
+                        });
+
+                        return {
+                            ...prev,
+                            measures: newMeasures,
+                            currentMeasureIndex: nextMeasureIndex,
+                            selectedMeasureId: nextMeasure.id,
+                            editingNoteId: newNoteId,
+                            selectedNoteIds: [newNoteId],
+                            activePositionIndex: 0
+                        };
+                    }
                 }
-                return m;
-            });
 
-            return {
-                ...prev,
-                measures: newMeasures,
-                currentMeasureIndex: measureIndex,
-                selectedMeasureId: measureId,
-                editingNoteId: newNoteId,
-                selectedNoteIds: [newNoteId],
-                activePositionIndex: 0
-            };
+                // If no next measure OR next measure is full, create a NEW measure
+                const newNoteId = generateId();
+                const newMeasureId = generateId();
+                const minAllowedFret = Math.max(0, prev.settings?.capo ?? 0);
+
+                const newMeasure: MeasureData = {
+                    id: newMeasureId,
+                    isCollapsed: false,
+                    showClef: false,
+                    showTimeSig: false,
+                    notes: [{
+                        id: newNoteId,
+                        positions: [{ fret: Math.max(1, minAllowedFret), string: 3 }],
+                        duration: durationToAdd,
+                        type: 'note' as const,
+                        decorators: {},
+                        accidental: 'none' as const,
+                        strumDirection: 'down' as const // Default for Beats
+                    }]
+                };
+
+                const newMeasures = [...prev.measures];
+                newMeasures.splice(nextMeasureIndex, 0, newMeasure);
+
+                return {
+                    ...prev,
+                    measures: newMeasures,
+                    currentMeasureIndex: nextMeasureIndex,
+                    selectedMeasureId: newMeasureId,
+                    editingNoteId: newNoteId,
+                    selectedNoteIds: [newNoteId],
+                    activePositionIndex: 0
+                };
+            }
         });
     }, [setState]);
 
@@ -175,32 +265,10 @@ export function useEditorNotes(
                                     duration: decomposed[0].duration as Duration,
                                     decorators: { ...nextNote.decorators, dot: decomposed[0].dotted }
                                 };
-                                if (decomposed.length > 1) {
-                                    const extraRests = decomposed.slice(1).map(d => ({
-                                        id: generateId(),
-                                        positions: [{ fret: 0, string: 1 }],
-                                        duration: d.duration as Duration,
-                                        type: 'rest' as const,
-                                        decorators: { dot: d.dotted },
-                                        accidental: 'none' as const
-                                    }));
-                                    newNotes.splice(i + 1, 0, ...extraRests);
-                                }
                             }
                             remainingToCut = 0;
                         }
                     }
-                } else if (delta < 0) {
-                    const absDelta = Math.abs(delta);
-                    const restsToAdd = decomposeValue(absDelta).map(d => ({
-                        id: generateId(),
-                        positions: [{ fret: 0, string: 1 }],
-                        duration: d.duration as Duration,
-                        type: 'rest' as const,
-                        decorators: { dot: d.dotted },
-                        accidental: 'none' as const
-                    }));
-                    newNotes.splice(noteIndex + 1, 0, ...restsToAdd);
                 }
 
                 // Capacity check / Truncate

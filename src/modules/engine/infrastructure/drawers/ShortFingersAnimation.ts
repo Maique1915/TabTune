@@ -2,7 +2,6 @@ import type { ChordDiagramProps, BarreInfo, StandardPosition } from "@/modules/c
 import { FingersAnimationDrawer, FingersAnimationParams } from "./ChordDrawer";
 import { easeInOutQuad } from "../utils/animacao";
 import { detectBarreFromChord } from "./utils/barre-detection";
-import { getFinNum } from "./utils/fingers-utils";
 import { FingerComponent } from "./components/FingerComponent";
 import { AvoidComponent } from "./components/AvoidComponent";
 import { TransposeIndicatorComponent } from "./components/TransposeIndicatorComponent";

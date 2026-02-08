@@ -30,8 +30,18 @@ export function useTimelineSync({
     // Use a stable reference for chords by stringifying measures
     const measuresKey = useMemo(() => JSON.stringify(measures.map(m => ({
         id: m.id,
-        chordName: m.chordName, // Added to ensure updates when name changes
-        notes: m.notes.map(n => ({ id: n.id, positions: n.positions }))
+        chordName: m.chordName,
+        notes: m.notes.map(n => ({
+            id: n.id,
+            positions: n.positions,
+            duration: n.duration,
+            type: n.type,
+            strumDirection: n.strumDirection,
+            strumFinger: n.strumFinger,
+            strumMode: n.strumMode,
+            isStrong: n.isStrong,
+            decorators: n.decorators
+        }))
     }))), [measures]);
 
     const chords = useMemo(() => {

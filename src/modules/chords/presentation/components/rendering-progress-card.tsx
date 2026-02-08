@@ -1,10 +1,6 @@
 "use client";
 
 import { useAppContext } from "@/modules/core/presentation/context/app-context";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/shared/components/ui/card";
-import { Progress } from "@/shared/components/ui/progress";
-import { CheckCircle } from "lucide-react";
-import { Button } from "@/shared/components/ui/button";
 
 interface RenderingProgressCardProps {
   elapsedTime?: string;

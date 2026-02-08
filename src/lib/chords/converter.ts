@@ -50,11 +50,26 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
                 const durationMs = note.customDurationMs || getMsFromDuration(note.duration, !!note.decorators?.dot, bpm);
 
                 result.push({
-                    chord: createEmptyChord(),
-                    finalChord: createEmptyChord(),
+                    chord: {
+                        ...createEmptyChord(),
+                        extends: {
+                            duration: note.duration,
+                            type: note.type,
+                            measureId: measure.id,
+                            noteId: note.id
+                        }
+                    },
+                    finalChord: {
+                        ...createEmptyChord(),
+                        extends: {
+                            duration: note.duration,
+                            type: note.type,
+                            measureId: measure.id,
+                            noteId: note.id
+                        }
+                    },
                     duration: durationMs,
                     transportDisplay: 0,
-                    // Mark as rest implicitly by having empty positions?
                 });
                 return;
             }
@@ -99,7 +114,7 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
                     decorators: note.decorators,
                     accidental: note.accidental,
                     technique: note.technique,
-                    manualChord: note.manualChord,
+                    manualChord: note.strumFinger || "", // Use strumFinger for the rhythm label
                     measureId: measure.id,
                     noteId: note.id
                 }
@@ -140,7 +155,9 @@ export function measuresToChords(measures: MeasureData[], settings: GlobalSettin
                 },
                 duration: durationMs,
                 transportDisplay: 0,
-                strumming: undefined,
+                strumming: note.strumDirection || 'down', // Always provide a direction for visualizer
+                strumMode: note.strumMode,
+                isStrong: note.isStrong !== false, // Default to strong if not explicitly weak
                 effects: effects.length > 0 ? effects.map(e => ({ ...e })) : undefined
             });
         });

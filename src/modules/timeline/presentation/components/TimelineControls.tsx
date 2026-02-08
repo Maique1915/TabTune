@@ -2,7 +2,6 @@
 
 import React from "react";
 import { useAppContext } from "@/modules/core/presentation/context/app-context";
-import { Pause, Play, StopCircle, Video } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/shared/components/ui/button";
 

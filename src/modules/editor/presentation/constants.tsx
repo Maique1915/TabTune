@@ -47,6 +47,15 @@ export const DEFAULT_COLORS: ChordDiagramColors = {
         barreWidth: 48,
         barreFingerRadius: 22
     },
+    arrows: {
+        color: "#FF8C42", // Orange (Primary Text) for high contrast on black
+        textColor: "#000000",
+        border: {
+            color: "#FFFFFF",
+            width: 2
+        },
+        shadow: { enabled: true, color: "rgba(255, 140, 66, 0.5)", blur: 10 }
+    },
     chordName: {
         color: "#ffffff",
         textColor: "#ffffff",
@@ -144,6 +153,12 @@ export const STUDIO_PRESETS = {
                 barreFingerRadius: 24,
                 shadow: { enabled: true, color: "rgba(0,0,0,0.15)", blur: 6 }
             },
+            arrows: {
+                color: "#1e293b", // Dark Blue (Finger Color) - Good contrast on white
+                textColor: "#ffffff",
+                border: { color: "#334155", width: 2 },
+                shadow: { enabled: true, color: "rgba(30, 41, 59, 0.3)", blur: 8 }
+            },
             capo: {
                 color: "#475569",
                 border: { color: "#1e293b", width: 1 },
@@ -193,6 +208,12 @@ export const STUDIO_PRESETS = {
                 fontSize: 16,
                 barreWidth: 48,
                 barreFingerRadius: 22
+            },
+            arrows: {
+                color: "#fb00ff", // Magenta (Primary) - High contrast on black
+                textColor: "#ffffff",
+                border: { color: "#fb00ff", width: 2 },
+                shadow: { enabled: true, color: "rgba(251,0,255, 0.6)", blur: 12 }
             },
             capo: {
                 color: "#180220",
@@ -245,6 +266,12 @@ export const STUDIO_PRESETS = {
                 barreWidth: 48,
                 barreFingerRadius: 22
             },
+            arrows: {
+                color: "#60a5fa", // Bright Blue (Highlight) - High contrast on black
+                textColor: "#0f172a",
+                border: { color: "#ffffff", width: 2 },
+                shadow: { enabled: true, color: "rgba(96, 165, 250, 0.5)", blur: 10 }
+            },
             capo: {
                 color: "#1e293b",
                 border: { color: "#60a5fa", width: 1 },
@@ -287,6 +314,12 @@ export const STUDIO_PRESETS = {
                 fontSize: 16,
                 barreWidth: 48,
                 barreFingerRadius: 22
+            },
+            arrows: {
+                color: "#efe6d5", // Beige (Text Color matching neck/inlays vibe) - High contrast on black
+                textColor: "#5d4037",
+                border: { color: "#a1887f", width: 2 },
+                shadow: { enabled: true, color: "rgba(215, 204, 200, 0.4)", blur: 8 }
             },
             capo: {
                 color: "#5d4037",
@@ -354,6 +387,12 @@ export const STUDIO_PRESETS = {
                 barreWidth: 52,
                 barreFingerRadius: 24,
                 shadow: { enabled: true, color: "rgba(7, 182, 213, 0.5)", blur: 10 } // Cyan glow
+            },
+            arrows: {
+                color: "#07b6d5", // Cyan (Primary) - High contrast on dark cyan
+                textColor: "#0c1a1d",
+                border: { color: "#ffffff", width: 2 },
+                shadow: { enabled: true, color: "rgba(7, 182, 213, 0.6)", blur: 12 }
             },
             capo: {
                 color: "#162a2d",
@@ -435,6 +474,9 @@ export const Icons = {
     },
     Plus: (props: React.SVGProps<SVGSVGElement>) => (
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    ),
+    Trash: (props: React.SVGProps<SVGSVGElement>) => (
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
     ),
     ChevronRight: (props: React.SVGProps<SVGSVGElement>) => (
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m9 18 6-6-6-6" /></svg>

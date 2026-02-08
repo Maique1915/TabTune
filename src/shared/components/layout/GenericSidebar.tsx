@@ -3,11 +3,12 @@
 import React from 'react';
 import { cn } from '@/shared/lib/utils';
 import { RotateCcw, X } from 'lucide-react';
+import { useTranslation } from "@/modules/core/presentation/context/translation-context";
 
 interface GenericSidebarProps {
     children: React.ReactNode;
-    title: string;
-    icon: React.ElementType;
+    title?: string;
+    icon?: React.ElementType;
     onReset?: () => void;
     tabs?: { id: string; label: string }[];
     activeTab?: string;
@@ -41,6 +42,7 @@ export const GenericSidebar: React.FC<GenericSidebarProps> = ({
     contentClassName,
     headerAction
 }) => {
+    const { t } = useTranslation();
     const isRight = side === 'right';
 
     const rootClasses = cn(
@@ -66,38 +68,40 @@ export const GenericSidebar: React.FC<GenericSidebarProps> = ({
                 </div>
             )}
 
-            {/* Main Header */}
-            <div className="flex items-center justify-between p-6 pb-4">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/20 rounded-lg shadow-[0_0_15px_rgba(7,182,213,0.2)]">
-                        <Icon className="w-5 h-5 text-primary" />
+            {/* Main Header - only render if title and icon are provided */}
+            {title && Icon && (
+                <div className="flex items-center justify-between p-6 pb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/20 rounded-lg shadow-[0_0_15px_rgba(7,182,213,0.2)]">
+                            <Icon className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="flex flex-col">
+                            <h1 className="text-sm font-bold tracking-widest text-zinc-100 uppercase">{title}</h1>
+                            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">{t('generic.engine')}</p>
+                        </div>
                     </div>
-                    <div className="flex flex-col">
-                        <h1 className="text-sm font-bold tracking-widest text-zinc-100 uppercase">{title}</h1>
-                        <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">NoteForge Engine</p>
+                    <div className="flex items-center gap-2">
+                        {headerAction}
+                        {onReset && (
+                            <button
+                                onClick={onReset}
+                                className="p-2 bg-white/5 hover:bg-primary/10 rounded-lg text-zinc-500 hover:text-primary border border-white/5 hover:border-primary/30 transition-all"
+                                title={t('generic.reset')}
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                            </button>
+                        )}
+                        {isMobile && onClose && (
+                            <button
+                                onClick={onClose}
+                                className="p-2 bg-white/5 rounded-lg text-zinc-500 hover:text-white border border-white/5 transition-all"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    {headerAction}
-                    {onReset && (
-                        <button
-                            onClick={onReset}
-                            className="p-2 bg-white/5 hover:bg-primary/10 rounded-lg text-zinc-500 hover:text-primary border border-white/5 hover:border-primary/30 transition-all"
-                            title="Reset Defaults"
-                        >
-                            <RotateCcw className="w-4 h-4" />
-                        </button>
-                    )}
-                    {isMobile && onClose && (
-                        <button
-                            onClick={onClose}
-                            className="p-2 bg-white/5 rounded-lg text-zinc-500 hover:text-white border border-white/5 transition-all"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
-                    )}
-                </div>
-            </div>
+            )}
 
             {/* Tab Switcher */}
             {tabs && activeTab && onTabChange && (
@@ -122,7 +126,7 @@ export const GenericSidebar: React.FC<GenericSidebarProps> = ({
             )}
 
             {/* Content Area */}
-            <div className={cn("flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar", contentClassName)}>
+            <div className={cn("flex-1 overflow-y-auto pb-4 custom-scrollbar", contentClassName)}>
                 {children}
             </div>
 
@@ -133,7 +137,7 @@ export const GenericSidebar: React.FC<GenericSidebarProps> = ({
                 </div>
             ) : (
                 <div className="mt-auto pt-4 pb-6 border-t border-zinc-800/30 text-center">
-                    <p className="text-[9px] text-zinc-600 font-mono uppercase tracking-[0.2em] opacity-50">NoteForge Active</p>
+                    <p className="text-[9px] text-zinc-600 font-mono uppercase tracking-[0.2em] opacity-50">{t('generic.active')}</p>
                 </div>
             )}
         </aside>

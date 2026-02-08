@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthSection } from "@/shared/components/layout/AuthSection";
 
 export default function LandingPage() {
   return (
@@ -34,14 +35,7 @@ export default function LandingPage() {
             </a>
           </nav>
           <div className="flex items-center gap-4">
-            <button className="text-sm font-semibold hover:text-primary transition-colors">
-              Log In
-            </button>
-            <Link href="/chords">
-              <button className="bg-primary text-background-dark px-6 py-2.5 rounded-lg text-sm font-bold shadow-cyan-glow hover:brightness-110 transition-all">
-                Start Creating
-              </button>
-            </Link>
+            <AuthSection variant="landing" />
           </div>
         </div>
       </header>
@@ -176,45 +170,50 @@ export default function LandingPage() {
               </a>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Feature Card 1 */}
-              <div className="group p-8 rounded-2xl bg-card-dark border border-white/5 hover:border-primary/30 transition-all hover:-translate-y-2">
-                <div className="size-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-6 group-hover:bg-primary group-hover:text-background-dark transition-all">
-                  <span className="material-symbols-outlined text-3xl">
-                    precision_manufacturing
-                  </span>
+              {/* Card 1: Short View */}
+              <Link href="/short" className="contents">
+                <div className="group p-8 rounded-2xl bg-card-dark border border-white/5 hover:border-primary/30 transition-all hover:-translate-y-2 cursor-pointer">
+                  <div className="size-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-6 group-hover:bg-primary group-hover:text-background-dark transition-all">
+                    <span className="material-symbols-outlined text-3xl">
+                      grid_view
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold mb-3">Short View</h3>
+                  <p className="text-slate-400 leading-relaxed">
+                    Vertical chord diagrams focused on individual chords. Ideal for quick charts and PDF exports.
+                  </p>
                 </div>
-                <h3 className="text-xl font-bold mb-3">Studio Precision</h3>
-                <p className="text-slate-400 leading-relaxed">
-                  Vertical diagrams optimized for traditional high-quality chord
-                  charts. Perfect for PDFs and songbooks.
-                </p>
-              </div>
-              {/* Feature Card 2 */}
-              <div className="group p-8 rounded-2xl bg-card-dark border border-white/5 hover:border-secondary-neon/30 transition-all hover:-translate-y-2">
-                <div className="size-14 rounded-xl bg-secondary-neon/10 flex items-center justify-center text-secondary-neon mb-6 group-hover:bg-secondary-neon group-hover:text-background-dark transition-all">
-                  <span className="material-symbols-outlined text-3xl">
-                    videocam
-                  </span>
+              </Link>
+
+              {/* Card 2: Full View */}
+              <Link href="/full" className="contents">
+                <div className="group p-8 rounded-2xl bg-card-dark border border-white/5 hover:border-secondary-neon/30 transition-all hover:-translate-y-2 cursor-pointer">
+                  <div className="size-14 rounded-xl bg-secondary-neon/10 flex items-center justify-center text-secondary-neon mb-6 group-hover:bg-secondary-neon group-hover:text-background-dark transition-all">
+                    <span className="material-symbols-outlined text-3xl">
+                      panorama_horizontal
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold mb-3">Full View</h3>
+                  <p className="text-slate-400 leading-relaxed">
+                    Complete horizontal fretboard visualization. Perfect for scales, intricate runs, and full neck rendering.
+                  </p>
                 </div>
-                <h3 className="text-xl font-bold mb-3">Cinematic Rendering</h3>
-                <p className="text-slate-400 leading-relaxed">
-                  Ultra-smooth full-neck views for intricate solos and scale
-                  runs. Export in 4K at 60fps for YouTube and TikTok.
-                </p>
-              </div>
-              {/* Feature Card 3 */}
-              <div className="group p-8 rounded-2xl bg-card-dark border border-white/5 hover:border-primary/30 transition-all hover:-translate-y-2">
-                <div className="size-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-6 group-hover:bg-primary group-hover:text-background-dark transition-all">
-                  <span className="material-symbols-outlined text-3xl">
-                    psychology
-                  </span>
+              </Link>
+
+              {/* Card 3: Beats System */}
+              <Link href="/beats" className="contents">
+                <div className="group p-8 rounded-2xl bg-card-dark border border-white/5 hover:border-primary/30 transition-all hover:-translate-y-2 cursor-pointer">
+                  <div className="size-14 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500 mb-6 group-hover:bg-purple-500 group-hover:text-background-dark transition-all">
+                    <span className="material-symbols-outlined text-3xl">
+                      equalizer
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold mb-3">Guitar Beats</h3>
+                  <p className="text-slate-400 leading-relaxed">
+                    Dedicated rhythm and strumming pattern editor. Create and visualize complex guitar beats independently.
+                  </p>
                 </div>
-                <h3 className="text-xl font-bold mb-3">Smart Transpose</h3>
-                <p className="text-slate-400 leading-relaxed">
-                  Proprietary AI-assisted positioning for optimal finger
-                  placement. No more awkward fingerings for complex jazz chords.
-                </p>
-              </div>
+              </Link>
             </div>
           </div>
         </section>
