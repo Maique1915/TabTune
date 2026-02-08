@@ -7,6 +7,7 @@ export const users = mysqlTable("users", {
     email: varchar("email", { length: 255 }).notNull(),
     passwordHash: varchar("password_hash", { length: 255 }).notNull(),
     preferredLanguage: mysqlEnum("preferred_language", ["en", "pt", "es"]).default("en"),
+    nivel: mysqlEnum("nivel", ["free", "plus", "admin"]).notNull().default("free"),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").onUpdateNow().defaultNow(),
 }, (table) => ({

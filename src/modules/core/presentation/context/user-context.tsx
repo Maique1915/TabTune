@@ -8,6 +8,9 @@ interface User {
     name: string;
     email: string;
     preferredLanguage?: string;
+    nivel?: "free" | "plus" | "admin";
+    createdAt?: string | Date;
+    updatedAt?: string | Date;
 }
 
 interface UserContextType {

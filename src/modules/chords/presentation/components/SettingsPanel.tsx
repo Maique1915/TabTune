@@ -369,17 +369,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                         <p className="text-[9px] text-white/40">Personal Style</p>
                       </div>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const updated = customStyles.filter(s => s.id !== style.id);
-                        setCustomStyles(updated);
-                        localStorage.setItem('cifrai_custom_styles', JSON.stringify(updated));
-                      }}
-                      className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors"
-                    >
-                      <Trash className="w-3.5 h-3.5" />
-                    </button>
+                    {/* Trash removed - users can only delete from profile */}
                   </div>
                   <div className="flex gap-1 h-1 w-full rounded-full overflow-hidden bg-black/20">
                     <div className="flex-1 h-full" style={{ backgroundColor: previewColors[0] }} />

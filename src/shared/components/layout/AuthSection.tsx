@@ -14,6 +14,7 @@ import {
 } from "@/shared/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar";
 import { User, LogOut, Settings, LayoutDashboard } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 interface AuthSectionProps {
     variant?: "header" | "landing";
@@ -21,12 +22,27 @@ interface AuthSectionProps {
 
 export function AuthSection({ variant = "header" }: AuthSectionProps) {
     const { user, loading, logout } = useUser();
+    const pathname = usePathname();
 
     if (loading) {
         return <div className="size-8 rounded-full bg-zinc-800 animate-pulse" />;
     }
 
     if (user) {
+        const isProfilePage = pathname?.startsWith("/profile");
+
+        if (isProfilePage) {
+            return (
+                <button
+                    onClick={logout}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[10px] font-bold uppercase tracking-wider transition-all border border-red-500/20"
+                >
+                    <LogOut size={14} />
+                    <span>Sair</span>
+                </button>
+            );
+        }
+
         return (
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -36,7 +52,7 @@ export function AuthSection({ variant = "header" }: AuthSectionProps) {
                                 {user.name}
                             </p>
                             <p className="text-[8px] font-bold text-primary uppercase tracking-wider leading-none mt-0.5">
-                                Pro Plan
+                                {user.nivel === 'admin' ? 'Admin Member' : user.nivel === 'plus' ? 'Plus Member' : 'Free Member'}
                             </p>
                         </div>
                         <Avatar className="size-8 border-2 border-primary/30 group-hover:border-primary transition-all">
