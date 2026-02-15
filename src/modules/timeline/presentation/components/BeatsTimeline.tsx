@@ -36,7 +36,8 @@ const BeatsTimeline: React.FC<BaseTimelineProps> = ({
     selectedMeasureId,
     totalDurationMs = 0,
     currentCursorMs = 0,
-    onSeek
+    onSeek,
+    variant = 'beats'
 }) => {
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);

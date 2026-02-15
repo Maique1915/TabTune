@@ -10,7 +10,7 @@ export interface FretboardEditorState {
     editingNoteId: string | null;
     activePanel: 'studio' | 'library' | 'mixer' | 'customize';
     activeDuration: Duration;
-    activePositionIndex: number;
+    activePositionIndex: number | null;
     currentMeasureIndex: number;
     selectedMeasureId: string | null;
     copiedMeasure: MeasureData | null;

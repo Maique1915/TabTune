@@ -28,4 +28,5 @@ export interface BaseTimelineProps {
     totalDurationMs?: number;
     currentCursorMs?: number;
     onSeek?: (ms: number) => void;
+    variant?: 'short' | 'full' | 'beats';
 }

@@ -4,8 +4,11 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { useTranslation } from "@/modules/core/presentation/context/translation-context";
+
 export default function SignupPage() {
     const router = useRouter();
+    const { t } = useTranslation();
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
@@ -85,8 +88,8 @@ export default function SignupPage() {
                             </span>
                         </div>
                         <div className="text-center">
-                            <h1 className="text-white text-3xl font-bold tracking-tight mb-1">Cifrai</h1>
-                            <p className="text-primary text-lg font-medium">Join the Studio</p>
+                            <h1 className="text-white text-3xl font-bold tracking-tight mb-1">TabTune</h1>
+                            <p className="text-primary text-lg font-medium">{t('auth.create_account')}</p>
                         </div>
                     </div>
 
@@ -98,7 +101,7 @@ export default function SignupPage() {
                             </div>
                         )}
                         <div className="flex flex-col gap-2">
-                            <label className="text-white text-sm font-medium px-1">Full Name</label>
+                            <label className="text-white text-sm font-medium px-1">{t('auth.name')}</label>
                             <input
                                 name="name"
                                 value={formData.name}
@@ -111,7 +114,7 @@ export default function SignupPage() {
                             />
                         </div>
                         <div className="flex flex-col gap-2">
-                            <label className="text-white text-sm font-medium px-1">Email</label>
+                            <label className="text-white text-sm font-medium px-1">{t('auth.email')}</label>
                             <input
                                 name="email"
                                 value={formData.email}
@@ -124,7 +127,7 @@ export default function SignupPage() {
                             />
                         </div>
                         <div className="flex flex-col gap-2">
-                            <label className="text-white text-sm font-medium px-1">Password</label>
+                            <label className="text-white text-sm font-medium px-1">{t('auth.password')}</label>
                             <div className="relative flex items-center">
                                 <input
                                     name="password"
@@ -155,7 +158,7 @@ export default function SignupPage() {
                             type="submit"
                             disabled={loading}
                         >
-                            {loading ? 'Creating Account...' : 'Create Account'}
+                            {loading ? t('auth.signing_up') : t('auth.signup_button')}
                         </button>
                     </form>
 
@@ -163,7 +166,7 @@ export default function SignupPage() {
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center gap-4">
                             <div className="h-px bg-[#3a5155] flex-1"></div>
-                            <span className="text-[#9bb6bb] text-xs font-medium uppercase tracking-widest">Or sign up with</span>
+                            <span className="text-[#9bb6bb] text-xs font-medium uppercase tracking-widest">{t('auth.or_continue_with')}</span>
                             <div className="h-px bg-[#3a5155] flex-1"></div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -188,9 +191,9 @@ export default function SignupPage() {
                     {/* Bottom CTA */}
                     <div className="text-center">
                         <p className="text-[#9bb6bb] text-sm">
-                            Already have an account?
+                            {t('auth.already_have_account')}
                             <Link href="/login" className="text-primary font-bold hover:underline ml-1">
-                                Log In
+                                {t('auth.login_link')}
                             </Link>
                         </p>
                     </div>
@@ -198,7 +201,7 @@ export default function SignupPage() {
 
                 {/* Support Info */}
                 <div className="mt-8 absolute bottom-6 text-center text-[#9bb6bb]/40 text-[10px] uppercase tracking-[0.2em] w-full left-0">
-                    © 2024 Cifrai Animator Studio. All rights reserved.
+                    © 2024 TabTune Animator Studio. All rights reserved.
                 </div>
             </div>
         </div>

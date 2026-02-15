@@ -25,13 +25,16 @@ export function useEditorTransposition(
             const targetNotes = isSelectiveMode ? selectedInMeasure : measure.notes;
 
             // Bounds check for all notes that will be shifted
-            const wouldGoOutOfBounds = targetNotes.some((note: NoteData) =>
-                note.positions.some((pos: any) => {
-                    if (pos.avoid) return false; // Ignore avoided strings in bounds check
+            const wouldGoOutOfBounds = targetNotes.some((note: NoteData) => {
+                const isBarre = !!note.barre || note.positions.some(p => p.endString !== undefined && p.endString !== p.string);
+                const effectiveMin = isBarre ? minAllowedFret : Math.max(1, minAllowedFret);
+
+                return note.positions.some((pos: any) => {
+                    if (pos.avoid) return false;
                     const newFret = pos.fret + semitones;
-                    return newFret < minAllowedFret || newFret > 24;
-                }) || (note.barre ? ((note.barre.fret + semitones) < minAllowedFret || (note.barre.fret + semitones) > 24) : false)
-            );
+                    return newFret < effectiveMin || newFret > 24;
+                }) || (note.barre ? ((note.barre.fret + semitones) < minAllowedFret || (note.barre.fret + semitones) > 24) : false);
+            });
 
             if (wouldGoOutOfBounds) return prev;
 
@@ -142,13 +145,16 @@ export function useEditorTransposition(
             const minAllowedFret = Math.max(0, prev.settings?.capo ?? 0);
             // Check bounds for ALL notes in ALL measures
             const wouldGoOutOfBounds = prev.measures.some((measure: MeasureData) =>
-                measure.notes.some((note: NoteData) =>
-                    note.positions.some((pos: any) => {
+                measure.notes.some((note: NoteData) => {
+                    const isBarre = !!note.barre || note.positions.some(p => p.endString !== undefined && p.endString !== p.string);
+                    const effectiveMin = isBarre ? minAllowedFret : Math.max(1, minAllowedFret);
+
+                    return note.positions.some((pos: any) => {
                         if (pos.avoid) return false;
                         const newFret = pos.fret + semitones;
-                        return newFret < minAllowedFret || newFret > 24;
-                    }) || (note.barre ? ((note.barre.fret + semitones) < minAllowedFret || (note.barre.fret + semitones) > 24) : false)
-                )
+                        return newFret < effectiveMin || newFret > 24;
+                    }) || (note.barre ? ((note.barre.fret + semitones) < minAllowedFret || (note.barre.fret + semitones) > 24) : false);
+                })
             );
 
             if (wouldGoOutOfBounds) return prev;

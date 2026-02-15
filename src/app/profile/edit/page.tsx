@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/modules/core/presentation/context/user-context';
+import { useTranslation } from '@/modules/core/presentation/context/translation-context';
 import { Header } from '@/shared/components/layout/Header';
 
 export default function EditProfilePage() {
     const router = useRouter();
     const { user: contextUser, loading: userLoading, setUser } = useUser();
+    const { t } = useTranslation();
 
     const [formData, setFormData] = useState({
         name: '',
@@ -66,14 +68,14 @@ export default function EditProfilePage() {
             if (response.ok) {
                 // Update context which also updates localStorage
                 setUser(data.user);
-                alert('Perfil atualizado com sucesso!');
+                alert(t('profile.messages.profile_updated'));
                 router.push('/profile');
             } else {
-                alert(data.error || 'Erro ao atualizar perfil');
+                alert(data.error || t('profile.messages.profile_update_error'));
             }
         } catch (error) {
             console.error('Update error:', error);
-            alert('Erro de conexão ao atualizar perfil');
+            alert(t('profile.messages.connection_error'));
         } finally {
             setLoading(false);
         }
@@ -85,7 +87,7 @@ export default function EditProfilePage() {
             <div className="min-h-screen bg-gradient-to-br from-[#0a1214] via-[#0f1c1f] to-[#0a1214] flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-zinc-400">Loading...</p>
+                    <p className="text-zinc-400">{t('page.demo.rendering')}</p>
                 </div>
             </div>
         );
@@ -105,13 +107,13 @@ export default function EditProfilePage() {
                         <Link href="/profile" className="p-2 rounded-full hover:bg-white/10 transition-colors">
                             <span className="material-symbols-outlined">arrow_back</span>
                         </Link>
-                        <h1 className="text-3xl font-bold">Edit Profile</h1>
+                        <h1 className="text-3xl font-bold">{t('profile.edit_profile')}</h1>
                     </div>
 
                     <div className="rounded-2xl p-8 bg-[#162a2d]/80 backdrop-blur-xl border border-white/10 shadow-2xl">
                         <form onSubmit={handleSave} className="flex flex-col gap-6">
                             <div className="flex flex-col gap-2">
-                                <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">Full Name</label>
+                                <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">{t('profile.edit.full_name')}</label>
                                 <input
                                     name="name"
                                     value={formData.name}
@@ -122,7 +124,7 @@ export default function EditProfilePage() {
                             </div>
 
                             <div className="flex flex-col gap-2">
-                                <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">Email Address</label>
+                                <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">{t('profile.edit.email_address')}</label>
                                 <input
                                     name="email"
                                     value={formData.email}
@@ -133,7 +135,7 @@ export default function EditProfilePage() {
                             </div>
 
                             <div className="flex flex-col gap-2">
-                                <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">Preferred Language</label>
+                                <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">{t('profile.edit.preferred_language')}</label>
                                 <select
                                     name="language"
                                     value={formData.language}
@@ -151,7 +153,7 @@ export default function EditProfilePage() {
                             <div className="flex gap-4">
                                 <Link href="/profile" className="flex-1">
                                     <button type="button" className="w-full py-3 rounded-xl border border-white/10 hover:bg-white/5 transition-all font-bold">
-                                        Cancel
+                                        {t('projects.save_dialog.cancel')}
                                     </button>
                                 </Link>
                                 <button
@@ -159,7 +161,7 @@ export default function EditProfilePage() {
                                     disabled={loading}
                                     className="flex-1 py-3 rounded-xl bg-primary text-[#0f2023] hover:brightness-110 transition-all font-bold shadow-[0_0_20px_rgba(7,182,213,0.3)] disabled:opacity-50"
                                 >
-                                    {loading ? 'Saving...' : 'Save Changes'}
+                                    {loading ? t('profile.edit.saving') : t('profile.edit.save_changes')}
                                 </button>
                             </div>
                         </form>

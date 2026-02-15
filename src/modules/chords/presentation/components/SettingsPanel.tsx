@@ -17,6 +17,7 @@ import {
 import { HexColorPicker } from "react-colorful";
 import * as Popover from "@radix-ui/react-popover";
 import { useAppContext } from "@/modules/core/presentation/context/app-context";
+import { useTranslation } from "@/modules/core/presentation/context/translation-context";
 import type { FretboardTheme } from "@/modules/core/domain/types";
 import { GenericSidebar } from "@/shared/components/layout/GenericSidebar";
 import { DEFAULT_COLORS, STUDIO_PRESETS } from "@/modules/editor/presentation/constants";
@@ -169,6 +170,7 @@ const SETTING_GROUPS: SettingGroup[] = [
 
 export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, onColorChange, numFrets, viewMode = 'standard' }: SettingsPanelProps) {
   const { setColors: contextSetColors, colors: contextColors, animationType, setAnimationType } = useAppContext();
+  const { t } = useTranslation();
 
   // Use props if available (from FretboardPlayer with history), otherwise fallback to context
   const colors = propsColors || contextColors;
@@ -213,7 +215,14 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
     }
   }, [colors, customStyles]);
 
-  const visibleGroups = SETTING_GROUPS.filter(group => {
+  const visibleGroups = SETTING_GROUPS.map(group => ({
+    ...group,
+    label: t(`settings.groups.${group.id}` as any),
+    controls: group.controls.map(control => ({
+      ...control,
+      label: t(`settings.labels.${control.key.replace(/\./g, '_')}` as any)
+    }))
+  })).filter(group => {
     if (viewMode === 'beats') {
       return ['global', 'fingers', 'labels'].includes(group.id);
     }
@@ -250,7 +259,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
     if (overwrite && activeStyleId) {
       // Update existing style
       updated = customStyles.map(s => s.id === activeStyleId ? { ...s, label: name, style: colors } : s);
-      alert("Estilo atualizado com sucesso!");
+      alert(t('settings.messages.style_updated'));
     } else {
       // Save as new style (with auto-increment if name exists)
       let finalName = name;
@@ -285,7 +294,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
       };
       updated = [...customStyles, newStyle];
       setActiveStyleId(newStyle.id);
-      alert("Estilo salvo com sucesso!");
+      alert(t('settings.messages.style_saved'));
     }
 
     setCustomStyles(updated);
@@ -298,9 +307,9 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
     <div className="px-4 space-y-4">
       <div className="space-y-1 mb-4">
         <h3 className="text-white text-sm font-bold uppercase tracking-widest flex items-center gap-2">
-          Visual Presets
+          {t('settings.tabs.presets')}
         </h3>
-        <p className="text-white/40 text-[10px]">Customize render output style</p>
+        <p className="text-white/40 text-[10px]">{t('settings.presets_desc')}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-3">
@@ -325,8 +334,8 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                   style={{ background: `linear-gradient(135deg, ${previewColors[0]} 0%, ${previewColors[1]} 100%)` }}
                 />
                 <div>
-                  <p className={`text-xs font-bold transition-colors ${isSelected ? 'text-primary' : 'text-white group-hover:text-primary'}`}>{preset.label}</p>
-                  <p className="text-[9px] text-white/40">Professional Styles</p>
+                  <p className={`text-xs font-bold transition-colors ${isSelected ? 'text-primary' : 'text-white group-hover:text-primary'}`}>{t(`settings.presets.${key}` as any)}</p>
+                  <p className="text-[9px] text-white/40">{t('settings.professional_styles')}</p>
                 </div>
               </div>
               <div className="flex gap-1 h-1 w-full rounded-full overflow-hidden bg-black/20">
@@ -342,7 +351,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
         {customStyles.length > 0 && (
           <>
             <div className="h-px bg-white/5 my-2" />
-            <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-2">Custom Styles</p>
+            <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-2">{t('settings.custom_styles')}</p>
             {customStyles.map((style) => {
               const previewColors = [
                 style.style.fingers?.color || '#000',
@@ -366,7 +375,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                       />
                       <div>
                         <p className={`text-xs font-bold transition-colors ${isSelected ? 'text-pink-400' : 'text-white group-hover:text-pink-400'}`}>{style.label}</p>
-                        <p className="text-[9px] text-white/40">Personal Style</p>
+                        <p className="text-[9px] text-white/40">{t('settings.personal_style')}</p>
                       </div>
                     </div>
                     {/* Trash removed - users can only delete from profile */}
@@ -393,31 +402,31 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
       groupsToRender = [
         {
           id: 'global',
-          label: 'Ambiente',
+          label: t('settings.groups.global'),
           icon: Sun,
           controls: [
-            { type: 'color', label: 'Cor do Fundo', key: 'global.backgroundColor' }
+            { type: 'color', label: t('settings.labels.global_backgroundColor'), key: 'global.backgroundColor' }
           ]
         },
         {
           id: 'fingers',
-          label: 'Seta de Batida',
+          label: t('settings.groups.arrows'),
           icon: Target,
           controls: [
-            { type: 'color', label: 'Cor da Seta', key: 'arrows.color' },
-            { type: 'color', label: 'Cor do Dedo (PIMA)', key: 'arrows.textColor' },
-            { type: 'toggle', label: 'Ativar Sombra', key: 'arrows.shadow.enabled' },
-            { type: 'color', label: 'Cor da Sombra', key: 'arrows.shadow.color' },
-            { type: 'toggle', label: 'Ativar Borda', key: 'arrows.border.enabled' },
-            { type: 'color', label: 'Cor da Borda', key: 'arrows.border.color' }
+            { type: 'color', label: t('settings.labels.arrows_color'), key: 'arrows.color' },
+            { type: 'color', label: t('settings.labels.arrows_textColor'), key: 'arrows.textColor' },
+            { type: 'toggle', label: t('settings.labels.arrows_shadow_enabled'), key: 'arrows.shadow.enabled' },
+            { type: 'color', label: t('settings.labels.arrows_shadow_color'), key: 'arrows.shadow.color' },
+            { type: 'toggle', label: t('settings.labels.arrows_border_enabled'), key: 'arrows.border.enabled' },
+            { type: 'color', label: t('settings.labels.arrows_border_color'), key: 'arrows.border.color' }
           ]
         },
         {
           id: 'labels',
-          label: 'Identificação',
+          label: t('settings.groups.labels'),
           icon: Type,
           controls: [
-            { type: 'color', label: 'Cor do Nome do Acorde', key: 'chordName.color' }
+            { type: 'color', label: t('settings.labels.chordName_color'), key: 'chordName.color' }
           ]
         }
       ] as any;
@@ -425,7 +434,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
 
     return (
       <div className="px-4 space-y-3">
-        <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">Componentes</p>
+        <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">{t('settings.components')}</p>
 
         {groupsToRender.map((group) => {
           const isExpanded = expandedKey === group.id;
@@ -532,52 +541,6 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
           );
         })}
 
-        <div className="h-px w-full bg-zinc-800/50 my-4" />
-
-        <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-3">View Transform</p>
-
-        {/* Rotation Controls */}
-        <div className="space-y-3 p-3 bg-zinc-950/30 rounded-lg border border-zinc-800/50 mb-3">
-
-          {/* Rotation Buttons */}
-          <div className="space-y-1">
-            <span className="text-[9px] text-zinc-500 font-medium">Rotation</span>
-            <div className="grid grid-cols-3 gap-2">
-              {(numFrets && numFrets > 12
-                ? [
-                  { label: '0°', val: 0, mirror: false },
-                  { label: '180°', val: 0, mirror: true } // Mirror on Y axis (headstock to the right)
-                ]
-                : [
-                  { label: '0°', val: 0, mirror: false },
-                  { label: '90°', val: 90, mirror: false },
-                  { label: '270°', val: 270, mirror: true }
-                ]
-              ).map((opt) => (
-                <button
-                  key={`${opt.val}-${opt.mirror}`}
-                  onClick={() => {
-                    setColors((prev: any) => ({
-                      ...prev,
-                      global: {
-                        ...(prev.global || {}),
-                        rotation: opt.val,
-                        mirror: opt.mirror
-                      }
-                    }));
-                  }}
-                  className={`py-2 rounded-lg border text-[10px] font-black transition-all ${colors.global?.rotation === opt.val && colors.global?.mirror === opt.mirror
-                    ? 'bg-primary/10 border-primary/40 text-primary font-bold shadow-[0_0_10px_rgba(6,182,212,0.2)]'
-                    : 'bg-black/20 border-white/5 text-zinc-500 hover:bg-white/5 hover:text-zinc-300'
-                    }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-        </div>
 
       </div>
     );
@@ -586,7 +549,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
   const renderMotionTab = () => (
     <div className="space-y-6">
       <div className="px-4 space-y-3">
-        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Animation Type</span>
+        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{t('settings.animation_type')}</span>
         <div className="grid grid-cols-1 gap-2">
           {numFrets && numFrets <= 24 && (
             <button
@@ -600,10 +563,10 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                 }`}
             >
               <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${animationType === 'carousel' ? 'text-secondary-neon' : 'text-zinc-300'}`}>
-                Carousel
+                {t('settings.animations.carousel.title')}
               </div>
               <div className="text-[9px] opacity-70">
-                Flowing stream of chords sliding across the screen.
+                {t('settings.animations.carousel.desc')}
               </div>
             </button>
           )}
@@ -620,10 +583,10 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                 }`}
             >
               <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${animationType === 'static-fingers' ? 'text-primary' : 'text-zinc-300'}`}>
-                Static Fretboard
+                {t('settings.animations.static.title')}
               </div>
               <div className="text-[9px] opacity-70">
-                Only fingers move. Fretboard remains fixed.
+                {t('settings.animations.static.desc')}
               </div>
             </button>
           )}
@@ -636,9 +599,9 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
   );
 
   const tabs = [
-    { id: 'basic', label: 'Basic' },
-    { id: 'advanced', label: 'Advanced' },
-    { id: 'motion', label: 'Motion' }
+    { id: 'basic', label: t('settings.tabs.basic') },
+    { id: 'advanced', label: t('settings.tabs.advanced') },
+    { id: 'motion', label: t('settings.tabs.motion') }
   ].filter(tab => {
     if (tab.id === 'motion') {
       return viewMode === 'standard';
@@ -664,7 +627,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
             className="w-full bg-pink-600 hover:bg-pink-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-pink-500/20 flex items-center justify-center gap-2 group transition-all"
           >
             <Palette className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-            Salvar Estilo Customizado
+            {t('settings.save_custom_style')}
           </button>
         )}
       >

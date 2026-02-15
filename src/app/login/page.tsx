@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from "@/modules/core/presentation/context/translation-context";
 
 export default function LoginPage() {
     const router = useRouter();
+    const { t } = useTranslation();
     const [showPassword, setShowPassword] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
@@ -87,8 +89,8 @@ export default function LoginPage() {
                             </span>
                         </div>
                         <div className="text-center">
-                            <h1 className="text-white text-3xl font-bold tracking-tight mb-1">Cifrai</h1>
-                            <p className="text-primary text-lg font-medium">Welcome Back, Artist</p>
+                            <h1 className="text-white text-3xl font-bold tracking-tight mb-1">TabTune</h1>
+                            <p className="text-primary text-lg font-medium">{t('auth.welcome_back')}</p>
                         </div>
                     </div>
 
@@ -100,7 +102,7 @@ export default function LoginPage() {
                             </div>
                         )}
                         <div className="flex flex-col gap-2">
-                            <label className="text-white text-sm font-medium px-1">Email</label>
+                            <label className="text-white text-sm font-medium px-1">{t('auth.email')}</label>
                             <input
                                 name="email"
                                 value={formData.email}
@@ -113,7 +115,7 @@ export default function LoginPage() {
                             />
                         </div>
                         <div className="flex flex-col gap-2">
-                            <label className="text-white text-sm font-medium px-1">Password</label>
+                            <label className="text-white text-sm font-medium px-1">{t('auth.password')}</label>
                             <div className="relative flex items-center">
                                 <input
                                     name="password"
@@ -139,7 +141,7 @@ export default function LoginPage() {
 
                         {/* Meta Text */}
                         <div className="flex justify-end">
-                            <a className="text-primary text-sm font-medium hover:underline cursor-pointer">Forgot Password?</a>
+                            <a className="text-primary text-sm font-medium hover:underline cursor-pointer">{t('auth.forgot_password')}</a>
                         </div>
 
                         {/* Action Button */}
@@ -148,7 +150,7 @@ export default function LoginPage() {
                             type="submit"
                             disabled={loading}
                         >
-                            {loading ? 'Logging In...' : 'Log In'}
+                            {loading ? t('auth.logging_in') : t('auth.login_button')}
                         </button>
                     </form>
 
@@ -156,7 +158,7 @@ export default function LoginPage() {
                     <div className="flex flex-col gap-6">
                         <div className="flex items-center gap-4">
                             <div className="h-px bg-[#3a5155] flex-1"></div>
-                            <span className="text-[#9bb6bb] text-xs font-medium uppercase tracking-widest">Or continue with</span>
+                            <span className="text-[#9bb6bb] text-xs font-medium uppercase tracking-widest">{t('auth.or_continue_with')}</span>
                             <div className="h-px bg-[#3a5155] flex-1"></div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -181,9 +183,9 @@ export default function LoginPage() {
                     {/* Bottom CTA */}
                     <div className="text-center">
                         <p className="text-[#9bb6bb] text-sm">
-                            Don't have an account?
+                            {t('auth.no_account')}
                             <Link href="/signup" className="text-primary font-bold hover:underline ml-1">
-                                Sign Up
+                                {t('auth.signup_link')}
                             </Link>
                         </p>
                     </div>
@@ -191,7 +193,7 @@ export default function LoginPage() {
 
                 {/* Support Info */}
                 <div className="mt-8 absolute bottom-6 text-center text-[#9bb6bb]/40 text-[10px] uppercase tracking-[0.2em] w-full left-0">
-                    © 2024 Cifrai Animator Studio. All rights reserved.
+                    © 2024 TabTune Animator Studio. All rights reserved.
                 </div>
             </div>
         </div>

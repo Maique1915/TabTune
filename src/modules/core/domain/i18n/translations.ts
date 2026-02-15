@@ -8,6 +8,7 @@ export const translations = {
             harmony: 'Harmonia',
             editor: 'Editor',
             upgrade_plan: 'Plano Premium',
+            confirm_exit: 'Você tem alterações não salvas. Deseja sair sem salvar?'
         },
         generic: {
             engine: 'Motor NoteForge',
@@ -22,10 +23,50 @@ export const translations = {
             share: 'Compartilhar',
             import: 'Importar',
             export: 'Exportar',
+            logout: 'Sair',
+            my_account: 'Minha Conta',
+            levels: {
+                admin: 'Membro Admin',
+                plus: 'Membro Plus',
+                free: 'Membro Grátis'
+            }
         },
         editor: {
             fretboard: 'Braço',
             duration: 'Duração',
+            duration_names: {
+                title: 'Selecione a Duração',
+                desc: 'Defina o tempo rítmico da nota selecionada.',
+                select: 'Selecione uma duração rítmica',
+                range: 'Gama de Semibreve a Fusa',
+                sync: 'Sincronia automática com o motor',
+                w: 'Semibreve',
+                h: 'Mínima',
+                q: 'Semínima',
+                '8': 'Colcheia',
+                '16': 'Semicolcheia',
+                '32': 'Fusa'
+            },
+            duration_modifiers: {
+                title: 'Modificadores',
+                dotted: 'Pontuada',
+                rest: 'Pausa',
+            },
+            tools: {
+                title: 'Ferramentas de Edição',
+                desc: 'Ações avançadas para manipular o compasso ou notas selecionadas.',
+                note_tools: 'Ferramentas de Nota',
+                measure_tools: 'Ferramentas de Compasso',
+                selective: 'Seletivo',
+                semitone: 'Semitom',
+                global: 'Global',
+                measure: 'Compasso',
+                transpose: 'Transpor',
+                auto: 'Auto',
+                finger: 'Dedo',
+                select: 'Edição Seletiva',
+                sync: 'Sincronizar Tudo'
+            },
             actions: 'Ações',
         },
         harmony: {
@@ -34,6 +75,15 @@ export const translations = {
             extensions: 'Extensões',
             bass_note: 'Nota Baixo',
             root: 'RAIZ',
+            qualities: {
+                major: 'Maior',
+                minor: 'Menor',
+                dim: 'Diminuta',
+                aug: 'Aumentada',
+                sus2: 'Sus2',
+                sus4: 'Sus4',
+                maj: 'Sétima Maior'
+            },
             empty: {
                 title: 'Nenhum Compasso Selecionado',
                 desc: 'Selecione um compasso para definir sua estrutura harmônica.',
@@ -61,8 +111,8 @@ export const translations = {
             hero: {
                 badge: 'Agora com Renderização 4K',
                 title_start: 'Acordes Animados para',
-                title_end: 'Criadores de Guitarra',
-                subtitle: 'Animações de braço de nível profissional para aulas, redes sociais e cursos. Crie cifras cinemáticas em segundos.',
+                title_end: 'Criadores de Conteúdo',
+                subtitle: 'Animações de braço de nível profissional para aulas, redes sociais e cursos. Crie cifras cinemáticas em segundos para qualquer instrumento de cordas.',
                 cta_primary: 'Começar Grátis',
                 cta_secondary: 'Ver Demo'
             },
@@ -79,20 +129,20 @@ export const translations = {
                 explore: 'Explorar todas as ferramentas',
                 short_view: {
                     title: 'Visão Curta',
-                    desc: 'Diagramas de acordes verticais focados em acordes individuais. Ideal para cifras rápidas e exportação em PDF.'
+                    desc: 'Diagramas de acordes verticais focados em acordes individuais. Ideal para demonstrar formações de acordes de forma clara e objetiva.'
                 },
                 full_view: {
                     title: 'Visão Completa',
-                    desc: 'Visualização horizontal completa do braço. Perfeito para escalas, corridas complexas e renderização de todo o braço.'
+                    desc: 'Visualização horizontal completa do braço para posições de dedos e riffs. Perfeito para escalas e sequências complexas.'
                 },
                 beats: {
-                    title: 'Batidas de Guitarra',
-                    desc: 'Editor dedicado de ritmo e padrões de batida. Crie e visualize batidas de guitarra complexas independentemente.'
+                    title: 'Padrões de Batida',
+                    desc: 'Editor dedicado de ritmo e padrões de batida. Crie e visualize padrões rítmicos complexos independentemente.'
                 }
             },
             cta: {
                 title: 'Pronto para transformar suas aulas?',
-                desc: 'Junte-se a mais de 5.000+ criadores de guitarra fazendo visuais de classe mundial com Cifrai. Nenhuma habilidade de design necessária.',
+                desc: 'Junte-se a milhares de criadores fazendo visuais de classe mundial com TabTune. Nenhuma habilidade de design necessária.',
                 button_primary: 'Começar Grátis',
                 button_secondary: 'Ver Planos'
             },
@@ -102,12 +152,17 @@ export const translations = {
                 discord: 'Comunidade Discord',
                 rights: '© 2024 Cifrai Animator. Todos os direitos reservados.'
             },
+            about: {
+                title: 'Sobre o TabTune',
+                description: 'TabTune é uma plataforma profissional desenvolvida para criadores de conteúdo educacional sobre instrumentos de cordas. Crie visualizações animadas de braço de instrumento, diagramas de acordes (tela Short), posições de dedos e riffs (tela Full), além de padrões de batidas e ritmos (tela Beats). Exporte suas criações em vídeo (MP4, WebM) ou como sequência de imagens PNG em ZIP. Torne seus vídeos mais didáticos, explicativos e profissionais.'
+            },
         },
         settings: {
             tabs: {
                 basic: 'Básico',
                 advanced: 'Avançado',
-                motion: 'Movimento'
+                motion: 'Movimento',
+                presets: 'Estilos'
             },
             headers: {
                 visual_presets: 'Predefinições Visuais',
@@ -115,9 +170,20 @@ export const translations = {
                 view_transform: 'Transformação de Vista',
                 animation_type: 'Tipo de Animação'
             },
+            presets_desc: 'Predefinições de estilo prontas para usar.',
+            professional_styles: 'Estilo Profissional',
+            custom_styles: 'Estilos Personalizados',
+            personal_style: 'Seu Estilo',
+            save_custom_style: 'Salvar Estilo Atual',
             presets: {
                 label: 'Estilos Profissionais',
-                customize: 'Personalize o estilo de saída'
+                customize: 'Personalize o estilo de saída',
+                default: 'Padrão Escuro',
+                classic: 'Clássico Claro',
+                cyberpunk: 'Cyberpunk',
+                midnight: 'Azul Meia-Noite',
+                vintage: 'Vintage',
+                studio: 'Modo Estúdio'
             },
             groups: {
                 global: 'Global & Vista',
@@ -125,7 +191,12 @@ export const translations = {
                 inlays: 'Marcadores',
                 strings_frets: 'Cordas & Trastes',
                 fingers: 'Dedos',
-                labels: 'Rótulos & Capo'
+                labels: 'Rótulos & Capo',
+                arrows: 'Setas Rítmicas'
+            },
+            messages: {
+                style_updated: 'Estilo atualizado!',
+                style_saved: 'Estilo salvo com sucesso!'
             },
             labels: {
                 background: 'Fundo',
@@ -171,6 +242,7 @@ export const translations = {
             up: 'CIMA',
             pause: 'PAUSA',
             mute: 'ABAFADO',
+            none: 'Nenhum',
             accent: 'Acento',
             strong_beat: 'Batida Forte',
             strum_finger: 'Dedo da Batida',
@@ -237,8 +309,116 @@ export const translations = {
                 saving: 'Salvando...',
                 cancel: 'Cancelar'
             }
+        },
+        auth: {
+            welcome_back: 'Bem-vindo de volta, Artista',
+            email: 'E-mail',
+            password: 'Senha',
+            forgot_password: 'Esqueceu a senha?',
+            login_button: 'Entrar',
+            logging_in: 'Entrando...',
+            or_continue_with: 'Ou continue com',
+            no_account: 'Não tem uma conta?',
+            signup_link: 'Cadastre-se',
+            create_account: 'Criar Conta',
+            name: 'Nome',
+            confirm_password: 'Confirmar Senha',
+            already_have_account: 'Já tem uma conta?',
+            login_link: 'Entrar',
+            signing_up: 'Cadastrando...',
+            signup_button: 'Cadastrar'
+        },
+        profile: {
+            title: 'Meu Perfil',
+            edit_profile: 'Editar Perfil',
+            sign_out: 'Sair',
+            lang: 'Idioma',
+            joined: 'Entrou em',
+            projects: 'Meus Projetos',
+            styles: 'Meus Estilos',
+            chord_library: 'Biblioteca de Acordes',
+            contact_admin: 'Contatar Admin',
+            view_all: 'Ver Todos',
+            add_shape: 'Adicionar Forma',
+            empty_projects: 'Nenhum projeto encontrado nesta visão',
+            create_project: 'Criar Novo Projeto',
+            empty_styles: 'Nenhum estilo personalizado salvo',
+            create_style: 'CRIAR NOVO ESTILO',
+            member: 'MEMBRO',
+            recently: 'Recentemente',
+            saved_cloud: 'Salvo na Nuvem',
+            open_project: 'Abrir Projeto',
+            delete_project: 'Excluir Projeto',
+            updated: 'Atualizado em',
+            confirm: {
+                delete_project: 'Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.',
+                delete_style: 'Tem certeza que deseja excluir este estilo?'
+            },
+            messages: {
+                project_deleted: 'Projeto excluído com sucesso!',
+                project_delete_error: 'Falha ao excluir o projeto',
+                style_deleted: 'Estilo removido com sucesso!',
+                profile_updated: 'Perfil atualizado com sucesso!',
+                profile_update_error: 'Erro ao atualizar perfil',
+                connection_error: 'Erro de conexão ao atualizar perfil'
+            },
+            edit: {
+                full_name: 'Nome Completo',
+                email_address: 'Endereço de E-mail',
+                preferred_language: 'Idioma Preferido',
+                save_changes: 'Salvar Alterações',
+                saving: 'Salvando...'
+            }
+        },
+        shortcuts: {
+            title: 'Atalhos do Teclado',
+            description: 'Melhore sua produtividade com estes atalhos rápidos.',
+            groups: {
+                navigation: 'Navegação',
+                editing: 'Edição',
+                advanced: 'Avançado'
+            },
+            keys: {
+                arrows: '⭠ ⭡ ⭢ ⭣',
+                arrows_desc: '⭠ ⭡ ⭢ ⭣ entre Trastes e Cordas',
+                alt_arrows: 'Alt + ⭡/⭣',
+                alt_arrows_desc: 'Navegação Hierárquica (Dedo > Acorde > Compasso)',
+                shift_arrows: 'Shift + ⭡/⭣',
+                shift_arrows_desc: 'Controle de Pestana',
+                shift_arrows_rl: 'Shift + ⭠/⭢',
+                shift_arrows_rl_desc: 'Transpor Projeto',
+                ctrl_arrows_ud: 'Ctrl + ⭡/⭣',
+                ctrl_arrows_ud_desc: 'Rotacionar/Espelhar Braço',
+                ctrl_arrows_rl: 'Ctrl + ⭠/⭢',
+                ctrl_arrows_rl_desc: 'Controle de Capo',
+                ctrl_shift_arrows: 'Ctrl + Shift + ⭠/⭢',
+                ctrl_shift_arrows_desc: 'Ciclar Dedos (1, 2, 3, 4, T, X)',
+                plus: '+',
+                plus_desc: 'Adicionar Compasso',
+                ctrl_space: 'Ctrl + Espaço',
+                ctrl_space_desc: 'Ativar/Desativar Acento (Batida Forte)',
+                ctrl_arrows_rl_beats: 'Ctrl + ⭠/⭢',
+                ctrl_arrows_rl_beats_desc: 'Ciclar Direção da Batida',
+                ctrl_shift_arrows_beats: 'Ctrl + Shift + ⭠/⭢',
+                ctrl_shift_arrows_beats_desc: 'Ciclar Dedo da Batida',
+                shift_plus: 'Shift + +',
+                shift_plus_desc: 'Adicionar Nota',
+                ctrl_plus: 'Ctrl + +',
+                ctrl_plus_desc: 'Adicionar Dedo',
+                minus: '-',
+                minus_desc: 'Remover Compasso',
+                shift_minus: 'Shift + -',
+                shift_minus_desc: 'Remover Nota/Acorde',
+                ctrl_minus: 'Ctrl + -',
+                ctrl_minus_desc: 'Remover Dedo',
+                ctrl_d: 'Ctrl + D',
+                ctrl_d_desc: 'Duplicar Compasso',
+                alt_shift_arrows_ud_beats: 'Alt + Shift + ⭡/⭣',
+                alt_shift_arrows_ud_beats_desc: 'Ciclar Duração da Batida',
+                alt_arrows_ud_beats: 'Alt + ⭡/⭣',
+                alt_arrows_ud_beats_desc: 'Ciclar Tipo de Batida (Normal, Pausa, Abafado, Nenhum)'
+            }
         }
-
     },
     en: {
         menu: {
@@ -247,6 +427,7 @@ export const translations = {
             harmony: 'Harmony',
             editor: 'Editor',
             upgrade_plan: 'Upgrade Plan',
+            confirm_exit: 'You have unsaved changes. Do you want to leave without saving?'
         },
         generic: {
             engine: 'NoteForge Engine',
@@ -261,10 +442,50 @@ export const translations = {
             share: 'Share',
             import: 'Import',
             export: 'Export',
+            logout: 'Log Out',
+            my_account: 'My Account',
+            levels: {
+                admin: 'Admin Member',
+                plus: 'Plus Member',
+                free: 'Free Member'
+            }
         },
         editor: {
             fretboard: 'Fretboard',
             duration: 'Duration',
+            duration_names: {
+                title: 'Select Duration',
+                desc: 'Set the rhythmic value for the selected note.',
+                select: 'Select a rhythmic duration',
+                range: 'Whole note to 32nd note',
+                sync: 'Automatic sync with engine',
+                w: 'Whole',
+                h: 'Half',
+                q: 'Quarter',
+                '8': '8th',
+                '16': '16th',
+                '32': '32nd'
+            },
+            duration_modifiers: {
+                title: 'Modifiers',
+                dotted: 'Dotted',
+                rest: 'Rest',
+            },
+            tools: {
+                title: 'Editing Tools',
+                desc: 'Advanced actions to manipulate the measure or selected notes.',
+                note_tools: 'Note Tools',
+                measure_tools: 'Measure Tools',
+                selective: 'Selective',
+                semitone: 'Semitone',
+                global: 'Global',
+                measure: 'Measure',
+                transpose: 'Transpose',
+                auto: 'Auto',
+                finger: 'Finger',
+                select: 'Selective Editing',
+                sync: 'Sync All'
+            },
             actions: 'Actions',
         },
         harmony: {
@@ -273,6 +494,15 @@ export const translations = {
             extensions: 'Extensions',
             bass_note: 'Bass Note',
             root: 'ROOT',
+            qualities: {
+                major: 'Major',
+                minor: 'Minor',
+                dim: 'Diminished',
+                aug: 'Augmented',
+                sus2: 'Sus2',
+                sus4: 'Sus4',
+                maj: 'Major 7th'
+            },
             empty: {
                 title: 'No Measure Selected',
                 desc: 'Select a measure to define its harmonic structure.',
@@ -300,8 +530,8 @@ export const translations = {
             hero: {
                 badge: 'Now with 4K Rendering',
                 title_start: 'Animated Chords for',
-                title_end: 'Guitar Creators',
-                subtitle: 'Professional-grade fretboard animations for lessons, social media, and courses. Build cinematic chord charts in seconds.',
+                title_end: 'Content Creators',
+                subtitle: 'Professional-grade fretboard animations for lessons, social media, and courses. Build cinematic chord charts in seconds for any stringed instrument.',
                 cta_primary: 'Start Creating Free',
                 cta_secondary: 'View Demo'
             },
@@ -318,20 +548,20 @@ export const translations = {
                 explore: 'Explore all tools',
                 short_view: {
                     title: 'Short View',
-                    desc: 'Vertical chord diagrams focused on individual chords. Ideal for quick charts and PDF exports.'
+                    desc: 'Vertical chord diagrams focused on individual chords. Ideal for demonstrating chord formations clearly and objectively.'
                 },
                 full_view: {
                     title: 'Full View',
-                    desc: 'Complete horizontal fretboard visualization. Perfect for scales, intricate runs, and full neck rendering.'
+                    desc: 'Complete horizontal fretboard visualization for finger positions and riffs. Perfect for scales and complex sequences.'
                 },
                 beats: {
-                    title: 'Guitar Beats',
-                    desc: 'Dedicated rhythm and strumming pattern editor. Create and visualize complex guitar beats independently.'
+                    title: 'Strumming Patterns',
+                    desc: 'Dedicated rhythm and strumming pattern editor. Create and visualize complex rhythmic patterns independently.'
                 }
             },
             cta: {
                 title: 'Ready to transform your lessons?',
-                desc: 'Join over 5,000+ guitar creators making world-class visuals with Cifrai. No design skills required.',
+                desc: 'Join thousands of creators making world-class visuals with TabTune. No design skills required.',
                 button_primary: 'Get Started For Free',
                 button_secondary: 'View Pricing Plans'
             },
@@ -341,12 +571,17 @@ export const translations = {
                 discord: 'Discord Community',
                 rights: '© 2024 Cifrai Animator. All rights reserved.'
             },
+            about: {
+                title: 'About TabTune',
+                description: 'TabTune is a professional platform designed for content creators teaching stringed instruments. Create animated fretboard visualizations, chord diagrams (Short view), finger positions and riffs (Full view), plus strumming patterns and rhythms (Beats view). Export your creations as video (MP4, WebM) or PNG image sequences in ZIP. Make your videos more educational, explanatory, and professional.'
+            },
         },
         settings: {
             tabs: {
                 basic: 'Basic',
                 advanced: 'Advanced',
-                motion: 'Motion'
+                motion: 'Motion',
+                presets: 'Presets'
             },
             headers: {
                 visual_presets: 'Visual Presets',
@@ -354,9 +589,20 @@ export const translations = {
                 view_transform: 'View Transform',
                 animation_type: 'Animation Type'
             },
+            presets_desc: 'Professional style presets ready for output.',
+            professional_styles: 'Professional Style',
+            custom_styles: 'Custom Styles',
+            personal_style: 'Your Style',
+            save_custom_style: 'Save Current Style',
             presets: {
                 label: 'Professional Styles',
-                customize: 'Customize render output style'
+                customize: 'Customize render output style',
+                default: 'Default Dark',
+                classic: 'Classic Light',
+                cyberpunk: 'Cyberpunk',
+                midnight: 'Midnight Blue',
+                vintage: 'Vintage',
+                studio: 'Studio Mode'
             },
             groups: {
                 global: 'Global & View',
@@ -364,7 +610,12 @@ export const translations = {
                 inlays: 'Inlays (Markers)',
                 strings_frets: 'Strings & Frets',
                 fingers: 'Fingers',
-                labels: 'Labels & Capo'
+                labels: 'Labels & Capo',
+                arrows: 'Rhythm Arrows'
+            },
+            messages: {
+                style_updated: 'Style updated!',
+                style_saved: 'Style saved successfully!'
             },
             labels: {
                 background: 'Background',
@@ -410,6 +661,7 @@ export const translations = {
             up: 'UP',
             pause: 'PAUSE',
             mute: 'MUTE',
+            none: 'None',
             accent: 'Accent',
             strong_beat: 'Strong Beat',
             strum_finger: 'Strum Finger',
@@ -476,8 +728,112 @@ export const translations = {
                 saving: 'Saving...',
                 cancel: 'Cancel'
             }
+        },
+        auth: {
+            welcome_back: 'Welcome Back, Artist',
+            email: 'Email',
+            password: 'Password',
+            forgot_password: 'Forgot Password?',
+            login_button: 'Log In',
+            logging_in: 'Logging In...',
+            or_continue_with: 'Or continue with',
+            no_account: "Don't have an account?",
+            signup_link: 'Sign Up',
+            create_account: 'Create Account',
+            name: 'Name',
+            confirm_password: 'Confirm Password',
+            already_have_account: 'Already have an account?',
+            login_link: 'Log In',
+            signing_up: 'Signing Up...',
+            signup_button: 'Sign Up'
+        },
+        profile: {
+            title: 'My Profile',
+            edit_profile: 'Edit Profile',
+            sign_out: 'Sign Out',
+            lang: 'Lang',
+            joined: 'Joined',
+            projects: 'My Projects',
+            styles: 'My Styles',
+            chord_library: 'Chord Library',
+            contact_admin: 'Contact Admin',
+            view_all: 'View All',
+            add_shape: 'Add Shape',
+            empty_projects: 'No projects found in this view',
+            create_project: 'Create New Project',
+            empty_styles: 'No custom styles saved',
+            create_style: 'CREATE NEW STYLE',
+            member: 'MEMBER',
+            recently: 'Recently',
+            saved_cloud: 'Saved in Cloud',
+            open_project: 'Open Project',
+            delete_project: 'Delete Project',
+            updated: 'Updated',
+            confirm: {
+                delete_project: 'Are you sure you want to delete this project? This action cannot be undone.',
+                delete_style: 'Are you sure you want to delete this style?'
+            },
+            messages: {
+                project_deleted: 'Project deleted successfully!',
+                project_delete_error: 'Failed to delete project',
+                style_deleted: 'Style removed successfully!',
+                profile_updated: 'Profile updated successfully!',
+                profile_update_error: 'Error updating profile',
+                connection_error: 'Connection error when updating profile'
+            },
+            edit: {
+                full_name: 'Full Name',
+                email_address: 'Email Address',
+                preferred_language: 'Preferred Language',
+                save_changes: 'Save Changes',
+                saving: 'Saving...'
+            }
+        },
+        shortcuts: {
+            title: 'Keyboard Shortcuts',
+            description: 'Boost your productivity with these quick shortcuts.',
+            groups: {
+                navigation: 'Navigation',
+                editing: 'Editing',
+                advanced: 'Advanced'
+            },
+            keys: {
+                arrows: '⭠ ⭡ ⭢ ⭣',
+                arrows_desc: '⭠ ⭡ ⭢ ⭣ Frets and Strings',
+                alt_arrows: 'Alt + ⭡/⭣',
+                alt_arrows_desc: 'Hierarchical Navigation (Finger > Chord > Measure)',
+                shift_arrows: 'Shift + ⭡/⭣',
+                shift_arrows_desc: 'Barre Control',
+                shift_arrows_rl: 'Shift + ⭠/⭢',
+                shift_arrows_rl_desc: 'Transpose Project',
+                ctrl_arrows_ud: 'Ctrl + ⭡/⭣',
+                ctrl_arrows_ud_desc: 'Rotate/Mirror Fretboard',
+                ctrl_arrows_rl: 'Ctrl + ⭠/⭢',
+                ctrl_arrows_rl_desc: 'Capo Control',
+                ctrl_shift_arrows: 'Ctrl + Shift + ⭠/⭢',
+                ctrl_shift_arrows_desc: 'Cycle Fingers (1, 2, 3, 4, T, X)',
+                plus: '+',
+                plus_desc: 'Add Measure',
+                ctrl_space: 'Ctrl + Space',
+                ctrl_space_desc: 'Toggle Accent (Strong Beat)',
+                ctrl_arrows_rl_beats: 'Ctrl + ⭠/⭢',
+                ctrl_arrows_rl_beats_desc: 'Cycle Strum Direction',
+                ctrl_shift_arrows_beats: 'Ctrl + Shift + ⭠/⭢',
+                ctrl_shift_arrows_beats_desc: 'Cycle Strum Finger',
+                shift_plus: 'Shift + +',
+                shift_plus_desc: 'Add Note',
+                ctrl_plus: 'Ctrl + +',
+                ctrl_plus_desc: 'Add Finger',
+                minus: '-',
+                minus_desc: 'Remove Measure',
+                shift_minus: 'Shift + -',
+                shift_minus_desc: 'Remove Note/Chord',
+                ctrl_minus: 'Ctrl + -',
+                ctrl_minus_desc: 'Remove Finger',
+                ctrl_d: 'Ctrl + D',
+                ctrl_d_desc: 'Duplicate Measure'
+            }
         }
-
     },
     es: {
         menu: {
@@ -486,6 +842,7 @@ export const translations = {
             harmony: 'Armonía',
             editor: 'Editor',
             upgrade_plan: 'Plan Premium',
+            confirm_exit: '¿Tienes cambios sin guardar. ¿Quieres salir sin guardar?'
         },
         generic: {
             engine: 'Motor NoteForge',
@@ -500,10 +857,50 @@ export const translations = {
             share: 'Compartir',
             import: 'Importar',
             export: 'Exportar',
+            logout: 'Cerrar Sesión',
+            my_account: 'Mi Cuenta',
+            levels: {
+                admin: 'Miembro Admin',
+                plus: 'Miembro Plus',
+                free: 'Miembro Gratis'
+            }
         },
         editor: {
             fretboard: 'Diapasón',
             duration: 'Duración',
+            duration_names: {
+                title: 'Seleccionar Duración',
+                desc: 'Define el tiempo rítmico de la nota seleccionada.',
+                select: 'Seleccione una duración rítmica',
+                range: 'Desde redonda hasta fusa',
+                sync: 'Sincronización automática con el motor',
+                w: 'Redonda',
+                h: 'Blanca',
+                q: 'Negra',
+                '8': 'Corchea',
+                '16': 'Semicorchea',
+                '32': 'Fusa'
+            },
+            duration_modifiers: {
+                title: 'Modificadores',
+                dotted: 'Puntillo',
+                rest: 'Silencio',
+            },
+            tools: {
+                title: 'Herramientas de Edición',
+                desc: 'Acciones avanzadas para manipular el compás o las notas seleccionadas.',
+                note_tools: 'Herramientas de Nota',
+                measure_tools: 'Herramientas de Compás',
+                selective: 'Selectivo',
+                semitone: 'Semitono',
+                global: 'Global',
+                measure: 'Compás',
+                transpose: 'Transponer',
+                auto: 'Auto',
+                finger: 'Dedo',
+                select: 'Edición Selectiva',
+                sync: 'Sincronizar Todo'
+            },
             actions: 'Acciones',
         },
 
@@ -513,6 +910,15 @@ export const translations = {
             extensions: 'Extensiones',
             bass_note: 'Nota Bajo',
             root: 'RAÍZ',
+            qualities: {
+                major: 'Mayor',
+                minor: 'Menor',
+                dim: 'Diminuta',
+                aug: 'Aumentada',
+                sus2: 'Sus2',
+                sus4: 'Sus4',
+                maj: 'Séptima Mayor'
+            },
             empty: {
                 title: 'Ningún Compás Seleccionado',
                 desc: 'Seleccione un compás para definir su estructura armónica.',
@@ -540,8 +946,8 @@ export const translations = {
             hero: {
                 badge: 'Ahora con Renderizado 4K',
                 title_start: 'Acordes Animados para',
-                title_end: 'Creadores de Guitarra',
-                subtitle: 'Animaciones de diapasón de nivel profesional para lecciones, redes sociales y cursos. Crea gráficos de acordes cinematográficos en segundos.',
+                title_end: 'Creadores de Contenido',
+                subtitle: 'Animaciones de diapasón de nivel profesional para lecciones, redes sociales y cursos. Crea gráficos de acordes cinematográficos en segundos para cualquier instrumento de cuerda.',
                 cta_primary: 'Empezar Gratis',
                 cta_secondary: 'Ver Demo'
             },
@@ -558,20 +964,20 @@ export const translations = {
                 explore: 'Explorar todas las herramientas',
                 short_view: {
                     title: 'Vista Corta',
-                    desc: 'Diagramas de acordes verticales enfocados en acordes individuales. Ideal para gráficos rápidos y exportaciones PDF.'
+                    desc: 'Diagramas de acordes verticales enfocados en acordes individuales. Ideal para demostrar formaciones de acordes de forma clara y objetiva.'
                 },
                 full_view: {
                     title: 'Vista Completa',
-                    desc: 'Visualización horizontal completa del diapasón. Perfecto para escalas, ejecuciones complejas y renderizado de mástil completo.'
+                    desc: 'Visualización horizontal completa del diapasón para posiciones de dedos y riffs. Perfecto para escalas y secuencias complejas.'
                 },
                 beats: {
-                    title: 'Ritmos de Guitarra',
-                    desc: 'Editor dedicado de ritmo y patrones de rasgueo. Crea y visualiza ritmos de guitarra complejos de forma independiente.'
+                    title: 'Patrones de Rasgueo',
+                    desc: 'Editor dedicado de ritmo y patrones de rasgueo. Crea y visualiza patrones rítmicos complejos de forma independiente.'
                 }
             },
             cta: {
                 title: '¿Listo para transformar tus lecciones?',
-                desc: 'Únete a más de 5,000+ creadores de guitarra haciendo visuales de clase mundial con Cifrai. No se requieren habilidades de diseño.',
+                desc: 'Únete a miles de creadores haciendo visuales de clase mundial con TabTune. No se requieren habilidades de diseño.',
                 button_primary: 'Empezar Gratis',
                 button_secondary: 'Ver Planes'
             },
@@ -581,12 +987,17 @@ export const translations = {
                 discord: 'Comunidad de Discord',
                 rights: '© 2024 Cifrai Animator. Todos los derechos reservados.'
             },
+            about: {
+                title: 'Acerca de TabTune',
+                description: 'TabTune es una plataforma profesional diseñada para creadores de contenido educativo sobre instrumentos de cuerda. Crea visualizaciones animadas de diapasón, diagramas de acordes (vista Short), posiciones de dedos y riffs (vista Full), además de patrones de rasgueo y ritmos (vista Beats). Exporta tus creaciones en video (MP4, WebM) o como secuencia de imágenes PNG en ZIP. Haz que tus videos sean más didácticos, explicativos y profesionales.'
+            },
         },
         settings: {
             tabs: {
                 basic: 'Básico',
                 advanced: 'Avanzado',
-                motion: 'Movimiento'
+                motion: 'Movimiento',
+                presets: 'Estilos'
             },
             headers: {
                 visual_presets: 'Preajustes Visuales',
@@ -594,9 +1005,20 @@ export const translations = {
                 view_transform: 'Transformación de Vista',
                 animation_type: 'Tipo de Animación'
             },
+            presets_desc: 'Preajustes de estilo listos para usar.',
+            professional_styles: 'Estilo Profesional',
+            custom_styles: 'Estilos Personalizados',
+            personal_style: 'Tu Estilo',
+            save_custom_style: 'Guardar Estilo Actual',
             presets: {
                 label: 'Estilos Profesionales',
-                customize: 'Personalizar estilo de salida'
+                customize: 'Personalizar estilo de salida',
+                default: 'Predeterminado Oscuro',
+                classic: 'Clásico Claro',
+                cyberpunk: 'Cyberpunk',
+                midnight: 'Azul Medianoche',
+                vintage: 'Vintage',
+                studio: 'Modo Estudio'
             },
             groups: {
                 global: 'Global & Vista',
@@ -604,7 +1026,12 @@ export const translations = {
                 inlays: 'Marcadores',
                 strings_frets: 'Cuerdas & Trastes',
                 fingers: 'Dedos',
-                labels: 'Etiquetas & Cejilla'
+                labels: 'Etiquetas & Cejilla',
+                arrows: 'Flechas Rítmicas'
+            },
+            messages: {
+                style_updated: '¡Estilo actualizado!',
+                style_saved: '¡Estilo guardado con éxito!'
             },
             labels: {
                 background: 'Fondo',
@@ -716,7 +1143,111 @@ export const translations = {
                 saving: 'Guardando...',
                 cancel: 'Cancelar'
             }
+        },
+        auth: {
+            welcome_back: 'Bienvenido de nuevo, Artista',
+            email: 'Correo electrónico',
+            password: 'Contraseña',
+            forgot_password: '¿Olvidaste tu contraseña?',
+            login_button: 'Iniciar Sesión',
+            logging_in: 'Iniciando sesión...',
+            or_continue_with: 'O continuar con',
+            no_account: '¿No tienes una cuenta?',
+            signup_link: 'Regístrate',
+            create_account: 'Crear Cuenta',
+            name: 'Nombre',
+            confirm_password: 'Confirmar Contraseña',
+            already_have_account: '¿Ya tienes una cuenta?',
+            login_link: 'Iniciar Sesión',
+            signing_up: 'Registrando...',
+            signup_button: 'Registrarse'
+        },
+        profile: {
+            title: 'Mi Perfil',
+            edit_profile: 'Editar Perfil',
+            sign_out: 'Cerrar Sesión',
+            lang: 'Idioma',
+            joined: 'Se unió',
+            projects: 'Mis Proyectos',
+            styles: 'Mis Estilos',
+            chord_library: 'Biblioteca de Acordes',
+            contact_admin: 'Contactar Admin',
+            view_all: 'Ver Todo',
+            add_shape: 'Añadir Forma',
+            empty_projects: 'No se encontraron proyectos en esta vista',
+            create_project: 'Crear Nuevo Proyecto',
+            empty_styles: 'No hay estilos personalizados guardados',
+            create_style: 'CREAR NUEVO ESTILO',
+            member: 'MIEMBRO',
+            recently: 'Recientemente',
+            saved_cloud: 'Guardado en la Nube',
+            open_project: 'Abrir Proyecto',
+            delete_project: 'Eliminar Proyecto',
+            updated: 'Actualizado',
+            confirm: {
+                delete_project: '¿Estás seguro de que quieres eliminar este proyecto? Esta acción no se puede deshacer.',
+                delete_style: '¿Estás seguro de que quieres eliminar este estilo?'
+            },
+            messages: {
+                project_deleted: '¡Proyecto eliminado con éxito!',
+                project_delete_error: 'Error al eliminar el proyecto',
+                style_deleted: '¡Estilo eliminado con éxito!',
+                profile_updated: '¡Perfil actualizado con éxito!',
+                profile_update_error: 'Error al actualizar el perfil',
+                connection_error: 'Error de conexión al actualizar el perfil'
+            },
+            edit: {
+                full_name: 'Nombre Completo',
+                email_address: 'Correo Electrónico',
+                preferred_language: 'Idioma Preferido',
+                save_changes: 'Guardar Cambios',
+                saving: 'Guardando...'
+            }
+        },
+        shortcuts: {
+            title: 'Atajos de Teclado',
+            description: 'Mejora tu productividad con estos atajos rápidos.',
+            groups: {
+                navigation: 'Navegação',
+                editing: 'Edición',
+                advanced: 'Avanzado'
+            },
+            keys: {
+                arrows: '⭠ ⭡ ⭢ ⭣',
+                arrows_desc: '⭠ ⭡ ⭢ ⭣ entre Trastes y Cuerdas',
+                alt_arrows: 'Alt + ⭡/⭣',
+                alt_arrows_desc: 'Navegación Jerárquica (Dedo > Acorde > Compás)',
+                shift_arrows: 'Shift + ⭡/⭣',
+                shift_arrows_desc: 'Control de Cejilla',
+                shift_arrows_rl: 'Shift + ⭠/⭢',
+                shift_arrows_rl_desc: 'Transponer Proyecto',
+                ctrl_arrows_ud: 'Ctrl + ⭡/⭣',
+                ctrl_arrows_ud_desc: 'Rotar/Espejar Diapasón',
+                ctrl_arrows_rl: 'Ctrl + ⭠/⭢',
+                ctrl_arrows_rl_desc: 'Control de Cejilla (Capo)',
+                ctrl_shift_arrows: 'Ctrl + Shift + ⭠/⭢',
+                ctrl_shift_arrows_desc: 'Ciclar Dedos (1, 2, 3, 4, T, X)',
+                plus: '+',
+                plus_desc: 'Añadir Compás',
+                ctrl_space: 'Ctrl + Espacio',
+                ctrl_space_desc: 'Activar/Desactivar Acento (Golpe Fuerte)',
+                ctrl_arrows_rl_beats: 'Ctrl + ⭠/⭢',
+                ctrl_arrows_rl_beats_desc: 'Ciclar Dirección del Golpe',
+                ctrl_shift_arrows_beats: 'Ctrl + Shift + ⭠/⭢',
+                ctrl_shift_arrows_beats_desc: 'Ciclar Dedo del Golpe',
+                shift_plus: 'Shift + +',
+                shift_plus_desc: 'Añadir Nota',
+                ctrl_plus: 'Ctrl + +',
+                ctrl_plus_desc: 'Añadir Dedo',
+                minus: '-',
+                minus_desc: 'Eliminar Compás',
+                shift_minus: 'Shift + -',
+                shift_minus_desc: 'Eliminar Nota/Acorde',
+                ctrl_minus: 'Ctrl + -',
+                ctrl_minus_desc: 'Eliminar Dedo',
+                ctrl_d: 'Ctrl + D',
+                ctrl_d_desc: 'Duplicar Compás'
+            }
         }
-
     }
 };

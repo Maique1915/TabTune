@@ -19,6 +19,7 @@ export function useEditorMeasures(
                 ...prev,
                 selectedNoteIds: [],
                 editingNoteId: null,
+                activePositionIndex: null,
                 selectedMeasureId: newSelectedId,
                 currentMeasureIndex: newIndex
             };
@@ -71,10 +72,19 @@ export function useEditorMeasures(
     const handleRemoveMeasure = useCallback((id: string) => {
         setState((prev: FretboardEditorState) => {
             const newMeasures = prev.measures.filter((m: MeasureData) => m.id !== id);
+
+            // If empty, just return empty list and clear selection
             if (newMeasures.length === 0) {
-                const initial: MeasureData = { id: generateId(), isCollapsed: false, showClef: true, showTimeSig: true, notes: [] };
-                return { ...prev, measures: [initial], currentMeasureIndex: 0, selectedMeasureId: initial.id };
+                return {
+                    ...prev,
+                    measures: [],
+                    currentMeasureIndex: 0,
+                    selectedMeasureId: null,
+                    editingNoteId: null,
+                    selectedNoteIds: []
+                };
             }
+
             const newIndex = Math.min(prev.currentMeasureIndex, newMeasures.length - 1);
             return {
                 ...prev,

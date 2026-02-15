@@ -14,7 +14,7 @@ import { useEditorClipboard } from './use-editor-clipboard';
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export function useStudioChordsEditor() {
-    const { state, setState, undo, redo, canUndo, canRedo } = useUndoRedo<FretboardEditorState>({
+    const { state, setState, undo, redo, canUndo, canRedo, hasUnsavedChanges, markAsSaved } = useUndoRedo<FretboardEditorState>({
         measures: [{
             id: generateId(),
             isCollapsed: false,
@@ -43,7 +43,7 @@ export function useStudioChordsEditor() {
         editingNoteId: null,
         activePanel: 'studio',
         activeDuration: 'q',
-        activePositionIndex: 0,
+        activePositionIndex: null,
         currentMeasureIndex: 0,
         selectedMeasureId: null,
         copiedMeasure: null
@@ -113,7 +113,6 @@ export function useStudioChordsEditor() {
     const getActiveMeasure = useCallback(() => {
         return measures.find(m => m.id === selectedMeasureId) || null;
     }, [measures, selectedMeasureId]);
-
 
     return {
         // State
@@ -188,6 +187,7 @@ export function useStudioChordsEditor() {
         handleAutoFingerToggle: transpositionApi.handleAutoFingerToggle,
 
         undo, redo, canUndo, canRedo,
+        hasUnsavedChanges, markAsSaved,
         theme, setTheme
     };
 }

@@ -59,3 +59,24 @@ export const userStyles = mysqlTable("user_styles", {
     isActive: boolean("is_active").default(false),
     createdAt: timestamp("created_at").defaultNow(),
 });
+
+// Conversations Table
+export const conversations = mysqlTable("conversations", {
+    id: bigint("id", { mode: "number", unsigned: true }).primaryKey().autoincrement(),
+    userOneId: bigint("user_one_id", { mode: "number", unsigned: true }).references(() => users.id, { onDelete: "cascade" }).notNull(),
+    userTwoId: bigint("user_two_id", { mode: "number", unsigned: true }).references(() => users.id, { onDelete: "cascade" }).notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").onUpdateNow().defaultNow(),
+}, (table) => ({
+    uniqueUserPair: uniqueIndex("unique_user_pair").on(table.userOneId, table.userTwoId),
+}));
+
+// Messages Table
+export const messages = mysqlTable("messages", {
+    id: bigint("id", { mode: "number", unsigned: true }).primaryKey().autoincrement(),
+    conversationId: bigint("conversation_id", { mode: "number", unsigned: true }).references(() => conversations.id, { onDelete: "cascade" }).notNull(),
+    senderId: bigint("sender_id", { mode: "number", unsigned: true }).references(() => users.id, { onDelete: "cascade" }).notNull(),
+    content: text("content").notNull(),
+    isRead: boolean("is_read").default(false),
+    createdAt: timestamp("created_at").defaultNow(),
+});

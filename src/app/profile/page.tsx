@@ -7,7 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui
 import { Button } from '@/shared/components/ui/button';
 import { Grid, Layout, Music, Clock, MoreVertical, ExternalLink, Trash2 } from 'lucide-react';
 import { useUser } from '@/modules/core/presentation/context/user-context';
+import { useTranslation } from '@/modules/core/presentation/context/translation-context';
 import { Header } from '@/shared/components/layout/Header';
+import { MiniChat } from '@/shared/components/layout/MiniChat';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -18,6 +20,7 @@ import {
 export default function ProfilePage() {
     const router = useRouter();
     const { user, loading: userLoading, logout } = useUser();
+    const { t } = useTranslation();
 
     // State for user data
     const [isLoading, setIsLoading] = useState(true);
@@ -65,7 +68,7 @@ export default function ProfilePage() {
     };
 
     const handleDeleteProject = async (projectId: number) => {
-        if (!window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+        if (!window.confirm(t('profile.confirm.delete_project'))) {
             return;
         }
 
@@ -76,34 +79,35 @@ export default function ProfilePage() {
 
             if (res.ok) {
                 setProjects(prev => prev.filter(p => p.id !== projectId));
+                alert(t('profile.messages.project_deleted'));
             } else {
-                alert('Failed to delete project');
+                alert(t('profile.messages.project_delete_error'));
             }
         } catch (error) {
             console.error('Delete error:', error);
-            alert('An error occurred while deleting the project');
+            alert(t('profile.messages.project_delete_error'));
         }
     };
 
     const handleDeleteStyle = (styleId: string) => {
-        if (!window.confirm('Tem certeza que deseja excluir este estilo?')) return;
+        if (!window.confirm(t('profile.confirm.delete_style'))) return;
         const updated = customStyles.filter(s => s.id !== styleId);
         setCustomStyles(updated);
         localStorage.setItem('cifrai_custom_styles', JSON.stringify(updated));
-        alert('Estilo removido com sucesso!');
+        alert(t('profile.messages.style_deleted'));
     };
 
     const getJoinedDate = () => {
-        if (!user) return 'Recently';
+        if (!user) return t('profile.recently');
         return user.createdAt
-            ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-            : 'Recently';
+            ? new Date(user.createdAt).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+            : t('profile.recently');
     };
 
     const formatContext = (ctx: string) => {
-        if (ctx === 'short') return 'SHORT VIEW';
-        if (ctx === 'full') return 'FULL VIEW';
-        if (ctx === 'beats') return 'BEATS';
+        if (ctx === 'short') return t('page.features_section.short_view.title').toUpperCase();
+        if (ctx === 'full') return t('page.features_section.full_view.title').toUpperCase();
+        if (ctx === 'beats') return t('page.features_section.beats.title').toUpperCase();
         return 'CUSTOM';
     };
 
@@ -113,7 +117,7 @@ export default function ProfilePage() {
             <div className="min-h-screen bg-gradient-to-br from-[#0a1214] via-[#0f1c1f] to-[#0a1214] flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-zinc-400">Loading...</p>
+                    <p className="text-zinc-400">{t('page.demo.rendering')}</p>
                 </div>
             </div>
         );
@@ -160,28 +164,30 @@ export default function ProfilePage() {
                                         user.nivel === 'plus' ? 'bg-primary/20 text-primary border border-primary/30' :
                                             'bg-white/10 text-zinc-400 border border-white/10'
                                         }`}>
-                                        {user.nivel.toUpperCase()} MEMBER
+                                        {user.nivel === 'admin' ? t('header.levels.admin').toUpperCase() :
+                                            user.nivel === 'plus' ? t('header.levels.plus').toUpperCase() :
+                                                t('header.levels.free').toUpperCase()}
                                     </span>
                                 )}
                             </div>
                             <p className="text-slate-400 mb-1">{user?.email}</p>
                             <div className="flex items-center justify-center md:justify-start gap-4 mt-4 text-xs font-mono uppercase tracking-widest text-[#9bb6bb]/70">
-                                <span>Lang: {(user?.preferredLanguage || 'EN').toUpperCase()}</span>
+                                <span>{t('profile.lang')}: {(user?.preferredLanguage || 'EN').toUpperCase()}</span>
                                 <span>•</span>
-                                <span>Joined: {getJoinedDate()}</span>
+                                <span>{t('profile.joined')}: {getJoinedDate()}</span>
                             </div>
                         </div>
                         <div className="flex flex-col gap-3 min-w-[140px]">
                             <Link href="/profile/edit">
                                 <button className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-bold transition-all w-full">
-                                    Edit Profile
+                                    {t('profile.edit_profile')}
                                 </button>
                             </Link>
                             <button
                                 onClick={logout}
                                 className="w-full px-4 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-sm font-bold transition-all"
                             >
-                                Sign Out
+                                {t('profile.sign_out')}
                             </button>
                         </div>
                     </div>
@@ -194,24 +200,24 @@ export default function ProfilePage() {
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-xl font-bold flex items-center gap-2">
                                     <span className="material-symbols-outlined text-primary">folder_open</span>
-                                    My Projects
+                                    {t('profile.projects')}
                                 </h2>
-                                <span className="text-xs text-[#9bb6bb] uppercase tracking-wider">Saved in Cloud</span>
+                                <span className="text-xs text-[#9bb6bb] uppercase tracking-wider">{t('profile.saved_cloud')}</span>
                             </div>
 
                             <Tabs defaultValue="short" value={activeTab} onValueChange={setActiveTab} className="w-full">
                                 <TabsList className="bg-black/20 border border-white/5 p-1 mb-6">
                                     <TabsTrigger value="short" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary flex items-center gap-2 px-4 py-2">
                                         <Grid size={14} />
-                                        <span>Short View</span>
+                                        <span>{t('page.features_section.short_view.title')}</span>
                                     </TabsTrigger>
                                     <TabsTrigger value="full" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary flex items-center gap-2 px-4 py-2">
                                         <Layout size={14} />
-                                        <span>Full View</span>
+                                        <span>{t('page.features_section.full_view.title')}</span>
                                     </TabsTrigger>
                                     <TabsTrigger value="beats" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary flex items-center gap-2 px-4 py-2">
                                         <Music size={14} />
-                                        <span>Beats Editor</span>
+                                        <span>{t('page.features_section.beats.title')}</span>
                                     </TabsTrigger>
                                 </TabsList>
 
@@ -242,7 +248,7 @@ export default function ProfilePage() {
                                                                         className="hover:bg-white/5 cursor-pointer"
                                                                     >
                                                                         <ExternalLink size={14} className="mr-2" />
-                                                                        Open Project
+                                                                        {t('profile.open_project')}
                                                                     </DropdownMenuItem>
                                                                     <DropdownMenuItem
                                                                         onClick={(e) => {
@@ -252,23 +258,23 @@ export default function ProfilePage() {
                                                                         className="text-red-400 hover:bg-red-500/10 focus:text-red-400 focus:bg-red-500/10 cursor-pointer"
                                                                     >
                                                                         <Trash2 size={14} className="mr-2" />
-                                                                        Delete Project
+                                                                        {t('profile.delete_project')}
                                                                     </DropdownMenuItem>
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
                                                         </div>
                                                         <div className="flex items-center gap-2 text-xs text-slate-500">
                                                             <Clock size={12} />
-                                                            <span>Updated {new Date(project.updatedAt).toLocaleDateString()}</span>
+                                                            <span>{t('profile.updated')} {new Date(project.updatedAt).toLocaleDateString()}</span>
                                                         </div>
                                                     </div>
                                                 ))
                                             ) : (
                                                 <div className="col-span-full py-8 text-center bg-black/10 rounded-xl border border-dashed border-white/10">
-                                                    <p className="text-slate-500 text-sm italic">No projects found in this view</p>
+                                                    <p className="text-slate-500 text-sm italic">{t('profile.empty_projects')}</p>
                                                     <Link href={`/${context}`}>
                                                         <Button className="mt-4 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold uppercase tracking-wider border border-primary/20 rounded-lg">
-                                                            Create New Project
+                                                            {t('profile.create_project')}
                                                         </Button>
                                                     </Link>
                                                 </div>
@@ -284,7 +290,7 @@ export default function ProfilePage() {
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-xl font-bold flex items-center gap-2">
                                     <span className="material-symbols-outlined text-pink-500">palette</span>
-                                    My Styles
+                                    {t('profile.styles')}
                                 </h2>
                             </div>
                             <div className="flex flex-col gap-3">
@@ -331,12 +337,12 @@ export default function ProfilePage() {
                                     })
                                 ) : (
                                     <div className="py-8 text-center bg-black/10 rounded-xl border border-dashed border-white/10">
-                                        <p className="text-slate-500 text-xs italic">No custom styles saved</p>
+                                        <p className="text-slate-500 text-xs italic">{t('profile.empty_styles')}</p>
                                     </div>
                                 )}
                                 <Link href="/">
                                     <button className="mt-2 w-full py-3 border border-dashed border-white/10 rounded-xl text-[10px] text-zinc-500 hover:text-pink-400 hover:border-pink-500/30 hover:bg-pink-500/5 transition-all font-black uppercase tracking-[0.2em]">
-                                        + CREATE NEW STYLE
+                                        {t('profile.create_style')}
                                     </button>
                                 </Link>
                             </div>
@@ -347,9 +353,9 @@ export default function ProfilePage() {
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-xl font-bold flex items-center gap-2">
                                     <span className="material-symbols-outlined text-yellow-500">library_music</span>
-                                    Chord Library
+                                    {t('profile.chord_library')}
                                 </h2>
-                                <button className="text-xs font-bold text-primary hover:text-white transition-colors">View All</button>
+                                <button className="text-xs font-bold text-primary hover:text-white transition-colors">{t('profile.view_all')}</button>
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
                                 {chordShapes.map((chord, idx) => (
@@ -366,7 +372,7 @@ export default function ProfilePage() {
                                 ))}
                                 <div className="aspect-square rounded-xl border-2 border-dashed border-white/10 hover:border-yellow-500/30 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer group hover:bg-yellow-500/5">
                                     <span className="material-symbols-outlined text-2xl text-slate-600 group-hover:text-yellow-500 transition-colors">add_circle</span>
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-white transition-colors">Add Shape</span>
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-white transition-colors">{t('profile.add_shape')}</span>
                                 </div>
                             </div>
                         </div>
@@ -374,6 +380,7 @@ export default function ProfilePage() {
                     </div>
                 </div>
             </div>
+            <MiniChat />
         </div>
     );
 }

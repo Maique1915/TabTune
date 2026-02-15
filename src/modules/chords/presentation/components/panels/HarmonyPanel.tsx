@@ -69,13 +69,13 @@ export const HarmonyPanel: React.FC<HarmonyPanelProps> = ({
                             value={chordData.quality}
                             onChange={(e) => onChordChange({ quality: e.target.value })}
                         >
-                            <option value="">Major</option>
-                            <option value="m">Minor</option>
-                            <option value="dim">Diminished</option>
-                            <option value="aug">Augmented</option>
-                            <option value="sus2">Sus2</option>
-                            <option value="sus4">Sus4</option>
-                            <option value="maj">Major 7th Style</option>
+                            <option value="">{t('harmony.qualities.major')}</option>
+                            <option value="m">{t('harmony.qualities.minor')}</option>
+                            <option value="dim">{t('harmony.qualities.dim')}</option>
+                            <option value="aug">{t('harmony.qualities.aug')}</option>
+                            <option value="sus2">{t('harmony.qualities.sus2')}</option>
+                            <option value="sus4">{t('harmony.qualities.sus4')}</option>
+                            <option value="maj">{t('harmony.qualities.maj')}</option>
                         </select>
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-zinc-600 pointer-events-none" />
                     </div>

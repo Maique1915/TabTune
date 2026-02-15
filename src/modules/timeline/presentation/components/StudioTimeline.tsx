@@ -36,7 +36,8 @@ const StudioTimeline: React.FC<BaseTimelineProps> = ({
     selectedMeasureId,
     totalDurationMs = 0,
     currentCursorMs = 0,
-    onSeek
+    onSeek,
+    variant = 'full'
 }) => {
     const capacity = getMeasureCapacity(timeSignature);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -157,7 +158,9 @@ const StudioTimeline: React.FC<BaseTimelineProps> = ({
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onSelectMeasure(measure.id);
-                                    // Removed auto-select first note to allow Measure-level selection
+                                    if (variant === 'short' && measure.notes.length > 0) {
+                                        onSelectNote(measure.notes[0].id, false);
+                                    }
                                 }}
                                 draggable={true}
                                 onDragStart={(e) => handleDragStart(e, mIdx)}
@@ -201,6 +204,13 @@ const StudioTimeline: React.FC<BaseTimelineProps> = ({
                                             {/* Action Buttons */}
                                             {!isCollapsed && (
                                                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                                    {variant !== 'short' && (
+                                                        <button onClick={(e) => { e.stopPropagation(); onAddNote?.(measure.id); }}
+                                                            className="size-6 flex items-center justify-center hover:bg-white/10 rounded-md text-zinc-500 hover:text-primary transition-all duration-300"
+                                                            title="Add Chord">
+                                                            <Icons.Plus className="w-3 h-3" />
+                                                        </button>
+                                                    )}
                                                     <button onClick={(e) => { e.stopPropagation(); onCopyMeasure(measure.id); }}
                                                         className="size-6 flex items-center justify-center hover:bg-white/10 rounded-md text-zinc-500 hover:text-primary transition-all duration-300"
                                                         title="Duplicate">
@@ -262,7 +272,7 @@ const StudioTimeline: React.FC<BaseTimelineProps> = ({
                                                     `}
                                                 >
                                                     {/* Note Actions */}
-                                                    {(onCopyNote || onRemoveNote) && (
+                                                    {variant !== 'short' && (onCopyNote || onRemoveNote) && (
                                                         <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover/note:opacity-100 transition-opacity z-10">
                                                             {onCopyNote && (
                                                                 <button
@@ -342,16 +352,18 @@ const StudioTimeline: React.FC<BaseTimelineProps> = ({
                     })}
 
                     {/* Add Section Button (End of Timeline) */}
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onAddMeasure(); }}
-                        className="w-20 h-[85%] border-2 border-dashed border-white/5 bg-white/[0.01] hover:bg-primary/5 hover:border-primary/30 rounded-[24px] flex flex-col items-center justify-center text-zinc-600 hover:text-primary transition-all duration-700 shrink-0 group/add-m"
-                        title="Add New Block"
-                    >
-                        <div className="w-10 h-10 rounded-full bg-white/[0.02] flex items-center justify-center group-hover/add-m:scale-110 group-hover/add-m:rotate-90 group-hover/add-m:bg-primary/10 transition-all duration-500 shadow-xl">
-                            <Icons.Plus />
-                        </div>
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] mt-3 opacity-40 group-hover/add-m:opacity-100 transition-opacity">Add Block</span>
-                    </button>
+                    {(
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onAddMeasure(); }}
+                            className="w-20 h-[85%] border-2 border-dashed border-white/5 bg-white/[0.01] hover:bg-primary/5 hover:border-primary/30 rounded-[24px] flex flex-col items-center justify-center text-zinc-600 hover:text-primary transition-all duration-700 shrink-0 group/add-m"
+                            title="Add New Block"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-white/[0.02] flex items-center justify-center group-hover/add-m:scale-110 group-hover/add-m:rotate-90 group-hover/add-m:bg-primary/10 transition-all duration-500 shadow-xl">
+                                <Icons.Plus />
+                            </div>
+                            <span className="text-[9px] font-black uppercase tracking-[0.2em] mt-3 opacity-40 group-hover/add-m:opacity-100 transition-opacity">Add Block</span>
+                        </button>
+                    )}
                 </div>
             </div>
         </div >

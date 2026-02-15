@@ -1,5 +1,6 @@
 import React from 'react';
 import { Guitar, Clock, Wrench } from 'lucide-react';
+import { useTranslation } from '@/modules/core/presentation/context/translation-context';
 
 interface SubTabNavigationProps {
     activeCategory: string;
@@ -7,10 +8,11 @@ interface SubTabNavigationProps {
 }
 
 export const SubTabNavigation: React.FC<SubTabNavigationProps> = ({ activeCategory, onSelect }) => {
+    const { t } = useTranslation();
     const tabs = [
-        { id: 'editor', label: 'Braço', icon: Guitar },
-        { id: 'rhythm', label: 'Duração', icon: Clock },
-        { id: 'tools', label: 'Ações', icon: Wrench },
+        { id: 'editor', label: t('editor.fretboard'), icon: Guitar },
+        { id: 'rhythm', label: t('editor.duration'), icon: Clock },
+        { id: 'tools', label: t('editor.actions'), icon: Wrench },
     ];
 
     return (
@@ -23,8 +25,8 @@ export const SubTabNavigation: React.FC<SubTabNavigationProps> = ({ activeCatego
                             key={tab.id}
                             onClick={() => onSelect(tab.id)}
                             className={`group relative flex items-center justify-center gap-2 px-2 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${isActive
-                                    ? 'bg-primary/20 text-primary border border-primary/30 shadow-cyan-glow'
-                                    : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
+                                ? 'bg-primary/20 text-primary border border-primary/30 shadow-cyan-glow'
+                                : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
                                 }`}
                         >
                             {tab.label}

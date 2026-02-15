@@ -15,6 +15,7 @@ export const RhythmPanel: React.FC<SidebarProps> = ({
     onNoteDurationStatic,
     isSequentialMode
 }) => {
+    const { t } = useTranslation();
     // Determine display note: editingNote or first note of active measure
     const displayNote = editingNote || (activeMeasure?.notes && activeMeasure.notes.length > 0 ? activeMeasure.notes[0] : null);
 
@@ -22,12 +23,12 @@ export const RhythmPanel: React.FC<SidebarProps> = ({
         return (
             <EmptyState
                 icon={Clock}
-                title="Rhythm Controls"
-                description="Select a note to adjust its musical duration and feel in the timeline."
+                title={t('editor.duration_names.title')}
+                description={t('editor.duration_names.desc')}
                 features={[
-                    "Select Note Duration",
-                    "Whole to 32nd Notes",
-                    "Sync with Playback"
+                    t('editor.duration_names.select'),
+                    t('editor.duration_names.range'),
+                    t('editor.duration_names.sync')
                 ]}
             />
         );
@@ -37,17 +38,17 @@ export const RhythmPanel: React.FC<SidebarProps> = ({
         <div className="space-y-6 animate-in slide-in-from-right-2 duration-300 h-full flex flex-col">
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-1">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Duration</label>
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('editor.duration_names.title')}</label>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
                     {[
-                        { label: 'Whole', code: 'w' as Duration },
-                        { label: 'Half', code: 'h' as Duration },
-                        { label: 'Quarter', code: 'q' as Duration },
-                        { label: '8th', code: '8' as Duration },
-                        { label: '16th', code: '16' as Duration },
-                        { label: '32nd', code: '32' as Duration },
+                        { label: t('editor.duration_names.w'), code: 'w' as Duration },
+                        { label: t('editor.duration_names.h'), code: 'h' as Duration },
+                        { label: t('editor.duration_names.q'), code: 'q' as Duration },
+                        { label: t('editor.duration_names.8'), code: '8' as Duration },
+                        { label: t('editor.duration_names.16'), code: '16' as Duration },
+                        { label: t('editor.duration_names.32'), code: '32' as Duration },
                     ].map((item) => {
                         const isActive = displayNote.duration === item.code;
                         return (
@@ -79,7 +80,7 @@ export const RhythmPanel: React.FC<SidebarProps> = ({
                 </div>
 
                 <div className="space-y-3 bg-black/20 p-4 rounded-2xl border border-white/5">
-                    <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest px-0.5">Modifiers</label>
+                    <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest px-0.5">{t('editor.duration_modifiers.title')}</label>
                     <div className="flex gap-2">
                         <button
                             onClick={() => onNoteRhythmChange?.(undefined, !displayNote.decorators.dot)}
@@ -88,7 +89,7 @@ export const RhythmPanel: React.FC<SidebarProps> = ({
                                 : 'bg-black/20 border-white/5 text-zinc-500 hover:bg-white/5'
                                 }`}
                         >
-                            • Dotted
+                            • {t('editor.duration_modifiers.dotted')}
                         </button>
                         <button
                             onClick={() => onNoteTypeChange?.(displayNote.type === 'rest' ? 'note' : 'rest')}
@@ -97,7 +98,7 @@ export const RhythmPanel: React.FC<SidebarProps> = ({
                                 : 'bg-black/20 border-white/5 text-zinc-500 hover:bg-white/5'
                                 }`}
                         >
-                            Rest
+                            {t('editor.duration_modifiers.rest')}
                         </button>
                     </div>
                 </div>

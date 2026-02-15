@@ -18,11 +18,14 @@ export interface SidebarProps {
     activeMeasure?: MeasureData | null;
     onMeasureUpdate?: (id: string, updates: Partial<MeasureData>) => void;
     onAddNote?: (measureId: string, duration: Duration) => void;
+    onAddMeasure?: () => void;
+    onRemoveMeasure?: (id: string) => void;
+    onCopyMeasure?: (id: string) => void;
     // Generic update for new properties
     onUpdateNote?: (updates: Partial<NoteData>) => void;
     onInsert?: (code: string) => void;
     // Chord Props
-    activePositionIndex?: number;
+    activePositionIndex?: number | null;
     onActivePositionIndexChange?: (index: number) => void;
     onAddChordNote?: () => void;
     onRemoveChordNote?: (index: number) => void;
@@ -40,6 +43,7 @@ export interface SidebarProps {
     onRedo?: () => void;
     canUndo?: boolean;
     canRedo?: boolean;
+    hasUnsavedChanges?: boolean;
     // Mobile props
     isMobile?: boolean;
     isOpen?: boolean;
@@ -56,10 +60,13 @@ export interface SidebarProps {
 
     // Beats specific props (Optional to stay compatible)
     onSelectNote?: (id: string, multi: boolean) => void;
+    onSelectMeasure?: (id: string) => void;
     onRemoveNote?: (id: string) => void;
 
     // Animation/View Props
     animationType?: string;
     projectName?: string;
     onSave?: () => void;
+    setTheme?: (theme: FretboardTheme | ((prev: FretboardTheme) => FretboardTheme)) => void;
+    variant?: 'short' | 'full' | 'beats';
 }

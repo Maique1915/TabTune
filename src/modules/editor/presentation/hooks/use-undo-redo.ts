@@ -11,6 +11,8 @@ interface UndoRedoHook<T> {
     redo: () => void;
     canUndo: boolean;
     canRedo: boolean;
+    hasUnsavedChanges: boolean;
+    markAsSaved: () => void;
     reset: (initialState: T) => void;
 }
 
@@ -19,18 +21,26 @@ interface UndoRedoHook<T> {
 interface HistoryState<T> {
     history: T[];
     index: number;
+    savedStateIndex: number; // Tracks which history index was last saved
 }
 
 export function useUndoRedo<T>(initialState: T, options: Options = { enableShortcuts: true }): UndoRedoHook<T> {
     const [historyState, setHistoryState] = useState<HistoryState<T>>({
         history: [initialState],
-        index: 0
+        index: 0,
+        savedStateIndex: -1 // -1 means nothing has been saved yet
     });
 
     const present = historyState.history[historyState.index] || initialState;
 
     const canUndo = historyState.index > 0;
     const canRedo = historyState.index < historyState.history.length - 1;
+
+    // If nothing has been saved yet (savedStateIndex = -1) and we're at the initial state (index = 0),
+    // then there are no unsaved changes (user hasn't made any changes yet)
+    const hasUnsavedChanges = historyState.savedStateIndex === -1
+        ? historyState.index > 0  // Only has unsaved changes if user moved away from initial state
+        : historyState.index !== historyState.savedStateIndex; // Normal comparison for saved projects
 
     const undo = useCallback(() => {
         setHistoryState(prev => {
@@ -91,15 +101,24 @@ export function useUndoRedo<T>(initialState: T, options: Options = { enableShort
 
             return {
                 history: newHistory,
-                index: newHistory.length - 1
+                index: newHistory.length - 1,
+                savedStateIndex: prev.savedStateIndex // Preserve saved state index
             };
         });
+    }, []);
+
+    const markAsSaved = useCallback(() => {
+        setHistoryState(prev => ({
+            ...prev,
+            savedStateIndex: prev.index
+        }));
     }, []);
 
     const reset = useCallback((newInitialState: T) => {
         setHistoryState({
             history: [newInitialState],
-            index: 0
+            index: 0,
+            savedStateIndex: -1 // Reset to unsaved state
         });
     }, []);
 
@@ -131,6 +150,8 @@ export function useUndoRedo<T>(initialState: T, options: Options = { enableShort
         redo,
         canUndo,
         canRedo,
+        hasUnsavedChanges,
+        markAsSaved,
         reset
     };
 }

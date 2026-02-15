@@ -53,7 +53,7 @@ export interface NoteData extends Omit<MusicalEvent, 'type'> {
     barre?: BarreData;
 
     // Rhythm / Strumming Details
-    strumDirection?: 'up' | 'down';
+    strumDirection?: 'up' | 'down' | 'pause' | 'mute';
     strumMode?: 'strum' | 'hit' | 'mute';
     strumFinger?: string; // P, i, m, a, etc.
     isStrong?: boolean; // Whether it's a strong beat for visual scaling

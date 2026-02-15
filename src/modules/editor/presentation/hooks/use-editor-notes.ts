@@ -43,7 +43,7 @@ export function useEditorNotes(
 
     const getCurrentPitch = useCallback(() => {
         const editingNote = getEditingNote();
-        if (!editingNote || editingNote.type === 'rest' || !editingNote.positions[activePositionIndex]) return null;
+        if (!editingNote || editingNote.type === 'rest' || activePositionIndex === null || !editingNote.positions[activePositionIndex]) return null;
         const pos = editingNote.positions[activePositionIndex];
         const midi = getMidiFromPosition(pos.fret, pos.string);
         return getPitchFromMidi(midi);
@@ -86,7 +86,7 @@ export function useEditorNotes(
                     ...prev,
                     selectedNoteIds: [id],
                     editingNoteId: id,
-                    activePositionIndex: 0,
+                    activePositionIndex: null,
                     currentMeasureIndex: measureIndex !== -1 ? measureIndex : prev.currentMeasureIndex,
                     selectedMeasureId: measureId
                 };
@@ -340,7 +340,7 @@ export function useEditorNotes(
     const handlePitchChange = useCallback((newName?: string, newAccidental?: string, newOctave?: number) => {
         const editingNote = getEditingNote();
         const currentPitch = getCurrentPitch();
-        if (!editingNote || !currentPitch) return;
+        if (!editingNote || !currentPitch || activePositionIndex === null) return;
 
         const pitch = newName ?? currentPitch.name;
         const acc = newAccidental ?? currentPitch.accidental;
@@ -351,14 +351,14 @@ export function useEditorNotes(
 
         updateSelectedNotes(n => {
             const newPositions = n.positions.map(p => ({ ...p }));
-            newPositions[activePositionIndex] = { fret: fret, string: string };
+            newPositions[activePositionIndex as number] = { fret: fret, string: string };
             return { positions: newPositions };
         });
     }, [getEditingNote, getCurrentPitch, activePositionIndex, updateSelectedNotes]);
 
     const handleStringChange = useCallback((newString: number) => {
         const editingNote = getEditingNote();
-        if (!editingNote || !editingNote.positions[activePositionIndex]) return;
+        if (!editingNote || activePositionIndex === null || !editingNote.positions[activePositionIndex]) return;
 
         const currentPos = editingNote.positions[activePositionIndex];
         const currentFret = currentPos.fret;
@@ -374,15 +374,16 @@ export function useEditorNotes(
 
         updateSelectedNotes(n => {
             const newPositions = n.positions.map(p => ({ ...p }));
-            newPositions[activePositionIndex] = { string: newString, fret: newFret };
+            newPositions[activePositionIndex as number] = { string: newString, fret: newFret };
             return { positions: newPositions };
         });
     }, [getEditingNote, activePositionIndex, updateSelectedNotes]);
 
     const handleAccidentalChange = useCallback((accidental: string) => {
+        if (activePositionIndex === null) return;
         updateSelectedNotes(n => {
             const desiredAccidental = (n.accidental === accidental ? 'none' : accidental) as any;
-            const currentPos = n.positions[activePositionIndex];
+            const currentPos = n.positions[activePositionIndex as number];
             if (!currentPos) return {};
 
             const currentMidi = getMidiFromPosition(currentPos.fret, currentPos.string);
@@ -401,7 +402,7 @@ export function useEditorNotes(
             const newMidi = naturalMidi + offset;
             const { fret } = findBestFretForPitch(newMidi, currentPos.string);
             const newPositions = n.positions.map(p => ({ ...p }));
-            newPositions[activePositionIndex] = { ...currentPos, fret: fret };
+            newPositions[activePositionIndex as number] = { ...currentPos, fret: fret };
 
             return {
                 accidental: desiredAccidental,
@@ -436,12 +437,28 @@ export function useEditorNotes(
     }, [updateSelectedNotes]);
 
     const handleSetFretForString = useCallback((idx: number, fret: number) => {
-        const minAllowedFret = Math.max(0, settings?.capo ?? 0);
-        const clampedFret = Math.max(fret, minAllowedFret);
         updateSelectedNotes(n => {
+            const isBarre = !!n.barre || n.positions.some(p => p.endString !== undefined && p.endString !== p.string);
+            const capo = settings?.capo ?? 0;
+            const absoluteMin = isBarre ? capo : Math.max(1, capo);
+
             const newPositions = n.positions.map(p => ({ ...p }));
             if (!newPositions[idx]) return {};
-            newPositions[idx] = { ...newPositions[idx], fret: clampedFret, avoid: false };
+
+            const clampedFret = Math.max(fret, absoluteMin);
+
+            // If it's fret 0 and not a barre, it should have no finger (open string)
+            let finalFinger = newPositions[idx].finger;
+            if (clampedFret === 0 && !isBarre) {
+                finalFinger = undefined;
+            }
+
+            newPositions[idx] = {
+                ...newPositions[idx],
+                fret: clampedFret,
+                finger: finalFinger,
+                avoid: false
+            };
             return { positions: newPositions };
         });
     }, [updateSelectedNotes, settings?.capo]);
@@ -450,7 +467,11 @@ export function useEditorNotes(
         updateSelectedNotes(n => {
             const newPositions = n.positions.map(p => ({ ...p }));
             if (!newPositions[idx]) return {};
-            newPositions[idx] = { ...newPositions[idx], string: stringNum };
+
+            // Clear endString when explicitly moving the base string
+            const { endString: _, ...rest } = newPositions[idx];
+            newPositions[idx] = { ...rest, string: stringNum };
+
             return { positions: newPositions };
         });
     }, [updateSelectedNotes]);
@@ -496,15 +517,16 @@ export function useEditorNotes(
     }, [setState]);
 
     const handleToggleBarre = useCallback((indices?: number[]) => {
+        if (activePositionIndex === null) return;
         updateSelectedNotes(n => {
             const newPositions = n.positions.map(p => ({ ...p }));
-            const pos = newPositions[activePositionIndex];
+            const pos = newPositions[activePositionIndex as number];
             if (!pos) return {};
 
             if (pos.endString && pos.endString !== pos.string) {
                 // Fix: Robustly remove endString and ensure finger is set (default to 1 'Indicator')
                 const { endString, ...rest } = pos;
-                newPositions[activePositionIndex] = { ...rest, finger: pos.finger || 1 };
+                newPositions[activePositionIndex as number] = { ...rest, finger: pos.finger || 1 };
             }
 
             return { positions: newPositions };
@@ -512,17 +534,18 @@ export function useEditorNotes(
     }, [updateSelectedNotes, activePositionIndex]);
 
     const handleToggleBarreTo = useCallback((targetString: number) => {
+        if (activePositionIndex === null) return;
         updateSelectedNotes(n => {
             const newPositions = n.positions.map(p => ({ ...p }));
-            const pos = newPositions[activePositionIndex];
+            const pos = newPositions[activePositionIndex as number];
             if (!pos) return {};
 
             if (pos.endString === targetString) {
                 // Fix: Robustly remove endString and ensure finger is set
                 const { endString, ...rest } = pos;
-                newPositions[activePositionIndex] = { ...rest, finger: pos.finger || 1 };
+                newPositions[activePositionIndex as number] = { ...rest, finger: pos.finger || 1 };
             } else {
-                newPositions[activePositionIndex] = {
+                newPositions[activePositionIndex as number] = {
                     ...pos,
                     endString: targetString
                 };
@@ -601,9 +624,10 @@ export function useEditorNotes(
                     const isImplicit = !prev.editingNoteId && prev.selectedNoteIds.length === 0 && m.id === prev.selectedMeasureId && nIdx === 0;
 
                     if (isExplicit || isImplicit) {
+                        const capo = settings?.capo ?? 0;
                         return {
                             ...n,
-                            positions: [...n.positions, { fret: 0, string: (n.positions.length + 1) }]
+                            positions: [...n.positions, { fret: Math.max(1, capo), string: (n.positions.length + 1) }]
                         };
                     }
                     return n;
@@ -621,7 +645,13 @@ export function useEditorNotes(
                 : null;
             const newIndex = editingNote ? editingNote.positions.length - 1 : 0;
 
-            return { ...prev, measures: newMeasures, activePositionIndex: newIndex };
+            return {
+                ...prev,
+                measures: newMeasures,
+                activePositionIndex: newIndex,
+                editingNoteId: targetId,
+                selectedNoteIds: targetId ? [targetId] : prev.selectedNoteIds
+            };
         });
     }, [setState]);
 
@@ -637,7 +667,9 @@ export function useEditorNotes(
                     if (isExplicit || isImplicit) {
                         if (n.positions.length <= 1) return n;
                         const newPositions = n.positions.filter((_: any, i: number) => i !== idx);
-                        if (newIndex >= newPositions.length) newIndex = Math.max(0, newPositions.length - 1);
+                        if (newIndex !== null && newIndex >= newPositions.length) {
+                            newIndex = Math.max(0, newPositions.length - 1);
+                        }
 
                         return { ...n, positions: newPositions };
                     }

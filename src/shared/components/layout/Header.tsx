@@ -3,8 +3,12 @@
 import React from "react";
 import Link from "next/link";
 import { AuthSection } from "./AuthSection";
+import { useTranslation } from "@/modules/core/presentation/context/translation-context";
+import { Button } from "@/shared/components/ui/button";
 
 export function Header() {
+    const { t } = useTranslation();
+
     return (
         <header className="sticky top-0 z-50 border-b border-white/5 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
             <div className="mx-auto px-6 h-20 flex items-center justify-between">
@@ -20,13 +24,13 @@ export function Header() {
                 </Link>
                 <nav className="hidden md:flex items-center gap-10">
                     <Link href="/short" className="text-sm font-medium hover:text-primary transition-colors cursor-pointer">
-                        Short View
+                        {t('page.features_section.short_view.title') || 'Short View'}
                     </Link>
                     <Link href="/full" className="text-sm font-medium hover:text-primary transition-colors cursor-pointer">
-                        Full View
+                        {t('page.features_section.full_view.title') || 'Full View'}
                     </Link>
                     <Link href="/beats" className="text-sm font-medium hover:text-primary transition-colors cursor-pointer">
-                        Beats Editor
+                        {t('page.features_section.beats.title') || 'Beats Editor'}
                     </Link>
                 </nav>
                 <div className="flex items-center gap-4">

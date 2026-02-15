@@ -1,7 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import { Header } from "@/shared/components/layout/Header";
+import { useTranslation } from "@/modules/core/presentation/context/translation-context";
 
 export default function LandingPage() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white selection:bg-primary/30 flex flex-col">
       <Header />
@@ -27,26 +32,50 @@ export default function LandingPage() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
               </span>
-              Now with 4K Rendering
+              {t('page.hero.badge')}
             </div>
             <h1 className="text-6xl md:text-8xl font-black tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/50 leading-[1.1]">
-              Animated Chords for <br />{" "}
-              <span className="text-primary">Guitar Creators</span>
+              {t('page.hero.title_start')} <br />{" "}
+              <span className="text-primary">{t('page.hero.title_end')}</span>
             </h1>
             <p className="max-w-2xl mx-auto text-lg md:text-xl text-slate-400 mb-10 leading-relaxed">
-              Professional-grade fretboard animations for lessons, social media,
-              and courses. Build cinematic chord charts in seconds.
+              {t('page.hero.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/chords">
+              <Link href="/short">
                 <button className="w-full sm:w-auto px-8 py-4 bg-primary text-background-dark rounded-xl font-bold text-lg shadow-cyan-glow hover:scale-105 transition-all">
-                  Start Creating Free
+                  {t('page.hero.cta_primary')}
                 </button>
               </Link>
               <button className="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2">
                 <span className="material-symbols-outlined">play_circle</span>
-                View Demo
+                {t('page.hero.cta_secondary')}
               </button>
+            </div>
+          </div>
+        </section>
+
+        {/* About Section */}
+        <section className="relative px-6 py-16">
+          <div className="max-w-4xl mx-auto">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-card-dark to-background-dark border border-white/10 p-10 md:p-12">
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[100px] rounded-full pointer-events-none"></div>
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-secondary-neon/5 blur-[80px] rounded-full pointer-events-none"></div>
+
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="size-12 bg-primary/20 rounded-xl flex items-center justify-center text-primary">
+                    <span className="material-symbols-outlined text-2xl">info</span>
+                  </div>
+                  <h2 className="text-3xl md:text-4xl font-bold">
+                    {t('page.about.title')}
+                  </h2>
+                </div>
+                <p className="text-lg md:text-xl text-slate-300 leading-relaxed">
+                  {t('page.about.description')}
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -63,7 +92,7 @@ export default function LandingPage() {
                   <div className="size-3 rounded-full bg-green-500/50"></div>
                 </div>
                 <div className="bg-white/5 px-4 py-1 rounded-md text-[10px] font-mono text-white/40 tracking-widest">
-                  TABTUNE_STUDIO_V2.EXE
+                  {t('page.demo.mock_filename')}
                 </div>
                 <div className="w-12"></div>
               </div>
@@ -83,17 +112,17 @@ export default function LandingPage() {
                 <div className="absolute left-6 top-6 flex flex-col gap-3">
                   <div className="p-3 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 w-48">
                     <div className="text-[10px] text-primary font-bold uppercase mb-2">
-                      Chord Type
+                      {t('page.demo.chord_type')}
                     </div>
-                    <div className="text-sm font-bold">C Major 7 (Add 9)</div>
+                    <div className="text-sm font-bold">{t('page.demo.mock_chord')}</div>
                   </div>
                   <div className="p-3 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 w-48">
                     <div className="text-[10px] text-secondary-neon font-bold uppercase mb-2">
-                      Animation State
+                      {t('page.demo.animation_state')}
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="size-2 rounded-full bg-secondary-neon animate-pulse"></div>
-                      <div className="text-sm font-bold">Rendering...</div>
+                      <div className="text-sm font-bold">{t('page.demo.rendering')}</div>
                     </div>
                   </div>
                 </div>
@@ -121,17 +150,16 @@ export default function LandingPage() {
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
               <div className="max-w-2xl">
                 <h2 className="text-4xl font-bold mb-4">
-                  Designed for Excellence
+                  {t('page.features_section.title')}
                 </h2>
                 <p className="text-slate-400 text-lg leading-relaxed">
-                  Experience the future of guitar content creation with tools
-                  built for speed, cinematic quality, and absolute precision.
+                  {t('page.features_section.subtitle')}
                 </p>
               </div>
               <a
                 className="text-primary font-bold flex items-center gap-2 hover:underline underline-offset-4 cursor-pointer"
               >
-                Explore all tools{" "}
+                {t('page.features_section.explore')}{" "}
                 <span className="material-symbols-outlined">trending_flat</span>
               </a>
             </div>
@@ -144,9 +172,9 @@ export default function LandingPage() {
                       grid_view
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold mb-3">Short View</h3>
+                  <h3 className="text-xl font-bold mb-3">{t('page.features_section.short_view.title')}</h3>
                   <p className="text-slate-400 leading-relaxed">
-                    Vertical chord diagrams focused on individual chords. Ideal for quick charts and PDF exports.
+                    {t('page.features_section.short_view.desc')}
                   </p>
                 </div>
               </Link>
@@ -159,9 +187,9 @@ export default function LandingPage() {
                       panorama_horizontal
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold mb-3">Full View</h3>
+                  <h3 className="text-xl font-bold mb-3">{t('page.features_section.full_view.title')}</h3>
                   <p className="text-slate-400 leading-relaxed">
-                    Complete horizontal fretboard visualization. Perfect for scales, intricate runs, and full neck rendering.
+                    {t('page.features_section.full_view.desc')}
                   </p>
                 </div>
               </Link>
@@ -174,9 +202,9 @@ export default function LandingPage() {
                       equalizer
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold mb-3">Guitar Beats</h3>
+                  <h3 className="text-xl font-bold mb-3">{t('page.features_section.beats.title')}</h3>
                   <p className="text-slate-400 leading-relaxed">
-                    Dedicated rhythm and strumming pattern editor. Create and visualize complex guitar beats independently.
+                    {t('page.features_section.beats.desc')}
                   </p>
                 </div>
               </Link>
@@ -196,20 +224,19 @@ export default function LandingPage() {
               }}
             ></div>
             <h2 className="text-4xl md:text-5xl font-black mb-6 relative z-10">
-              Ready to transform <br /> your lessons?
+              {t('page.cta.title')}
             </h2>
             <p className="text-lg text-slate-300 mb-10 max-w-xl mx-auto relative z-10">
-              Join over 5,000+ guitar creators making world-class visuals with
-              TabTune. No design skills required.
+              {t('page.cta.desc')}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10">
-              <Link href="/chords">
+              <Link href="/short">
                 <button className="bg-primary text-background-dark px-10 py-4 rounded-xl font-black text-lg shadow-cyan-glow hover:scale-105 transition-all">
-                  Get Started For Free
+                  {t('page.cta.button_primary')}
                 </button>
               </Link>
               <button className="text-white font-bold hover:text-primary transition-colors">
-                View Pricing Plans
+                {t('page.cta.button_secondary')}
               </button>
             </div>
           </div>
@@ -228,17 +255,17 @@ export default function LandingPage() {
           </div>
           <div className="flex gap-8 text-sm text-slate-500">
             <a className="hover:text-white transition-colors cursor-pointer">
-              Terms of Service
+              {t('page.footer.terms')}
             </a>
             <a className="hover:text-white transition-colors cursor-pointer">
-              Privacy Policy
+              {t('page.footer.privacy')}
             </a>
             <a className="hover:text-white transition-colors cursor-pointer">
-              Discord Community
+              {t('page.footer.discord')}
             </a>
           </div>
           <p className="text-sm text-slate-600">
-            © 2024 TabTune Animator. All rights reserved.
+            {t('page.footer.rights')}
           </p>
         </div>
       </footer>

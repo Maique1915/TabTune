@@ -24,7 +24,8 @@ export const StrategySidebar: React.FC<StrategySidebarProps> = (props) => {
         onUndo,
         onRedo,
         canUndo,
-        canRedo
+        canRedo,
+        hasUnsavedChanges = true // Default to true for backwards compatibility
     } = props;
 
     const strategy = useMemo(() => MenuFactory.createStrategy(menuType), [menuType]);
@@ -46,8 +47,8 @@ export const StrategySidebar: React.FC<StrategySidebarProps> = (props) => {
 
     // Use project name if it exists and we're in the config/studio view
     const isProjectSaved = !!props.projectName;
-    const breadcrumbLabel = activeCategory === 'config' ? (isProjectSaved ? 'Saved Project' : 'Project') : (isProjectSaved ? props.projectName : 'Editor');
-    const categoryLabel = (activeCategory === 'config' && isProjectSaved) ? props.projectName : (currentNavItem?.label || 'Fretboard');
+    const breadcrumbLabel = activeCategory === 'config' ? (isProjectSaved ? t('sidebar.project') : t('sidebar.project')) : (isProjectSaved ? props.projectName : t('sidebar.editor'));
+    const categoryLabel = (activeCategory === 'config' && isProjectSaved) ? props.projectName : (currentNavItem?.label || t('sidebar.fretboard'));
 
     return (
         <GenericSidebar
@@ -86,7 +87,7 @@ export const StrategySidebar: React.FC<StrategySidebarProps> = (props) => {
                         <button className="group relative w-10 h-10 flex flex-col items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-secondary-neon/20 border border-white/10 hover:border-primary/50 transition-all shadow-lg hover:shadow-cyan-glow">
                             <div className="text-[9px] font-black text-white group-hover:text-primary transition-colors">PRO</div>
                             <span className="absolute left-full ml-4 px-2 py-1 bg-card-dark text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl border border-white/10">
-                                Upgrade Plan
+                                {t('sidebar.upgrade')}
                             </span>
                         </button>
                     </div>
@@ -110,8 +111,9 @@ export const StrategySidebar: React.FC<StrategySidebarProps> = (props) => {
                         <div className="flex items-center gap-1 bg-zinc-900/50 p-1 rounded-lg border border-white/5 shadow-sm">
                             <button
                                 onClick={props.onSave}
-                                className="p-1.5 rounded-md transition-all text-zinc-400 hover:text-primary hover:bg-primary/10"
-                                title="Salvar Projeto"
+                                disabled={!hasUnsavedChanges}
+                                className={`p-1.5 rounded-md transition-all ${!hasUnsavedChanges ? 'text-zinc-600 opacity-40 cursor-not-allowed' : 'text-zinc-400 hover:text-primary hover:bg-primary/10'}`}
+                                title={t('projects.save_dialog.title')}
                             >
                                 <Save className="w-3 h-3" />
                             </button>
@@ -119,7 +121,7 @@ export const StrategySidebar: React.FC<StrategySidebarProps> = (props) => {
                             <button
                                 onClick={onUndo}
                                 disabled={!canUndo}
-                                className={`p-1.5 rounded-md transition-all ${!canUndo ? 'text-zinc-700 cursor-not-allowed' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
+                                className={`p-1.5 rounded-md transition-all ${!canUndo ? 'text-zinc-600 opacity-40 cursor-not-allowed' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
                                 title="Undo"
                             >
                                 <RotateCw className="w-3 h-3 -scale-x-100" />
@@ -128,7 +130,7 @@ export const StrategySidebar: React.FC<StrategySidebarProps> = (props) => {
                             <button
                                 onClick={onRedo}
                                 disabled={!canRedo}
-                                className={`p-1.5 rounded-md transition-all ${!canRedo ? 'text-zinc-700 cursor-not-allowed' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
+                                className={`p-1.5 rounded-md transition-all ${!canRedo ? 'text-zinc-600 opacity-40 cursor-not-allowed' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
                                 title="Redo"
                             >
                                 <RotateCw className="w-3 h-3" />

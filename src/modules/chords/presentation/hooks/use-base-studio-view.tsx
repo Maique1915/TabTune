@@ -15,6 +15,7 @@ export interface BaseStudioViewConfig {
     defaultNumFrets: number;
     defaultAnimationType: string;
     allowedAnimationTypes?: string[];
+    variant?: 'short' | 'full' | 'beats';
 
     // Stage ref
     stageRef: React.RefObject<any>;
@@ -35,7 +36,7 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
     // Use the provided editor hook
     const editorData = useEditor();
 
-    const { setMeasures, setSettings, setTheme } = editorData;
+    const { setMeasures, setSettings, setTheme, hasUnsavedChanges, markAsSaved } = editorData;
 
     const [projectName, setProjectName] = useState<string>("");
 
@@ -55,11 +56,14 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
                     if (data.theme) setTheme((prev: any) => ({ ...prev, ...data.theme }));
                     if (project.name) setProjectName(project.name);
 
+                    // Mark the loaded project as saved
+                    markAsSaved();
+
                     console.log(`Project ${project.name} loaded successfully`);
                 }
             })
             .catch(err => console.error('Error loading project:', err));
-    }, [projectId, setMeasures, setSettings, setTheme, setProjectName]);
+    }, [projectId, setMeasures, setSettings, setTheme, setProjectName, markAsSaved]);
 
     const {
         playbackTransitionsEnabled,
@@ -215,7 +219,7 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.code === 'Space') {
+            if (e.code === 'Space' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
                 if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
                 e.preventDefault();
                 if (isAnimating) {
@@ -265,7 +269,16 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
         hasClipboard: false,
         onSelectNote: editorData.handleSelectNote,
         onDoubleClickNote: (id: string) => editorData.setEditingNoteId(id),
-        onAddNote: editorData.handleAddNote,
+        onAddNote: (measureId: string) => {
+            if (config.variant === 'short') {
+                const measure = editorData.measures.find((m: any) => m.id === measureId);
+                if (measure && measure.notes.length > 0) {
+                    editorData.handleSelectNote(measure.notes[0].id, false);
+                    return;
+                }
+            }
+            editorData.handleAddNote(measureId);
+        },
         onRemoveNote: editorData.handleRemoveNote,
         onCopyNote: editorData.handleCopyNote,
         onRemoveMeasure: editorData.handleRemoveMeasure,
@@ -312,6 +325,7 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
                     })
                 });
                 if (res.ok) {
+                    markAsSaved(); // Mark current state as saved
                     alert("Projeto salvo com sucesso!");
                 }
             } catch (err) {
@@ -349,6 +363,7 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
             if (res.ok) {
                 const result = await res.json();
                 setProjectName(name);
+                markAsSaved(); // Mark current state as saved
                 const newUrl = `${window.location.pathname}?id=${result.id}`;
                 window.history.pushState({ path: newUrl }, '', newUrl);
                 alert("Projeto criado e salvo!");
@@ -395,7 +410,10 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
         // Shared objects
         floatingControls,
         navItems,
-        visualEditorProps,
+        visualEditorProps: {
+            ...visualEditorProps,
+            variant: config.variant
+        },
         activeAnimationType,
 
         // App context
@@ -405,5 +423,6 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
         renderProgress,
         setRenderProgress,
         projectName,
+        variant: config.variant
     };
 }

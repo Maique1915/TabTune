@@ -4,26 +4,30 @@ import { Minus, Plus } from 'lucide-react';
 import { InstrumentPreset } from '@/lib/instruments';
 import { INSTRUMENTS } from '@/lib/instruments';
 import { calculateShiftedTuning } from '@/modules/editor/domain/music-math';
+import { useTranslation } from '@/modules/core/presentation/context/translation-context';
 
 export const ConfigPanel: React.FC<SidebarProps> = ({
     globalSettings,
     onGlobalSettingsChange,
     onImportScore,
     measures,
-    animationType
+    animationType,
+    theme,
+    setTheme
 }) => {
+    const { t } = useTranslation();
 
     return (
         <div className="space-y-6 animate-in slide-in-from-right-2 duration-300">
             <div className="space-y-4">
-                <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Global Config</h3>
+                <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">{t('beats.config.title')}</h3>
 
                 {/* BPM / Tempo Selector */}
                 <div className="space-y-3 pt-4 border-t border-zinc-900/50">
                     <div className="flex items-center justify-between px-1">
                         <div className="flex flex-col">
-                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none">Tempo</label>
-                            <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-tight mt-1">Sync Animation</span>
+                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none">{t('beats.config.tempo')}</label>
+                            <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-tight mt-1">{t('beats.config.sync')}</span>
                         </div>
                         <div className="px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20">
                             <span className="text-[11px] font-black text-cyan-400 leading-none">{globalSettings?.bpm || 120} BPM</span>
@@ -121,7 +125,7 @@ export const ConfigPanel: React.FC<SidebarProps> = ({
                 <div className="space-y-3">
                     <div className="flex items-center justify-between">
                         <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-1">
-                            Capo / Tuning Shift
+                            {t('settings.labels.capo_color')} / Tuning Shift
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -203,8 +207,60 @@ export const ConfigPanel: React.FC<SidebarProps> = ({
                     onClick={onImportScore}
                     className="w-full py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-bold text-xs hover:bg-cyan-500/20 transition-all flex items-center justify-center gap-2 uppercase tracking-widest mt-4"
                 >
-                    ↓ Import Score
+                    ↓ {t('header.import')} Score
                 </button>
+
+                {/* View Transform / Rotation */}
+                <div className="space-y-3 pt-6 border-t border-zinc-900/50">
+                    <div className="flex items-center justify-between px-1">
+                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none">
+                            {t('settings.headers.view_transform')}
+                        </label>
+                    </div>
+
+                    <div className="space-y-3 p-3 bg-zinc-950/40 rounded-2xl border border-white/[0.03] shadow-inner">
+                        <div className="space-y-1.5 cursor-default">
+                            <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-tight pl-0.5">{t('settings.labels.rotation')}</span>
+                            <div className="grid grid-cols-3 gap-2">
+                                {(globalSettings?.numFrets && globalSettings.numFrets > 12
+                                    ? [
+                                        { label: '0°', val: 0, mirror: false },
+                                        { label: '180°', val: 0, mirror: true }
+                                    ]
+                                    : [
+                                        { label: '0°', val: 0, mirror: false },
+                                        { label: '90°', val: 90, mirror: false },
+                                        { label: '270°', val: 270, mirror: true }
+                                    ]
+                                ).map((opt) => {
+                                    const isSelected = theme?.global?.rotation === opt.val && theme?.global?.mirror === opt.mirror;
+
+                                    return (
+                                        <button
+                                            key={`${opt.val}-${opt.mirror}`}
+                                            onClick={() => {
+                                                setTheme?.((prev: any) => ({
+                                                    ...prev,
+                                                    global: {
+                                                        ...(prev.global || {}),
+                                                        rotation: opt.val,
+                                                        mirror: opt.mirror
+                                                    }
+                                                }));
+                                            }}
+                                            className={`py-2 rounded-xl border text-[10px] font-black transition-all ${isSelected
+                                                ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.1)]'
+                                                : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700'
+                                                }`}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

@@ -18,6 +18,7 @@ import { RenderDialog } from "@/modules/chords/presentation/components/RenderDia
 import { SaveProjectDialog } from "@/modules/chords/presentation/components/SaveProjectDialog";
 import { PreviewWatermark } from "@/modules/chords/presentation/components/PreviewWatermark";
 import { useBaseStudioView } from "@/modules/chords/presentation/hooks/use-base-studio-view";
+import { useKeyboardShortcuts } from "@/modules/chords/presentation/hooks/use-keyboard-shortcuts";
 
 export function ShortStudioView() {
     const videoCanvasRef = useRef<FretboardStageRef>(null);
@@ -28,6 +29,7 @@ export function ShortStudioView() {
         defaultNumFrets: 5,
         defaultAnimationType: 'static-fingers',
         allowedAnimationTypes: ['static-fingers', 'carousel'],
+        variant: 'short',
         stageRef: videoCanvasRef
     });
 
@@ -52,6 +54,7 @@ export function ShortStudioView() {
         handleUpdateMeasure,
         handleAddMeasure,
         handleRemoveMeasure,
+        handleCopyMeasure,
         handleNoteRhythmChange,
         handleRemoveNote,
         handleCopyNote,
@@ -77,6 +80,7 @@ export function ShortStudioView() {
         canRedo,
         theme,
         setTheme,
+        hasUnsavedChanges,
         // Base view data
         isAnimating,
         isPaused,
@@ -106,28 +110,30 @@ export function ShortStudioView() {
         onConfirmSaveNewProject
     } = baseView;
 
+    useKeyboardShortcuts({
+        ...baseView,
+        onSetFretForPosition: handleSetFretForString,
+        onSetStringForPosition: handleSetStringForPosition,
+        onSetFingerForPosition: handleSetFingerForString,
+        onToggleBarreTo: handleToggleBarreTo,
+        onTransposeAll: handleTransposeAll,
+        onAddNote: handleAddNote,
+        onAddMeasure: handleAddMeasure,
+        onAddChordNote: handleAddChordNote,
+        onRemoveMeasure: handleRemoveMeasure,
+        onCopyMeasure: handleCopyMeasure,
+        onRemoveChordNote: handleRemoveChordNote,
+        onRemoveNote: handleRemoveNote,
+        onGlobalSettingsChange: (newSettings: any) => setSettings((prev: any) => ({ ...prev, ...newSettings })),
+        globalSettings: settings
+    } as any);
+
     return (
         <WorkspaceLayout
             isMobile={isMobile}
             header={<AppHeader
-                onImportHistory={async (file) => {
-                    try {
-                        const { readHistoryFile, historyToFretboard } = await import('@/lib/history-manager');
-                        const data = await readHistoryFile(file);
-                        if (data.measures) setMeasures(data.measures);
-                        else setMeasures(historyToFretboard(data.chords));
-                        if (data.settings) setSettings((prev: any) => ({ ...prev, ...data.settings }));
-                        if (data.theme) setTheme((prev: any) => ({ ...prev, ...data.theme }));
-                    } catch (e) {
-                        console.error("Import failed", e);
-                    }
-                }}
-                onExportHistory={async () => {
-                    const { downloadHistory, createFullHistory } = await import('@/lib/history-manager');
-                    const history = createFullHistory(measures, settings, theme);
-                    downloadHistory(history, 'fretboard-history.json');
-                }}
                 title="Studio"
+                hasUnsavedChanges={hasUnsavedChanges}
             />}
             mobileBottomNav={<MobileNav items={navItems} activePanel={activePanel} onPanelChange={setLocalActivePanel} />}
             leftSidebar={
@@ -175,6 +181,7 @@ export function ShortStudioView() {
                     onRedo={redo}
                     canUndo={canUndo}
                     canRedo={canRedo}
+                    hasUnsavedChanges={hasUnsavedChanges}
                     theme={theme}
                     measures={measures}
                     projectName={projectName}
@@ -209,7 +216,7 @@ export function ShortStudioView() {
                         </div>
                         <div className="mb-4 px-2">{floatingControls}</div>
                         <div className="h-64 overflow-hidden border-t border-white/10">
-                            <StudioTimeline {...visualEditorProps} />
+                            <StudioTimeline {...visualEditorProps} variant="short" />
                         </div>
                     </div>
                 </div>
@@ -237,7 +244,7 @@ export function ShortStudioView() {
                             {!isRendering && <PreviewWatermark />}
                         </StageContainer>
                     }
-                    bottomSection={<StudioTimeline {...visualEditorProps} />}
+                    bottomSection={<StudioTimeline {...visualEditorProps} variant="short" />}
                     floatingControls={floatingControls}
                 />
             )}

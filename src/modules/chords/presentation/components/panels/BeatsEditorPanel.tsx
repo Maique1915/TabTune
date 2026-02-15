@@ -239,6 +239,15 @@ export const BeatsEditorPanel: React.FC<SidebarProps> = ({
                         <div className="space-y-2 animate-in fade-in duration-300">
                             <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{t('beats.strum_finger')}</label>
                             <div className="flex gap-1.5 flex-wrap">
+                                <button
+                                    onClick={() => onUpdateNote?.({ strumFinger: '' })}
+                                    className={`h-8 px-2 rounded-lg font-black text-[10px] border transition-all uppercase ${!editingNote.strumFinger
+                                        ? 'bg-primary text-black border-primary'
+                                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'
+                                        }`}
+                                >
+                                    {t('beats.none')}
+                                </button>
                                 {['P', 'i', 'm', 'a'].map(f => (
                                     <button
                                         key={f}
@@ -256,7 +265,7 @@ export const BeatsEditorPanel: React.FC<SidebarProps> = ({
                                     value={editingNote.strumFinger || ''}
                                     onChange={(e) => onUpdateNote?.({ strumFinger: e.target.value })}
                                     placeholder="Custom"
-                                    className="h-8 px-2 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-white focus:border-primary focus:outline-none w-20"
+                                    className="h-8 px-2 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-100 focus:border-primary/50 focus:outline-none w-20 transition-all placeholder:text-zinc-600"
                                 />
                             </div>
                         </div>
