@@ -116,6 +116,7 @@ export function ShortStudioView() {
         onSetStringForPosition: handleSetStringForPosition,
         onSetFingerForPosition: handleSetFingerForString,
         onToggleBarreTo: handleToggleBarreTo,
+        onToggleBarre: handleToggleBarre,
         onTransposeAll: handleTransposeAll,
         onAddNote: handleAddNote,
         onAddMeasure: handleAddMeasure,
@@ -197,6 +198,7 @@ export function ShortStudioView() {
                             <StageContainer title="Visualizer">
                                 <FretboardStage
                                     ref={videoCanvasRef}
+                                    {...visualEditorProps}
                                     chords={chords}
                                     activeChordIndex={activeChordIndex}
                                     transitionsEnabled={playbackTransitionsEnabled}
@@ -226,6 +228,7 @@ export function ShortStudioView() {
                         <StageContainer title="Visualizer">
                             <FretboardStage
                                 ref={videoCanvasRef}
+                                {...visualEditorProps}
                                 chords={chords}
                                 activeChordIndex={activeChordIndex}
                                 transitionsEnabled={playbackTransitionsEnabled}

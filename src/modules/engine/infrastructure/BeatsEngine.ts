@@ -363,4 +363,8 @@ export class BeatsEngine {
 
         ctx.restore();
     }
+
+    public getGeometry() {
+        return (this.chordDrawer as any)?._geometry || null;
+    }
 }

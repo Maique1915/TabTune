@@ -59,6 +59,7 @@ export function ShortcutsModal({ children }: { children: React.ReactNode }) {
         {
             title: t('shortcuts.groups.advanced') || 'Advanced',
             shortcuts: [
+                { key: 'B / P', description: t('shortcuts.keys.toggle_barre_desc') },
                 { key: t('shortcuts.keys.shift_arrows'), description: t('shortcuts.keys.shift_arrows_desc') },
                 { key: t('shortcuts.keys.shift_arrows_rl'), description: t('shortcuts.keys.shift_arrows_rl_desc') },
                 { key: t('shortcuts.keys.ctrl_arrows_ud'), description: t('shortcuts.keys.ctrl_arrows_ud_desc') },

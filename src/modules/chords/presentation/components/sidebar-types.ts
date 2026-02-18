@@ -28,9 +28,10 @@ export interface SidebarProps {
     activePositionIndex?: number | null;
     onActivePositionIndexChange?: (index: number) => void;
     onAddChordNote?: () => void;
+    onAddChordPosition?: (fret: number, string: number) => void;
     onRemoveChordNote?: (index: number) => void;
     onToggleBarre?: (indices?: number[]) => void;
-    onToggleBarreTo?: (targetString: number) => void;
+    onToggleBarreTo?: (targetString: number, index?: number, forceSet?: boolean, startString?: number, fret?: number) => void;
     onSetFingerForPosition?: (idx: number, finger: number | string | undefined) => void;
     onSetFretForPosition?: (idx: number, fret: number) => void;
     onSetStringForPosition?: (idx: number, stringNum: number) => void;
@@ -67,6 +68,7 @@ export interface SidebarProps {
     animationType?: string;
     projectName?: string;
     onSave?: () => void;
+    onShowAlert?: (message: string) => void;
     setTheme?: (theme: FretboardTheme | ((prev: FretboardTheme) => FretboardTheme)) => void;
     variant?: 'short' | 'full' | 'beats';
 }

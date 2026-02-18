@@ -70,11 +70,13 @@ export const translations = {
             actions: 'Ações',
         },
         harmony: {
+            title: 'Harmonia',
             root_tone: 'Tônica & Tom',
             quality: 'Qualidade',
             extensions: 'Extensões',
             bass_note: 'Nota Baixo',
-            root: 'RAIZ',
+            root: 'Raíz',
+            show_name: 'Mostrar Nome',
             qualities: {
                 major: 'Maior',
                 minor: 'Menor',
@@ -196,11 +198,13 @@ export const translations = {
             },
             messages: {
                 style_updated: 'Estilo atualizado!',
-                style_saved: 'Estilo salvo com sucesso!'
+                style_saved: 'Estilo salvo com sucesso!',
+                finger_limit: 'Limite de 4 dedos atingido!'
             },
             labels: {
                 background: 'Fundo',
                 global_scale: 'Escala Global',
+                scale: 'Escala',
                 neck_color: 'Cor do Braço',
                 neck_shadow: 'Sombra do Braço',
                 headstock_color: 'Cor da Mão',
@@ -215,7 +219,38 @@ export const translations = {
                 border_color: 'Cor da Borda',
                 chord_name: 'Nome do Acorde',
                 capo_color: 'Cor do Capo',
-                rotation: 'Rotação'
+                rotation: 'Rotação',
+                shadow_color: 'Cor da Sombra',
+                global_backgroundColor: 'Cor de Fundo',
+                strings_shadow: 'Sombra das Cordas',
+                strings_shadow_enabled: 'Sombra das Cordas',
+                strings_shadow_color: 'Cor da Sombra',
+                frets_shadow: 'Sombra dos Trastes',
+                frets_shadow_enabled: 'Sombra dos Trastes',
+                frets_shadow_color: 'Cor da Sombra',
+                fingers_shadow: 'Sombra dos Dedos',
+                fingers_shadow_enabled: 'Sombra dos Dedos',
+                fingers_shadow_color: 'Cor da Sombra',
+                inlays_shadow: 'Sombra dos Marcadores',
+                inlays_shadow_enabled: 'Sombra dos Marcadores',
+                inlays_shadow_color: 'Cor da Sombra',
+                capo_shadow: 'Sombra do Capo',
+                capo_shadow_enabled: 'Sombra do Capo',
+                capo_shadow_color: 'Cor da Sombra',
+                head_shadow_enabled: 'Sombra da Mão',
+                head_shadow_color: 'Cor da Sombra',
+                head_border_color: 'Borda da Mão',
+                neck_shadow_enabled: 'Sombra do Braço',
+                neck_shadow_color: 'Cor da Sombra',
+                fingers_opacity: 'Opacidade BG',
+                capo_text_color: 'Cor do Texto',
+                chordName_color: 'Cor do Acorde',
+                arrows_color: 'Cor das Setas',
+                arrows_textColor: 'Cor do Texto',
+                arrows_shadow_enabled: 'Sombra das Setas',
+                arrows_shadow_color: 'Cor da Sombra',
+                arrows_border_enabled: 'Borda das Setas',
+                arrows_border_color: 'Cor da Borda'
             },
             animations: {
                 carousel: {
@@ -381,7 +416,7 @@ export const translations = {
             keys: {
                 arrows: '⭠ ⭡ ⭢ ⭣',
                 arrows_desc: '⭠ ⭡ ⭢ ⭣ entre Trastes e Cordas',
-                alt_arrows: 'Alt + ⭡/⭣',
+                alt_arrows: 'A / D',
                 alt_arrows_desc: 'Navegação Hierárquica (Dedo > Acorde > Compasso)',
                 shift_arrows: 'Shift + ⭡/⭣',
                 shift_arrows_desc: 'Controle de Pestana',
@@ -393,6 +428,7 @@ export const translations = {
                 ctrl_arrows_rl_desc: 'Controle de Capo',
                 ctrl_shift_arrows: 'Ctrl + Shift + ⭠/⭢',
                 ctrl_shift_arrows_desc: 'Ciclar Dedos (1, 2, 3, 4, T, X)',
+                toggle_barre_desc: 'Alternar Pestana',
                 plus: '+',
                 plus_desc: 'Adicionar Compasso',
                 ctrl_space: 'Ctrl + Espaço',
@@ -415,7 +451,7 @@ export const translations = {
                 ctrl_d_desc: 'Duplicar Compasso',
                 alt_shift_arrows_ud_beats: 'Alt + Shift + ⭡/⭣',
                 alt_shift_arrows_ud_beats_desc: 'Ciclar Duração da Batida',
-                alt_arrows_ud_beats: 'Alt + ⭡/⭣',
+                alt_arrows_ud_beats: 'W / S',
                 alt_arrows_ud_beats_desc: 'Ciclar Tipo de Batida (Normal, Pausa, Abafado, Nenhum)'
             }
         }
@@ -489,11 +525,13 @@ export const translations = {
             actions: 'Actions',
         },
         harmony: {
+            title: 'Harmony',
             root_tone: 'Root & Tone',
             quality: 'Quality',
             extensions: 'Extensions',
             bass_note: 'Bass Note',
-            root: 'ROOT',
+            root: 'Root',
+            show_name: 'Show Name',
             qualities: {
                 major: 'Major',
                 minor: 'Minor',
@@ -615,11 +653,13 @@ export const translations = {
             },
             messages: {
                 style_updated: 'Style updated!',
-                style_saved: 'Style saved successfully!'
+                style_saved: 'Style saved successfully!',
+                finger_limit: '4 finger limit reached!'
             },
             labels: {
                 background: 'Background',
                 global_scale: 'Global Scale',
+                scale: 'Scale',
                 neck_color: 'Neck Color',
                 neck_shadow: 'Neck Shadow',
                 headstock_color: 'Headstock Color',
@@ -634,7 +674,38 @@ export const translations = {
                 border_color: 'Border Color',
                 chord_name: 'Chord Name',
                 capo_color: 'Capo Color',
-                rotation: 'Rotation'
+                rotation: 'Rotation',
+                shadow_color: 'Shadow Color',
+                global_backgroundColor: 'Background Color',
+                strings_shadow: 'Strings Shadow',
+                strings_shadow_enabled: 'Strings Shadow',
+                strings_shadow_color: 'Shadow Color',
+                frets_shadow: 'Frets Shadow',
+                frets_shadow_enabled: 'Frets Shadow',
+                frets_shadow_color: 'Shadow Color',
+                fingers_shadow: 'Finger Shadows',
+                fingers_shadow_enabled: 'Finger Shadows',
+                fingers_shadow_color: 'Shadow Color',
+                inlays_shadow: 'Inlay Shadows',
+                inlays_shadow_enabled: 'Inlay Shadows',
+                inlays_shadow_color: 'Shadow Color',
+                capo_shadow: 'Capo Shadow',
+                capo_shadow_enabled: 'Capo Shadow',
+                capo_shadow_color: 'Shadow Color',
+                head_shadow_enabled: 'Head Shadow',
+                head_shadow_color: 'Shadow Color',
+                head_border_color: 'Head Border',
+                neck_shadow_enabled: 'Neck Shadow',
+                neck_shadow_color: 'Shadow Color',
+                fingers_opacity: 'BG Opacity',
+                capo_text_color: 'Text Color',
+                chordName_color: 'Chord Color',
+                arrows_color: 'Arrows Color',
+                arrows_textColor: 'Text Color',
+                arrows_shadow_enabled: 'Arrows Shadow',
+                arrows_shadow_color: 'Shadow Color',
+                arrows_border_enabled: 'Arrows Border',
+                arrows_border_color: 'Border Color'
             },
             animations: {
                 carousel: {
@@ -800,7 +871,7 @@ export const translations = {
             keys: {
                 arrows: '⭠ ⭡ ⭢ ⭣',
                 arrows_desc: '⭠ ⭡ ⭢ ⭣ Frets and Strings',
-                alt_arrows: 'Alt + ⭡/⭣',
+                alt_arrows: 'A / D',
                 alt_arrows_desc: 'Hierarchical Navigation (Finger > Chord > Measure)',
                 shift_arrows: 'Shift + ⭡/⭣',
                 shift_arrows_desc: 'Barre Control',
@@ -810,8 +881,9 @@ export const translations = {
                 ctrl_arrows_ud_desc: 'Rotate/Mirror Fretboard',
                 ctrl_arrows_rl: 'Ctrl + ⭠/⭢',
                 ctrl_arrows_rl_desc: 'Capo Control',
-                ctrl_shift_arrows: 'Ctrl + Shift + ⭠/⭢',
+                ctrl_shift_arrows: 'W / S',
                 ctrl_shift_arrows_desc: 'Cycle Fingers (1, 2, 3, 4, T, X)',
+                toggle_barre_desc: 'Toggle Barre (Pestana)',
                 plus: '+',
                 plus_desc: 'Add Measure',
                 ctrl_space: 'Ctrl + Space',
@@ -831,7 +903,11 @@ export const translations = {
                 ctrl_minus: 'Ctrl + -',
                 ctrl_minus_desc: 'Remove Finger',
                 ctrl_d: 'Ctrl + D',
-                ctrl_d_desc: 'Duplicate Measure'
+                ctrl_d_desc: 'Duplicate Measure',
+                alt_shift_arrows_ud_beats: 'Alt + Shift + ⭡/⭣',
+                alt_shift_arrows_ud_beats_desc: 'Cycle Beat Duration',
+                alt_arrows_ud_beats: 'W / S',
+                alt_arrows_ud_beats_desc: 'Cycle Beat Type (Normal, Pause, Mute, None)'
             }
         }
     },
@@ -905,11 +981,13 @@ export const translations = {
         },
 
         harmony: {
+            title: 'Armonía',
             root_tone: 'Tónica y Tono',
             quality: 'Calidad',
             extensions: 'Extensiones',
-            bass_note: 'Nota Bajo',
-            root: 'RAÍZ',
+            bass_note: 'Nota de Bajo',
+            root: 'Raíz',
+            show_name: 'Mostrar Nombre',
             qualities: {
                 major: 'Mayor',
                 minor: 'Menor',
@@ -1031,7 +1109,8 @@ export const translations = {
             },
             messages: {
                 style_updated: '¡Estilo actualizado!',
-                style_saved: '¡Estilo guardado con éxito!'
+                style_saved: '¡Estilo guardado con éxito!',
+                finger_limit: '¡Límite de 4 dedos alcanzado!'
             },
             labels: {
                 background: 'Fondo',
@@ -1050,7 +1129,38 @@ export const translations = {
                 border_color: 'Color del Borde',
                 chord_name: 'Nombre del Acorde',
                 capo_color: 'Color de Cejilla',
-                rotation: 'Rotación'
+                rotation: 'Rotación',
+                shadow_color: 'Color de Sombra',
+                global_backgroundColor: 'Color de Fondo',
+                strings_shadow: 'Sombra de Cuerdas',
+                strings_shadow_enabled: 'Sombra de Cuerdas',
+                strings_shadow_color: 'Color de Sombra',
+                frets_shadow: 'Sombra de Trastes',
+                frets_shadow_enabled: 'Sombra de Trastes',
+                frets_shadow_color: 'Color de Sombra',
+                fingers_shadow: 'Sombra de Dedos',
+                fingers_shadow_enabled: 'Sombra de Dedos',
+                fingers_shadow_color: 'Color de Sombra',
+                inlays_shadow: 'Sombra de Marcadores',
+                inlays_shadow_enabled: 'Sombra de Marcadores',
+                inlays_shadow_color: 'Color de Sombra',
+                capo_shadow: 'Sombra de Cejilla',
+                capo_shadow_enabled: 'Sombra de Cejilla',
+                capo_shadow_color: 'Color de Sombra',
+                head_shadow_enabled: 'Sombra de la Pala',
+                head_shadow_color: 'Color de Sombra',
+                head_border_color: 'Borde de la Pala',
+                neck_shadow_enabled: 'Sombra del Mástil',
+                neck_shadow_color: 'Color de Sombra',
+                fingers_opacity: 'Opacidad BG',
+                capo_text_color: 'Color de Texto',
+                chordName_color: 'Color del Acorde',
+                arrows_color: 'Color de Flechas',
+                arrows_textColor: 'Color de Texto',
+                arrows_shadow_enabled: 'Sombra de Flechas',
+                arrows_shadow_color: 'Color de Sombra',
+                arrows_border_enabled: 'Borde de Flechas',
+                arrows_border_color: 'Color del Borde'
             },
             animations: {
                 carousel: {
@@ -1215,7 +1325,7 @@ export const translations = {
             keys: {
                 arrows: '⭠ ⭡ ⭢ ⭣',
                 arrows_desc: '⭠ ⭡ ⭢ ⭣ entre Trastes y Cuerdas',
-                alt_arrows: 'Alt + ⭡/⭣',
+                alt_arrows: 'A / D',
                 alt_arrows_desc: 'Navegación Jerárquica (Dedo > Acorde > Compás)',
                 shift_arrows: 'Shift + ⭡/⭣',
                 shift_arrows_desc: 'Control de Cejilla',
@@ -1225,8 +1335,9 @@ export const translations = {
                 ctrl_arrows_ud_desc: 'Rotar/Espejar Diapasón',
                 ctrl_arrows_rl: 'Ctrl + ⭠/⭢',
                 ctrl_arrows_rl_desc: 'Control de Cejilla (Capo)',
-                ctrl_shift_arrows: 'Ctrl + Shift + ⭠/⭢',
+                ctrl_shift_arrows: 'W / S',
                 ctrl_shift_arrows_desc: 'Ciclar Dedos (1, 2, 3, 4, T, X)',
+                toggle_barre_desc: 'Alternar Cejuela',
                 plus: '+',
                 plus_desc: 'Añadir Compás',
                 ctrl_space: 'Ctrl + Espacio',
@@ -1246,7 +1357,11 @@ export const translations = {
                 ctrl_minus: 'Ctrl + -',
                 ctrl_minus_desc: 'Eliminar Dedo',
                 ctrl_d: 'Ctrl + D',
-                ctrl_d_desc: 'Duplicar Compás'
+                ctrl_d_desc: 'Duplicar Compás',
+                alt_shift_arrows_ud_beats: 'Alt + Shift + ⭡/⭣',
+                alt_shift_arrows_ud_beats_desc: 'Ciclar Duración de Beat',
+                alt_arrows_ud_beats: 'W / S',
+                alt_arrows_ud_beats_desc: 'Ciclar Tipo de Beat (Normal, Pausa, Apagado, Ninguno)'
             }
         }
     }

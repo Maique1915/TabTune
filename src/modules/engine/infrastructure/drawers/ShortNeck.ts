@@ -371,13 +371,14 @@ export class ShortNeckDrawer extends BaseDrawer implements FretboardDrawer, Chor
     }
 
     public drawStringNames(progress: number = 1, customNames?: string[]): void {
+        const standardNames = this._stringNames || ["E", "A", "D", "G", "B", "e"];
+        // Ensure names are in the right order for the component (E should be at index 0 for leftmost)
         if (customNames) {
             this._shortNeckComp.setStringNames(customNames);
-            this._shortNeckComp.draw(this._ctx, { stringNamesProgress: progress }, this._rotation, this._mirror);
-            if (this._stringNames) this._shortNeckComp.setStringNames(this._stringNames);
         } else {
-            this._shortNeckComp.draw(this._ctx, { stringNamesProgress: progress }, this._rotation, this._mirror);
+            this._shortNeckComp.setStringNames(standardNames);
         }
+        this._shortNeckComp.draw(this._ctx, { stringNamesProgress: progress }, this._rotation, this._mirror);
     }
 
     public drawStrings(): void {

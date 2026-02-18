@@ -95,6 +95,45 @@ export class GeometryProvider {
         return true;
     }
 
+    public getFretStringFromCoords(x: number, y: number): { fret: number; string: number } | null {
+        if (this.settings.neckType === NeckType.FULL) {
+            // FULL neck: x is fret, y is string
+            const relativeX = x - this.settings.fretboardX;
+            // Snapping to fret: 
+            // - Click near the nut (negative or very small) -> fret 0
+            // - Click in the box of fret N -> fret N
+            let fret = Math.ceil(relativeX / this.settings.realFretSpacing);
+            if (relativeX < 0 && relativeX > -this.settings.realFretSpacing / 2) {
+                fret = 0;
+            }
+
+            const relativeY = y - (this.settings.boardY + this.settings.stringMargin);
+            const visualIdx = Math.round(relativeY / this.settings.stringSpacing);
+            const stringNum = this.settings.numStrings - visualIdx;
+
+            if (fret < 0 || fret > this.settings.numFrets) return null;
+            if (stringNum < 1 || stringNum > this.settings.numStrings) return null;
+
+            return { fret: Math.max(0, fret), string: stringNum };
+        } else {
+            // SHORT neck: x is string, y is fret
+            const relativeX = x - (this.settings.fretboardX + this.settings.paddingX);
+            const visualIdx = Math.round(relativeX / this.settings.stringSpacing);
+            const stringNum = this.settings.numStrings - visualIdx;
+
+            const relativeY = y - this.settings.fretboardY;
+            let fret = Math.ceil(relativeY / this.settings.realFretSpacing);
+            if (relativeY < 0 && relativeY > -this.settings.realFretSpacing / 2) {
+                fret = 0;
+            }
+
+            if (fret < 0 || fret > this.settings.numFrets) return null;
+            if (stringNum < 1 || stringNum > this.settings.numStrings) return null;
+
+            return { fret: Math.max(0, fret), string: stringNum };
+        }
+    }
+
     public get scaleFactor(): number { return this.settings.scaleFactor; }
     public get fingerRadius(): number { return this.settings.fingerRadius; }
     public get barreWidth(): number { return this.settings.barreWidth; }

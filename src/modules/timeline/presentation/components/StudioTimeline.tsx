@@ -129,23 +129,22 @@ const StudioTimeline: React.FC<BaseTimelineProps> = ({
         });
     });
 
-    // Timeline / Horizontal Layout - STUDIO MODE
     return (
         <div
-            className="flex flex-col w-full h-full bg-panel-dark/95 backdrop-blur-2xl border-t border-white/5 relative"
+            className="flex flex-col w-full h-full bg-background-dark/40 backdrop-blur-2xl border-t border-white/[0.05] relative overflow-hidden"
             onClick={onDeselectAll}
         >
             {/* Playback Progress Overlay */}
             <div
-                className="absolute top-0 left-0 h-0.5 bg-gradient-to-r from-primary via-cyan-400 to-primary z-50 transition-all duration-100 ease-linear shadow-cyan-glow"
+                className="absolute top-0 left-0 h-1 bg-primary z-50 transition-all duration-100 ease-linear shadow-cyan-glow"
                 style={{ width: `${Math.min(100, (currentCursorMs / totalDurationMs) * 100)}%` }}
             />
 
 
 
             {/* Horizontal Timeline Container */}
-            <div className="flex-1 overflow-x-auto overflow-y-hidden px-8 py-6 custom-scrollbar">
-                <div className="flex flex-row gap-5 min-w-max h-full items-start">
+            <div className="flex-1 overflow-x-auto overflow-y-hidden px-10 py-8 custom-scrollbar relative z-10">
+                <div className="flex flex-row gap-6 min-w-max h-full items-start">
                     {measures.map((measure, mIdx) => {
                         const isCollapsed = measure.isCollapsed;
                         const isDragging = draggedIndex === mIdx;
@@ -170,19 +169,19 @@ const StudioTimeline: React.FC<BaseTimelineProps> = ({
                                 onDragLeave={() => setDragOverIndex(null)}
                                 className={`
                                     flex flex-col
-                                    relative group transition-all duration-300
-                                    rounded-[20px] border
-                                    ${isCollapsed ? 'w-14' : 'w-[180px]'}
+                                    relative group transition-all duration-500
+                                    rounded-[28px] border
+                                    ${isCollapsed ? 'w-16' : 'w-[200px]'}
                                     ${isDragging ? 'opacity-20 scale-95 border-dashed border-zinc-700' :
                                         isMeasureSelected
-                                            ? 'opacity-100 border-primary bg-gradient-to-br from-primary/10 to-transparent shadow-[0_0_30px_rgba(6,182,212,0.15)] ring-1 ring-primary/30 z-10'
-                                            : 'opacity-100 border-white/5 bg-gradient-to-br from-white/[0.03] to-transparent hover:border-white/10 hover:bg-white/[0.05]'}
-                                    ${isOver ? 'border-primary/60 scale-[1.02] shadow-cyan-glow' : ''}
-                                    h-[85%] overflow-hidden
+                                            ? 'opacity-100 border-primary bg-primary/[0.08] shadow-premium-glow ring-1 ring-primary/20 z-10'
+                                            : 'opacity-100 border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.1]'}
+                                    ${isOver ? 'border-primary/60 scale-[1.02] shadow-cyan-glow bg-primary/5' : ''}
+                                    h-[90%] overflow-hidden
                                 `}
                             >
                                 {/* Active Selection Indicator Line */}
-                                {isMeasureSelected && <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />}
+                                {isMeasureSelected && <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary opacity-50 shadow-cyan-glow" />}
 
                                 {/* Measure Header */}
                                 <div className={`flex flex-col p-2.5 z-10 ${isCollapsed ? 'items-center px-1' : ''}`}>
@@ -260,51 +259,51 @@ const StudioTimeline: React.FC<BaseTimelineProps> = ({
                                                     onDragEnd={handleNoteDragEnd}
                                                     onDragLeave={() => setDragOverNoteIndex(null)}
                                                     className={`
-                                                        relative cursor-pointer transition-all duration-300 group/note
-                                                        w-[110px] h-[72px] shrink-0 rounded-xl border flex flex-col items-center justify-center select-none shadow-md pt-4
+                                                        relative cursor-pointer transition-all duration-500 group/note
+                                                        w-[120px] h-[80px] shrink-0 rounded-2xl border flex flex-col items-center justify-center select-none shadow-glass-panel pt-4
                                                         ${isPlaying
-                                                            ? 'bg-primary/20 border-primary shadow-cyan-glow scale-[1.05] z-20'
+                                                            ? 'bg-primary/20 border-primary shadow-premium-glow scale-[1.08] z-20'
                                                             : isSelected
-                                                                ? 'bg-primary/10 border-primary shadow-[0_0_15px_rgba(6,182,212,0.1)]'
-                                                                : 'bg-black/40 border-white/5 hover:border-white/10 hover:bg-black/60'}
+                                                                ? 'bg-primary/10 border-primary shadow-cyan-glow'
+                                                                : 'bg-black/40 border-white/[0.03] hover:border-white/10 hover:bg-black/60'}
                                                         ${isNoteDragging ? 'opacity-20 scale-90 blur-[2px]' : ''}
                                                         ${isNoteOver ? 'border-primary scale-[1.05] -translate-y-1' : ''}
                                                     `}
                                                 >
                                                     {/* Note Actions */}
                                                     {variant !== 'short' && (onCopyNote || onRemoveNote) && (
-                                                        <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover/note:opacity-100 transition-opacity z-10">
+                                                        <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover/note:opacity-100 transition-opacity z-10">
                                                             {onCopyNote && (
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); onCopyNote(note.id); }}
-                                                                    className="size-5 flex items-center justify-center rounded-md bg-black/60 hover:bg-white/10 text-zinc-300 hover:text-white transition"
+                                                                    className="size-6 flex items-center justify-center rounded-lg bg-black/80 hover:bg-white/10 text-zinc-300 hover:text-white transition-all shadow-lg"
                                                                     title="Duplicar"
                                                                 >
-                                                                    <Icons.Copy className="w-3 h-3" />
+                                                                    <Icons.Copy className="w-3.5 h-3.5" />
                                                                 </button>
                                                             )}
                                                             {onRemoveNote && (
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); onRemoveNote(note.id); }}
-                                                                    className="size-5 flex items-center justify-center rounded-md bg-black/60 hover:bg-rose-500/20 text-zinc-300 hover:text-rose-400 transition"
+                                                                    className="size-6 flex items-center justify-center rounded-lg bg-black/80 hover:bg-rose-500/20 text-zinc-300 hover:text-rose-400 transition-all shadow-lg"
                                                                     title="Excluir"
                                                                 >
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                                                                 </button>
                                                             )}
                                                         </div>
                                                     )}
                                                     {/* Glow behind playing note */}
-                                                    {isPlaying && <div className="absolute inset-0 bg-primary/10 animate-pulse rounded-xl" />}
+                                                    {isPlaying && <div className="absolute inset-0 bg-primary/10 animate-pulse-subtle rounded-2xl" />}
 
                                                     {/* Note Info */}
-                                                    <span className={`absolute top-1.5 left-2 text-[7px] font-black uppercase tracking-widest ${isSelected || isPlaying ? 'text-primary' : 'text-zinc-700 group-hover/note:text-zinc-500'}`}>
+                                                    <span className={`absolute top-2 left-3 text-[8px] font-black uppercase tracking-[0.2em] ${isSelected || isPlaying ? 'text-primary' : 'text-zinc-600 group-hover/note:text-zinc-400'}`}>
                                                         {note.duration}{note.decorators.dot && '•'}
                                                     </span>
 
                                                     {/* Main Value */}
-                                                    <div className="flex flex-row flex-wrap items-center justify-center content-center transition-all duration-500 group-hover/note:scale-105 text-white gap-1.5 px-2">
-                                                        <div className="flex -space-x-2">
+                                                    <div className="flex flex-row flex-wrap items-center justify-center content-center transition-all duration-500 group-hover/note:scale-110 text-white gap-2 px-2">
+                                                        <div className="flex -space-x-2.5">
                                                             {(() => {
                                                                 const uniqueNotes = Array.from(new Set(note.positions
                                                                     .filter(p => !p.avoid)
@@ -316,15 +315,15 @@ const StudioTimeline: React.FC<BaseTimelineProps> = ({
 
                                                                 return uniqueNotes.slice(0, 3).map((noteName, i) => (
                                                                     <div key={i} className={`
-                                                                        size-6 rounded-full border border-black flex items-center justify-center text-[9px] font-black shadow-lg transition-all duration-300
-                                                                        ${isPlaying ? 'bg-primary text-black scale-110 z-10' : 'bg-zinc-800 text-zinc-300'}
+                                                                        size-7 rounded-full border border-black/50 flex items-center justify-center text-[10px] font-black shadow-xl transition-all duration-300
+                                                                        ${isPlaying ? 'bg-primary text-black scale-110 z-10 shadow-cyan-glow' : 'bg-zinc-800 text-slate-300'}
                                                                     `}>
                                                                         {noteName}
                                                                     </div>
                                                                 ));
                                                             })()}
                                                             {note.positions.filter(p => !p.avoid).length > 3 && (
-                                                                <div className="w-5 h-5 rounded-full bg-cyan-950 border-2 border-primary/50 flex items-center justify-center text-[8px] font-black text-primary shadow-lg">
+                                                                <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center text-[10px] font-black text-primary shadow-lg backdrop-blur-sm">
                                                                     +
                                                                 </div>
                                                             )}
@@ -332,13 +331,13 @@ const StudioTimeline: React.FC<BaseTimelineProps> = ({
                                                     </div>
 
                                                     {/* Indicators (Bottom Dots) */}
-                                                    <div className="absolute bottom-3 left-4 flex gap-1">
-                                                        {note.technique && <div className={`w-1.5 h-1.5 rounded-full ring-2 ring-black/40 shadow-sm ${getTechColor(note.technique)}`} />}
+                                                    <div className="absolute bottom-3 left-4 flex gap-1.5">
+                                                        {note.technique && <div className={`w-2 h-2 rounded-full ring-2 ring-black/40 shadow-inner-glow ${getTechColor(note.technique)}`} />}
                                                     </div>
 
                                                     {/* Progress bar inside note (match cinematic) */}
                                                     {isPlaying && timing && (
-                                                        <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-primary via-cyan-400 to-primary rounded-full transition-all duration-100 ease-linear shadow-cyan-glow"
+                                                        <div className="absolute bottom-0 left-0 h-1 bg-primary rounded-full transition-all duration-100 ease-linear shadow-cyan-glow"
                                                             style={{ width: `${Math.min(100, Math.max(0, ((currentCursorMs - timing.start) / (timing.end - timing.start)) * 100))}%` }}
                                                         />
                                                     )}
@@ -355,13 +354,13 @@ const StudioTimeline: React.FC<BaseTimelineProps> = ({
                     {(
                         <button
                             onClick={(e) => { e.stopPropagation(); onAddMeasure(); }}
-                            className="w-20 h-[85%] border-2 border-dashed border-white/5 bg-white/[0.01] hover:bg-primary/5 hover:border-primary/30 rounded-[24px] flex flex-col items-center justify-center text-zinc-600 hover:text-primary transition-all duration-700 shrink-0 group/add-m"
+                            className="w-24 h-[90%] border-2 border-dashed border-white/[0.05] bg-white/[0.01] hover:bg-primary/[0.03] hover:border-primary/30 rounded-[32px] flex flex-col items-center justify-center text-zinc-600 hover:text-primary transition-all duration-700 shrink-0 group/add-m"
                             title="Add New Block"
                         >
-                            <div className="w-10 h-10 rounded-full bg-white/[0.02] flex items-center justify-center group-hover/add-m:scale-110 group-hover/add-m:rotate-90 group-hover/add-m:bg-primary/10 transition-all duration-500 shadow-xl">
-                                <Icons.Plus />
+                            <div className="w-12 h-12 rounded-2xl bg-white/[0.02] flex items-center justify-center group-hover/add-m:scale-110 group-hover/add-m:rotate-90 group-hover/add-m:bg-primary/10 transition-all duration-500 shadow-xl border border-white/[0.03] group-hover/add-m:border-primary/20">
+                                <Icons.Plus className="w-6 h-6" />
                             </div>
-                            <span className="text-[9px] font-black uppercase tracking-[0.2em] mt-3 opacity-40 group-hover/add-m:opacity-100 transition-opacity">Add Block</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] mt-4 opacity-40 group-hover/add-m:opacity-100 transition-opacity">Add Block</span>
                         </button>
                     )}
                 </div>

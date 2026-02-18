@@ -6,7 +6,11 @@ interface BaseStageUIProps {
     canvasRef: React.RefObject<HTMLCanvasElement>;
     backgroundCanvasRef: React.RefObject<HTMLCanvasElement>;
     stageContainerRef: React.RefObject<HTMLDivElement>;
-    children?: React.ReactNode; // For any additional overlays if needed
+    children?: React.ReactNode;
+    onMouseDown?: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+    onMouseMove?: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+    onMouseUp?: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+    onMouseLeave?: (e: React.MouseEvent<HTMLCanvasElement>) => void;
 }
 
 export const BaseStageUI = ({
@@ -15,7 +19,11 @@ export const BaseStageUI = ({
     canvasRef,
     backgroundCanvasRef,
     stageContainerRef,
-    children
+    children,
+    onMouseDown,
+    onMouseMove,
+    onMouseUp,
+    onMouseLeave
 }: BaseStageUIProps) => {
     return (
         <div ref={stageContainerRef} className="relative w-full h-full flex items-center justify-center p-8">
@@ -34,7 +42,11 @@ export const BaseStageUI = ({
                     ref={canvasRef}
                     width={width}
                     height={height}
-                    className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                    className="absolute inset-0 w-full h-full object-contain cursor-crosshair z-30"
+                    onMouseDown={onMouseDown}
+                    onMouseMove={onMouseMove}
+                    onMouseUp={onMouseUp}
+                    onMouseLeave={onMouseLeave}
                 />
 
                 {children}

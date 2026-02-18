@@ -172,6 +172,7 @@ export function useStudioChordsEditor() {
         handleDecoratorChange: notesApi.handleDecoratorChange,
         handleInsert: notesApi.handleInsert,
         handleAddChordNote: notesApi.handleAddChordNote,
+        handleAddChordPosition: notesApi.handleAddChordPosition,
         handleRemoveChordNote: notesApi.handleRemoveChordNote,
         handleSetFingerForString: notesApi.handleSetFingerForString,
         handleSetFretForString: notesApi.handleSetFretForString,

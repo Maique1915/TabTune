@@ -116,6 +116,7 @@ export function FullStudioView() {
         onSetStringForPosition: handleSetStringForPosition,
         onSetFingerForPosition: handleSetFingerForString,
         onToggleBarreTo: handleToggleBarreTo,
+        onToggleBarre: handleToggleBarre,
         onTransposeAll: handleTransposeAll,
         onAddNote: handleAddNote,
         onAddMeasure: handleAddMeasure,
@@ -197,6 +198,7 @@ export function FullStudioView() {
                             <StageContainer title="Visualizer">
                                 <FullFretboardStage
                                     ref={videoCanvasRef}
+                                    {...visualEditorProps}
                                     chords={chords}
                                     activeChordIndex={activeChordIndex}
                                     transitionsEnabled={playbackTransitionsEnabled}

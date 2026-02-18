@@ -22,7 +22,18 @@ export const HarmonyPanel: React.FC<HarmonyPanelProps> = ({
         <div className="space-y-3 animate-in slide-in-from-right-2 duration-300">
             {/* Root Selection */}
             <div className="space-y-2 bg-black/20 p-3 rounded-xl border border-white/5">
-                <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest px-0.5">{t('harmony.root_tone')}</label>
+                <div className="flex items-center justify-between px-0.5">
+                    <label className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">{t('harmony.root_tone')}</label>
+                    <button
+                        onClick={() => onChordChange({ showChordName: !chordData.showChordName })}
+                        className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${chordData.showChordName !== false ? 'bg-primary/10 text-primary' : 'bg-black/40 text-zinc-600'}`}
+                    >
+                        <span className="text-[8px] font-black uppercase tracking-tighter">{t('harmony.show_name')}</span>
+                        <div className={`w-6 h-3.5 rounded-full relative transition-all duration-300 ${chordData.showChordName !== false ? 'bg-primary shadow-[0_0_8px_rgba(34,211,238,0.4)]' : 'bg-zinc-800'}`}>
+                            <div className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white transition-all duration-300 ${chordData.showChordName !== false ? 'left-3' : 'left-0.5'}`} />
+                        </div>
+                    </button>
+                </div>
                 <div className="grid grid-cols-7 gap-1">
                     {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map((note) => {
                         const currentBase = chordData.root.replace(/[#b]/g, '');

@@ -116,6 +116,7 @@ export function BeatsStudioView() {
         onSetStringForPosition: handleSetStringForPosition,
         onSetFingerForPosition: handleSetFingerForString,
         onToggleBarreTo: handleToggleBarreTo,
+        onToggleBarre: handleToggleBarre,
         onTransposeAll: handleTransposeAll,
         onAddNote: handleAddNote,
         onAddMeasure: handleAddMeasure,
@@ -208,6 +209,7 @@ export function BeatsStudioView() {
                             <StageContainer title="Beats Visualizer">
                                 <BeatsFretboardStage
                                     ref={videoCanvasRef}
+                                    {...visualEditorProps}
                                     chords={chords}
                                     activeChordIndex={activeChordIndex}
                                     transitionsEnabled={playbackTransitionsEnabled}

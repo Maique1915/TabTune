@@ -31,6 +31,7 @@ export function useKeyboardShortcuts(props: SidebarProps) {
                 onSetFretForPosition,
                 onSetStringForPosition,
                 onSetFingerForPosition,
+                onToggleBarre,
                 onToggleBarreTo,
                 onTransposeAll,
                 globalSettings,
@@ -103,12 +104,20 @@ export function useKeyboardShortcuts(props: SidebarProps) {
                 return;
             }
 
+            const keyLower = e.key.toLowerCase();
             const isShift = e.shiftKey;
             const isCtrl = e.ctrlKey || e.metaKey;
             const isAlt = e.altKey;
 
+            // B or P: Toggle Barre
+            if (!isCtrl && !isAlt && (keyLower === 'b' || keyLower === 'p')) {
+                e.preventDefault();
+                onToggleBarre?.();
+                return;
+            }
+
             // Ctrl + D: Duplicate Measure
-            if (isCtrl && !isShift && !isAlt && e.key === 'd') {
+            if (isCtrl && !isShift && !isAlt && keyLower === 'd') {
                 e.preventDefault();
                 if (activeMeasure && onCopyMeasure) {
                     onCopyMeasure(activeMeasure.id);
@@ -137,32 +146,7 @@ export function useKeyboardShortcuts(props: SidebarProps) {
                     onUpdateNote?.({ isStrong: !editingNote.isStrong });
                     return;
                 }
-                // Ctrl + Shift + ArrowRight/Left: Cycle Strum Finger
-                else if (isCtrl && isShift && !isAlt) {
-                    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-                        e.preventDefault();
-                        const cycle = ['', 'P', 'i', 'm', 'a'];
-                        const currentFinger = editingNote.strumFinger || '';
-                        const currentIndex = cycle.indexOf(currentFinger);
-                        const direction = e.key === 'ArrowRight' ? 1 : -1;
-                        const nextIndex = (currentIndex + direction + cycle.length) % cycle.length;
-                        onUpdateNote?.({ strumFinger: cycle[nextIndex] });
-                        return;
-                    }
-                }
-                // Alt + Arrows: Cycle Type (Note-level but uses Alt)
-                else if (isAlt && !isShift && !isCtrl) {
-                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        const cycle: ('down' | 'up' | 'pause' | 'mute')[] = ['down', 'up', 'pause', 'mute'];
-                        const currentDir = editingNote.strumDirection || 'down';
-                        const currentIndex = cycle.indexOf(currentDir as any);
-                        const direction = e.key === 'ArrowDown' ? 1 : -1;
-                        const nextIndex = (currentIndex + direction + cycle.length) % cycle.length;
-                        onUpdateNote?.({ strumDirection: cycle[nextIndex] });
-                        return;
-                    }
-                }
+                // Ctrl + Shift + ArrowRight/Left: REMOVED (Conflicted with system)
                 // Alt + Shift + Arrows: Cycle Duration
                 else if (isAlt && isShift && !isCtrl) {
                     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
@@ -182,44 +166,164 @@ export function useKeyboardShortcuts(props: SidebarProps) {
                 }
             }
 
-            // Alt + ArrowUp/Down: Hierarchical Navigation (Generic)
-            if (isAlt && !isShift && !isCtrl) {
-                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            // --- Recursive A/D Navigation ---
+            if (!isShift && !isCtrl && !isAlt) {
+                // A: Advance (Navigate Forward & Deeper)
+                if (keyLower === 'a') {
                     e.preventDefault();
 
-                    // 1. Navigate Fingers (if a finger is selected)
+                    // 1. If at Finger level
                     if (activePositionIndex !== null && editingNote) {
                         const count = editingNote.positions.length;
-                        if (count > 0) {
-                            const nextIndex = e.key === 'ArrowDown'
-                                ? (activePositionIndex + 1) % count
-                                : (activePositionIndex - 1 + count) % count;
-                            onActivePositionIndexChange?.(nextIndex);
+                        if (activePositionIndex < count - 1) {
+                            // Move to next finger
+                            onActivePositionIndexChange?.(activePositionIndex + 1);
+                        } else {
+                            // Move to level of current chord (exit fingers)
+                            onActivePositionIndexChange?.(null as any);
+
+                            // Then try to go to next chord
+                            const measureNotes = activeMeasure?.notes || [];
+                            const chordIndex = measureNotes.findIndex(n => n.id === editingNote.id);
+
+                            if (chordIndex !== -1 && chordIndex < measureNotes.length - 1) {
+                                // Jump to next chord's first finger if possible
+                                const nextNote = measureNotes[chordIndex + 1];
+                                onSelectNote?.(nextNote.id, false);
+                                if (nextNote.positions.length > 0) {
+                                    onActivePositionIndexChange?.(0);
+                                }
+                            } else {
+                                // No more chords in measure, go to next measure
+                                const measureIndex = measures.findIndex(m => m.id === activeMeasure?.id);
+                                if (measureIndex !== -1 && measureIndex < measures.length - 1) {
+                                    const nextMeasure = measures[measureIndex + 1];
+                                    onSelectMeasure?.(nextMeasure.id);
+                                    if (nextMeasure.notes.length > 0) {
+                                        onSelectNote?.(nextMeasure.notes[0].id, false);
+                                    }
+                                }
+                            }
                         }
                     }
-                    // 2. Navigate Chords
+                    // 2. If at Chord level
                     else if (editingNote && activeMeasure) {
-                        const count = activeMeasure.notes.length;
-                        const currentIndex = activeMeasure.notes.findIndex(n => n.id === editingNote.id);
-                        if (currentIndex !== -1) {
-                            const nextIndex = e.key === 'ArrowDown'
-                                ? (currentIndex + 1) % count
-                                : (currentIndex - 1 + count) % count;
-                            onSelectNote?.(activeMeasure.notes[nextIndex].id, false);
+                        if (editingNote.positions.length > 0) {
+                            // Go to first finger
+                            onActivePositionIndexChange?.(0);
+                        } else {
+                            // No fingers, go to next chord
+                            const measureNotes = activeMeasure.notes;
+                            const chordIndex = measureNotes.findIndex(n => n.id === editingNote.id);
+                            if (chordIndex !== -1 && chordIndex < measureNotes.length - 1) {
+                                onSelectNote?.(measureNotes[chordIndex + 1].id, false);
+                            } else {
+                                // Next measure
+                                const measureIndex = measures.findIndex(m => m.id === activeMeasure.id);
+                                if (measureIndex !== -1 && measureIndex < measures.length - 1) {
+                                    const nextMeasure = measures[measureIndex + 1];
+                                    onSelectMeasure?.(nextMeasure.id);
+                                }
+                            }
                         }
                     }
-                    // 3. Navigate Measures
-                    else if (activeMeasure && measures.length > 0) {
-                        const count = measures.length;
-                        const currentIndex = measures.findIndex(m => m.id === activeMeasure.id);
-                        if (currentIndex !== -1) {
-                            const nextIndex = e.key === 'ArrowDown'
-                                ? (currentIndex + 1) % count
-                                : (currentIndex - 1 + count) % count;
-                            onSelectMeasure?.(measures[nextIndex].id);
+                    // 3. If at Measure level
+                    else if (activeMeasure) {
+                        if (activeMeasure.notes.length > 0) {
+                            // Go to first chord
+                            onSelectNote?.(activeMeasure.notes[0].id, false);
+                        } else {
+                            // No chords, next measure
+                            const measureIndex = measures.findIndex(m => m.id === activeMeasure.id);
+                            if (measureIndex !== -1 && measureIndex < measures.length - 1) {
+                                onSelectMeasure?.(measures[measureIndex + 1].id);
+                            }
                         }
                     }
                     return;
+                }
+
+                // D: Return (Navigate Backward & Shallower)
+                if (keyLower === 'd') {
+                    e.preventDefault();
+
+                    // 1. If at Finger level
+                    if (activePositionIndex !== null && editingNote) {
+                        if (activePositionIndex > 0) {
+                            // Previous finger
+                            onActivePositionIndexChange?.(activePositionIndex - 1);
+                        } else {
+                            // Return to chord level
+                            onActivePositionIndexChange?.(null as any);
+                        }
+                    }
+                    // 2. If at Chord level
+                    else if (editingNote && activeMeasure) {
+                        const measureNotes = activeMeasure.notes;
+                        const chordIndex = measureNotes.findIndex(n => n.id === editingNote.id);
+
+                        if (chordIndex > 0) {
+                            // Previous chord's last finger
+                            const prevNote = measureNotes[chordIndex - 1];
+                            onSelectNote?.(prevNote.id, false);
+                            if (prevNote.positions.length > 0) {
+                                onActivePositionIndexChange?.(prevNote.positions.length - 1);
+                            }
+                        } else {
+                            // Return to measure level
+                            onSelectNote?.(null as any, false);
+                        }
+                    }
+                    // 3. If at Measure level
+                    else if (activeMeasure) {
+                        const measureIndex = measures.findIndex(m => m.id === activeMeasure.id);
+                        if (measureIndex > 0) {
+                            // Previous measure's last chord's last finger
+                            const prevMeasure = measures[measureIndex - 1];
+                            onSelectMeasure?.(prevMeasure.id);
+                            if (prevMeasure.notes.length > 0) {
+                                const lastNote = prevMeasure.notes[prevMeasure.notes.length - 1];
+                                onSelectNote?.(lastNote.id, false);
+                                if (lastNote.positions.length > 0) {
+                                    onActivePositionIndexChange?.(lastNote.positions.length - 1);
+                                }
+                            }
+                        }
+                    }
+                    return;
+                }
+
+                // W / S: Cycle Type (Beats) or Fingers (Chords)
+                if (keyLower === 'w' || keyLower === 's') {
+                    e.preventDefault();
+                    const direction = keyLower === 'w' ? 1 : -1;
+
+                    // A. If in Beats View (Note Level) - Cycle Beat Type
+                    if (variant === 'beats' && editingNote) {
+                        const cycle: ('down' | 'up' | 'pause' | 'mute')[] = ['down', 'up', 'pause', 'mute'];
+                        const currentDir = editingNote.strumDirection || 'down';
+                        const currentIndex = cycle.indexOf(currentDir as any);
+                        const nextIndex = (currentIndex + direction + cycle.length) % cycle.length;
+                        onUpdateNote?.({ strumDirection: cycle[nextIndex] });
+                        return;
+                    }
+
+                    // B. If in Fretboard View (Chord/Finger Level)
+                    if (editingNote && activePositionIndex !== null) {
+                        const cycle = ['X', 1, 2, 3, 4, 'T'];
+                        const currentPos = editingNote.positions[activePositionIndex];
+                        if (!currentPos) return;
+
+                        // Normalize current finger for lookup
+                        let currentFinger: string | number = currentPos.avoid ? 'X' : (currentPos.finger ?? 'X');
+                        let currentIndex = cycle.indexOf(currentFinger);
+                        if (currentIndex === -1) currentIndex = 0;
+
+                        const nextIndex = (currentIndex + direction + cycle.length) % cycle.length;
+                        const nextFinger = cycle[nextIndex];
+                        onSetFingerForPosition?.(activePositionIndex, nextFinger);
+                        return;
+                    }
                 }
             }
 
@@ -244,18 +348,33 @@ export function useKeyboardShortcuts(props: SidebarProps) {
                 } else if (e.key === 'ArrowUp') {
                     e.preventDefault();
                     const maxStrings = globalSettings?.numStrings || 6;
-                    if (currentPos.string < maxStrings) {
-                        const isUsed = editingNote.positions.some((p, i) => p.string === currentPos.string + 1 && i !== activePositionIndex);
+                    let nextString = currentPos.string;
+
+                    // Logic to find next available string upwards with wrap-around
+                    let found = false;
+                    for (let i = 1; i <= maxStrings; i++) {
+                        let candidate = ((nextString + i - 1) % maxStrings) + 1;
+                        const isUsed = editingNote.positions.some((p, idx) => p.string === candidate && idx !== activePositionIndex);
                         if (!isUsed) {
-                            onSetStringForPosition?.(activePositionIndex, currentPos.string + 1);
+                            onSetStringForPosition?.(activePositionIndex, candidate);
+                            found = true;
+                            break;
                         }
                     }
                 } else if (e.key === 'ArrowDown') {
                     e.preventDefault();
-                    if (currentPos.string > 1) {
-                        const isUsed = editingNote.positions.some((p, i) => p.string === currentPos.string - 1 && i !== activePositionIndex);
+                    const maxStrings = globalSettings?.numStrings || 6;
+                    let nextString = currentPos.string;
+
+                    // Logic to find next available string downwards with wrap-around
+                    let found = false;
+                    for (let i = 1; i <= maxStrings; i++) {
+                        let candidate = ((nextString - i - 1 + maxStrings) % maxStrings) + 1;
+                        const isUsed = editingNote.positions.some((p, idx) => p.string === candidate && idx !== activePositionIndex);
                         if (!isUsed) {
-                            onSetStringForPosition?.(activePositionIndex, currentPos.string - 1);
+                            onSetStringForPosition?.(activePositionIndex, candidate);
+                            found = true;
+                            break;
                         }
                     }
                 }
@@ -332,30 +451,7 @@ export function useKeyboardShortcuts(props: SidebarProps) {
                 }
             }
 
-            // 4. Shift + Ctrl + Arrows: Modular Finger Cycling
-            else if (isShift && isCtrl && !isAlt) {
-                if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-                    e.preventDefault();
-
-                    const cycle = ['X', 1, 2, 3, 4, 'T'];
-
-                    // Normalize current finger for lookup
-                    let currentFinger: string | number = currentPos.avoid ? 'X' : (currentPos.finger ?? 'X');
-
-                    let currentIndex = cycle.indexOf(currentFinger);
-                    if (currentIndex === -1) {
-                        currentIndex = 0;
-                    }
-
-                    const direction = e.key === 'ArrowRight' ? 1 : -1;
-                    const nextIndex = (currentIndex + direction + cycle.length) % cycle.length;
-                    const nextFinger = cycle[nextIndex];
-
-                    if (activePositionIndex !== null) {
-                        onSetFingerForPosition?.(activePositionIndex, nextFinger);
-                    }
-                }
-            }
+            // 4. Shift + Ctrl + Arrows: REMOVED (Conflicted with system)
         };
 
         window.addEventListener('keydown', handleKeyDown);

@@ -8,6 +8,7 @@ import { BaseStageUI } from "./BaseStageUI";
 import { useBaseStage, BaseStageRef, BaseStageProps } from "./useBaseStage";
 import { useAppContext } from "@/modules/core/presentation/context/app-context";
 import { TimeSignature, ChordWithTiming } from "@/modules/core/domain/types";
+import { useMouseShortcuts } from "../../hooks/use-mouse-shortcuts";
 
 
 
@@ -114,6 +115,8 @@ const BeatsFretboardStageInner = ({ contextColors, forwardedRef, ...props }: any
         ref: forwardedRef
     });
 
+    const mouseHandlers = useMouseShortcuts(props, baseStage.engine?.getGeometry());
+
     return (
         <BaseStageUI
             width={width}
@@ -121,6 +124,7 @@ const BeatsFretboardStageInner = ({ contextColors, forwardedRef, ...props }: any
             canvasRef={baseStage.canvasRef as any}
             backgroundCanvasRef={baseStage.backgroundCanvasRef as any}
             stageContainerRef={baseStage.stageContainerRef as any}
+            {...mouseHandlers}
         />
     );
 };

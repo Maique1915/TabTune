@@ -65,6 +65,7 @@ export interface IStageEngine {
     setPreviewChord: (chord: ChordDiagramProps | null) => void;
     drawFrame: (state: AnimationState) => void;
     resize: (width: number, height: number, state: AnimationState) => void;
+    getGeometry: () => any;
 }
 
 interface UseBaseStageParams extends BaseStageProps {
@@ -632,6 +633,7 @@ export const useBaseStage = ({
         stageContainerRef,
         colors,
         animationType,
-        effectiveNumFrets
+        effectiveNumFrets,
+        engine: engineRef.current
     };
 };

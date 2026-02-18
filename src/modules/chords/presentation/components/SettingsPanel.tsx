@@ -155,7 +155,6 @@ const SETTING_GROUPS: SettingGroup[] = [
     icon: Type,
     controls: [
       { type: 'color', label: 'Chord Name', key: 'chordName.color' },
-      { type: 'slider', label: 'Name Opacity', key: 'chordName.opacity', min: 0, max: 1, step: 0.1 },
 
       { type: 'color', label: 'Capo Color', key: 'capo.color' },
       { type: 'color', label: 'Capo Text', key: 'capo.textColors.name' },
@@ -218,10 +217,45 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
   const visibleGroups = SETTING_GROUPS.map(group => ({
     ...group,
     label: t(`settings.groups.${group.id}` as any),
-    controls: group.controls.map(control => ({
-      ...control,
-      label: t(`settings.labels.${control.key.replace(/\./g, '_')}` as any)
-    }))
+    controls: group.controls.map(control => {
+      let translationKey = control.key.replace(/\./g, '_');
+
+      // Custom mappings for specific paths that differ from the simple key
+      if (control.key === 'fretboard.neck.color') translationKey = 'neck_color';
+      if (control.key === 'fretboard.neck.shadow.enabled') translationKey = 'neck_shadow_enabled';
+      if (control.key === 'fretboard.neck.shadow.color') translationKey = 'neck_shadow_color';
+      if (control.key === 'head.color') translationKey = 'headstock_color';
+      if (control.key === 'head.border.color') translationKey = 'head_border_color';
+      if (control.key === 'head.shadow.enabled') translationKey = 'head_shadow_enabled';
+      if (control.key === 'head.shadow.color') translationKey = 'head_shadow_color';
+      if (control.key === 'fretboard.board.inlays.color') translationKey = 'inlays_color';
+      if (control.key === 'fretboard.board.inlays.opacity') translationKey = 'fingers_opacity';
+      if (control.key === 'fretboard.board.inlays.shadow.enabled') translationKey = 'inlays_shadow_enabled';
+      if (control.key === 'fretboard.board.inlays.shadow.color') translationKey = 'inlays_shadow_color';
+      if (control.key === 'fretboard.strings.color') translationKey = 'strings_color';
+      if (control.key === 'fretboard.strings.shadow.enabled') translationKey = 'strings_shadow_enabled';
+      if (control.key === 'fretboard.strings.shadow.color') translationKey = 'strings_shadow_color';
+      if (control.key === 'fretboard.frets.color') translationKey = 'frets_color';
+      if (control.key === 'fretboard.frets.shadow.enabled') translationKey = 'frets_shadow_enabled';
+      if (control.key === 'fretboard.frets.shadow.color') translationKey = 'frets_shadow_color';
+      if (control.key === 'fingers.color') translationKey = 'fill_color';
+      if (control.key === 'fingers.textColor') translationKey = 'text_color';
+      if (control.key === 'fingers.border.color') translationKey = 'border_color';
+      if (control.key === 'fingers.opacity') translationKey = 'fingers_opacity';
+      if (control.key === 'fingers.shadow.enabled') translationKey = 'fingers_shadow_enabled';
+      if (control.key === 'fingers.shadow.color') translationKey = 'fingers_shadow_color';
+      if (control.key === 'chordName.color') translationKey = 'chordName_color';
+      if (control.key === 'capo.color') translationKey = 'capo_color';
+      if (control.key === 'capo.textColors.name') translationKey = 'capo_text_color';
+      if (control.key === 'capo.textColors.number') translationKey = 'capo_text_color';
+      if (control.key === 'capo.shadow.enabled') translationKey = 'capo_shadow_enabled';
+      if (control.key === 'capo.shadow.color') translationKey = 'capo_shadow_color';
+
+      return {
+        ...control,
+        label: t(`settings.labels.${translationKey}` as any)
+      };
+    })
   })).filter(group => {
     if (viewMode === 'beats') {
       return ['global', 'fingers', 'labels'].includes(group.id);
@@ -304,15 +338,15 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
   // --- TAB RENDERERS ---
 
   const renderBasicTab = () => (
-    <div className="px-4 space-y-4">
-      <div className="space-y-1 mb-4">
-        <h3 className="text-white text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+    <div className="px-8 space-y-6">
+      <div className="space-y-1.5 mb-2">
+        <h3 className="text-white text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2">
           {t('settings.tabs.presets')}
         </h3>
-        <p className="text-white/40 text-[10px]">{t('settings.presets_desc')}</p>
+        <p className="text-slate-500 text-[10px] uppercase font-black tracking-widest">{t('settings.presets_desc')}</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3">
+      <div className="grid grid-cols-1 gap-4">
         {Object.entries(STUDIO_PRESETS).map(([key, preset]) => {
           const previewColors = [
             preset.style.fingers?.color || '#000',
@@ -326,23 +360,24 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
             <div
               key={key}
               onClick={() => setColors(preset.style)}
-              className={`p-3 rounded-xl border cursor-pointer transition-colors group ${isSelected ? 'bg-primary/10 border-primary/40' : 'bg-white/5 border-white/5 hover:border-white/20 hover:bg-white/10'}`}
+              className={`p-4 rounded-2xl border cursor-pointer transition-all duration-500 group relative overflow-hidden ${isSelected ? 'bg-primary/10 border-primary/40 shadow-premium-glow' : 'bg-white/[0.02] border-white/[0.05] hover:border-white/[0.15] hover:bg-white/[0.05]'}`}
             >
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-4 mb-3">
                 <div
-                  className="size-8 rounded bg-gradient-to-br from-white/10 to-white/5 border border-white/10 shadow-inner"
+                  className="size-10 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-500"
                   style={{ background: `linear-gradient(135deg, ${previewColors[0]} 0%, ${previewColors[1]} 100%)` }}
                 />
                 <div>
-                  <p className={`text-xs font-bold transition-colors ${isSelected ? 'text-primary' : 'text-white group-hover:text-primary'}`}>{t(`settings.presets.${key}` as any)}</p>
-                  <p className="text-[9px] text-white/40">{t('settings.professional_styles')}</p>
+                  <p className={`text-xs font-black uppercase tracking-widest transition-colors ${isSelected ? 'text-primary' : 'text-white group-hover:text-primary'}`}>{t(`settings.presets.${key}` as any)}</p>
+                  <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-0.5">{t('settings.professional_styles')}</p>
                 </div>
               </div>
-              <div className="flex gap-1 h-1 w-full rounded-full overflow-hidden bg-black/20">
-                <div className="flex-1 h-full" style={{ backgroundColor: previewColors[0] }} />
-                <div className="flex-1 h-full" style={{ backgroundColor: previewColors[1] }} />
-                <div className="flex-1 h-full" style={{ backgroundColor: previewColors[2] }} />
+              <div className="flex gap-1.5 h-1.5 w-full rounded-full overflow-hidden bg-black/40 border border-white/[0.05]">
+                <div className="flex-1 h-full shadow-inner" style={{ backgroundColor: previewColors[0] }} />
+                <div className="flex-1 h-full shadow-inner" style={{ backgroundColor: previewColors[1] }} />
+                <div className="flex-1 h-full shadow-inner" style={{ backgroundColor: previewColors[2] }} />
               </div>
+              {isSelected && <div className="absolute top-2 right-2 size-2 bg-primary rounded-full shadow-cyan-glow" />}
             </div>
           );
         })}
@@ -350,8 +385,8 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
         {/* Custom Styles */}
         {customStyles.length > 0 && (
           <>
-            <div className="h-px bg-white/5 my-2" />
-            <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-2">{t('settings.custom_styles')}</p>
+            <div className="h-px bg-white/5 my-4" />
+            <p className="text-[10px] text-slate-500 uppercase font-black tracking-[0.3em] mt-2">{t('settings.custom_styles')}</p>
             {customStyles.map((style) => {
               const previewColors = [
                 style.style.fingers?.color || '#000',
@@ -365,26 +400,26 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                 <div
                   key={style.id}
                   onClick={() => setColors(style.style)}
-                  className={`p-3 rounded-xl border cursor-pointer transition-colors group ${isSelected ? 'bg-pink-500/10 border-pink-500/40' : 'bg-white/5 border-white/5 hover:border-white/20 hover:bg-white/10'}`}
+                  className={`p-4 rounded-2xl border cursor-pointer transition-all duration-500 group relative overflow-hidden ${isSelected ? 'bg-pink-500/10 border-pink-500/40 shadow-[0_0_20px_rgba(236,72,153,0.15)]' : 'bg-white/[0.02] border-white/[0.05] hover:border-white/[0.15] hover:bg-white/[0.05]'}`}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-4">
                       <div
-                        className="size-8 rounded bg-gradient-to-br from-white/10 to-white/5 border border-white/10 shadow-inner"
+                        className="size-10 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-500"
                         style={{ background: `linear-gradient(135deg, ${previewColors[0]} 0%, ${previewColors[1]} 100%)` }}
                       />
                       <div>
-                        <p className={`text-xs font-bold transition-colors ${isSelected ? 'text-pink-400' : 'text-white group-hover:text-pink-400'}`}>{style.label}</p>
-                        <p className="text-[9px] text-white/40">{t('settings.personal_style')}</p>
+                        <p className={`text-xs font-black uppercase tracking-widest transition-colors ${isSelected ? 'text-pink-400' : 'text-white group-hover:text-pink-400'}`}>{style.label}</p>
+                        <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mt-0.5">{t('settings.personal_style')}</p>
                       </div>
                     </div>
-                    {/* Trash removed - users can only delete from profile */}
                   </div>
-                  <div className="flex gap-1 h-1 w-full rounded-full overflow-hidden bg-black/20">
-                    <div className="flex-1 h-full" style={{ backgroundColor: previewColors[0] }} />
-                    <div className="flex-1 h-full" style={{ backgroundColor: previewColors[1] }} />
-                    <div className="flex-1 h-full" style={{ backgroundColor: previewColors[2] }} />
+                  <div className="flex gap-1.5 h-1.5 w-full rounded-full overflow-hidden bg-black/40 border border-white/[0.05]">
+                    <div className="flex-1 h-full shadow-inner" style={{ backgroundColor: previewColors[0] }} />
+                    <div className="flex-1 h-full shadow-inner" style={{ backgroundColor: previewColors[1] }} />
+                    <div className="flex-1 h-full shadow-inner" style={{ backgroundColor: previewColors[2] }} />
                   </div>
+                  {isSelected && <div className="absolute top-2 right-2 size-2 bg-pink-500 rounded-full shadow-[0_0_8px_rgba(236,72,153,0.8)]" />}
                 </div>
               );
             })}
@@ -433,8 +468,8 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
     }
 
     return (
-      <div className="px-4 space-y-3">
-        <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-2">{t('settings.components')}</p>
+      <div className="px-8 space-y-4">
+        <p className="text-[10px] text-zinc-500 uppercase font-black tracking-[0.3em] mb-4">{t('settings.headers.components')}</p>
 
         {groupsToRender.map((group) => {
           const isExpanded = expandedKey === group.id;
@@ -443,17 +478,17 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
           return (
             <div
               key={group.id}
-              className={`flex flex-col rounded-xl border transition-all duration-300 overflow-hidden ${isExpanded ? 'bg-black/40 border-primary/30' : 'bg-black/20 border-white/5 hover:bg-white/5'}`}
+              className={`flex flex-col rounded-2xl border transition-all duration-500 overflow-hidden shadow-lg ${isExpanded ? 'bg-white/[0.04] border-primary/30' : 'bg-white/[0.02] border-white/[0.05] hover:bg-white/[0.05] hover:border-white/[0.1]'}`}
             >
               <div
-                className="flex items-center justify-between p-3 cursor-pointer group"
+                className="flex items-center justify-between p-4 cursor-pointer group"
                 onClick={() => toggleExpand(group.id)}
               >
-                <div className="flex items-center gap-3">
-                  {isExpanded ? <ChevronDown className="w-3 h-3 text-primary" /> : <ChevronRight className="w-3 h-3 text-zinc-600 group-hover:text-zinc-400" />}
-                  <div className="flex items-center gap-2">
-                    <Icon className={`w-3 h-3 ${isExpanded ? 'text-primary' : 'text-zinc-500'}`} />
-                    <span className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${isExpanded ? 'text-primary-100' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+                <div className="flex items-center gap-4">
+                  {isExpanded ? <ChevronDown className="w-4 h-4 text-primary" /> : <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-colors" />}
+                  <div className="flex items-center gap-3">
+                    <Icon className={`w-4 h-4 transition-colors duration-500 ${isExpanded ? 'text-primary' : 'text-slate-500 group-hover:text-slate-300'}`} />
+                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-500 ${isExpanded ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>
                       {group.label}
                     </span>
                   </div>
@@ -461,7 +496,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
               </div>
 
               {isExpanded && (
-                <div className="px-3 pb-3 pt-0 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 border-t border-zinc-800/30 mt-1 pt-3">
+                <div className="p-6 pt-2 space-y-6 animate-in fade-in slide-in-from-top-4 duration-500 border-t border-white/[0.05] bg-black/20">
                   {group.controls.map(control => {
                     // Resolve deep value
                     const currentValue = control.key.split('.').reduce((obj: any, k) => obj?.[k], colors);
@@ -469,7 +504,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                     if (control.type === 'color') {
                       return (
                         <div key={control.key} className="flex items-center justify-between">
-                          <span className="text-[10px] font-medium text-zinc-400 uppercase">{control.label}</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{control.label}</span>
                           <ColorPicker
                             color={String(currentValue)}
                             onChange={(val) => handleColorChange(control.key, val)}
@@ -480,10 +515,10 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
 
                     if (control.type === 'slider') {
                       return (
-                        <div key={control.key} className="space-y-2">
+                        <div key={control.key} className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-medium text-zinc-400 uppercase">{control.label}</span>
-                            <span className="text-[10px] font-mono text-zinc-500">{Math.round((currentValue as number) * 100)}%</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{control.label}</span>
+                            <span className="text-[10px] font-black font-mono text-primary bg-primary/10 px-2 py-0.5 rounded shadow-inner-glow">{Math.round((currentValue as number) * 100)}%</span>
                           </div>
                           <input
                             type="range"
@@ -492,7 +527,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                             step={control.step}
                             value={Number(currentValue ?? 0)}
                             onChange={(e) => handleColorChange(control.key, parseFloat(e.target.value) || 0)}
-                            className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:scale-125 transition-all shadow-cyan-glow"
+                            className="w-full h-1.5 bg-black/40 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:scale-125 transition-all shadow-cyan-glow border border-white/10"
                           />
                         </div>
                       );
@@ -501,7 +536,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                     if (control.type === 'number') {
                       return (
                         <div key={control.key} className="flex items-center justify-between">
-                          <span className="text-[10px] font-medium text-zinc-400 uppercase">{control.label}</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{control.label}</span>
                           <input
                             type="number"
                             min={control.min}
@@ -509,7 +544,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                             step={control.step || 1}
                             value={Number(currentValue ?? 0)}
                             onChange={(e) => handleColorChange(control.key, parseFloat(e.target.value) || 0)}
-                            className="w-16 bg-black/40 border border-white/10 rounded px-2 py-1 text-xs text-zinc-300 font-mono focus:border-primary/50 outline-none text-right"
+                            className="w-20 bg-black/60 border border-white/[0.08] hover:border-white/20 rounded-xl px-3 py-1.5 text-xs text-primary font-black font-mono focus:border-primary/50 outline-none text-right transition-all"
                           />
                         </div>
                       );
@@ -518,15 +553,15 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                     if (control.type === 'toggle') {
                       return (
                         <div key={control.key} className="flex items-center justify-between">
-                          <span className="text-[10px] font-medium text-zinc-400 uppercase">{control.label}</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{control.label}</span>
                           <button
                             onClick={() => handleColorChange(control.key, !currentValue)}
-                            className={`w-8 h-4 rounded-full transition-colors relative cursor-pointer ${currentValue ? 'bg-primary/20' : 'bg-white/10'
+                            className={`w-10 h-5 rounded-full transition-all duration-500 relative cursor-pointer shadow-inner ${currentValue ? 'bg-primary/20 ring-1 ring-primary/30' : 'bg-white/10 ring-1 ring-white/5'
                               }`}
                           >
-                            <div className={`absolute top-0.5 bottom-0.5 w-3 h-3 rounded-full transition-all duration-300 ${currentValue
-                              ? 'left-[18px] bg-primary shadow-[0_0_8px_rgba(6,182,212,0.6)]'
-                              : 'left-0.5 bg-zinc-600'
+                            <div className={`absolute top-1 bottom-1 w-3 h-3 rounded-full transition-all duration-500 ${currentValue
+                              ? 'left-[22px] bg-primary shadow-cyan-glow scale-125'
+                              : 'left-1 bg-slate-600'
                               }`} />
                           </button>
                         </div>
@@ -547,27 +582,28 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
   };
 
   const renderMotionTab = () => (
-    <div className="space-y-6">
-      <div className="px-4 space-y-3">
-        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{t('settings.animation_type')}</span>
-        <div className="grid grid-cols-1 gap-2">
+    <div className="space-y-8 px-8">
+      <div className="space-y-4">
+        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{t('settings.animation_type')}</span>
+        <div className="grid grid-cols-1 gap-4">
           {numFrets && numFrets <= 24 && (
             <button
               onClick={() => {
                 console.log('Set animation to carousel');
                 setAnimationType('carousel');
               }}
-              className={`p-3 rounded-lg border text-left transition-all ${animationType === 'carousel'
-                ? 'bg-secondary-neon/10 border-secondary-neon/50 shadow-[0_0_15px_rgba(255,0,229,0.15)]'
-                : 'bg-black/20 border-white/5 text-zinc-500 hover:border-white/10 hover:text-zinc-300'
+              className={`p-4 rounded-2xl border text-left transition-all duration-500 relative overflow-hidden group ${animationType === 'carousel'
+                ? 'bg-secondary-neon/10 border-secondary-neon/40 shadow-[0_0_20px_rgba(255,0,229,0.15)] ring-1 ring-secondary-neon/20'
+                : 'bg-white/[0.02] border-white/[0.05] text-slate-500 hover:border-white/[0.15] hover:text-white'
                 }`}
             >
-              <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${animationType === 'carousel' ? 'text-secondary-neon' : 'text-zinc-300'}`}>
+              <div className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 transition-colors duration-500 ${animationType === 'carousel' ? 'text-secondary-neon' : 'text-slate-300 group-hover:text-white'}`}>
                 {t('settings.animations.carousel.title')}
               </div>
-              <div className="text-[9px] opacity-70">
+              <div className="text-[10px] opacity-60 font-black uppercase tracking-widest leading-relaxed">
                 {t('settings.animations.carousel.desc')}
               </div>
+              {animationType === 'carousel' && <div className="absolute top-2 right-2 size-2 bg-secondary-neon rounded-full shadow-[0_0_8px_rgba(255,0,229,0.8)]" />}
             </button>
           )}
 
@@ -577,17 +613,18 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
                 console.log('Set animation to static-fingers');
                 setAnimationType('static-fingers');
               }}
-              className={`p-3 rounded-lg border text-left transition-all ${animationType === 'static-fingers'
-                ? 'bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
-                : 'bg-black/20 border-white/5 text-zinc-500 hover:border-white/10 hover:text-zinc-300'
+              className={`p-4 rounded-2xl border text-left transition-all duration-500 relative overflow-hidden group ${animationType === 'static-fingers'
+                ? 'bg-primary/10 border-primary/40 shadow-premium-glow ring-1 ring-primary/20'
+                : 'bg-white/[0.02] border-white/[0.05] text-slate-500 hover:border-white/[0.15] hover:text-white'
                 }`}
             >
-              <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${animationType === 'static-fingers' ? 'text-primary' : 'text-zinc-300'}`}>
+              <div className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 transition-colors duration-500 ${animationType === 'static-fingers' ? 'text-primary' : 'text-slate-300 group-hover:text-white'}`}>
                 {t('settings.animations.static.title')}
               </div>
-              <div className="text-[9px] opacity-70">
+              <div className="text-[10px] opacity-60 font-black uppercase tracking-widest leading-relaxed">
                 {t('settings.animations.static.desc')}
               </div>
+              {animationType === 'static-fingers' && <div className="absolute top-2 right-2 size-2 bg-primary rounded-full shadow-cyan-glow" />}
             </button>
           )}
 
@@ -612,7 +649,7 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
   return (
     <>
       <GenericSidebar
-        title="Visual Presets"
+        title={t('settings.headers.visual_presets')}
         icon={Palette}
         onReset={handleReset}
         tabs={tabs}

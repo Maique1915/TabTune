@@ -58,12 +58,12 @@ export const StrategySidebar: React.FC<StrategySidebarProps> = (props) => {
             onClose={onClose}
             isMobile={isMobile}
             side="left"
-            className="border-r border-white/5 bg-[#09090b]/95 backdrop-blur-xl"
+            className="border-r border-white/5 bg-background-dark/40 backdrop-blur-2xl"
             contentClassName="p-0 flex flex-col"
         >
             <div className="flex h-full overflow-hidden">
                 {/* Vertical Navigation Rail */}
-                <div className="w-14 bg-panel-dark/50 border-r border-white/5 flex flex-col items-center py-4 gap-3 backdrop-blur-md">
+                <div className="w-16 bg-white/[0.02] border-r border-white/[0.05] flex flex-col items-center py-6 gap-4 backdrop-blur-xl">
                     {navItems.map((item: NavItemDef) => {
                         const Icon = item.icon;
                         const isActive = activeCategory === item.id || (item.includedCategories?.includes(activeCategory));
@@ -72,23 +72,21 @@ export const StrategySidebar: React.FC<StrategySidebarProps> = (props) => {
                             <button
                                 key={item.id}
                                 onClick={() => setActiveCategory(item.id)}
-                                className={`relative group p-2.5 rounded-xl transition-all duration-300 ${isActive ? 'bg-primary/10 text-primary shadow-[0_0_20px_rgba(6,182,212,0.15)] ring-1 ring-cyan-500/20' : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5'}`}
+                                className={`relative group p-3 rounded-2xl transition-all duration-500 ${isActive ? 'bg-primary/10 text-primary shadow-premium-glow ring-1 ring-primary/20' : 'text-slate-500 hover:text-white hover:bg-white/[0.05]'}`}
                             >
-                                <Icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`} />
+                                <Icon className={`w-5 h-5 transition-transform duration-500 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
                                 {/* Tooltip */}
-                                <span className="absolute left-full ml-4 px-2 py-1 bg-card-dark text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl border border-white/10 uppercase tracking-widest">
+                                <span className="absolute left-full ml-4 px-3 py-1.5 bg-background-dark/95 text-white text-[10px] font-black rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-2xl border border-white/[0.1] uppercase tracking-[0.2em] backdrop-blur-md">
                                     {item.label}
                                 </span>
                             </button>
                         );
                     })}
 
-                    <div className="mt-auto mb-2">
-                        <button className="group relative w-10 h-10 flex flex-col items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-secondary-neon/20 border border-white/10 hover:border-primary/50 transition-all shadow-lg hover:shadow-cyan-glow">
-                            <div className="text-[9px] font-black text-white group-hover:text-primary transition-colors">PRO</div>
-                            <span className="absolute left-full ml-4 px-2 py-1 bg-card-dark text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none shadow-xl border border-white/10">
-                                {t('sidebar.upgrade')}
-                            </span>
+                    <div className="mt-auto mb-4 px-2">
+                        <button className="group relative w-11 h-11 flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-secondary-neon/20 border border-white/10 hover:border-primary/50 transition-all duration-500 shadow-lg hover:shadow-cyan-glow overflow-hidden">
+                            <div className="text-[10px] font-black text-white group-hover:text-primary transition-colors z-10">PRO</div>
+                            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </button>
                     </div>
                 </div>
@@ -97,43 +95,43 @@ export const StrategySidebar: React.FC<StrategySidebarProps> = (props) => {
                 <div className="flex-1 flex flex-col h-full overflow-hidden relative">
 
                     {/* Secondary Context Header */}
-                    <div className="h-14 shrink-0 border-b border-white/5 flex items-center justify-between px-5 bg-black/10 backdrop-blur-md">
+                    <div className="h-16 shrink-0 border-b border-white/[0.05] flex items-center justify-between px-6 bg-white/[0.01] backdrop-blur-md">
                         <div className="flex flex-col">
-                            <span className="text-[9px] uppercase font-black tracking-widest text-zinc-500 leading-none mb-0.5">
+                            <span className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-500 leading-none mb-1">
                                 {breadcrumbLabel}
                             </span>
-                            <h2 className="text-xs font-black text-white uppercase tracking-wider leading-none">
+                            <h2 className="text-sm font-black text-white uppercase tracking-widest leading-none">
                                 {categoryLabel}
                             </h2>
                         </div>
 
                         {/* Actions */}
-                        <div className="flex items-center gap-1 bg-zinc-900/50 p-1 rounded-lg border border-white/5 shadow-sm">
+                        <div className="flex items-center gap-2 bg-white/[0.03] p-1.5 rounded-xl border border-white/[0.05] shadow-inner-glow">
                             <button
                                 onClick={props.onSave}
                                 disabled={!hasUnsavedChanges}
-                                className={`p-1.5 rounded-md transition-all ${!hasUnsavedChanges ? 'text-zinc-600 opacity-40 cursor-not-allowed' : 'text-zinc-400 hover:text-primary hover:bg-primary/10'}`}
+                                className={`p-2 rounded-lg transition-all duration-300 ${!hasUnsavedChanges ? 'text-zinc-600 opacity-20 cursor-not-allowed' : 'text-slate-400 hover:text-primary hover:bg-primary/10'}`}
                                 title={t('projects.save_dialog.title')}
                             >
-                                <Save className="w-3 h-3" />
+                                <Save className="w-4 h-4" />
                             </button>
-                            <div className="w-[1px] h-2 bg-white/5 mx-0.5" />
+                            <div className="w-[1px] h-3 bg-white/[0.05] mx-0.5" />
                             <button
                                 onClick={onUndo}
                                 disabled={!canUndo}
-                                className={`p-1.5 rounded-md transition-all ${!canUndo ? 'text-zinc-600 opacity-40 cursor-not-allowed' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
+                                className={`p-2 rounded-lg transition-all duration-300 ${!canUndo ? 'text-zinc-600 opacity-20 cursor-not-allowed' : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'}`}
                                 title="Undo"
                             >
-                                <RotateCw className="w-3 h-3 -scale-x-100" />
+                                <RotateCw className="w-4 h-4 -scale-x-100" />
                             </button>
-                            <div className="w-[1px] h-2 bg-white/5" />
+                            <div className="w-[1px] h-3 bg-white/[0.05]" />
                             <button
                                 onClick={onRedo}
                                 disabled={!canRedo}
-                                className={`p-1.5 rounded-md transition-all ${!canRedo ? 'text-zinc-600 opacity-40 cursor-not-allowed' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
+                                className={`p-2 rounded-lg transition-all duration-300 ${!canRedo ? 'text-zinc-600 opacity-20 cursor-not-allowed' : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'}`}
                                 title="Redo"
                             >
-                                <RotateCw className="w-3 h-3" />
+                                <RotateCw className="w-4 h-4" />
                             </button>
                         </div>
                     </div>

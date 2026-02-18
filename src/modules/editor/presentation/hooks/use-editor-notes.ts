@@ -30,6 +30,18 @@ export function useEditorNotes(
     } = state;
 
     // --- Helpers ---
+    const getNextAvailableFinger = useCallback((positions: any[]) => {
+        const used = positions.map(p => p.finger);
+        const usedFingers = used.filter(f => typeof f === 'number' && f >= 1 && f <= 4) as number[];
+
+        for (let i = 1; i <= 4; i++) {
+            if (!usedFingers.includes(i)) return i;
+        }
+
+        if (!used.includes('T')) return 'T';
+        return undefined;
+    }, []);
+
 
     const getEditingNote = useCallback(() => {
         if (editingNoteId) {
@@ -479,14 +491,14 @@ export function useEditorNotes(
     const handleSelectStringAndAddIfMissing = useCallback((stringNum: number) => {
         setState((prev: FretboardEditorState) => {
             const minAllowedFret = Math.max(0, prev.settings?.capo ?? 0);
-            let targetNoteId = prev.editingNoteId;
-            if (!targetNoteId && prev.selectedMeasureId) {
+            let targetId = prev.editingNoteId;
+            if (!targetId && prev.selectedMeasureId) {
                 const measure = prev.measures.find(m => m.id === prev.selectedMeasureId);
-                if (measure && measure.notes.length > 0) targetNoteId = measure.notes[0].id;
+                if (measure && measure.notes.length > 0) targetId = measure.notes[0].id;
             }
 
-            const editingNote = targetNoteId
-                ? prev.measures.flatMap(m => m.notes).find(n => n.id === targetNoteId)
+            const editingNote = targetId
+                ? prev.measures.flatMap(m => m.notes).find(n => n.id === targetId)
                 : null;
 
             if (!editingNote) return prev;
@@ -496,25 +508,42 @@ export function useEditorNotes(
                 return { ...prev, activePositionIndex: existingIdx };
             }
 
+            // Finger Limit Check (Max 5 fingers)
+            const activeFingers = editingNote.positions.filter(p => p.finger !== undefined && p.finger !== 0 && !p.avoid);
+            if (activeFingers.length >= 5) {
+                // We use a custom event or let the UI handle the alert if possible, 
+                // but since this is a hook used in StudioViews, we can use window.alert as a simple mechanism 
+                // or assume the caller handles errors. The request asked for an alert.
+                // In this project, 't' is available in components, but here we are in a hook.
+                // But this hook doesn't have 't' injected.
+                // Let's use a standard alert with a generic message or try to find where translations are handled.
+                // The implementation plan said: alert(t('settings.messages.finger_limit'))
+                // For now, I'll use a standard alert as I don't have 't' here.
+                window.alert("Limite de 5 dedos atingido!");
+                return prev;
+            }
+
+            const nextFinger = getNextAvailableFinger(editingNote.positions);
+
             const newMeasures = prev.measures.map((m: MeasureData) => ({
                 ...m,
                 notes: m.notes.map((n: NoteData) => {
-                    if (n.id === targetNoteId) {
+                    if (n.id === targetId) {
                         return {
                             ...n,
-                            positions: [...n.positions, { fret: minAllowedFret, string: stringNum }]
+                            positions: [...n.positions, { fret: minAllowedFret, string: stringNum, finger: nextFinger }]
                         };
                     }
                     return n;
                 })
             }));
 
-            const updatedNote = newMeasures.flatMap(m => m.notes).find(n => n.id === targetNoteId);
+            const updatedNote = newMeasures.flatMap(m => m.notes).find(n => n.id === targetId);
             const newIdx = updatedNote ? updatedNote.positions.length - 1 : 0;
 
             return { ...prev, measures: newMeasures, activePositionIndex: newIdx };
         });
-    }, [setState]);
+    }, [setState, getNextAvailableFinger]);
 
     const handleToggleBarre = useCallback((indices?: number[]) => {
         if (activePositionIndex === null) return;
@@ -523,29 +552,48 @@ export function useEditorNotes(
             const pos = newPositions[activePositionIndex as number];
             if (!pos) return {};
 
-            if (pos.endString && pos.endString !== pos.string) {
-                // Fix: Robustly remove endString and ensure finger is set (default to 1 'Indicator')
+            if (pos.endString !== undefined && pos.endString !== pos.string) {
+                // Remove barre
                 const { endString, ...rest } = pos;
                 newPositions[activePositionIndex as number] = { ...rest, finger: pos.finger || 1 };
+            } else {
+                // Add default barre (from current string to string 1)
+                newPositions[activePositionIndex as number] = {
+                    ...pos,
+                    endString: 1,
+                    finger: pos.finger || 1
+                };
             }
 
             return { positions: newPositions };
         });
     }, [updateSelectedNotes, activePositionIndex]);
 
-    const handleToggleBarreTo = useCallback((targetString: number) => {
-        if (activePositionIndex === null) return;
+    const handleToggleBarreTo = useCallback((targetString: number, index?: number, forceSet?: boolean, startString?: number, fret?: number) => {
         updateSelectedNotes(n => {
             const newPositions = n.positions.map(p => ({ ...p }));
-            const pos = newPositions[activePositionIndex as number];
+            let targetIdx = index;
+
+            // Robust lookup: If index is invalid or missing, try finding by startString and fret
+            if (targetIdx === undefined || targetIdx < 0 || targetIdx >= newPositions.length) {
+                if (startString !== undefined && fret !== undefined) {
+                    targetIdx = newPositions.findIndex(p => p.string === startString && p.fret === fret);
+                } else {
+                    targetIdx = activePositionIndex as number;
+                }
+            }
+
+            if (targetIdx === null || targetIdx === undefined || targetIdx === -1) return {};
+
+            const pos = newPositions[targetIdx];
             if (!pos) return {};
 
-            if (pos.endString === targetString) {
-                // Fix: Robustly remove endString and ensure finger is set
+            if (!forceSet && pos.endString === targetString) {
+                // Remove endString and ensure finger is set
                 const { endString, ...rest } = pos;
-                newPositions[activePositionIndex as number] = { ...rest, finger: pos.finger || 1 };
+                newPositions[targetIdx] = { ...rest, finger: pos.finger || 1 };
             } else {
-                newPositions[activePositionIndex as number] = {
+                newPositions[targetIdx] = {
                     ...pos,
                     endString: targetString
                 };
@@ -617,6 +665,24 @@ export function useEditorNotes(
 
     const handleAddChordNote = useCallback(() => {
         setState((prev: FretboardEditorState) => {
+            let targetId = prev.editingNoteId;
+            if (!targetId && prev.selectedMeasureId) {
+                const measure = prev.measures.find(m => m.id === prev.selectedMeasureId);
+                if (measure && measure.notes.length > 0) targetId = measure.notes[0].id;
+            }
+
+            const editingNote = targetId
+                ? prev.measures.flatMap((m: MeasureData) => m.notes).find((n: NoteData) => n.id === targetId)
+                : null;
+
+            if (editingNote) {
+                const activeFingers = editingNote.positions.filter(p => p.finger !== undefined && p.finger !== 0 && !p.avoid);
+                if (activeFingers.length >= 5) {
+                    window.alert("Limite de 5 dedos atingido!");
+                    return prev;
+                }
+            }
+
             const newMeasures = prev.measures.map((m: MeasureData) => ({
                 ...m,
                 notes: m.notes.map((n: NoteData, nIdx: number) => {
@@ -625,25 +691,20 @@ export function useEditorNotes(
 
                     if (isExplicit || isImplicit) {
                         const capo = settings?.capo ?? 0;
+                        const nextFinger = getNextAvailableFinger(n.positions);
                         return {
                             ...n,
-                            positions: [...n.positions, { fret: Math.max(1, capo), string: (n.positions.length + 1) }]
+                            positions: [...n.positions, { fret: Math.max(1, capo), string: (n.positions.length + 1), finger: nextFinger }]
                         };
                     }
                     return n;
                 })
             }));
 
-            let targetId = prev.editingNoteId;
-            if (!targetId && prev.selectedMeasureId) {
-                const measure = newMeasures.find(m => m.id === prev.selectedMeasureId);
-                if (measure && measure.notes.length > 0) targetId = measure.notes[0].id;
-            }
-
-            const editingNote = targetId
+            const updatedNote = targetId
                 ? newMeasures.flatMap((m: MeasureData) => m.notes).find((n: NoteData) => n.id === targetId)
                 : null;
-            const newIndex = editingNote ? editingNote.positions.length - 1 : 0;
+            const newIndex = updatedNote ? updatedNote.positions.length - 1 : 0;
 
             return {
                 ...prev,
@@ -653,7 +714,58 @@ export function useEditorNotes(
                 selectedNoteIds: targetId ? [targetId] : prev.selectedNoteIds
             };
         });
-    }, [setState]);
+    }, [setState, settings?.capo, getNextAvailableFinger]);
+
+    const handleAddChordPosition = useCallback((fret: number, stringNum: number) => {
+        setState((prev: FretboardEditorState) => {
+            let targetId = prev.editingNoteId;
+            if (!targetId && prev.selectedMeasureId) {
+                const measure = prev.measures.find(m => m.id === prev.selectedMeasureId);
+                if (measure && measure.notes.length > 0) targetId = measure.notes[0].id;
+            }
+
+            if (!targetId) return prev;
+
+            const editingNote = prev.measures.flatMap(m => m.notes).find(n => n.id === targetId);
+            if (editingNote) {
+                const activeFingers = editingNote.positions.filter(p => (p.finger !== undefined && p.finger !== 0) && !p.avoid);
+                if (activeFingers.length >= 5) {
+                    window.alert("Limite de 5 dedos atingido!");
+                    return prev;
+                }
+            }
+
+            const newMeasures = prev.measures.map((m: MeasureData) => ({
+                ...m,
+                notes: m.notes.map((n: NoteData) => {
+                    if (n.id === targetId) {
+                        // Check if finger on this string already exists
+                        const existingIdx = n.positions.findIndex(p => p.string === stringNum);
+                        if (existingIdx !== -1) return n;
+
+                        const nextFinger = getNextAvailableFinger(n.positions);
+
+                        return {
+                            ...n,
+                            positions: [...n.positions, { fret, string: stringNum, finger: nextFinger }]
+                        };
+                    }
+                    return n;
+                })
+            }));
+
+            const updatedNote = newMeasures.flatMap(m => m.notes).find(n => n.id === targetId);
+            const newIndex = updatedNote ? updatedNote.positions.length - 1 : 0;
+
+            return {
+                ...prev,
+                measures: newMeasures,
+                activePositionIndex: newIndex,
+                editingNoteId: targetId,
+                selectedNoteIds: [targetId]
+            };
+        });
+    }, [setState, getNextAvailableFinger]);
 
     const handleRemoveChordNote = useCallback((idx: number) => {
         setState((prev: FretboardEditorState) => {
@@ -726,6 +838,7 @@ export function useEditorNotes(
         handleToggleBarreTo,
         handleInsert,
         handleAddChordNote,
+        handleAddChordPosition,
         handleRemoveChordNote,
         handleReorderNotes
     };

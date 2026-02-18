@@ -273,4 +273,8 @@ export class FullFretboardEngine {
             this.chordDrawer.drawChordName(this.previewChord.chordName, { extensions: exts });
         }
     }
+
+    public getGeometry() {
+        return (this.chordDrawer as any)?._geometry || null;
+    }
 }

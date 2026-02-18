@@ -148,6 +148,7 @@ const FretboardStageImplementation = React.forwardRef<FretboardStageRef, Fretboa
 // No, simpler:
 
 import { useAppContext } from "@/modules/core/presentation/context/app-context";
+import { useMouseShortcuts } from "../../hooks/use-mouse-shortcuts";
 
 const FretboardStageInner = ({ contextColors, forwardedRef, ...props }: any) => {
     const {
@@ -220,6 +221,8 @@ const FretboardStageInner = ({ contextColors, forwardedRef, ...props }: any) => 
         ref: forwardedRef
     });
 
+    const mouseHandlers = useMouseShortcuts(props, baseStage.engine?.getGeometry());
+
     return (
         <BaseStageUI
             width={width}
@@ -227,6 +230,7 @@ const FretboardStageInner = ({ contextColors, forwardedRef, ...props }: any) => 
             canvasRef={baseStage.canvasRef as any}
             backgroundCanvasRef={baseStage.backgroundCanvasRef as any}
             stageContainerRef={baseStage.stageContainerRef as any}
+            {...mouseHandlers}
         />
     );
 };

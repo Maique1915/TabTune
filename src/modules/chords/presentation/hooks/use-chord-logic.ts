@@ -11,7 +11,8 @@ export const useChordLogic = ({ activeMeasure, onUpdateMeasure }: UseChordLogicP
         root: "C",
         quality: "",
         bass: "Root",
-        extensions: []
+        extensions: [],
+        showChordName: true
     });
 
     // Sync local state when active measure changes
@@ -74,7 +75,8 @@ export const useChordLogic = ({ activeMeasure, onUpdateMeasure }: UseChordLogicP
                 root,
                 quality,
                 bass,
-                extensions: foundExts
+                extensions: foundExts,
+                showChordName: activeMeasure.showChordName !== false
             });
 
         } else {
@@ -83,10 +85,11 @@ export const useChordLogic = ({ activeMeasure, onUpdateMeasure }: UseChordLogicP
                 root: "C",
                 quality: "",
                 bass: "Root",
-                extensions: []
+                extensions: [],
+                showChordName: activeMeasure?.showChordName ?? true
             });
         }
-    }, [activeMeasure?.id, activeMeasure?.chordName]);
+    }, [activeMeasure?.id, activeMeasure?.chordName, activeMeasure?.showChordName]);
 
     // Sync chord data changes back to parent measure
     useEffect(() => {
@@ -97,8 +100,11 @@ export const useChordLogic = ({ activeMeasure, onUpdateMeasure }: UseChordLogicP
             const newName = `${chordData.root}${qualitySuffix}${extensionStr}${bassSuffix}`;
 
             // Only update if the name actually changed to avoid infinite loops
-            if (activeMeasure.chordName !== newName) {
-                onUpdateMeasure(activeMeasure.id, { chordName: newName });
+            if (activeMeasure.chordName !== newName || activeMeasure.showChordName !== chordData.showChordName) {
+                onUpdateMeasure(activeMeasure.id, {
+                    chordName: newName,
+                    showChordName: chordData.showChordName
+                });
             }
         }
     }, [chordData, activeMeasure?.id, activeMeasure?.chordName, onUpdateMeasure]);

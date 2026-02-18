@@ -4,6 +4,7 @@ import { useAppContext } from "@/modules/core/presentation/context/app-context";
 import { useTimelineSync } from "@/modules/timeline/presentation/hooks/use-timeline-sync";
 import { TimelineControls } from "@/modules/timeline/presentation/components/TimelineControls";
 import { NavItem } from "@/shared/components/layout/MobileNav";
+import { useTranslation } from "@/modules/core/presentation/context/translation-context";
 import { Library, Settings, Guitar } from "lucide-react";
 import { RenderFormat, RenderQuality } from "@/modules/chords/presentation/components/RenderDialog";
 
@@ -29,6 +30,7 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
         allowedAnimationTypes,
         stageRef
     } = config;
+    const { t } = useTranslation();
 
     const searchParams = useSearchParams();
     const projectId = searchParams.get('id');
@@ -293,6 +295,16 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
         onDeselectAll: () => editorData.handleSelectMeasure(''),
         selectedMeasureId: editorData.selectedMeasureId,
         onUpdateNote: (id: string, updates: any) => editorData.updateSelectedNotes(updates),
+        onSetFretForPosition: editorData.handleSetFretForString,
+        onSetStringForPosition: editorData.handleSetStringForPosition,
+        onSetFingerForPosition: editorData.handleSetFingerForString,
+        onToggleBarreTo: editorData.handleToggleBarreTo,
+        onToggleBarre: editorData.handleToggleBarre,
+        editingNote: editorData.editingNote,
+        activeMeasure: editorData.activeMeasure,
+        onAddChordNote: editorData.handleAddChordNote,
+        onAddChordPosition: editorData.handleAddChordPosition,
+        onShowAlert: (msg: string) => alert(t(msg)),
         totalDurationMs: totalDurationMs,
         currentCursorMs: currentCursorMs,
         bpm: editorData.settings.bpm,

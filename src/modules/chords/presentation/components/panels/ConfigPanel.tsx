@@ -9,7 +9,6 @@ import { useTranslation } from '@/modules/core/presentation/context/translation-
 export const ConfigPanel: React.FC<SidebarProps> = ({
     globalSettings,
     onGlobalSettingsChange,
-    onImportScore,
     measures,
     animationType,
     theme,
@@ -203,12 +202,6 @@ export const ConfigPanel: React.FC<SidebarProps> = ({
                     </div>
                 </div>
 
-                <button
-                    onClick={onImportScore}
-                    className="w-full py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-bold text-xs hover:bg-cyan-500/20 transition-all flex items-center justify-center gap-2 uppercase tracking-widest mt-4"
-                >
-                    ↓ {t('header.import')} Score
-                </button>
 
                 {/* View Transform / Rotation */}
                 <div className="space-y-3 pt-6 border-t border-zinc-900/50">

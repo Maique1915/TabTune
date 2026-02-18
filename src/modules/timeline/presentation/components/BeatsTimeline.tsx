@@ -119,18 +119,18 @@ const BeatsTimeline: React.FC<BaseTimelineProps> = ({
 
     return (
         <div
-            className="flex flex-col w-full h-full bg-panel-dark/95 backdrop-blur-2xl border-t border-white/5 relative"
+            className="flex flex-col w-full h-full bg-background-dark/40 backdrop-blur-2xl border-t border-white/[0.05] relative overflow-hidden"
             onClick={onDeselectAll}
         >
             {/* Playback Progress Overlay */}
             <div
-                className="absolute top-0 left-0 h-0.5 bg-gradient-to-r from-primary via-cyan-400 to-primary z-50 transition-all duration-100 ease-linear shadow-cyan-glow"
+                className="absolute top-0 left-0 h-1 bg-primary z-50 transition-all duration-100 ease-linear shadow-cyan-glow"
                 style={{ width: `${Math.min(100, (currentCursorMs / totalDurationMs) * 100)}%` }}
             />
 
             {/* Horizontal Timeline Container */}
-            <div className="flex-1 overflow-x-auto overflow-y-hidden px-8 py-6 custom-scrollbar">
-                <div className="flex flex-row gap-8 min-w-max h-full items-start">
+            <div className="flex-1 overflow-x-auto overflow-y-hidden px-10 py-8 custom-scrollbar relative z-10">
+                <div className="flex flex-row gap-10 min-w-max h-full items-start">
                     {measures.map((measure, mIdx) => {
                         const isCollapsed = measure.isCollapsed;
                         const isDragging = draggedIndex === mIdx;
@@ -155,19 +155,19 @@ const BeatsTimeline: React.FC<BaseTimelineProps> = ({
                                 onDragLeave={() => setDragOverIndex(null)}
                                 className={`
                                     flex flex-col
-                                    relative group transition-all duration-300
-                                    rounded-[20px] border
-                                    ${isCollapsed ? 'w-14' : 'w-[400px]'} 
+                                    relative group transition-all duration-500
+                                    rounded-[32px] border
+                                    ${isCollapsed ? 'w-16' : 'w-[450px]'} 
                                     ${isDragging ? 'opacity-20 scale-95 border-dashed border-zinc-700' :
                                         isMeasureSelected
-                                            ? 'opacity-100 border-primary bg-gradient-to-br from-primary/5 to-transparent shadow-[0_0_30px_rgba(6,182,212,0.1)] ring-1 ring-primary/30 z-10'
-                                            : 'opacity-100 border-white/5 bg-gradient-to-br from-white/[0.03] to-transparent hover:border-white/10 hover:bg-white/[0.05]'}
-                                    ${isOver ? 'border-primary/60 scale-[1.02] shadow-cyan-glow' : ''}
-                                    h-[85%] overflow-hidden
+                                            ? 'opacity-100 border-primary bg-primary/[0.08] shadow-premium-glow ring-1 ring-primary/20 z-10'
+                                            : 'opacity-100 border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.1]'}
+                                    ${isOver ? 'border-primary/60 scale-[1.02] shadow-cyan-glow bg-primary/5' : ''}
+                                    h-[90%] overflow-hidden
                                 `}
                             >
                                 {/* Active Selection Indicator Line */}
-                                {isMeasureSelected && <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />}
+                                {isMeasureSelected && <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary opacity-50 shadow-cyan-glow" />}
 
                                 {/* Measure Header */}
                                 <div className={`flex flex-col p-2.5 z-10 ${isCollapsed ? 'items-center px-1' : ''}`}>
@@ -299,70 +299,72 @@ const BeatsTimeline: React.FC<BaseTimelineProps> = ({
                                                     onDragEnd={handleNoteDragEnd}
                                                     onDragLeave={() => setDragOverNoteIndex(null)}
                                                     className={`
-                                                        relative cursor-pointer transition-all duration-300 group/note
-                                                        w-16 h-32 shrink-0 flex flex-col items-center justify-center select-none
+                                                        relative cursor-pointer transition-all duration-500 group/note
+                                                        w-20 h-40 shrink-0 flex flex-col items-center justify-center select-none
                                                         ${isNoteDragging ? 'opacity-20 scale-90 blur-[2px]' : ''}
                                                         ${isNoteOver ? 'scale-[1.05] -translate-y-1' : ''}
                                                     `}
                                                 >
                                                     {/* Note Actions */}
                                                     {(onCopyNote || onRemoveNote) && (
-                                                        <div className={`absolute top-2 right-2 flex gap-0.5 z-20 transition-opacity duration-300 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover/note:opacity-100'}`}>
+                                                        <div className={`absolute top-2 right-2 flex gap-1.5 z-20 transition-opacity duration-300 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover/note:opacity-100'}`}>
                                                             {onCopyNote && (
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); onCopyNote(note.id); }}
-                                                                    className="size-5 flex items-center justify-center rounded-md bg-zinc-900/80 backdrop-blur-sm border border-white/10 text-zinc-400 hover:text-primary transition-colors"
+                                                                    className="size-6 flex items-center justify-center rounded-lg bg-black/80 hover:bg-white/10 text-zinc-300 hover:text-white transition-all shadow-lg border border-white/[0.05]"
                                                                     title="Duplicate"
                                                                 >
-                                                                    <Icons.Copy className="w-2.5 h-2.5" />
+                                                                    <Icons.Copy className="w-3 h-3" />
                                                                 </button>
                                                             )}
                                                             {onRemoveNote && (
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); onRemoveNote(note.id); }}
-                                                                    className="size-5 flex items-center justify-center rounded-md bg-zinc-900/80 backdrop-blur-sm border border-white/10 text-zinc-400 hover:text-rose-400 transition-colors"
+                                                                    className="size-6 flex items-center justify-center rounded-lg bg-black/80 hover:bg-rose-500/20 text-zinc-300 hover:text-rose-400 transition-all shadow-lg border border-white/[0.05]"
                                                                     title="Delete"
                                                                 >
-                                                                    <Icons.Trash className="w-2.5 h-2.5" />
+                                                                    <Icons.Trash className="w-3 h-3" />
                                                                 </button>
                                                             )}
                                                         </div>
                                                     )}
                                                     {/* Glow behind playing note */}
-                                                    {isPlaying && <div className="absolute inset-x-2 inset-y-4 bg-primary/10 animate-pulse rounded-xl blur-md" />}
+                                                    {isPlaying && <div className="absolute inset-x-2 inset-y-4 bg-primary/10 animate-pulse-subtle rounded-3xl blur-xl" />}
 
                                                     <div className={`
-                                                        flex flex-col items-center justify-center gap-2
-                                                        transition-all duration-300
-                                                        ${isSelected ? 'text-primary scale-110 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]' : 'text-zinc-400 hover:text-zinc-200'}
+                                                        flex flex-col items-center justify-center gap-3
+                                                        transition-all duration-500
+                                                        ${isSelected ? 'text-primary scale-110 drop-shadow-[0_0_12px_rgba(6,182,212,0.6)]' : 'text-zinc-500 hover:text-zinc-300'}
                                                         ${isPlaying ? 'text-primary scale-125' : ''}
                                                     `}>
                                                         {/* Finger Label */}
                                                         {finger && (
-                                                            <span className="text-[10px] font-black uppercase mb-1 text-zinc-300 bg-black/50 px-1.5 rounded">{finger}</span>
+                                                            <span className="text-[10px] font-black uppercase mb-1 text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full backdrop-blur-md shadow-inner-glow">{finger}</span>
                                                         )}
 
-                                                        {direction === 'down' ? (
-                                                            <ArrowDown strokeWidth={3} className="w-12 h-12" />
-                                                        ) : (
-                                                            <ArrowUp strokeWidth={3} className="w-12 h-12" />
-                                                        )}
+                                                        <div className={`transition-transform duration-500 ${isPlaying ? 'animate-float' : ''}`}>
+                                                            {direction === 'down' ? (
+                                                                <ArrowDown strokeWidth={4} className="w-14 h-14" />
+                                                            ) : (
+                                                                <ArrowUp strokeWidth={4} className="w-14 h-14" />
+                                                            )}
+                                                        </div>
 
                                                         {/* Note Duration Label */}
-                                                        <span className="text-[9px] font-black uppercase tracking-tighter opacity-50">
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">
                                                             {note.duration}{note.decorators.dot && '•'}
                                                         </span>
                                                     </div>
 
                                                     {/* Selection/Hover Halo */}
                                                     {isSelected && (
-                                                        <div className="absolute bottom-4 w-2 h-2 bg-primary rounded-full shadow-cyan-glow" />
+                                                        <div className="absolute bottom-4 w-2.5 h-2.5 bg-primary rounded-full shadow-cyan-glow animate-pulse" />
                                                     )}
 
                                                     {/* Progress bar inside note (optional, or rely on measure cursor?) */}
                                                     {/* Kept existing logic but minimal */}
                                                     {isPlaying && timing && (
-                                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 bg-primary rounded-full transition-all duration-100 ease-linear shadow-cyan-glow w-8" />
+                                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 bg-primary rounded-full transition-all duration-100 ease-linear shadow-cyan-glow w-10" />
                                                     )}
                                                 </div>
                                             );
@@ -376,13 +378,13 @@ const BeatsTimeline: React.FC<BaseTimelineProps> = ({
                     {/* Add Section Button (End of Timeline) */}
                     <button
                         onClick={(e) => { e.stopPropagation(); onAddMeasure(); }}
-                        className="w-20 h-[85%] border-2 border-dashed border-white/5 bg-white/[0.01] hover:bg-primary/5 hover:border-primary/30 rounded-[24px] flex flex-col items-center justify-center text-zinc-600 hover:text-primary transition-all duration-700 shrink-0 group/add-m"
+                        className="w-24 h-[90%] border-2 border-dashed border-white/[0.05] bg-white/[0.01] hover:bg-primary/[0.03] hover:border-primary/30 rounded-[32px] flex flex-col items-center justify-center text-zinc-600 hover:text-primary transition-all duration-700 shrink-0 group/add-m"
                         title="Add New Block"
                     >
-                        <div className="w-10 h-10 rounded-full bg-white/[0.02] flex items-center justify-center group-hover/add-m:scale-110 group-hover/add-m:rotate-90 group-hover/add-m:bg-primary/10 transition-all duration-500 shadow-xl">
-                            <Icons.Plus />
+                        <div className="w-12 h-12 rounded-2xl bg-white/[0.02] flex items-center justify-center group-hover/add-m:scale-110 group-hover/add-m:rotate-90 group-hover/add-m:bg-primary/10 transition-all duration-500 shadow-xl border border-white/[0.03] group-hover/add-m:border-primary/20">
+                            <Icons.Plus className="w-6 h-6" />
                         </div>
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] mt-3 opacity-40 group-hover/add-m:opacity-100 transition-opacity">Add Block</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] mt-4 opacity-40 group-hover/add-m:opacity-100 transition-opacity">Add Block</span>
                     </button>
                 </div>
             </div>
