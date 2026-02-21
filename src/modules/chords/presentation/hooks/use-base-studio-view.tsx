@@ -86,7 +86,11 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
 
     // Studio specific defaults
     useEffect(() => {
-        editorData.setSettings((prev: any) => ({ ...prev, numFrets: defaultNumFrets }));
+        editorData.setSettings((prev: any) => {
+            if (prev.numFrets === defaultNumFrets) return prev;
+            return { ...prev, numFrets: defaultNumFrets };
+        });
+
         if (allowedAnimationTypes && !allowedAnimationTypes.includes(animationType)) {
             setAnimationType(defaultAnimationType as any);
         }

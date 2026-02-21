@@ -30,7 +30,7 @@ const FullFretboardStageInner = ({ contextColors, forwardedRef, ...props }: any)
     } = props;
 
     const colors = propsColors || contextColors || undefined;
-    const effectiveNumFrets = propNumFrets ?? 5;
+    const effectiveNumFrets = propNumFrets ?? 24;
     const numFrets = effectiveNumFrets;
 
     console.log('[FullFretboardStage] Render colors:', {

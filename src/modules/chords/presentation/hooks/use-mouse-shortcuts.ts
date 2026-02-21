@@ -72,8 +72,8 @@ export const useMouseShortcuts = (props: SidebarProps, geometry?: GeometryProvid
         const now = Date.now();
         const lastClick = { ...lastClickRef.current };
         const diff = now - lastClick.time;
-        // Double click if time is low AND it's on the same fret and string
-        const isSecondClick = diff < 400 && lastClick.string === pos.string && lastClick.fret === pos.fret;
+        // Double click if time is low (500ms) and roughly same area (same fret)
+        const isSecondClick = diff < 500 && lastClick.fret === pos.fret;
 
         // Update last click ref SYNC to ensure subsequent clicks (double-clicks) see it immediately
         lastClickRef.current = { time: now, x, y, string: pos.string, fret: pos.fret };
@@ -110,18 +110,6 @@ export const useMouseShortcuts = (props: SidebarProps, geometry?: GeometryProvid
                     onActivePositionIndexChange?.(fingerIdx);
                 } else {
                     // Start dragging AFTER ADDING a new finger
-                    const positions = currentEditingNote?.positions || [];
-                    const usedFingers = positions
-                        .map(p => p.finger)
-                        .filter(f => typeof f === 'number' && f >= 1 && f <= 4) || [];
-
-                    if (usedFingers.length >= 4) {
-                        onShowAlert?.('settings.messages.finger_limit');
-                        isDraggingBarreRef.current = false;
-                        setIsDraggingBarre(false);
-                        return;
-                    }
-
                     if (onAddChordPosition) {
                         onAddChordPosition(pos.fret, pos.string);
                         draggingStartRef.current = { ...pos, noteId, fingerIdx: -1 };

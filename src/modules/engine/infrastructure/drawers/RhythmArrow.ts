@@ -69,30 +69,31 @@ export class RhythmArrow {
 
         if (direction === 'mute') {
             // "Abafado" Symbol: Adjusted Half-Arrow + Chevrons
-
-            // Scaling relative to `w` (which is roughly 0.35h)
-            const shaftWidth = w * 0.35;
+            // Using proportions from the full arrow for consistency:
+            // xShaft = w * 0.25, xWing = w * 0.5
+            const xShaftHalf = w * 0.25;
+            const xWingTip = w * 0.5;
 
             // Coordinates for Arrow Polygon (Left part of the group)
-            // Aligned such that Right Edge of Shaft is at x=0
+            // Aligned such that Right Edge of Shaft is at x=0 (the center of the full arrow)
             const xShaftRight = 0;
-            const xShaftLeft = -shaftWidth;
-            const xBevelTip = -shaftWidth * 2.5; // Extends further left
+            const xShaftLeft = -xShaftHalf;
+            const xBevelTip = -xWingTip;
 
             // Label Positioning Update
-            labelX = -shaftWidth / 2; // Center label in the mute arrow shaft
+            labelX = xShaftLeft / 2; // Center label in the mute arrow shaft
 
-            // Y Coordinates (Mapped 0.05..0.85 to -h/2..h/2)
+            // Y Coordinates (Consistent with full arrow)
             const yTop = -h * 0.5;
             const yBottom = h * 0.5;
-            const yBevelTip = -h * 0.5 + (h * 0.6875);
-            const yInnerCorner = -h * 0.5 + (h * 0.75);
+            const yBevelTip = yTop + (h * 0.6875);
+            const yInnerCorner = yTop + (h * 0.75);
 
             // Draw Motifs (Chevrons) - BEHIND
             // Positioned to the Right of the Shaft
-            const chevronGap = shaftWidth * 0.8;
+            const chevronGap = xShaftHalf * 0.8;
             const cx = xShaftRight + chevronGap;
-            const chevronSize = shaftWidth * 1.2;
+            const chevronSize = xShaftHalf * 1.5; // Slightly larger for better visibility
 
             // Draw Chevron Helper
             const drawChevron = (cx: number, cy: number, size: number) => {
@@ -118,11 +119,11 @@ export class RhythmArrow {
             // 4 Chevrons
             const startCY = -h * 0.375;
             const stepCY = h * 0.25;
-
-            drawChevron(cx, startCY, chevronSize);
-            drawChevron(cx, startCY + stepCY, chevronSize);
-            drawChevron(cx, startCY + stepCY * 2, chevronSize);
-            drawChevron(cx, startCY + stepCY * 3, chevronSize);
+            const tipOffset = 10;
+            drawChevron(cx + tipOffset, startCY, chevronSize);
+            drawChevron(cx + tipOffset, startCY + stepCY, chevronSize);
+            drawChevron(cx + tipOffset, startCY + stepCY * 2, chevronSize);
+            drawChevron(cx + tipOffset, startCY + stepCY * 3, chevronSize);
 
             // Draw Updated Arrow Polygon (On Top)
             ctx.beginPath();
@@ -135,12 +136,9 @@ export class RhythmArrow {
 
             ctx.fill();
             strokeBorder(ctx, scale, arrowTheme, fingersTheme);
-
         }
         else if (direction === 'pause') {
-            ctx.beginPath();
-            ctx.arc(0, 0, baseSize * 0.15, 0, Math.PI * 2);
-            ctx.fill();
+            // Leave empty space as requested
         }
         else {
             // UP / DOWN (Full Symmetric Arrow)

@@ -127,7 +127,7 @@ export function useKeyboardShortcuts(props: SidebarProps) {
 
             // --- Beats Specific Shortcuts (Note-level) ---
             if (variant === 'beats' && editingNote) {
-                // Ctrl + ArrowRight/Left: Cycle Strum Direction
+                // Ctrl + ArrowRight/Left: Cycle Strum Direction (Arrow Types)
                 if (isCtrl && !isShift && !isAlt) {
                     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
                         e.preventDefault();
@@ -147,22 +147,25 @@ export function useKeyboardShortcuts(props: SidebarProps) {
                     return;
                 }
                 // Ctrl + Shift + ArrowRight/Left: REMOVED (Conflicted with system)
-                // Alt + Shift + Arrows: Cycle Duration
-                else if (isAlt && isShift && !isCtrl) {
-                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        const cycle: string[] = ['w', 'h', 'q', '8', '16'];
-                        const currentDuration = editingNote.duration || 'q';
-                        const currentIndex = cycle.indexOf(currentDuration);
-                        const direction = e.key === 'ArrowDown' ? 1 : -1;
-                        const nextIndex = (currentIndex + direction + cycle.length) % cycle.length;
-                        if (propsRef.current.onNoteDurationStatic) {
-                            propsRef.current.onNoteDurationStatic(editingNote.id, cycle[nextIndex] as any);
-                        } else {
-                            propsRef.current.onNoteRhythmChange?.(cycle[nextIndex] as any);
-                        }
-                        return;
+                // Alt + Shift + Arrows or W/S: Cycle Duration
+                else if ((isAlt && isShift && !isCtrl && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) ||
+                    (!isShift && !isCtrl && !isAlt && (keyLower === 'w' || keyLower === 's'))) {
+                    e.preventDefault();
+                    const cycle: string[] = ['w', 'h', 'q', '8', '16', '32'];
+                    const currentDuration = editingNote.duration || 'q';
+                    const currentIndex = cycle.indexOf(currentDuration);
+
+                    // W or ArrowUp: Increase duration (move left in cycle: 16 -> 8 -> q -> h -> w)
+                    // S or ArrowDown: Decrease duration (move right in cycle: w -> h -> q -> 8 -> 16)
+                    const direction = (keyLower === 'w' || e.key === 'ArrowUp') ? -1 : 1;
+                    const nextIndex = (currentIndex + direction + cycle.length) % cycle.length;
+
+                    if (propsRef.current.onNoteDurationStatic) {
+                        propsRef.current.onNoteDurationStatic(editingNote.id, cycle[nextIndex] as any);
+                    } else {
+                        propsRef.current.onNoteRhythmChange?.(cycle[nextIndex] as any);
                     }
+                    return;
                 }
             }
 
@@ -298,15 +301,8 @@ export function useKeyboardShortcuts(props: SidebarProps) {
                     e.preventDefault();
                     const direction = keyLower === 'w' ? 1 : -1;
 
-                    // A. If in Beats View (Note Level) - Cycle Beat Type
-                    if (variant === 'beats' && editingNote) {
-                        const cycle: ('down' | 'up' | 'pause' | 'mute')[] = ['down', 'up', 'pause', 'mute'];
-                        const currentDir = editingNote.strumDirection || 'down';
-                        const currentIndex = cycle.indexOf(currentDir as any);
-                        const nextIndex = (currentIndex + direction + cycle.length) % cycle.length;
-                        onUpdateNote?.({ strumDirection: cycle[nextIndex] });
-                        return;
-                    }
+                    // A. If in Beats View (Note Level) - Cycle Beat Type (DEPRECATED: NOW HANDLED BY DURATION OR CTRL+ARROWS)
+                    // Removed W/S from here as it now handles duration above
 
                     // B. If in Fretboard View (Chord/Finger Level)
                     if (editingNote && activePositionIndex !== null) {
@@ -451,7 +447,27 @@ export function useKeyboardShortcuts(props: SidebarProps) {
                 }
             }
 
-            // 4. Shift + Ctrl + Arrows: REMOVED (Conflicted with system)
+            // 4. Shift + Ctrl + Arrows: Finger Cycling
+            else if (isShift && isCtrl && !isAlt) {
+                if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    if (editingNote && activePositionIndex !== null) {
+                        const direction = e.key === 'ArrowRight' ? 1 : -1;
+                        const cycle = ['X', 1, 2, 3, 4, 'T'];
+                        const currentPos = editingNote.positions[activePositionIndex];
+                        if (!currentPos) return;
+
+                        // Normalize current finger for lookup
+                        let currentFinger: string | number = currentPos.avoid ? 'X' : (currentPos.finger ?? 'X');
+                        let currentIndex = cycle.indexOf(currentFinger);
+                        if (currentIndex === -1) currentIndex = 0;
+
+                        const nextIndex = (currentIndex + direction + cycle.length) % cycle.length;
+                        const nextFinger = cycle[nextIndex];
+                        onSetFingerForPosition?.(activePositionIndex, nextFinger);
+                    }
+                }
+            }
         };
 
         window.addEventListener('keydown', handleKeyDown);

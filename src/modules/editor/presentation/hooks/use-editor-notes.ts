@@ -39,7 +39,7 @@ export function useEditorNotes(
         }
 
         if (!used.includes('T')) return 'T';
-        return undefined;
+        return 'X';
     }, []);
 
 
@@ -508,22 +508,9 @@ export function useEditorNotes(
                 return { ...prev, activePositionIndex: existingIdx };
             }
 
-            // Finger Limit Check (Max 5 fingers)
-            const activeFingers = editingNote.positions.filter(p => p.finger !== undefined && p.finger !== 0 && !p.avoid);
-            if (activeFingers.length >= 5) {
-                // We use a custom event or let the UI handle the alert if possible, 
-                // but since this is a hook used in StudioViews, we can use window.alert as a simple mechanism 
-                // or assume the caller handles errors. The request asked for an alert.
-                // In this project, 't' is available in components, but here we are in a hook.
-                // But this hook doesn't have 't' injected.
-                // Let's use a standard alert with a generic message or try to find where translations are handled.
-                // The implementation plan said: alert(t('settings.messages.finger_limit'))
-                // For now, I'll use a standard alert as I don't have 't' here.
-                window.alert("Limite de 5 dedos atingido!");
-                return prev;
-            }
-
+            // Finger Limit Check removed. Instead, we use getNextAvailableFinger which returns 'X'
             const nextFinger = getNextAvailableFinger(editingNote.positions);
+            const isAvoid = nextFinger === 'X';
 
             const newMeasures = prev.measures.map((m: MeasureData) => ({
                 ...m,
@@ -531,7 +518,7 @@ export function useEditorNotes(
                     if (n.id === targetId) {
                         return {
                             ...n,
-                            positions: [...n.positions, { fret: minAllowedFret, string: stringNum, finger: nextFinger }]
+                            positions: [...n.positions, { fret: minAllowedFret, string: stringNum, finger: nextFinger, avoid: isAvoid }]
                         };
                     }
                     return n;
@@ -675,14 +662,6 @@ export function useEditorNotes(
                 ? prev.measures.flatMap((m: MeasureData) => m.notes).find((n: NoteData) => n.id === targetId)
                 : null;
 
-            if (editingNote) {
-                const activeFingers = editingNote.positions.filter(p => p.finger !== undefined && p.finger !== 0 && !p.avoid);
-                if (activeFingers.length >= 5) {
-                    window.alert("Limite de 5 dedos atingido!");
-                    return prev;
-                }
-            }
-
             const newMeasures = prev.measures.map((m: MeasureData) => ({
                 ...m,
                 notes: m.notes.map((n: NoteData, nIdx: number) => {
@@ -692,9 +671,15 @@ export function useEditorNotes(
                     if (isExplicit || isImplicit) {
                         const capo = settings?.capo ?? 0;
                         const nextFinger = getNextAvailableFinger(n.positions);
+                        const isAvoid = nextFinger === 'X';
                         return {
                             ...n,
-                            positions: [...n.positions, { fret: Math.max(1, capo), string: (n.positions.length + 1), finger: nextFinger }]
+                            positions: [...n.positions, {
+                                fret: Math.max(1, capo),
+                                string: (n.positions.length + 1),
+                                finger: nextFinger,
+                                avoid: isAvoid
+                            }]
                         };
                     }
                     return n;
@@ -726,15 +711,6 @@ export function useEditorNotes(
 
             if (!targetId) return prev;
 
-            const editingNote = prev.measures.flatMap(m => m.notes).find(n => n.id === targetId);
-            if (editingNote) {
-                const activeFingers = editingNote.positions.filter(p => (p.finger !== undefined && p.finger !== 0) && !p.avoid);
-                if (activeFingers.length >= 5) {
-                    window.alert("Limite de 5 dedos atingido!");
-                    return prev;
-                }
-            }
-
             const newMeasures = prev.measures.map((m: MeasureData) => ({
                 ...m,
                 notes: m.notes.map((n: NoteData) => {
@@ -744,10 +720,16 @@ export function useEditorNotes(
                         if (existingIdx !== -1) return n;
 
                         const nextFinger = getNextAvailableFinger(n.positions);
+                        const isAvoid = nextFinger === 'X';
 
                         return {
                             ...n,
-                            positions: [...n.positions, { fret, string: stringNum, finger: nextFinger }]
+                            positions: [...n.positions, {
+                                fret,
+                                string: stringNum,
+                                finger: nextFinger,
+                                avoid: isAvoid
+                            }]
                         };
                     }
                     return n;

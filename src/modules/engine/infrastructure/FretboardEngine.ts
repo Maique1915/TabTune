@@ -75,7 +75,8 @@ export class FretboardEngine {
                 realFretSpacing: 0,
                 neckRadius: 0,
                 stringNamesY: 0
-            }
+            },
+            this.options.colors?.global?.scale || 1
         );
 
         if (this.options.tuning) {

@@ -204,35 +204,6 @@ export class BeatsEngine {
         const animationType = this.options.animationType || 'dynamic-fingers';
         const nextChordData = (chordIndex < this.chords.length - 1) ? this.chords[chordIndex + 1] : null;
 
-        if (animationType === "carousel" && this.fingersAnimation) {
-            // fingersAnimation disabled for Beats view
-            /*
-            this.fingersAnimation.draw({
-                drawer,
-                allChords: allChordsSafe,
-                currentIndex: state.chordIndex,
-                currentDisplayChord: { finalChord: currentChordData.finalChord, transportDisplay: currentChordData.transportDisplay },
-                nextDisplayChord: null,
-                transitionProgress: state.transitionProgress,
-                skipFretboard: true
-            });
-            */
-        } else if (this.fingersAnimation) {
-            // fingersAnimation disabled for Beats view
-            /*
-            this.fingersAnimation.draw({
-                drawer,
-                currentDisplayChord: { finalChord: currentChordData.finalChord, transportDisplay: currentChordData.transportDisplay },
-                nextDisplayChord: nextChordData ? { finalChord: nextChordData.finalChord, transportDisplay: nextChordData.transportDisplay } : null,
-                transitionProgress: state.transitionProgress,
-                buildProgress: state.buildProgress,
-                skipFretboard: true
-            });
-            */
-        } else {
-            // Fallback: draw nothing or just names
-        }
-
         if (this.options.showChordName && animationType !== "carousel") {
             this.drawChordName(state, currentChordData, nextChordData, chordIndex);
         }

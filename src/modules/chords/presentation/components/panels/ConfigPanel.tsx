@@ -12,7 +12,8 @@ export const ConfigPanel: React.FC<SidebarProps> = ({
     measures,
     animationType,
     theme,
-    setTheme
+    setTheme,
+    variant
 }) => {
     const { t } = useTranslation();
 
@@ -69,6 +70,7 @@ export const ConfigPanel: React.FC<SidebarProps> = ({
                 </div>
 
                 {/* Instrument Selector */}
+                {variant !== 'beats' && (
                 <div className="space-y-1">
                     <label className="text-[9px] font-bold text-zinc-600 uppercase">Instrument</label>
                     <select
@@ -94,8 +96,10 @@ export const ConfigPanel: React.FC<SidebarProps> = ({
                         ))}
                     </select>
                 </div>
+                )}
 
                 {/* Tuning Selector */}
+                {variant !== 'beats' && (
                 <div className="space-y-1">
                     <label className="text-[9px] font-bold text-zinc-600 uppercase">Tuning</label>
                     <select
@@ -119,8 +123,10 @@ export const ConfigPanel: React.FC<SidebarProps> = ({
                         ))}
                     </select>
                 </div>
+                )}
 
                 {/* Tuning Shift / Capo Selector */}
+                {variant !== 'beats' && (
                 <div className="space-y-3">
                     <div className="flex items-center justify-between">
                         <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-1">
@@ -201,9 +207,11 @@ export const ConfigPanel: React.FC<SidebarProps> = ({
                         >+</button>
                     </div>
                 </div>
+                )}
 
 
                 {/* View Transform / Rotation */}
+                {variant !== 'beats' && (
                 <div className="space-y-3 pt-6 border-t border-zinc-900/50">
                     <div className="flex items-center justify-between px-1">
                         <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none">
@@ -254,6 +262,7 @@ export const ConfigPanel: React.FC<SidebarProps> = ({
                         </div>
                     </div>
                 </div>
+                )}
             </div>
         </div>
     );

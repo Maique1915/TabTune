@@ -24,14 +24,16 @@ export function FullStudioView() {
     const videoCanvasRef = useRef<FullFretboardStageRef>(null);
     const isMobile = useIsMobile();
 
-    const baseView = useBaseStudioView({
+    const baseViewConfig = React.useMemo(() => ({
         useEditor: useStudioChordsEditor,
-        defaultNumFrets: 24,  // Full view uses 24 frets
-        defaultAnimationType: 'guitar-fretboard',  // Full view uses guitar-fretboard animation
+        defaultNumFrets: 24,
+        defaultAnimationType: 'guitar-fretboard',
         allowedAnimationTypes: ['guitar-fretboard'],
-        variant: 'full',
+        variant: 'full' as const,
         stageRef: videoCanvasRef
-    });
+    }), []);
+
+    const baseView = useBaseStudioView(baseViewConfig);
 
     const {
         measures,
@@ -187,6 +189,7 @@ export function FullStudioView() {
                     measures={measures}
                     projectName={projectName}
                     onSave={handleSaveProject}
+                    variant="full"
                 />
             }
             rightSidebar={<SettingsPanel isMobile={isMobile} isOpen={activePanel === 'customize'} onClose={() => setLocalActivePanel('studio')} colors={theme} onColorChange={setTheme as any} numFrets={settings.numFrets || 5} viewMode="full" />}
@@ -228,6 +231,7 @@ export function FullStudioView() {
                         <StageContainer title="Visualizer">
                             <FullFretboardStage
                                 ref={videoCanvasRef}
+                                {...visualEditorProps}
                                 chords={chords}
                                 activeChordIndex={activeChordIndex}
                                 transitionsEnabled={playbackTransitionsEnabled}

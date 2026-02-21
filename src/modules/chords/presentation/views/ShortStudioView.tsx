@@ -24,14 +24,16 @@ export function ShortStudioView() {
     const videoCanvasRef = useRef<FretboardStageRef>(null);
     const isMobile = useIsMobile();
 
-    const baseView = useBaseStudioView({
+    const baseViewConfig = React.useMemo(() => ({
         useEditor: useStudioChordsEditor,
         defaultNumFrets: 5,
         defaultAnimationType: 'static-fingers',
         allowedAnimationTypes: ['static-fingers', 'carousel'],
-        variant: 'short',
+        variant: 'short' as const,
         stageRef: videoCanvasRef
-    });
+    }), []);
+
+    const baseView = useBaseStudioView(baseViewConfig);
 
     const {
         measures,
@@ -187,6 +189,7 @@ export function ShortStudioView() {
                     measures={measures}
                     projectName={projectName}
                     onSave={handleSaveProject}
+                    variant="short"
                 />
             }
             rightSidebar={<SettingsPanel isMobile={isMobile} isOpen={activePanel === 'customize'} onClose={() => setLocalActivePanel('studio')} colors={theme} onColorChange={setTheme as any} numFrets={settings.numFrets || 5} />}

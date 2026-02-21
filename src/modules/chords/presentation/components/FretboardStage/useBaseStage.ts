@@ -116,7 +116,7 @@ export const useBaseStage = ({
     const isRenderingRef = useRef(false);
 
     // Engine & Animation State
-    const engineRef = useRef<IStageEngine | null>(null);
+    const [engine, setEngine] = useState<IStageEngine | null>(null);
     const drawFrameRef = useRef<((state: AnimationState, timeMs: number) => void) | null>(null);
 
     const animationStateRef = useRef<AnimationState>({
@@ -158,17 +158,18 @@ export const useBaseStage = ({
 
     // --- Engine Initialization ---
     useEffect(() => {
-        if (!canvasRef.current || engineRef.current) return;
-        engineRef.current = engineFactory(canvasRef.current);
-        engineRef.current.drawSingleFrame();
-    }, []); // Run once on mount
+        if (!canvasRef.current || engine) return;
+        const newEngine = engineFactory(canvasRef.current);
+        setEngine(newEngine);
+        newEngine.drawSingleFrame();
+    }, [engine, engineFactory]); // Run until engine is created
 
     // --- Update Engine Options ---
     useEffect(() => {
-        if (engineRef.current) {
+        if (engine) {
             // We pass all props to updateOptions. engines should pick what they need
             // or we construct a generic options object here
-            engineRef.current.updateOptions({
+            engine.updateOptions({
                 width,
                 height,
                 numStrings,
@@ -183,28 +184,28 @@ export const useBaseStage = ({
                 ...extraOptions
             }, animationStateRef.current);
         }
-    }, [width, height, numStrings, effectiveNumFrets, colors, animationType, showChordName, transitionsEnabled, buildEnabled, capo, stringNames, engineRef, extraOptions]);
+    }, [width, height, numStrings, effectiveNumFrets, colors, animationType, showChordName, transitionsEnabled, buildEnabled, capo, stringNames, engine, extraOptions]);
 
     // --- Update Chords ---
     useEffect(() => {
-        if (engineRef.current) {
-            engineRef.current.setChords(chords);
+        if (engine) {
+            engine.setChords(chords);
         }
-    }, [chords]);
+    }, [chords, engine]);
 
     // --- Update Preview Chord ---
     useEffect(() => {
-        if (engineRef.current) {
-            engineRef.current.setPreviewChord(previewChord || null);
+        if (engine) {
+            engine.setPreviewChord(previewChord || null);
         }
-    }, [previewChord]);
+    }, [previewChord, engine]);
 
     // --- Resize ---
     useEffect(() => {
-        if (engineRef.current && canvasRef.current) {
-            engineRef.current.resize(width, height, animationStateRef.current);
+        if (engine && canvasRef.current) {
+            engine.resize(width, height, animationStateRef.current);
         }
-    }, [width, height]);
+    }, [width, height, engine]);
 
     // --- Background Drawing ---
     useEffect(() => {
@@ -216,15 +217,15 @@ export const useBaseStage = ({
 
     // --- Drawing Logic ---
     const drawFrame = useCallback((state: AnimationState, timeMs: number) => {
-        if (engineRef.current) {
-            engineRef.current.drawFrame(state);
+        if (engine) {
+            engine.drawFrame(state);
         }
-    }, []);
+    }, [engine]);
 
     const drawAnimatedChord = useCallback(() => {
-        if (!canvasRef.current || !engineRef.current) return;
+        if (!canvasRef.current || !engine) return;
         drawFrame(animationStateRef.current, playheadStateRef.current.t);
-    }, [drawFrame]);
+    }, [drawFrame, engine]);
 
     useEffect(() => {
         drawFrameRef.current = drawFrame;
@@ -632,8 +633,7 @@ export const useBaseStage = ({
         backgroundCanvasRef,
         stageContainerRef,
         colors,
-        animationType,
         effectiveNumFrets,
-        engine: engineRef.current
+        engine: engine
     };
 };

@@ -24,14 +24,16 @@ export function BeatsStudioView() {
     const videoCanvasRef = useRef<BeatsFretboardStageRef>(null);
     const isMobile = useIsMobile();
 
-    const baseView = useBaseStudioView({
-        useEditor: useBeatsEditor,  // Beats uses different editor
+    const baseViewConfig = React.useMemo(() => ({
+        useEditor: useBeatsEditor,
         defaultNumFrets: 5,
         defaultAnimationType: 'static-fingers',
         allowedAnimationTypes: ['static-fingers', 'carousel'],
-        variant: 'beats',
+        variant: 'beats' as const,
         stageRef: videoCanvasRef
-    });
+    }), []);
+
+    const baseView = useBaseStudioView(baseViewConfig);
 
     const {
         measures,
@@ -190,6 +192,7 @@ export function BeatsStudioView() {
                     onRemoveNote={handleRemoveNote}
                     projectName={projectName}
                     onSave={handleSaveProject}
+                    variant="beats"
                 />
             }
             rightSidebar={<SettingsPanel
@@ -240,6 +243,7 @@ export function BeatsStudioView() {
                         <StageContainer title="Beats Visualizer">
                             <BeatsFretboardStage
                                 ref={videoCanvasRef}
+                                {...visualEditorProps}
                                 chords={chords}
                                 activeChordIndex={activeChordIndex}
                                 transitionsEnabled={playbackTransitionsEnabled}

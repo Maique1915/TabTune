@@ -48,12 +48,13 @@ export function ShortcutsModal({ children }: { children: React.ReactNode }) {
             title: t('shortcuts.groups.editing') || 'Editing',
             shortcuts: [
                 { key: t('shortcuts.keys.plus'), description: t('shortcuts.keys.plus_desc') },
-                { key: t('shortcuts.keys.shift_plus'), description: t('shortcuts.keys.shift_plus_desc') },
+                { key: 'Shift + +', description: t('shortcuts.keys.shift_plus_desc') },
                 { key: t('shortcuts.keys.ctrl_plus'), description: t('shortcuts.keys.ctrl_plus_desc') },
                 { key: t('shortcuts.keys.minus'), description: t('shortcuts.keys.minus_desc') },
-                { key: t('shortcuts.keys.shift_minus'), description: t('shortcuts.keys.shift_minus_desc') },
+                { key: 'Shift + -', description: t('shortcuts.keys.shift_minus_desc') },
                 { key: t('shortcuts.keys.ctrl_minus'), description: t('shortcuts.keys.ctrl_minus_desc') },
                 { key: t('shortcuts.keys.ctrl_d'), description: t('shortcuts.keys.ctrl_d_desc') },
+                { key: 'Ctrl + ⭠/⭢', description: t('shortcuts.keys.ctrl_arrows_rl_beats_desc') },
             ]
         },
         {
@@ -66,7 +67,6 @@ export function ShortcutsModal({ children }: { children: React.ReactNode }) {
                 { key: t('shortcuts.keys.ctrl_arrows_rl'), description: t('shortcuts.keys.ctrl_arrows_rl_desc') },
                 { key: t('shortcuts.keys.ctrl_shift_arrows'), description: t('shortcuts.keys.ctrl_shift_arrows_desc') },
                 { key: t('shortcuts.keys.ctrl_space'), description: t('shortcuts.keys.ctrl_space_desc') },
-                { key: t('shortcuts.keys.ctrl_arrows_rl_beats'), description: t('shortcuts.keys.ctrl_arrows_rl_beats_desc') },
                 { key: t('shortcuts.keys.ctrl_shift_arrows_beats'), description: t('shortcuts.keys.ctrl_shift_arrows_beats_desc') },
                 { key: t('shortcuts.keys.alt_shift_arrows_ud_beats'), description: t('shortcuts.keys.alt_shift_arrows_ud_beats_desc') },
                 { key: t('shortcuts.keys.alt_arrows_ud_beats'), description: t('shortcuts.keys.alt_arrows_ud_beats_desc') },

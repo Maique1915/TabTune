@@ -199,7 +199,7 @@ export const translations = {
             messages: {
                 style_updated: 'Estilo atualizado!',
                 style_saved: 'Estilo salvo com sucesso!',
-                finger_limit: 'Limite de 4 dedos atingido!'
+                finger_limit: 'Limite de 5 dedos atingido!'
             },
             labels: {
                 background: 'Fundo',
@@ -434,17 +434,17 @@ export const translations = {
                 ctrl_space: 'Ctrl + Espaço',
                 ctrl_space_desc: 'Ativar/Desativar Acento (Batida Forte)',
                 ctrl_arrows_rl_beats: 'Ctrl + ⭠/⭢',
-                ctrl_arrows_rl_beats_desc: 'Ciclar Direção da Batida',
+                ctrl_arrows_rl_beats_desc: 'Mudar tipos de setas',
                 ctrl_shift_arrows_beats: 'Ctrl + Shift + ⭠/⭢',
                 ctrl_shift_arrows_beats_desc: 'Ciclar Dedo da Batida',
                 shift_plus: 'Shift + +',
-                shift_plus_desc: 'Adicionar Nota',
+                shift_plus_desc: 'Adicionar Seta/Nota',
                 ctrl_plus: 'Ctrl + +',
                 ctrl_plus_desc: 'Adicionar Dedo',
                 minus: '-',
                 minus_desc: 'Remover Compasso',
                 shift_minus: 'Shift + -',
-                shift_minus_desc: 'Remover Nota/Acorde',
+                shift_minus_desc: 'Remover Seta/Nota',
                 ctrl_minus: 'Ctrl + -',
                 ctrl_minus_desc: 'Remover Dedo',
                 ctrl_d: 'Ctrl + D',
@@ -452,7 +452,7 @@ export const translations = {
                 alt_shift_arrows_ud_beats: 'Alt + Shift + ⭡/⭣',
                 alt_shift_arrows_ud_beats_desc: 'Ciclar Duração da Batida',
                 alt_arrows_ud_beats: 'W / S',
-                alt_arrows_ud_beats_desc: 'Ciclar Tipo de Batida (Normal, Pausa, Abafado, Nenhum)'
+                alt_arrows_ud_beats_desc: 'Ciclar Duração da Batida'
             }
         }
     },
@@ -654,7 +654,7 @@ export const translations = {
             messages: {
                 style_updated: 'Style updated!',
                 style_saved: 'Style saved successfully!',
-                finger_limit: '4 finger limit reached!'
+                finger_limit: '5 finger limit reached!'
             },
             labels: {
                 background: 'Background',
@@ -889,17 +889,17 @@ export const translations = {
                 ctrl_space: 'Ctrl + Space',
                 ctrl_space_desc: 'Toggle Accent (Strong Beat)',
                 ctrl_arrows_rl_beats: 'Ctrl + ⭠/⭢',
-                ctrl_arrows_rl_beats_desc: 'Cycle Strum Direction',
+                ctrl_arrows_rl_beats_desc: 'Change arrow types',
                 ctrl_shift_arrows_beats: 'Ctrl + Shift + ⭠/⭢',
                 ctrl_shift_arrows_beats_desc: 'Cycle Strum Finger',
                 shift_plus: 'Shift + +',
-                shift_plus_desc: 'Add Note',
+                shift_plus_desc: 'Add Arrow/Note',
                 ctrl_plus: 'Ctrl + +',
                 ctrl_plus_desc: 'Add Finger',
                 minus: '-',
                 minus_desc: 'Remove Measure',
                 shift_minus: 'Shift + -',
-                shift_minus_desc: 'Remove Note/Chord',
+                shift_minus_desc: 'Remove Arrow/Note',
                 ctrl_minus: 'Ctrl + -',
                 ctrl_minus_desc: 'Remove Finger',
                 ctrl_d: 'Ctrl + D',
@@ -907,7 +907,7 @@ export const translations = {
                 alt_shift_arrows_ud_beats: 'Alt + Shift + ⭡/⭣',
                 alt_shift_arrows_ud_beats_desc: 'Cycle Beat Duration',
                 alt_arrows_ud_beats: 'W / S',
-                alt_arrows_ud_beats_desc: 'Cycle Beat Type (Normal, Pause, Mute, None)'
+                alt_arrows_ud_beats_desc: 'Cycle Beat Duration'
             }
         }
     },
@@ -1110,7 +1110,7 @@ export const translations = {
             messages: {
                 style_updated: '¡Estilo actualizado!',
                 style_saved: '¡Estilo guardado con éxito!',
-                finger_limit: '¡Límite de 4 dedos alcanzado!'
+                finger_limit: '¡Límite de 5 dedos alcanzado!'
             },
             labels: {
                 background: 'Fondo',
@@ -1343,17 +1343,17 @@ export const translations = {
                 ctrl_space: 'Ctrl + Espacio',
                 ctrl_space_desc: 'Activar/Desactivar Acento (Golpe Fuerte)',
                 ctrl_arrows_rl_beats: 'Ctrl + ⭠/⭢',
-                ctrl_arrows_rl_beats_desc: 'Ciclar Dirección del Golpe',
+                ctrl_arrows_rl_beats_desc: 'Cambiar tipos de flechas',
                 ctrl_shift_arrows_beats: 'Ctrl + Shift + ⭠/⭢',
                 ctrl_shift_arrows_beats_desc: 'Ciclar Dedo del Golpe',
                 shift_plus: 'Shift + +',
-                shift_plus_desc: 'Añadir Nota',
+                shift_plus_desc: 'Añadir Flecha/Nota',
                 ctrl_plus: 'Ctrl + +',
                 ctrl_plus_desc: 'Añadir Dedo',
                 minus: '-',
                 minus_desc: 'Eliminar Compás',
                 shift_minus: 'Shift + -',
-                shift_minus_desc: 'Eliminar Nota/Acorde',
+                shift_minus_desc: 'Eliminar Flecha/Nota',
                 ctrl_minus: 'Ctrl + -',
                 ctrl_minus_desc: 'Eliminar Dedo',
                 ctrl_d: 'Ctrl + D',
@@ -1361,7 +1361,7 @@ export const translations = {
                 alt_shift_arrows_ud_beats: 'Alt + Shift + ⭡/⭣',
                 alt_shift_arrows_ud_beats_desc: 'Ciclar Duración de Beat',
                 alt_arrows_ud_beats: 'W / S',
-                alt_arrows_ud_beats_desc: 'Ciclar Tipo de Beat (Normal, Pausa, Apagado, Ninguno)'
+                alt_arrows_ud_beats_desc: 'Ciclar Duración del Golpe'
             }
         }
     }

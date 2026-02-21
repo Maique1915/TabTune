@@ -62,7 +62,8 @@ export class FullFretboardEngine {
             {
                 numStrings: this.options.numStrings || 6,
                 numFrets: this.options.numFrets || 5
-            }
+            },
+            this.options.colors?.global?.scale || 1
         );
 
         if (this.options.tuning) {
