@@ -1,4 +1,4 @@
-import { Music, Menu, Download, Upload } from 'lucide-react';
+import { Menu, Download, Upload } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { AuthSection } from '@/shared/components/layout/AuthSection';
 import { useTranslation } from "@/modules/core/presentation/context/translation-context";
@@ -35,7 +35,9 @@ export function AppHeader({ onMenuClick, onImport, onExport, title, hasUnsavedCh
           onClick={handleLogoClick}
         >
           <div className="size-11 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-inner-glow group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-500">
-            <Music className="text-primary" size={20} />
+            <span className="material-symbols-outlined text-primary text-2xl font-bold">
+              graphic_eq
+            </span>
           </div>
           <div className="flex flex-col">
             <h1 className="text-lg font-display font-black tracking-widest text-white uppercase leading-none flex items-center gap-3">

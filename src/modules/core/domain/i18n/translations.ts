@@ -13,7 +13,9 @@ export const translations = {
         generic: {
             engine: 'Motor NoteForge',
             active: 'NoteForge Ativo',
-            reset: 'Redefinir Padrões'
+            reset: 'Redefinir Padrões',
+            import: 'Importar',
+            export: 'Exportar'
         },
         header: {
             guest_user: 'Usuário Convidad',
@@ -468,7 +470,9 @@ export const translations = {
         generic: {
             engine: 'NoteForge Engine',
             active: 'NoteForge Active',
-            reset: 'Reset Defaults'
+            reset: 'Reset Defaults',
+            import: 'Import',
+            export: 'Export'
         },
         header: {
             guest_user: 'Guest User',
@@ -923,7 +927,9 @@ export const translations = {
         generic: {
             engine: 'Motor NoteForge',
             active: 'NoteForge Activo',
-            reset: 'Restablecer Valores'
+            reset: 'Restablecer Valores',
+            import: 'Importar',
+            export: 'Exportar'
         },
         header: {
             guest_user: 'Usuario Invitado',

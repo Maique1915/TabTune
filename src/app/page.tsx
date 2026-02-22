@@ -151,7 +151,7 @@ export default function LandingPage() {
             <p className="text-xl md:text-2xl text-slate-300 mb-14 max-w-2xl mx-auto relative z-10 font-medium">
               {t('page.cta.desc')}
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 relative z-10">
+            {/*<div className="flex flex-col sm:flex-row items-center justify-center gap-6 relative z-10">
               <Link href="/short">
                 <button className="bg-primary text-background-dark px-12 py-5 rounded-2xl font-black text-xl shadow-cyan-glow hover:scale-110 hover:shadow-premium-glow transition-all duration-500">
                   {t('page.cta.button_primary')}
@@ -160,7 +160,7 @@ export default function LandingPage() {
               <button className="text-white font-black text-xl hover:text-primary transition-colors py-4">
                 {t('page.cta.button_secondary')}
               </button>
-            </div>
+            </div>*/}
           </div>
         </section>
       </main>
