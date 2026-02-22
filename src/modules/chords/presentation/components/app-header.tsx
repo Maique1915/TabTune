@@ -43,7 +43,7 @@ export function AppHeader({ onMenuClick, onImport, onExport, title, hasUnsavedCh
             <h1 className="text-lg font-display font-black tracking-widest text-white uppercase leading-none flex items-center gap-3">
               TabTune <div className="size-2 rounded-full bg-primary shadow-cyan-glow animate-pulse-subtle" />
             </h1>
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] leading-tight group-hover:text-primary transition-colors duration-500">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] leading-tight group-hover:text-primary transition-colors duration-500" suppressHydrationWarning>
               {t('menu.studio_mode')}
             </span>
           </div>

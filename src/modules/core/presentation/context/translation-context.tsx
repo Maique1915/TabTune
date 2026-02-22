@@ -43,7 +43,7 @@ export const TranslationProvider: React.FC<{ children: ReactNode }> = ({ childre
         }
     }, []);
 
-    const updateLanguage = (lang: Language) => {
+    const updateLanguage = React.useCallback((lang: Language) => {
         setLanguage(lang);
         localStorage.setItem('language', lang);
 
@@ -72,11 +72,12 @@ export const TranslationProvider: React.FC<{ children: ReactNode }> = ({ childre
                 console.error('Error updating user language preference:', error);
             }
         }
-    };
+    }, []);
 
-    const t = (key: string): string => {
+    const t = React.useCallback((key: string): string => {
         const keys = key.split('.');
         // Use English during SSR and initial hydration to avoid mismatch
+        // On the very first client render, mounted will be false.
         const activeLanguage = mounted ? language : 'en';
         let current: any = translations[activeLanguage];
 
@@ -96,10 +97,16 @@ export const TranslationProvider: React.FC<{ children: ReactNode }> = ({ childre
             current = current[k];
         }
         return current as string;
-    };
+    }, [language, mounted]);
+
+    const value = React.useMemo(() => ({
+        language,
+        setLanguage: updateLanguage,
+        t
+    }), [language, updateLanguage, t]);
 
     return (
-        <TranslationContext.Provider value={{ language, setLanguage: updateLanguage, t }}>
+        <TranslationContext.Provider value={value}>
             {children}
         </TranslationContext.Provider>
     );
