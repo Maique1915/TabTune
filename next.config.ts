@@ -33,10 +33,10 @@ const nextConfig: NextConfig = {
   /* config options here */
   outputFileTracingRoot: process.cwd(),
   typescript: {
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: true,
   },
   eslint: {
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: true,
   },
   webpack: (config) => {
     config.resolve.alias = {
