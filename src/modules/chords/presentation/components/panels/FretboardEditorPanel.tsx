@@ -101,9 +101,10 @@ export const FretboardEditorPanel: React.FC<SidebarProps> = ({
 
                 {/* Detailed Editors - Only visible if notes exist */}
                 {displayNote.positions.length > 0 && (() => {
-                    const currentPos = displayNote.positions[activePositionIndex];
+                    const safeActiveIndex = activePositionIndex ?? 0;
+                    const currentPos = displayNote.positions[safeActiveIndex];
                     const usedFingers = displayNote.positions
-                        .filter((_, idx) => idx !== activePositionIndex)
+                        .filter((_, idx) => idx !== safeActiveIndex)
                         .map(p => p.finger)
                         .filter(f => f !== undefined && f !== 0);
 
@@ -121,7 +122,7 @@ export const FretboardEditorPanel: React.FC<SidebarProps> = ({
                                             <button
                                                 key={s}
                                                 disabled={isUsedElsewhere}
-                                                onClick={() => onSetStringForPosition?.(activePositionIndex, s)}
+                                                onClick={() => onSetStringForPosition?.(safeActiveIndex, s)}
                                                 className={`flex-1 h-9 rounded-lg border font-bold text-[10px] transition-all flex items-center justify-center ${isActive
                                                     ? 'bg-primary shadow-cyan-glow border-primary text-black'
                                                     : isUsedElsewhere
@@ -156,7 +157,7 @@ export const FretboardEditorPanel: React.FC<SidebarProps> = ({
                                             <button
                                                 key={finger.label}
                                                 disabled={isUsed}
-                                                onClick={() => onSetFingerForPosition?.(activePositionIndex, finger.val)}
+                                                onClick={() => onSetFingerForPosition?.(safeActiveIndex, finger.val)}
                                                 className={`flex-1 h-9 rounded-lg border font-bold text-xs transition-all flex items-center justify-center ${isActive
                                                     ? (isAvoidVal ? 'bg-red-500/20 border-red-500 text-red-500' : 'bg-primary shadow-cyan-glow border-primary text-black')
                                                     : isUsed
@@ -192,7 +193,7 @@ export const FretboardEditorPanel: React.FC<SidebarProps> = ({
                                         return (
                                             <button
                                                 key={fret}
-                                                onClick={() => onSetFretForPosition?.(activePositionIndex, fret)}
+                                                onClick={() => onSetFretForPosition?.(safeActiveIndex, fret)}
                                                 className={`h-7 rounded-sm border font-mono text-[10px] transition-all flex items-center justify-center ${currentFret === fret
                                                     ? 'bg-primary border-primary text-black shadow-cyan-glow'
                                                     : 'bg-black/20 border-white/5 text-zinc-500 hover:bg-white/10 hover:text-white'

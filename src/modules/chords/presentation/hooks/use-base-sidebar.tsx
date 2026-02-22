@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { MeasureData, NoteData, ManualChordData } from '@/modules/editor/domain/types';
 
 export interface BaseSidebarConfig {
@@ -14,12 +15,6 @@ export interface BaseSidebarConfig {
 }
 
 export function useBaseSidebar(config: BaseSidebarConfig) {
-    const [chordData, setChordData] = useState<ManualChordData>({
-        root: 'C',
-        quality: '',
-        extensions: [],
-        bass: 'Root'
-    });
     const {
         activeMeasure,
         onUpdateMeasure,

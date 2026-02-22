@@ -5,21 +5,20 @@ import { CreateChordShapeDTO, UpdateChordShapeDTO } from "../application/dtos/ch
 
 export class ChordShapeService {
     async saveShape(data: CreateChordShapeDTO) {
-        const [shape] = await db.insert(chordShapes).values({
+        await db.insert(chordShapes).values({
             userId: data.userId,
             name: data.name,
             chordData: data.chordData,
             tags: data.tags,
         })
-            .onConflictDoUpdate({
-                target: [chordShapes.userId, chordShapes.name],
+            .onDuplicateKeyUpdate({
                 set: {
                     chordData: data.chordData,
                     tags: data.tags,
                 }
-            })
-            .returning();
-        return shape;
+            });
+
+        return await this.findByName(data.name, data.userId);
     }
 
     async findByName(name: string, userId: number) {

@@ -25,6 +25,7 @@ export interface ManualChordData {
     quality: string;
     bass?: string;
     extensions?: string[];
+    showChordName?: boolean;
 }
 
 // Master Entity that represents a "Vertical Slice" of music on the fretboard

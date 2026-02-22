@@ -5,12 +5,13 @@ import { CreateProjectDTO, UpdateProjectDTO } from "../application/dtos/project.
 
 export class ProjectService {
     async createProject(data: CreateProjectDTO) {
-        const [project] = await db.insert(projects).values({
+        const [result] = await db.insert(projects).values({
             userId: data.userId,
             name: data.name,
+            screenContext: data.screenContext,
             data: data.data,
-        }).returning();
-        return project;
+        });
+        return await this.getProject(result.insertId, data.userId);
     }
 
     async listUserProjects(userId: number) {
@@ -27,11 +28,10 @@ export class ProjectService {
     }
 
     async updateProject(id: number, userId: number, data: UpdateProjectDTO) {
-        const [project] = await db.update(projects)
+        await db.update(projects)
             .set({ ...data, updatedAt: new Date() })
-            .where(and(eq(projects.id, id), eq(projects.userId, userId)))
-            .returning();
-        return project;
+            .where(and(eq(projects.id, id), eq(projects.userId, userId)));
+        return await this.getProject(id, userId);
     }
 
     async deleteProject(id: number, userId: number) {

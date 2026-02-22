@@ -25,11 +25,13 @@ export const ProjectDataSchema = z.object({
 export const CreateProjectSchema = z.object({
     userId: z.number(),
     name: z.string().min(1).max(255),
+    screenContext: z.enum(["short", "full", "beats"]),
     data: ProjectDataSchema,
 });
 
 export const UpdateProjectSchema = z.object({
     name: z.string().min(1).max(255).optional(),
+    screenContext: z.enum(["short", "full", "beats"]).optional(),
     data: ProjectDataSchema.optional(),
 });
 
