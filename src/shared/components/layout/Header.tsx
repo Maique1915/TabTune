@@ -4,14 +4,13 @@ import React from "react";
 import Link from "next/link";
 import { AuthSection } from "./AuthSection";
 import { useTranslation } from "@/modules/core/presentation/context/translation-context";
-import { Button } from "@/shared/components/ui/button";
 
 export function Header() {
     const { t } = useTranslation();
 
     return (
         <header className="sticky top-0 z-50 border-b border-white/[0.05] bg-background-dark/80 backdrop-blur-xl">
-            <div className="mx-auto px-8 h-20 flex items-center justify-between max-w-7xl">
+            <div className="mx-auto px-8 h-20 flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-3 group">
                     <div className="size-10 bg-primary rounded-xl flex items-center justify-center text-background-dark shadow-cyan-glow group-hover:scale-110 transition-transform duration-300">
                         <span className="material-symbols-outlined text-2xl font-bold">
@@ -34,7 +33,7 @@ export function Header() {
                     </Link>
                 </nav>
                 <div className="flex items-center gap-6">
-                    <AuthSection variant="header" />
+                    <AuthSection />
                 </div>
             </div>
         </header>

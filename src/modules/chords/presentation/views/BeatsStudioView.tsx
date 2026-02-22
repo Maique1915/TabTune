@@ -139,6 +139,8 @@ export function BeatsStudioView() {
             header={<AppHeader
                 title="Guitar Beats"
                 hasUnsavedChanges={hasUnsavedChanges}
+                onImport={baseView.handleImport}
+                onExport={baseView.handleExport}
             />}
             mobileBottomNav={<MobileNav items={navItems} activePanel={activePanel} onPanelChange={setLocalActivePanel} />}
             leftSidebar={

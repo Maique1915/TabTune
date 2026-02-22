@@ -323,10 +323,8 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
         if (projectId) {
             // It's a saved project, just update it
             const storedUser = localStorage.getItem('cifrai_user');
-            if (!storedUser) {
-                alert("Faça login para salvar seus projetos.");
-                return;
-            }
+            // Removing login requirement alert for database-less version
+
 
             const { createFullHistory } = await import('@/lib/history-manager');
             const history = createFullHistory(editorData.measures, editorData.settings, editorData.theme);
@@ -353,14 +351,65 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
         }
     };
 
+    const handleExport = useCallback(() => {
+        const { measures, settings, theme } = editorData;
+        const data = {
+            measures,
+            settings,
+            theme,
+            version: '1.0',
+            exportedAt: new Date().toISOString()
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${projectName || 'tabtune-project'}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, [editorData, projectName]);
+
+    const handleImport = useCallback(() => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/json';
+        input.onchange = async (e: any) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event: any) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    if (data.measures && data.settings) {
+                        editorData.loadState({
+                            measures: data.measures,
+                            settings: { ...editorData.settings, ...data.settings },
+                            theme: data.theme || editorData.theme
+                        });
+                        alert("Projeto importado com sucesso!");
+                    } else {
+                        alert("Arquivo inválido: Formato não reconhecido.");
+                    }
+                } catch (err) {
+                    console.error("Import error:", err);
+                    alert("Erro ao ler o arquivo.");
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }, [editorData]);
+
     const onConfirmSaveNewProject = async (name: string) => {
         const storedUser = localStorage.getItem('cifrai_user');
-        if (!storedUser) {
-            alert("Faça login para salvar seus projetos.");
-            return;
-        }
+        // Removing login requirement alert for database-less version
 
-        const user = JSON.parse(storedUser);
+
+        const user = JSON.parse(storedUser || '{}');
         const { createFullHistory } = await import('@/lib/history-manager');
         const history = createFullHistory(editorData.measures, editorData.settings, editorData.theme);
         const screenContext = window.location.pathname.replace('/', '') || 'short';
@@ -413,6 +462,8 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
         handleResetPlayback,
         handleRenderWithOptions,
         handleSaveProject,
+        handleExport,
+        handleImport,
         onConfirmSaveNewProject,
         saveDialogOpen,
         setSaveDialogOpen,

@@ -1,4 +1,4 @@
-import { Music, Menu } from 'lucide-react';
+import { Music, Menu, Download, Upload } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { AuthSection } from '@/shared/components/layout/AuthSection';
 import { useTranslation } from "@/modules/core/presentation/context/translation-context";
@@ -7,11 +7,13 @@ import { useRouter } from 'next/navigation';
 interface HeaderProps {
   onMenuClick?: () => void;
   onSettingsClick?: () => void;
+  onImport?: () => void;
+  onExport?: () => void;
   title?: string;
   hasUnsavedChanges?: boolean;
 }
 
-export function AppHeader({ onMenuClick, title, hasUnsavedChanges }: HeaderProps) {
+export function AppHeader({ onMenuClick, onImport, onExport, title, hasUnsavedChanges }: HeaderProps) {
   const { t } = useTranslation();
   const router = useRouter();
 
@@ -46,7 +48,28 @@ export function AppHeader({ onMenuClick, title, hasUnsavedChanges }: HeaderProps
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
+        <div className="hidden md:flex items-center gap-2 mr-4 border-r border-white/10 pr-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onImport}
+            className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white hover:bg-white/5 gap-2"
+          >
+            <Upload size={14} />
+            {t('generic.import') || 'Importar'}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onExport}
+            className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white hover:bg-white/5 gap-2"
+          >
+            <Download size={14} />
+            {t('generic.export') || 'Exportar'}
+          </Button>
+        </div>
+
         <AuthSection />
 
         {onMenuClick && (

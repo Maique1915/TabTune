@@ -137,6 +137,8 @@ export function ShortStudioView() {
             header={<AppHeader
                 title="Studio"
                 hasUnsavedChanges={hasUnsavedChanges}
+                onImport={baseView.handleImport}
+                onExport={baseView.handleExport}
             />}
             mobileBottomNav={<MobileNav items={navItems} activePanel={activePanel} onPanelChange={setLocalActivePanel} />}
             leftSidebar={

@@ -109,6 +109,15 @@ export function useBeatsEditor() {
         setState((prev: FretboardEditorState) => ({ ...prev, activePositionIndex: index }));
     }, [setState]);
 
+    const loadState = useCallback((partialState: Partial<FretboardEditorState>) => {
+        setState((prev: FretboardEditorState) => ({
+            ...prev,
+            ...partialState,
+            selectedNoteIds: partialState.selectedNoteIds || [],
+            editingNoteId: partialState.editingNoteId || null,
+        }));
+    }, [setState]);
+
     // Derived Helper
     const getActiveMeasure = useCallback(() => {
         return measures.find(m => m.id === selectedMeasureId) || null;
@@ -188,6 +197,7 @@ export function useBeatsEditor() {
         handleAutoFingerToggle: transpositionApi.handleAutoFingerToggle,
 
         undo, redo, canUndo, canRedo,
-        theme, setTheme
+        theme, setTheme,
+        loadState
     };
 }

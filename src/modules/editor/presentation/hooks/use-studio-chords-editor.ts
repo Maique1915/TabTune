@@ -109,6 +109,16 @@ export function useStudioChordsEditor() {
         setState((prev: FretboardEditorState) => ({ ...prev, activePositionIndex: index }));
     }, [setState]);
 
+    const loadState = useCallback((partialState: Partial<FretboardEditorState>) => {
+        setState((prev: FretboardEditorState) => ({
+            ...prev,
+            ...partialState,
+            // Ensure we don't lose the index or other critical UI state unless provided
+            selectedNoteIds: partialState.selectedNoteIds || [],
+            editingNoteId: partialState.editingNoteId || null,
+        }));
+    }, [setState]);
+
     // Derived Helper
     const getActiveMeasure = useCallback(() => {
         return measures.find(m => m.id === selectedMeasureId) || null;
@@ -189,6 +199,7 @@ export function useStudioChordsEditor() {
 
         undo, redo, canUndo, canRedo,
         hasUnsavedChanges, markAsSaved,
-        theme, setTheme
+        theme, setTheme,
+        loadState
     };
 }
