@@ -13,8 +13,10 @@ const TranslationContext = createContext<TranslationContextType | undefined>(und
 
 export const TranslationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [language, setLanguage] = useState<Language>('en');
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
         // First, check if user is logged in and has a preferred language
         const storedUser = localStorage.getItem('cifrai_user');
         if (storedUser) {
@@ -74,12 +76,14 @@ export const TranslationProvider: React.FC<{ children: ReactNode }> = ({ childre
 
     const t = (key: string): string => {
         const keys = key.split('.');
-        let current: any = translations[language];
+        // Use English during SSR and initial hydration to avoid mismatch
+        const activeLanguage = mounted ? language : 'en';
+        let current: any = translations[activeLanguage];
 
         for (const k of keys) {
             if (current === undefined || current[k] === undefined) {
                 // Fallback to English if not found in current language
-                if (language !== 'en') {
+                if (activeLanguage !== 'en') {
                     let fallback: any = translations['en'];
                     for (const fk of keys) {
                         if (fallback === undefined || fallback[fk] === undefined) return key;
