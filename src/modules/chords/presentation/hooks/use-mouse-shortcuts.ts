@@ -1,11 +1,13 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import { SidebarProps } from '../components/sidebar-types';
 import { GeometryProvider } from '../../../engine/infrastructure/drawers/components/GeometryProvider';
 import { Duration } from '@/modules/editor/domain/types';
 
 export const useMouseShortcuts = (props: SidebarProps, geometry?: GeometryProvider) => {
     const propsRef = useRef(props);
-    propsRef.current = props;
+    useEffect(() => {
+        propsRef.current = props;
+    });
 
     const [isDraggingBarre, setIsDraggingBarre] = useState(false);
     const isDraggingBarreRef = useRef(false);

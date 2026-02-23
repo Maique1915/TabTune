@@ -12,35 +12,35 @@ interface TranslationContextType {
 const TranslationContext = createContext<TranslationContextType | undefined>(undefined);
 
 export const TranslationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [language, setLanguage] = useState<Language>('en');
+    const [language, setLanguage] = useState<Language>(() => {
+        if (typeof window !== "undefined") {
+            // First, check if user is logged in and has a preferred language
+            const storedUser = localStorage.getItem('cifrai_user');
+            if (storedUser) {
+                try {
+                    const user = JSON.parse(storedUser);
+                    const userLang = user.preferred_language as Language;
+                    if (userLang && ['en', 'pt', 'es'].includes(userLang)) return userLang;
+                } catch (error) {
+                    console.error('Error parsing user language preference:', error);
+                }
+            }
+
+            // Fallback to stored language preference if no user is logged in
+            const stored = localStorage.getItem('language') as Language;
+            if (stored && ['en', 'pt', 'es'].includes(stored)) {
+                return stored;
+            }
+        }
+        return 'en';
+    });
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        setMounted(true);
-        // First, check if user is logged in and has a preferred language
-        const storedUser = localStorage.getItem('cifrai_user');
-        if (storedUser) {
-            try {
-                const user = JSON.parse(storedUser);
-                const userLang = user.preferred_language as Language;
-
-                // If user has a valid preferred language, use it
-                if (userLang && ['en', 'pt', 'es'].includes(userLang)) {
-                    setLanguage(userLang);
-                    // Also update the language localStorage to keep them in sync
-                    localStorage.setItem('language', userLang);
-                    return;
-                }
-            } catch (error) {
-                console.error('Error parsing user language preference:', error);
-            }
-        }
-
-        // Fallback to stored language preference if no user is logged in
-        const stored = localStorage.getItem('language') as Language;
-        if (stored && ['en', 'pt', 'es'].includes(stored)) {
-            setLanguage(stored);
-        }
+        const timer = setTimeout(() => {
+            setMounted(true);
+        }, 0);
+        return () => clearTimeout(timer);
     }, []);
 
     const updateLanguage = React.useCallback((lang: Language) => {
@@ -55,6 +55,7 @@ export const TranslationProvider: React.FC<{ children: ReactNode }> = ({ childre
                 user.preferred_language = lang;
                 localStorage.setItem('cifrai_user', JSON.stringify(user));
 
+                /*
                 // Update language in database
                 fetch('/api/user/update-language', {
                     method: 'POST',
@@ -68,6 +69,7 @@ export const TranslationProvider: React.FC<{ children: ReactNode }> = ({ childre
                 }).catch(error => {
                     console.error('Failed to update language in database:', error);
                 });
+                */
             } catch (error) {
                 console.error('Error updating user language preference:', error);
             }

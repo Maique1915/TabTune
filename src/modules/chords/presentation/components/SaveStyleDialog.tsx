@@ -32,11 +32,16 @@ export function SaveStyleDialog({
     const { t } = useTranslation();
     const [name, setName] = useState(initialName);
 
-    useEffect(() => {
+    const [prevOpen, setPrevOpen] = useState(false);
+    const [prevInitialName, setPrevInitialName] = useState(initialName);
+
+    if (open !== prevOpen || (open && initialName !== prevInitialName)) {
+        setPrevOpen(open);
+        setPrevInitialName(initialName);
         if (open) {
             setName(initialName || t('settings.save_dialog.default_name'));
         }
-    }, [open, initialName, t]);
+    }
 
     const handleSaveAsNew = () => {
         if (name.trim()) {

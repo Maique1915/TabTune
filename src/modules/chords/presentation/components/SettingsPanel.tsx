@@ -178,29 +178,38 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
   const [activeTab, setActiveTab] = useState<'basic' | 'advanced' | 'motion'>('basic');
   const [expandedKey, setExpandedKey] = useState<string | null>('fretboard');
   const [saveStyleDialogOpen, setSaveStyleDialogOpen] = useState(false);
-  const [customStyles, setCustomStyles] = useState<any[]>([]);
+  const [customStyles, setCustomStyles] = useState<any[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem('cifrai_custom_styles');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error("Failed to parse custom styles", e);
+        }
+      }
+    }
+    return [];
+  });
   const [hasChanges, setHasChanges] = useState(false);
   const [activeStyleId, setActiveStyleId] = useState<string | null>(null);
 
-  // Load custom styles on mount
-  useEffect(() => {
-    const saved = localStorage.getItem('cifrai_custom_styles');
-    if (saved) {
-      try {
-        setCustomStyles(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse custom styles", e);
-      }
-    }
-  }, []);
+  // Remove the old useEffect for loading styles
+
+  const [prevColorsState, setPrevColorsState] = useState<string>(JSON.stringify(colors));
+  const [prevCustomStylesState, setPrevCustomStylesState] = useState<any[]>(customStyles);
 
   // Detect changes against presets AND track which custom style is active
-  useEffect(() => {
+  const currentColorsStr = JSON.stringify(colors);
+  if (currentColorsStr !== prevColorsState || customStyles !== prevCustomStylesState) {
+    setPrevColorsState(currentColorsStr);
+    setPrevCustomStylesState(customStyles);
+
     // Check if current colors match any preset
-    const presetMatch = Object.values(STUDIO_PRESETS).some(p => JSON.stringify(p.style) === JSON.stringify(colors));
+    const presetMatch = Object.values(STUDIO_PRESETS).some(p => JSON.stringify(p.style) === currentColorsStr);
 
     // Check if current colors match any custom style
-    const customMatch = customStyles.find(s => JSON.stringify(s.style) === JSON.stringify(colors));
+    const customMatch = customStyles.find(s => JSON.stringify(s.style) === currentColorsStr);
 
     if (customMatch) {
       setActiveStyleId(customMatch.id);
@@ -209,10 +218,9 @@ export function SettingsPanel({ isMobile, isOpen, onClose, colors: propsColors, 
       setActiveStyleId(null);
       setHasChanges(false);
     } else {
-      // If we had an active style and now colors changed, we have unsaved changes on THAT style
       setHasChanges(true);
     }
-  }, [colors, customStyles]);
+  }
 
   const visibleGroups = SETTING_GROUPS.map(group => ({
     ...group,

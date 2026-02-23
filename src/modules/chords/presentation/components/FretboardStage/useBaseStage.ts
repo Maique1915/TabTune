@@ -295,7 +295,7 @@ export const useBaseStage = ({
             cursor += outHalf;
         }
         return { chordIndex: chords.length - 1, transitionProgress: 0, buildProgress: 1, chordProgress: 1 };
-    }, [chords, getSegmentDurationSec, transitionsEnabled, animationType]);
+    }, [chords, getSegmentDurationSec]);
 
     // --- Playback Controls ---
     const stopPlayhead = useCallback(() => {
@@ -473,7 +473,7 @@ export const useBaseStage = ({
             animationStateRef.current.nameTransitionProgress = 1;
             drawAnimatedChord();
         }
-    }, [chords, computeStateAtTimeMs, computeTotalPlaybackDurationMs, playbackSeekNonce, playbackSeekProgress, setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress]);
+    }, [chords, computeStateAtTimeMs, computeTotalPlaybackDurationMs, playbackSeekNonce, playbackSeekProgress, setPlaybackIsPaused, setPlaybackIsPlaying, setPlaybackProgress, drawAnimatedChord, isPaused]);
 
     // Effect for when chords array changes or activeChordIndex changes (Unified logic)
     useEffect(() => {
@@ -609,7 +609,7 @@ export const useBaseStage = ({
             canvasRecorder.setIsRendering(false);
             canvasRecorder.setIsComplete(true); // Should probably set this or clean up
         }
-    }, [chords, width, height, numStrings, numFrets, capo, animationType, colors, canvasRecorder, computeTotalPlaybackDurationMs, computeStateAtTimeMs, onRenderProgress]);
+    }, [chords, canvasRecorder, computeTotalPlaybackDurationMs, computeStateAtTimeMs, onRenderProgress]);
 
     // --- Expose Ref ---
     useImperativeHandle(ref, () => ({

@@ -23,21 +23,28 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<User | null>(() => {
+        if (typeof window !== "undefined") {
+            const stored = localStorage.getItem("cifrai_user");
+            if (stored) {
+                try {
+                    return JSON.parse(stored);
+                } catch (e) {
+                    console.error("Failed to parse stored user", e);
+                    localStorage.removeItem("cifrai_user");
+                }
+            }
+        }
+        return null;
+    });
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
     useEffect(() => {
-        const storedUser = localStorage.getItem("cifrai_user");
-        if (storedUser) {
-            try {
-                setUser(JSON.parse(storedUser));
-            } catch (e) {
-                console.error("Failed to parse stored user", e);
-                localStorage.removeItem("cifrai_user");
-            }
-        }
-        setLoading(false);
+        const timer = setTimeout(() => {
+            setLoading(false);
+        }, 0);
+        return () => clearTimeout(timer);
     }, []);
 
     const handleSetUser = useCallback((newUser: User | null) => {

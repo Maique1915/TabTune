@@ -33,12 +33,16 @@ export const StrategySidebar: React.FC<StrategySidebarProps> = (props) => {
     // Initialize state with default category from strategy
     const [activeCategory, setActiveCategory] = useState<string>(() => strategy.getDefaultCategory(props));
 
+    const [prevSelectionId, setPrevSelectionId] = useState<string | null>(null);
+
     // Force switch to editor if selection occurs
-    useEffect(() => {
-        if (props.editingNote || props.activeMeasure) {
+    const currentSelectionId = props.editingNote?.id || props.activeMeasure?.id || null;
+    if (currentSelectionId !== prevSelectionId) {
+        setPrevSelectionId(currentSelectionId);
+        if (currentSelectionId) {
             setActiveCategory('editor');
         }
-    }, [props.editingNote?.id, props.activeMeasure?.id]);
+    }
 
     const navItems = strategy.getNavItems(t);
 

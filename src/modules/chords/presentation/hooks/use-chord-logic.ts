@@ -15,8 +15,21 @@ export const useChordLogic = ({ activeMeasure, onUpdateMeasure }: UseChordLogicP
         showChordName: true
     });
 
+    const [prevMeasureState, setPrevMeasureState] = useState<{ id: string | null, name: string | null, shown: boolean } | null>(null);
+
     // Sync local state when active measure changes
-    useEffect(() => {
+    const currentMeasureState = {
+        id: activeMeasure?.id || null,
+        name: activeMeasure?.chordName || null,
+        shown: activeMeasure?.showChordName ?? true
+    };
+
+    if (currentMeasureState.id !== prevMeasureState?.id ||
+        currentMeasureState.name !== prevMeasureState?.name ||
+        currentMeasureState.shown !== prevMeasureState?.shown) {
+
+        setPrevMeasureState(currentMeasureState);
+
         if (activeMeasure?.chordName) {
             const chordName = activeMeasure.chordName;
 
@@ -89,7 +102,7 @@ export const useChordLogic = ({ activeMeasure, onUpdateMeasure }: UseChordLogicP
                 showChordName: activeMeasure?.showChordName ?? true
             });
         }
-    }, [activeMeasure?.id, activeMeasure?.chordName, activeMeasure?.showChordName]);
+    }
 
     // Sync chord data changes back to parent measure
     useEffect(() => {
@@ -107,7 +120,7 @@ export const useChordLogic = ({ activeMeasure, onUpdateMeasure }: UseChordLogicP
                 });
             }
         }
-    }, [chordData, activeMeasure?.id, activeMeasure?.chordName, onUpdateMeasure]);
+    }, [chordData, activeMeasure?.id, activeMeasure?.chordName, onUpdateMeasure, activeMeasure]);
 
     // Helper to update local state only (parent sync happens in useEffect above)
     const handleChordChange = useCallback((updates: Partial<ManualChordData>) => {

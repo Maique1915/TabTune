@@ -139,47 +139,47 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
 
   // 2. Compatibility Setters & Handlers
-  const setSelectedChords = (action: SetStateAction<ChordWithTiming[]>) => {
+  const setSelectedChords = useCallback((action: SetStateAction<ChordWithTiming[]>) => {
     setState(prev => ({
       ...prev,
       selectedChords: typeof action === "function" ? (action as Function)(prev.selectedChords) : action
     }));
-  };
+  }, [setState]);
 
-  const setTimelineState = (action: SetStateAction<TimelineState>) => {
+  const setTimelineState = useCallback((action: SetStateAction<TimelineState>) => {
     setState(prev => ({
       ...prev,
       timelineState: typeof action === "function" ? (action as Function)(prev.timelineState) : action
     }));
-  };
+  }, [setState]);
 
-  const setColors = (action: SetStateAction<ChordDiagramColors>) => {
+  const setColors = useCallback((action: SetStateAction<ChordDiagramColors>) => {
     setState(prev => ({
       ...prev,
       colors: typeof action === "function" ? (action as Function)(prev.colors) : action
     }));
-  };
+  }, [setState]);
 
-  const setAnimationType = (action: SetStateAction<AnimationType>) => {
+  const setAnimationType = useCallback((action: SetStateAction<AnimationType>) => {
     setState(prev => ({
       ...prev,
       animationType: typeof action === "function" ? (action as Function)(prev.animationType) : action
     }));
-  };
+  }, [setState]);
 
-  const setPlaybackTransitionsEnabled = (action: SetStateAction<boolean>) => {
+  const setPlaybackTransitionsEnabled = useCallback((action: SetStateAction<boolean>) => {
     setState(prev => ({
       ...prev,
       playbackTransitionsEnabled: typeof action === "function" ? (action as Function)(prev.playbackTransitionsEnabled) : action
     }));
-  };
+  }, [setState]);
 
-  const setPlaybackBuildEnabled = (action: SetStateAction<boolean>) => {
+  const setPlaybackBuildEnabled = useCallback((action: SetStateAction<boolean>) => {
     setState(prev => ({
       ...prev,
       playbackBuildEnabled: typeof action === "function" ? (action as Function)(prev.playbackBuildEnabled) : action
     }));
-  };
+  }, [setState]);
 
   const setInstrumentId = useCallback((id: string) => {
     setState(prev => ({ ...prev, instrumentId: id, tuningIndex: 0 }));
@@ -249,10 +249,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   }, [setState, minClipDurationMs, playbackTotalDurationMs]);
 
-  const requestPlaybackSeek = (progress: number) => {
+  const requestPlaybackSeek = useCallback((progress: number) => {
     setPlaybackSeekProgress(progress);
     setPlaybackSeekNonce((n) => n + 1);
-  };
+  }, []);
 
   const value: AppContextType = useMemo(() => ({
     selectedChords,
@@ -305,11 +305,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setTuningIndex,
   }), [
     selectedChords,
+    setSelectedChords,
     timelineState,
+    setTimelineState,
     colors,
+    setColors,
     animationType,
+    setAnimationType,
     playbackTransitionsEnabled,
+    setPlaybackTransitionsEnabled,
     playbackBuildEnabled,
+    setPlaybackBuildEnabled,
     playbackIsPlaying,
     playbackIsPaused,
     playbackProgress,
@@ -317,15 +323,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     playbackIsScrubbing,
     playbackSeekProgress,
     playbackSeekNonce,
+    requestPlaybackSeek,
     isRendering,
     renderProgress,
     renderCancelRequested,
     undo,
     redo,
     canUndo,
-    canRedo,
     minClipDurationMs,
-    addChordToTimeline
+    addChordToTimeline,
+    state.instrumentId,
+    setInstrumentId,
+    state.tuningIndex,
+    setTuningIndex
   ]);
 
   return (

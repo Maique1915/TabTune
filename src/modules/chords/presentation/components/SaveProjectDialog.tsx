@@ -28,11 +28,16 @@ export function SaveProjectDialog({
 }: SaveProjectDialogProps) {
     const [name, setName] = useState(initialName);
 
-    useEffect(() => {
+    const [prevOpen, setPrevOpen] = useState(false);
+    const [prevInitialName, setPrevInitialName] = useState(initialName);
+
+    if (open !== prevOpen || (open && initialName !== prevInitialName)) {
+        setPrevOpen(open);
+        setPrevInitialName(initialName);
         if (open) {
             setName(initialName || "Meu Novo Projeto");
         }
-    }, [open, initialName]);
+    }
 
     const handleSave = () => {
         if (name.trim()) {

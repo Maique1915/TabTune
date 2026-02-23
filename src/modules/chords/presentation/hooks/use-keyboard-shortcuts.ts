@@ -11,7 +11,9 @@ import { SidebarProps } from '../components/sidebar-types';
 export function useKeyboardShortcuts(props: SidebarProps) {
     // Use a ref to always have the latest props without re-registering the event listener
     const propsRef = useRef(props);
-    propsRef.current = props;
+    useEffect(() => {
+        propsRef.current = props;
+    });
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {

@@ -47,7 +47,7 @@ export function useTimelineSync({
     const chords = useMemo(() => {
         console.log('[useTimelineSync] Recalculating chords');
         return measuresToChords(measures, settings);
-    }, [measuresKey, settings]);
+    }, [settings, measures]);
 
     const activeChordIndex = useMemo(() => {
         // Robustness: Find measure by ID from current measures list

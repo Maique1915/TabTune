@@ -25,10 +25,14 @@ export const FretboardEditorPanel: React.FC<SidebarProps> = ({
 
     const displayNote = editingNote || (activeMeasure?.notes && activeMeasure.notes.length > 0 ? activeMeasure.notes[0] : null);
 
+    const [prevSelectionState, setPrevSelectionState] = useState<{ id: string | null, index: number | null } | null>(null);
+
     // Reset barre selector when note changes or active position changes
-    useEffect(() => {
+    const currentSelectionState = { id: editingNote?.id || null, index: activePositionIndex ?? null };
+    if (currentSelectionState.id !== prevSelectionState?.id || currentSelectionState.index !== prevSelectionState?.index) {
+        setPrevSelectionState(currentSelectionState);
         setIsBarreSelectorOpen(false);
-    }, [editingNote?.id, activePositionIndex]);
+    }
 
     if (!displayNote) {
         return (

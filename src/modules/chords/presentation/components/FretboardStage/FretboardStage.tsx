@@ -235,4 +235,6 @@ const FretboardStageInner = ({ contextColors, forwardedRef, ...props }: any) => 
     );
 };
 
+FretboardStageImplementation.displayName = "FretboardStageImplementation";
+FretboardStageInner.displayName = "FretboardStageInner";
 FretboardStage.displayName = "FretboardStage";

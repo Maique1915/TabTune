@@ -25,7 +25,19 @@ export default function ProfilePage() {
     // State for user data
     const [isLoading, setIsLoading] = useState(true);
     const [projects, setProjects] = useState<any[]>([]);
-    const [customStyles, setCustomStyles] = useState<any[]>([]);
+    const [customStyles, setCustomStyles] = useState<any[]>(() => {
+        if (typeof window !== "undefined") {
+            const saved = localStorage.getItem('cifrai_custom_styles');
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (e) {
+                    console.error("Failed to load styles", e);
+                }
+            }
+        }
+        return [];
+    });
     const [activeTab, setActiveTab] = useState('short');
 
     const fetchProjects = (userId: number) => {
@@ -39,17 +51,6 @@ export default function ProfilePage() {
             .catch(err => console.error('Error fetching projects:', err));
     };
 
-    const loadStyles = () => {
-        const saved = localStorage.getItem('cifrai_custom_styles');
-        if (saved) {
-            try {
-                setCustomStyles(JSON.parse(saved));
-            } catch (e) {
-                console.error("Failed to load styles", e);
-            }
-        }
-    };
-
     useEffect(() => {
         if (!userLoading) {
             if (!user) {
@@ -58,8 +59,11 @@ export default function ProfilePage() {
             }
 
             fetchProjects(user.id);
-            loadStyles();
-            setIsLoading(false);
+            // Defer loading state update to avoid cascading renders
+            const timer = setTimeout(() => {
+                setIsLoading(false);
+            }, 0);
+            return () => clearTimeout(timer);
         }
     }, [user, userLoading, router]);
 

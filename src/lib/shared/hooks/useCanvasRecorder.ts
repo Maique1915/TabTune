@@ -66,7 +66,7 @@ export function useCanvasRecorder(
         fps = 30,
         format = 'webm',
         quality = 'medium'
-    } = useMemo(() => options, [options.fps, options.format, options.quality]);
+    } = options;
 
     const loadFFmpeg = useCallback(async () => {
         if (ffmpegRef.current?.loaded) return;
@@ -258,7 +258,7 @@ export function useCanvasRecorder(
             });
 
             if (onProgress) onProgress(5);
-            setRenderProgress(Math.max(renderProgress, 5));
+            setRenderProgress(prev => Math.max(prev, 5));
             setRenderStatus('Carregando motor...');
             setIsComplete(false);
             renderStartTimeRef.current = Date.now();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useUser } from '@/modules/core/presentation/context/user-context';
 import { MessageCircle, X, Send, User } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
@@ -16,33 +16,7 @@ export function MiniChat() {
     const [isLoading, setIsLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        if (isOpen && !admin) {
-            fetchAdmin();
-        }
-    }, [isOpen]);
-
-    useEffect(() => {
-        if (admin && user) {
-            setupConversation();
-        }
-    }, [admin, user]);
-
-    useEffect(() => {
-        if (conversation) {
-            fetchMessages();
-            const interval = setInterval(fetchMessages, 3000); // Poll every 3s
-            return () => clearInterval(interval);
-        }
-    }, [conversation]);
-
-    useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-    }, [messages]);
-
-    const fetchAdmin = async () => {
+    const fetchAdmin = useCallback(async () => {
         try {
             const res = await fetch('/api/chat/admin');
             if (res.ok) {
@@ -52,9 +26,9 @@ export function MiniChat() {
         } catch (err) {
             console.error('Failed to fetch admin:', err);
         }
-    };
+    }, []);
 
-    const setupConversation = async () => {
+    const setupConversation = useCallback(async () => {
         if (!user || !admin) return;
         try {
             const res = await fetch('/api/chat/conversations', {
@@ -69,9 +43,9 @@ export function MiniChat() {
         } catch (err) {
             console.error('Failed to setup conversation:', err);
         }
-    };
+    }, [user, admin]);
 
-    const fetchMessages = async () => {
+    const fetchMessages = useCallback(async () => {
         if (!conversation) return;
         try {
             const res = await fetch(`/api/chat/messages?conversationId=${conversation.id}`);
@@ -82,7 +56,46 @@ export function MiniChat() {
         } catch (err) {
             console.error('Failed to fetch messages:', err);
         }
-    };
+    }, [conversation]);
+
+    useEffect(() => {
+        if (isOpen && !admin) {
+            const timer = setTimeout(() => {
+                void fetchAdmin();
+            }, 0);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, admin, fetchAdmin]);
+
+    useEffect(() => {
+        if (admin && user) {
+            const timer = setTimeout(() => {
+                void setupConversation();
+            }, 0);
+            return () => clearTimeout(timer);
+        }
+    }, [admin, user, setupConversation]);
+
+    useEffect(() => {
+        if (conversation) {
+            const timer = setTimeout(() => {
+                void fetchMessages();
+            }, 0);
+            const interval = setInterval(() => {
+                void fetchMessages();
+            }, 3000); // Poll every 3s
+            return () => {
+                clearTimeout(timer);
+                clearInterval(interval);
+            };
+        }
+    }, [conversation, fetchMessages]);
+
+    useEffect(() => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+    }, [messages]);
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();

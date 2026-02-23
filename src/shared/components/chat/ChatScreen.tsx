@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Card } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -29,33 +29,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ className = "" }) => {
     const [isLoading, setIsLoading] = useState(true);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Scroll to bottom when messages change
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
-
-    // Fetch admin on mount
-    useEffect(() => {
-        fetchAdmin();
-    }, []);
-
-    // Setup conversation when admin and user are available
-    useEffect(() => {
-        if (admin && user) {
-            setupConversation();
-        }
-    }, [admin, user]);
-
-    // Poll for new messages
-    useEffect(() => {
-        if (conversation) {
-            fetchMessages();
-            const interval = setInterval(fetchMessages, 3000); // Poll every 3s
-            return () => clearInterval(interval);
-        }
-    }, [conversation]);
-
-    const fetchAdmin = async () => {
+    const fetchAdmin = useCallback(async () => {
         try {
             const res = await fetch("/api/chat/admin");
             if (res.ok) {
@@ -67,9 +41,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ className = "" }) => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    const setupConversation = async () => {
+    const setupConversation = useCallback(async () => {
         if (!user || !admin) return;
         try {
             const res = await fetch("/api/chat/conversations", {
@@ -84,9 +58,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ className = "" }) => {
         } catch (err) {
             console.error("Failed to setup conversation:", err);
         }
-    };
+    }, [user, admin]);
 
-    const fetchMessages = async () => {
+    const fetchMessages = useCallback(async () => {
         if (!conversation) return;
         try {
             const res = await fetch(
@@ -99,7 +73,46 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ className = "" }) => {
         } catch (err) {
             console.error("Failed to fetch messages:", err);
         }
-    };
+    }, [conversation]);
+
+    // Scroll to bottom when messages change
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
+
+    // Fetch admin on mount
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            void fetchAdmin();
+        }, 0);
+        return () => clearTimeout(timer);
+    }, [fetchAdmin]);
+
+    // Setup conversation when admin and user are available
+    useEffect(() => {
+        if (admin && user) {
+            const timer = setTimeout(() => {
+                void setupConversation();
+            }, 0);
+            return () => clearTimeout(timer);
+        }
+    }, [admin, user, setupConversation]);
+
+    // Poll for new messages
+    useEffect(() => {
+        if (conversation) {
+            const timer = setTimeout(() => {
+                void fetchMessages();
+            }, 0);
+            const interval = setInterval(() => {
+                void fetchMessages();
+            }, 3000); // Poll every 3s
+            return () => {
+                clearTimeout(timer);
+                clearInterval(interval);
+            };
+        }
+    }, [conversation, fetchMessages]);
 
     const sendMessage = async () => {
         if (!newMessage.trim() || !conversation || !user) return;
@@ -184,8 +197,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ className = "" }) => {
 
                             <div
                                 className={`px-3 py-2 rounded-lg text-sm max-w-xs break-words transition-all duration-200 hover:scale-[1.02] ${msg.senderId === user?.id
-                                        ? "bg-primary text-[#0f2023] rounded-br-none"
-                                        : "bg-white/5 text-white border border-white/10 rounded-bl-none"
+                                    ? "bg-primary text-[#0f2023] rounded-br-none"
+                                    : "bg-white/5 text-white border border-white/10 rounded-bl-none"
                                     }`}
                             >
                                 {msg.content}

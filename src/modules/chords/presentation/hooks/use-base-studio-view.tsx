@@ -38,7 +38,7 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
     // Use the provided editor hook
     const editorData = useEditor();
 
-    const { setMeasures, setSettings, setTheme, hasUnsavedChanges, markAsSaved } = editorData;
+    const { setMeasures, setSettings, setTheme, loadState, measures, settings, theme, activeMeasure, currentMeasureIndex, editingNoteId, selectedNoteIds, selectedMeasureId, handleSelectNote, setEditingNoteId, handleAddNote, handleRemoveNote, handleCopyNote, handleRemoveMeasure, handleAddMeasure, handleUpdateMeasure, handleToggleCollapse, handleCopyMeasure, handlePasteMeasure, handleReorderMeasures, handleReorderNotes, handleSelectMeasure, updateSelectedNotes, editingNote, handleAddChordNote, handleAddChordPosition, markAsSaved } = editorData;
 
     const [projectName, setProjectName] = useState<string>("");
 
@@ -86,7 +86,7 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
 
     // Studio specific defaults
     useEffect(() => {
-        editorData.setSettings((prev: any) => {
+        setSettings((prev: any) => {
             if (prev.numFrets === defaultNumFrets) return prev;
             return { ...prev, numFrets: defaultNumFrets };
         });
@@ -94,7 +94,7 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
         if (allowedAnimationTypes && !allowedAnimationTypes.includes(animationType)) {
             setAnimationType(defaultAnimationType as any);
         }
-    }, [editorData.setSettings, setAnimationType, defaultNumFrets, defaultAnimationType, allowedAnimationTypes, animationType]);
+    }, [setSettings, setAnimationType, defaultNumFrets, defaultAnimationType, allowedAnimationTypes, animationType]);
 
     const [isAnimating, setIsAnimating] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
@@ -116,16 +116,16 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
         totalDurationMs,
         currentCursorMs
     } = useTimelineSync({
-        measures: editorData.measures,
-        settings: editorData.settings,
-        activeMeasure: editorData.activeMeasure,
-        currentMeasureIndex: editorData.currentMeasureIndex,
-        editingNoteId: editorData.editingNoteId,
-        selectedNoteIds: editorData.selectedNoteIds,
+        measures: measures,
+        settings: settings,
+        activeMeasure: activeMeasure,
+        currentMeasureIndex: currentMeasureIndex,
+        editingNoteId: editingNoteId,
+        selectedNoteIds: selectedNoteIds,
         playbackIsPlaying,
         playbackProgress,
         playbackTotalDurationMs,
-        selectedMeasureId: editorData.selectedMeasureId
+        selectedMeasureId: selectedMeasureId
     });
 
     const handleSeek = (ms: number) => {
@@ -133,6 +133,57 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
             requestPlaybackSeek(ms / totalDurationMs);
         }
     };
+
+    const handleSaveProject = useCallback(async () => {
+        if (projectId) {
+            // It's a saved project, just update it
+            const storedUser = localStorage.getItem('cifrai_user');
+            const { createFullHistory } = await import('@/lib/history-manager');
+            const history = createFullHistory(measures, settings, theme);
+
+            try {
+                const res = await fetch('/api/projects', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: projectId,
+                        data: history
+                    })
+                });
+                if (res.ok) {
+                    markAsSaved(); // Mark current state as saved
+                    alert("Projeto salvo com sucesso!");
+                }
+            } catch (err) {
+                console.error("Save error:", err);
+            }
+        } else {
+            // It's a new project, open the name dialog
+            setSaveDialogOpen(true);
+        }
+    }, [projectId, measures, settings, theme, markAsSaved]);
+
+    const handleAnimate = useCallback(() => {
+        if (stageRef.current) {
+            stageRef.current.startAnimation();
+            setIsAnimating(true);
+            setIsPaused(false);
+        }
+    }, [stageRef]);
+
+    const handlePause = useCallback(() => {
+        if (stageRef.current) {
+            stageRef.current.pauseAnimation();
+            setIsPaused(true);
+        }
+    }, [stageRef]);
+
+    const handleResume = useCallback(() => {
+        if (stageRef.current) {
+            stageRef.current.resumeAnimation();
+            setIsPaused(false);
+        }
+    }, [stageRef]);
 
     useEffect(() => {
         if (renderCancelRequested) {
@@ -142,28 +193,6 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
             setRenderCancelRequested(false);
         }
     }, [renderCancelRequested, setIsRendering, setRenderProgress, setRenderCancelRequested, stageRef]);
-
-    const handleAnimate = () => {
-        if (stageRef.current) {
-            stageRef.current.startAnimation();
-            setIsAnimating(true);
-            setIsPaused(false);
-        }
-    };
-
-    const handlePause = () => {
-        if (stageRef.current) {
-            stageRef.current.pauseAnimation();
-            setIsPaused(true);
-        }
-    };
-
-    const handleResume = () => {
-        if (stageRef.current) {
-            stageRef.current.resumeAnimation();
-            setIsPaused(false);
-        }
-    };
 
     const handleResetPlayback = () => {
         if (stageRef.current) stageRef.current.cancelRender();
@@ -241,7 +270,7 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isAnimating, isPaused]);
+    }, [isAnimating, isPaused, handleResume, handlePause, handleAnimate, handleSaveProject]);
 
     const floatingControls = (
         <TimelineControls
@@ -252,7 +281,7 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
             handlePause={handlePause}
             handleResume={handleResume}
             handleRenderVideo={handleRenderVideo}
-            isTimelineEmpty={editorData.measures.length === 0}
+            isTimelineEmpty={measures.length === 0}
             onAudioUpload={() => { }}
             audioUploaded={false}
             onResetPlayback={handleResetPlayback}
@@ -306,12 +335,12 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
         onToggleBarre: editorData.handleToggleBarre,
         editingNote: editorData.editingNote,
         activeMeasure: editorData.activeMeasure,
-        onAddChordNote: editorData.handleAddChordNote,
-        onAddChordPosition: editorData.handleAddChordPosition,
+        onAddChordNote: handleAddChordNote,
+        onAddChordPosition: handleAddChordPosition,
         onShowAlert: (msg: string) => alert(t(msg)),
         totalDurationMs: totalDurationMs,
         currentCursorMs: currentCursorMs,
-        bpm: editorData.settings.bpm,
+        bpm: settings.bpm,
         onSeek: handleSeek
     };
 
@@ -319,37 +348,6 @@ export function useBaseStudioView(config: BaseStudioViewConfig) {
         ? (animationType === 'guitar-fretboard' ? 'static-fingers' : animationType)
         : 'guitar-fretboard';
 
-    const handleSaveProject = async () => {
-        if (projectId) {
-            // It's a saved project, just update it
-            const storedUser = localStorage.getItem('cifrai_user');
-            // Removing login requirement alert for database-less version
-
-
-            const { createFullHistory } = await import('@/lib/history-manager');
-            const history = createFullHistory(editorData.measures, editorData.settings, editorData.theme);
-
-            try {
-                const res = await fetch('/api/projects', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id: projectId,
-                        data: history
-                    })
-                });
-                if (res.ok) {
-                    markAsSaved(); // Mark current state as saved
-                    alert("Projeto salvo com sucesso!");
-                }
-            } catch (err) {
-                console.error("Save error:", err);
-            }
-        } else {
-            // It's a new project, open the name dialog
-            setSaveDialogOpen(true);
-        }
-    };
 
     const handleExport = useCallback(() => {
         const { measures, settings, theme } = editorData;

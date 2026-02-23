@@ -1,8 +1,6 @@
-
+import JSZip from 'jszip';
 import { ScoreData, MusicalMeasure, MusicalNote, TabData } from '../../domain/types';
 import { KEY_SIGNATURE_MAP, CLEF_MAP, MIDI_TO_NOTE_NAME, DURATION_MAP } from '../../domain/constants';
-
-declare const JSZip: any;
 
 export class MSCZParser {
   static async parse(file: File): Promise<ScoreData> {
